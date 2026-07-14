@@ -72,6 +72,15 @@ dependencies; infrastructure implements application ports; CLI/API/worker wire
 dependencies and contain no business decisions. Dependency checks and tests
 reject reverse imports or a second persistence writer.
 
+## AC-11: Rust file-level blueprint is bounded and implementable
+
+The architecture names the exact first-slice Cargo packages, Rust source files,
+public types/functions/traits, responsibility, dependency limit, and test home
+for raw capture plus first-party authoring. It separates that required inventory
+from deferred process/API/worker/view files, which name only their future
+placement and activation condition. No required function has an ambiguous owner
+or a second persistence path.
+
 ## Traceability
 
 | Requirement / PRD | Acceptance | Test |
@@ -83,4 +92,5 @@ reject reverse imports or a second persistence writer.
 | PRD-06 | AC-01, AC-07 | TC-07 |
 | PRD-07 | AC-09 | TC-09 |
 | PRD-07 | AC-10 | TC-10 |
+| PRD-07 | AC-11 | TC-11 |
 | Storage/recovery | AC-08 | TC-08 |

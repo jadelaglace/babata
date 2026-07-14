@@ -91,6 +91,11 @@ a real independent deployment or consumer proves that need.
 - Secrets and provider tokens reside in protected local configuration outside
   Git. The API binds to loopback, requires an installation-local token, and has
   no remote listener in the initial architecture.
+- Before Rust implementation begins, the architecture must name the initial
+  physical Rust file inventory, each file's responsibility, its public
+  types/functions/traits, dependency limits, and the later extension location.
+  It must define a small first-slice inventory rather than create speculative
+  empty files for every future capability.
 
 ## 6. Source-route policy
 

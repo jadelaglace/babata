@@ -26,6 +26,10 @@ Skill / shell / scheduler              browser extension or local UI
 This is an in-process architecture, not a networked microservice graph. The API
 is a convenience entry point that invokes the same Rust use cases as the CLI.
 
+The exact initial file inventory and public Rust surfaces are defined in
+[Rust implementation blueprint](04_RUST_IMPLEMENTATION_BLUEPRINT.md). It is
+part of this architecture, not a separate implementation plan.
+
 ## 2. Repository layout and Rust workspace
 
 The numbered repository layout remains the governing physical layout. Rust code
@@ -355,3 +359,5 @@ derived data; P2/P3 may be rebuilt.
 | AC-07 | Route evaluation records through CaptureService/configuration |
 | AC-08 | BackupDriver and isolated restore verification |
 | AC-09 | Rust domain/store/usecase ownership; CLI/API shared services; peripheral runner boundary |
+| AC-10 | Acyclic domain/application/infrastructure dependency rules and composition roots |
+| AC-11 | Bounded R1 Rust file inventory, public surface ownership, and deferred-file gates |
