@@ -15,6 +15,21 @@ extend, merge, or revive its module repositories.
 
 Exit: AC-01 and AC-08 pass with fixtures; no real content enters Git.
 
+### P1a — Technical architecture (complete)
+
+The Rust-core, loopback API, peripheral adapter, data-root, SQLite, task, and
+backup boundaries are defined in `03_architecture`. This step defines callable
+surfaces and ownership only; it does not implement capture logic, source tools,
+model workflows, or UI.
+
+### P1b — Concrete implementation plan (next, not defined in this document)
+
+The next planning step turns the approved architecture into ordered business
+logic and tool implementation work. It must define the raw schema migration,
+CLI command behaviours, Bailian integration details, source-route tooling, and
+test sequence before code begins. Do not infer or start that work from this
+architecture alone.
+
 ## P2 — Unified raw capture
 
 Implement `capture text`, `capture file`, `capture export`, `create`, `revise`,

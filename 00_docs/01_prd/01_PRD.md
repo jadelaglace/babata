@@ -64,6 +64,18 @@ Capture, Process, Workspace, Explore, and Ops; each is created only after its
 underlying command passes its own tests. A Skill neither stores material nor
 creates hidden bypass paths.
 
+### PRD-07: Local Rust core and peripheral adapters
+
+The `compass` Rust application is the only owner of raw/derived SQLite writes,
+asset finalisation, revision rules, processing tasks, and backup snapshots. Its
+CLI is the default interface for people, Skills, scripts, and scheduled tasks.
+When a browser clipper or local UI needs direct interaction, the same Rust
+application exposes a loopback-only, token-protected local API. Rust is the
+default implementation for importers, provider adapters, views, and operations.
+JavaScript is limited to browser-facing capture. Python is an exception-only
+child-process adapter for mature Python-only tooling. Both submit validated
+candidates to the Rust core rather than owning storage or business decisions.
+
 ## 4. Initial source route matrix
 
 | Source | Preferred route | Candidate tools / light work | Fallback |

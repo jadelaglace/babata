@@ -10,6 +10,8 @@
 | TC-06 | AC-06 | Search raw/derived fixture; build and remove generated view | Search reveals lineage; removing/rebuilding view changes no authority data |
 | TC-07 | AC-07 | Import permitted Feishu/export and browser/bookmark fixture; try incomplete route | Successful routes record coverage/limits; incomplete route is not marked enabled |
 | TC-08 | AC-08 | Back up fixture SQLite/assets, restore into isolated path, sample hashes | Restored indexes open and sampled asset hashes match; no live database sync is required |
+| TC-09 | AC-09 | Inspect Rust CLI/API use-case dependency graph; run JS/Python adapter fixtures | Rust owns all writes/finalisation/queue state; JS is browser-only; Python is an exception-only candidate adapter; loopback API rejects missing/invalid token and never binds remotely |
+| TC-10 | AC-10 | Run workspace dependency checks and architecture tests with a mock port implementation | Domain/application compile without IO infrastructure; infrastructure implements ports; CLI/API/worker only compose use cases; reverse dependencies and direct secondary writers are rejected |
 
 ## Skill test rule
 

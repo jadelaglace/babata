@@ -68,6 +68,30 @@ a real independent deployment or consumer proves that need.
 - Datasette is the first inspection/search view. Obsidian is optional generated
   output only; it is never the sole source of truth and can be deleted/rebuilt.
 
+## 5.1 Technical implementation requirements
+
+- Rust is the default and preferred implementation language for every Compass
+  capability: domain types, SQLite access, migrations, asset placement,
+  hashing, source importers, version/relationship rules, task queue, processing
+  provenance, provider adapters, CLI, local API, worker, views, and backup
+  orchestration.
+- JavaScript/TypeScript is allowed only for code that must execute in a browser,
+  such as an extension/userscript capture UI and DOM extraction. It never writes
+  SQLite, finalises assets, or owns processing/business rules.
+- Python is an exception-only escape hatch for a mature Python-only parser/tool
+  whose value outweighs a Rust implementation. It runs as a versioned child
+  process, emits a candidate envelope, and never writes SQLite, finalises
+  assets, owns queue state, or becomes a general application layer.
+- The Rust core owns every mutation. Peripheral tools submit candidate data to
+  the local CLI/API or emit a versioned candidate envelope for the Rust core to
+  validate and persist.
+- The default interaction surface is the `compass` CLI. A loopback-only local
+  API exists only for real local callers such as a browser extension or local
+  UI; it is not a public service or future distributed contract by default.
+- Secrets and provider tokens reside in protected local configuration outside
+  Git. The API binds to loopback, requires an installation-local token, and has
+  no remote listener in the initial architecture.
+
 ## 6. Source-route policy
 
 Use this route order: official export/API, maintained CLI/SDK/open-source tool,
