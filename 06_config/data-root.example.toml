@@ -1,0 +1,8 @@
+# Copy outside Git, then set COMPASS_DATA_HOME to this directory.
+# Example: C:\\Users\\Aiano\\CompassData
+[data]
+root = "C:\\Users\\Aiano\\CompassData"
+
+# No production credentials belong in this repository or this template.
+[providers.bailian]
+enabled = false

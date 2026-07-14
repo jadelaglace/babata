@@ -1,0 +1,22 @@
+# Real Compass data belongs under COMPASS_DATA_HOME, outside this repository.
+.env
+.env.*
+!.env.example
+data/
+CompassData/
+*.db
+*.sqlite
+*.sqlite3
+*.sqlite-wal
+*.sqlite-shm
+
+# Local runtime state and generated views.
+.cache/
+tmp/
+artifacts/
+coverage/
+dist/
+__pycache__/
+*.py[cod]
+*.log
+.DS_Store
