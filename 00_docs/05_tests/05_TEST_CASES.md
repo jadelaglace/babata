@@ -1,4 +1,4 @@
-# Compass Reboot Test Cases
+# Babata Reboot Test Cases
 
 | ID | Acceptance | Scenario | Expected result |
 | --- | --- | --- | --- |
@@ -12,7 +12,7 @@
 | TC-08 | AC-08 | Back up fixture SQLite/assets, restore into isolated path, sample hashes | Restored indexes open and sampled asset hashes match; no live database sync is required |
 | TC-09 | AC-09 | Inspect Rust CLI/API use-case dependency graph; run JS/Python adapter fixtures | Rust owns all writes/finalisation/queue state; JS is browser-only; Python is an exception-only candidate adapter; loopback API rejects missing/invalid token and never binds remotely |
 | TC-10 | AC-10 | Run workspace dependency checks and architecture tests with a mock port implementation | Domain/application compile without IO infrastructure; infrastructure implements ports; CLI/API/worker only compose use cases; reverse dependencies and direct secondary writers are rejected |
-| TC-11 | AC-11 | Compare the implemented R1 workspace against the file-level blueprint and compile its public surfaces | Required files and public functions have one owner; no deferred API/worker/provider files appear without an activation decision; each required file has its mapped test home |
+| TC-11 | AC-11 | Compare the P2 workspace against the full-system skeleton blueprint; run Cargo workspace check plus inventory, dependency, interface-ownership, document-traceability, and no-secondary-writer checks | All six crates, 117 Rust files, peripheral skeletons, commands, routes, ports, tools, tests and configuration templates exist with one owner and activation phase; inactive capabilities report unavailable; no single module's functional test is required to close P2 |
 
 ## Skill test rule
 

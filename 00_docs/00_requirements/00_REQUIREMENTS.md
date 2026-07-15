@@ -1,8 +1,8 @@
-# Compass Reboot Requirements
+# Babata Reboot Requirements
 
 ## 1. Reset and purpose
 
-Compass 2.0 is frozen at `C:\Users\Aiano\Compass-2.0-frozen`. Its multi-repo,
+Babata 2.0 is frozen at `C:\Users\Aiano\Babata-2.0-frozen`. Its multi-repo,
 contract-first design is reference material only. The reboot builds a useful
 local personal knowledge system before introducing service boundaries.
 
@@ -55,13 +55,14 @@ a real independent deployment or consumer proves that need.
 
 ## 5. Storage, repository, and recovery requirements
 
-- `C:\Users\Aiano\Compass` is the sole Git application repository for code,
+- `C:\Users\Aiano\Babata` is the sole Git application repository for code,
   skills, migrations, docs, tests, and configuration templates.
-- Real data lives under a configured external `COMPASS_DATA_HOME`, initially
-  `C:\Users\Aiano\CompassData`; database records use relative asset keys, not
+- Real data lives under a configured external `BABATA_DATA_HOME`, initially
+  `C:\Users\Aiano\BabataData`; database records use relative asset keys, not
   hard-coded machine paths.
-- Raw evidence and first-party records are P0 backup data. Derived data is P1.
-  Views are P2 and runtime/logs are P3 because they can be recreated.
+- Backup criticality is independent of project phases: raw evidence and
+  first-party records are C0; derived data is C1; rebuildable views are C2;
+  runtime state and logs are C3.
 - SQLite and assets require consistent encrypted incremental backups. NAS/cloud
   copies receive SQLite-consistent snapshots, never blind concurrent sync of a
   live database file.
@@ -70,7 +71,7 @@ a real independent deployment or consumer proves that need.
 
 ## 5.1 Technical implementation requirements
 
-- Rust is the default and preferred implementation language for every Compass
+- Rust is the default and preferred implementation language for every Babata
   capability: domain types, SQLite access, migrations, asset placement,
   hashing, source importers, version/relationship rules, task queue, processing
   provenance, provider adapters, CLI, local API, worker, views, and backup
@@ -85,17 +86,25 @@ a real independent deployment or consumer proves that need.
 - The Rust core owns every mutation. Peripheral tools submit candidate data to
   the local CLI/API or emit a versioned candidate envelope for the Rust core to
   validate and persist.
-- The default interaction surface is the `compass` CLI. A loopback-only local
+- The default interaction surface is the `babata` CLI. A loopback-only local
   API exists only for real local callers such as a browser extension or local
   UI; it is not a public service or future distributed contract by default.
 - Secrets and provider tokens reside in protected local configuration outside
   Git. The API binds to loopback, requires an installation-local token, and has
   no remote listener in the initial architecture.
-- Before Rust implementation begins, the architecture must name the initial
-  physical Rust file inventory, each file's responsibility, its public
-  types/functions/traits, dependency limits, and the later extension location.
-  It must define a small first-slice inventory rather than create speculative
-  empty files for every future capability.
+- Before any single capability is developed to completion, P2 must define and
+  establish the whole-system skeleton: every planned module, Cargo crate,
+  source file, responsibility, public type/function/trait, command group, API
+  route, worker entry, peripheral adapter, Skill specification, migration area,
+  test area, engineering check, configuration template, and external-tool
+  boundary.
+- P2 fixes ownership and dependency direction but does not implement platform
+  collection, processing, search, view, export, or backup algorithms. Inactive
+  capabilities must report an explicit unavailable state and must not claim
+  support.
+- Existing early implementation in one module may be retained, but it does not
+  move that module ahead of the whole-system skeleton and is not accepted until
+  its later functional phase.
 
 ## 6. Source-route policy
 

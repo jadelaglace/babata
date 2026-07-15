@@ -1,8 +1,8 @@
-# Compass Reboot Technical Architecture
+# Babata Reboot Technical Architecture
 
 ## 1. Architectural decision
 
-Compass is one Rust application workspace with local SQLite databases and an
+Babata is one Rust application workspace with local SQLite databases and an
 external numbered data root. Rust is the default implementation for every
 capability and the sole business/persistence core. The system is CLI-first, with
 an optional loopback API for genuine local callers. JavaScript/TypeScript and
@@ -11,7 +11,7 @@ Python are constrained boundary exceptions, never alternative application cores.
 ```text
 Skill / shell / scheduler              browser extension or local UI
           |                                           |
-          +------------- compass CLI -----------------+
+          +------------- babata CLI -----------------+
                                 |                       |
                                 +--- loopback API -------+
                                            |
@@ -26,9 +26,12 @@ Skill / shell / scheduler              browser extension or local UI
 This is an in-process architecture, not a networked microservice graph. The API
 is a convenience entry point that invokes the same Rust use cases as the CLI.
 
-The exact initial file inventory and public Rust surfaces are defined in
-[Rust implementation blueprint](04_RUST_IMPLEMENTATION_BLUEPRINT.md). It is
-part of this architecture, not a separate implementation plan.
+The complete P2 file inventory, interfaces, commands, routes, tools and
+peripheral skeleton are defined in
+[system skeleton blueprint](04_SYSTEM_SKELETON_BLUEPRINT.md). The delayed P3
+raw-storage implementation detail is preserved separately in
+[raw foundation blueprint](05_RAW_FOUNDATION_BLUEPRINT.md). Both are part of
+this architecture.
 
 ## 2. Repository layout and Rust workspace
 
@@ -39,12 +42,12 @@ applications.
 ```text
 01_app/
 ├── Cargo.toml                     # workspace manifest
-├── 01_compass_domain/             # IDs, domain types, invariants, errors
-├── 02_compass_application/        # use cases, input/output types, port traits
-├── 03_compass_infrastructure/     # SQLite, assets, config, Bailian, backup, adapters
-├── 04_compass_cli/                # clap `compass` executable and composition root
-├── 05_compass_local_api/          # axum loopback API and composition root, when needed
-└── 06_compass_worker/             # queue worker and composition root
+├── 01_babata_domain/             # IDs, domain types, invariants, errors
+├── 02_babata_application/        # use cases, input/output types, port traits
+├── 03_babata_infrastructure/     # SQLite, assets, config, Bailian, backup, adapters
+├── 04_babata_cli/                # clap `babata` executable and composition root
+├── 05_babata_local_api/          # axum loopback API skeleton; disabled by default
+└── 06_babata_worker/             # queue worker and composition root
 ```
 
 Names may be shortened in Cargo package metadata, but the numeric directories
@@ -56,12 +59,12 @@ domain <- application <- infrastructure
        +---- cli / local_api / worker (composition roots) ----+
 ```
 
-- `01_compass_domain` contains no filesystem, SQLite, HTTP, provider, or CLI
+- `01_babata_domain` contains no filesystem, SQLite, HTTP, provider, or CLI
   dependency.
-- `02_compass_application` defines business invariants and the repository,
+- `02_babata_application` defines business invariants and the repository,
   asset, provider, clock, and backup port traits it requires. It never imports
   SQLite, filesystem, HTTP, provider SDK, or process-execution crates.
-- `03_compass_infrastructure` is the only component that opens raw/derived
+- `03_babata_infrastructure` is the only component that opens raw/derived
   SQLite or finalises assets under the data root. It implements application
   ports and supplies Rust source importers, Bailian providers, and backup
   drivers.
@@ -70,11 +73,27 @@ domain <- application <- infrastructure
 - Skills, JS, and Python are callers or candidate producers; provider adapters
   may read inputs and return outputs but never write data directly.
 
+P2 creates all six crate and module skeletons before a single capability is
+accepted. Existing raw-capture implementation is retained as early P3 work, but
+P2 completion is determined by whole-workspace structure, ownership and compile
+checks rather than raw-capture behaviour.
+
+The rest of the repository skeleton is:
+
+```text
+02_skills/       inactive Skill specifications first; live SKILL.md later
+03_migrations/   raw / derived / runtime migration ownership
+04_tests/        architecture / contract / integration / end-to-end / fixtures
+05_scripts/      inventory, boundary, ownership, traceability, writer checks
+06_config/       app, routes, providers, pipelines, views, privacy, backup templates
+08_adapters/     browser TypeScript boundary and exception-only Python bridge
+```
+
 ## 3. Runtime configuration and data root
 
-The executable resolves `COMPASS_DATA_HOME` first, then an explicit config path,
+The executable resolves `BABATA_DATA_HOME` first, then an explicit config path,
 then a documented local default. The initial default is
-`C:\Users\Aiano\CompassData`.
+`C:\Users\Aiano\BabataData`.
 
 ```text
 00_inbox/     temporary external exports and first-party input
@@ -97,7 +116,7 @@ BackupConfig         snapshot staging and target policy
 ```
 
 Database paths and asset references are logical keys relative to numbered
-partitions. Moving `COMPASS_DATA_HOME` does not modify row content.
+partitions. Moving `BABATA_DATA_HOME` does not modify row content.
 
 ## 4. Persistence and concurrency model
 
@@ -133,6 +152,7 @@ DerivativeKind         FaithfulText | OcrText | Subtitle | Transcript |
 ProcessingState        Queued | Running | Succeeded | Failed | Skipped | Cancelled
 AssetRole              Original | Attachment | Export | Cover | Derived | Preview
 RelationKind           Revises | Annotates | Quotes | RespondsTo | RelatedTo
+CapabilityStatus        Planned | Scaffolded | Available | Disabled | Unavailable
 ```
 
 Core request/result types:
@@ -167,6 +187,11 @@ ViewService.build(BuildViewRequest) -> BuildResult
 OpsService.status() -> SystemStatus
 OpsService.backup(BackupRequest) -> BackupResult
 OpsService.restore_verify(snapshot_ref) -> RestoreReport
+RouteService.list() -> Vec<SourceRouteDescriptor>
+RouteService.show(route_id) -> SourceRouteDescriptor
+RouteService.evaluate(route_id, input) -> RouteCoverage
+RouteService.collect(route_id, request) -> CaptureResult
+CapabilityService.list() -> Vec<CapabilityDescriptor>
 ```
 
 Application port traits below those services:
@@ -177,9 +202,12 @@ DerivedRepositoryPort  jobs/runs/derivatives transactions
 AssetStorePort         stage/hash/finalise/open asset by logical key
 JobRepositoryPort      enqueue/claim/heartbeat/complete/fail/retry
 ProcessProviderPort    prepare/run/poll/cancel/fetch output
+SourceAdapterPort      describe/probe/collect/coverage
 CandidateRunnerPort    execute peripheral adapter and parse candidate envelope
 ViewBuilderPort        query/read only, write generated view files
 BackupDriverPort       SQLite-consistent snapshot/restore/hash verification
+CapabilityRegistryPort list/get capability state and activation phase
+ClockPort              current time supplied to application services
 ```
 
 No provider, adapter, or view builder receives a mutable database connection.
@@ -189,48 +217,50 @@ use case.
 
 ## 6. CLI surface
 
-The first executable is `compass`. Human operators, Skills, scheduled tasks,
+The first executable is `babata`. Human operators, Skills, scheduled tasks,
 JS bridges, and Python wrappers prefer this interface. Output defaults to
 human-readable text; `--json` emits stable command result objects for automation.
 
 ```text
-compass data status
-compass capture text --provider <name> --text <text> [--context <id>]
-compass capture file --provider <name> --path <file> [--context <id>]
-compass capture export --provider <name> --path <export> [--context <id>]
-compass capture candidate --path <candidate-envelope.json>
+babata data status
+babata capture text --provider <name> --text <text> [--context <id>]
+babata capture file --provider <name> --path <file> [--context <id>]
+babata capture export --provider <name> --path <export> [--context <id>]
+babata capture candidate --path <candidate-envelope.json>
 
-compass create --path <file>|--text <text>
-compass revise --parent <revision-id> --path <file>|--text <text>
-compass annotate --target <item-or-revision-id> --path <file>|--text <text>
+babata create --path <file>|--text <text>
+babata revise --parent <revision-id> --path <file>|--text <text>
+babata annotate --target <item-or-revision-id> --path <file>|--text <text>
 
-compass process enqueue --revision <id> --pipeline <name> [--priority <n>]
-compass process run --job <id>
-compass process worker
-compass process status [--job <id>]
-compass process retry --job <id>
-compass process cancel --job <id>
+babata process enqueue --revision <id> --pipeline <name> [--priority <n>]
+babata process run --job <id>
+babata process worker
+babata process status [--job <id>]
+babata process retry --job <id>
+babata process cancel --job <id>
 
-compass explore search <query> [filters]
-compass explore show <item-or-revision-id>
-compass views build datasette|obsidian [filters]
+babata explore search <query> [filters]
+babata explore show <item-or-revision-id>
+babata views build datasette|obsidian [filters]
 
-compass routes list|show|evaluate
-compass ops backup [--scope raw|derived|all]
-compass ops restore-verify --snapshot <ref>
-compass ops doctor
+babata routes list|show|evaluate
+babata ops backup [--scope raw|derived|all]
+babata ops restore-verify --snapshot <ref>
+babata ops doctor
 ```
 
-The commands are definitions, not an instruction to implement all commands at
-once. Capture functions precede processing; process precedes views; a Skill is
-created only after its corresponding command is working.
+P2 registers the complete command tree and stable request/result shells. Commands
+whose capability is not active return `capability_unavailable`. Later phases
+replace those shells with real use-case composition in dependency order; a live
+Skill is still created only after its corresponding command is working.
 
 ## 7. Loopback local API
 
-The local API is disabled by default and begins only when a browser extension or
-local UI has a demonstrated need. It binds to `127.0.0.1` or `::1`, never a LAN
-interface. It has an installation-local bearer token stored outside Git and
-strict request-size/origin configuration.
+The local API crate, request/response types and route tree are created in P2,
+but the server is disabled by default and begins listening only when a browser
+extension or local UI has a demonstrated need. When active it binds to
+`127.0.0.1` or `::1`, never a LAN interface. It has an installation-local
+bearer token stored outside Git and strict request-size/origin configuration.
 
 It maps directly to use cases; it is not a second implementation:
 
@@ -264,7 +294,7 @@ Use only when browser execution is the most direct solution:
 browser extension/userscript
   -> gather URL/title/selected or extracted DOM/declared page metadata
   -> submit to loopback API after explicit local pairing
-  -> or save a candidate envelope for `compass capture candidate`
+  -> or save a candidate envelope for `babata capture candidate`
 ```
 
 It does not include a SQLite driver, data-root write permission, provider
@@ -325,17 +355,18 @@ skipped rather than silently processed.
 
 ## 10. Skills and views
 
-Skills are thin descriptions around proven CLI commands:
+P2 first creates inactive Skill specifications around the complete CLI map:
 
 ```text
-01_compass_capture   -> compass capture / create / revise / annotate
-02_compass_process   -> compass process
-03_compass_workspace -> compass create / revise / annotate / explore show
-04_compass_explore   -> compass explore / views build
-05_compass_ops       -> compass data / ops
+01_babata_capture   -> babata capture / create / revise / annotate
+02_babata_process   -> babata process
+03_babata_workspace -> babata create / revise / annotate / explore show
+04_babata_explore   -> babata explore / views build
+05_babata_ops       -> babata data / ops
 ```
 
-Datasette opens local read-only SQLite/query views. Obsidian generation is a
+Those specifications become live `SKILL.md` packages only after their mapped
+commands pass functional acceptance. Datasette opens local read-only SQLite/query views. Obsidian generation is a
 `ViewBuilder` target that writes only `03_views/02_obsidian`; deletion/rebuild
 does not affect raw or derived authority.
 
@@ -345,8 +376,8 @@ does not affect raw or derived authority.
 mechanism into isolated staging, records an inventory with logical asset keys
 and hashes, then invokes the selected encrypted incremental backup target.
 Restore writes to an isolated data root, opens indexes, and samples hashes before
-any operator switches a live data root. P0 raw/first-party data precedes P1
-derived data; P2/P3 may be rebuilt.
+any operator switches a live data root. C0 raw/first-party data precedes C1
+derived data; C2/C3 may be rebuilt.
 
 ## 12. Architecture coverage
 
@@ -360,4 +391,4 @@ derived data; P2/P3 may be rebuilt.
 | AC-08 | BackupDriver and isolated restore verification |
 | AC-09 | Rust domain/store/usecase ownership; CLI/API shared services; peripheral runner boundary |
 | AC-10 | Acyclic domain/application/infrastructure dependency rules and composition roots |
-| AC-11 | Bounded R1 Rust file inventory, public surface ownership, and deferred-file gates |
+| AC-11 | Complete P2 whole-system skeleton, 117-file Rust inventory, interface/tool ownership, inactive-capability behavior, and no-second-writer gates |

@@ -1,8 +1,8 @@
-# Compass Reboot Acceptance Criteria
+# Babata Reboot Acceptance Criteria
 
 ## AC-01: External data root and Git boundary
 
-The application resolves `COMPASS_DATA_HOME`; all real SQLite files, source
+The application resolves `BABATA_DATA_HOME`; all real SQLite files, source
 assets, exports, derived outputs, logs, runtime state, and credentials stay
 outside the repository. A Git scan finds only code, docs, tests, migrations, and
 templates.
@@ -72,14 +72,22 @@ dependencies; infrastructure implements application ports; CLI/API/worker wire
 dependencies and contain no business decisions. Dependency checks and tests
 reject reverse imports or a second persistence writer.
 
-## AC-11: Rust file-level blueprint is bounded and implementable
+## AC-11: Whole-system skeleton is complete and coherent
 
-The architecture names the exact first-slice Cargo packages, Rust source files,
-public types/functions/traits, responsibility, dependency limit, and test home
-for raw capture plus first-party authoring. It separates that required inventory
-from deferred process/API/worker/view files, which name only their future
-placement and activation condition. No required function has an ambiguous owner
-or a second persistence path.
+Before any single module is accepted functionally, the architecture names and
+the P2 workspace establishes the full module skeleton: six Rust crates, all
+planned Rust source files, application services and ports, CLI command groups,
+loopback API routes, worker lifecycle, source/process/view/backup adapter
+locations, peripheral browser/Python boundaries, Skill specifications,
+migrations, tests, engineering scripts, configuration templates, and external
+tool ownership.
+
+The complete workspace compiles and every file/interface has one owner, allowed
+dependencies, forbidden dependencies, activation phase, and test home. Inactive
+capabilities return an explicit unavailable state; they do not perform real
+provider calls, claim support, introduce a second writer, or require one module's
+functional acceptance to close P2. Early raw-capture code may remain but is not
+accepted until P3.
 
 ## Traceability
 

@@ -1,8 +1,8 @@
-# Compass Reboot PRD
+# Babata Reboot PRD
 
 ## 1. Product definition
 
-Compass is a local-first personal material system. It accepts external and
+Babata is a local-first personal material system. It accepts external and
 first-party content into an immutable raw library, creates replayable multimodal
 derivatives, and exposes them through query and reading views. Human writing,
 revision, annotation, and judgement are first-party records, not manual edits
@@ -22,7 +22,7 @@ to generated data.
 
 ### PRD-01: Unified capture
 
-`compass capture` accepts text, local files, authorised exports, and later web
+`babata capture` accepts text, local files, authorised exports, and later web
 clips. It stores a raw revision and references copied or imported original assets
 under the configured data root. It records provider, source locator/native ID,
 collection context, source/capture times, hash, content type, and arbitrary raw
@@ -31,21 +31,21 @@ an event.
 
 ### PRD-02: First-party authoring
 
-`compass create`, `revise`, and `annotate` create `first_party` raw revisions.
+`babata create`, `revise`, and `annotate` create `first_party` raw revisions.
 A new note has no external source. A revision points to its parent. An annotation
 is its own authored record with an `annotates` relation. Original wording is
 always preserved; model-generated format or interpretation is separate.
 
 ### PRD-03: Derivative production
 
-`compass process` selects a configured pipeline for a raw revision. Mechanical
+`babata process` selects a configured pipeline for a raw revision. Mechanical
 extraction happens before model work. Bailian CLI handles interactive processing;
 Bailian/Qwen API or batch processing handles queued scale. Each run is
 inspectable and retryable without mutating raw data.
 
 ### PRD-04: Media fidelity
 
-For image/audio/video content, Compass retains the original asset and stores
+For image/audio/video content, Babata retains the original asset and stores
 OCR, transcript, subtitle, keyframe, visual-description, or summary outputs as
 separate linked derivatives. It does not flatten visual or temporal meaning into
 a single authoritative text field.
@@ -59,14 +59,14 @@ human work.
 
 ### PRD-06: Skill interaction
 
-Skills invoke available local `compass` CLI commands. Planned skills are
+Skills invoke available local `babata` CLI commands. Planned skills are
 Capture, Process, Workspace, Explore, and Ops; each is created only after its
 underlying command passes its own tests. A Skill neither stores material nor
 creates hidden bypass paths.
 
 ### PRD-07: Local Rust core and peripheral adapters
 
-The `compass` Rust application is the only owner of raw/derived SQLite writes,
+The `babata` Rust application is the only owner of raw/derived SQLite writes,
 asset finalisation, revision rules, processing tasks, and backup snapshots. Its
 CLI is the default interface for people, Skills, scripts, and scheduled tasks.
 When a browser clipper or local UI needs direct interaction, the same Rust
@@ -94,13 +94,15 @@ All candidate tools are validated against permitted material before enablement.
 
 ## 5. First release slice
 
-1. Set an external data root and create the raw schema.
-2. Capture text, a local file/export, and one first-party note.
-3. Import one Feishu export and one browser/bookmark/web input.
-4. Produce faithful text for one document and one media derivative through
+1. Establish the complete Babata module/file/interface/tool skeleton without
+   implementing the individual business algorithms.
+2. Set an external data root and create the raw schema.
+3. Capture text, a local file/export, and one first-party note.
+4. Import one Feishu export and one browser/bookmark/web input.
+5. Produce faithful text for one document and one media derivative through
    Bailian CLI.
-5. Search both raw and derived data locally.
-6. Demonstrate original/revision/annotation history and rebuild an optional view.
+6. Search both raw and derived data locally.
+7. Demonstrate original/revision/annotation history and rebuild an optional view.
 
 ## 6. Non-goals
 

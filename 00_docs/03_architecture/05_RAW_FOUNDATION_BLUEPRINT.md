@@ -1,35 +1,39 @@
-# Compass Rust Implementation Blueprint
+# Babata P3 原始资料入库底座实现蓝图
 
-> This is a file-level architecture definition, not authorization to create all
-> files or implement all features now. The next concrete development plan chooses
-> implementation order. R1 creates only the bounded raw-foundation inventory.
+> P2 creates the complete Babata skeleton defined by
+> `04_SYSTEM_SKELETON_BLUEPRINT.md`. This document activates only the 29
+> raw-foundation files that receive real business and persistence behaviour in
+> P3; it is not the inventory of the whole workspace. SQL ownership, transaction
+> order, implementation sequence and command verification are preserved in
+> `06_RAW_FOUNDATION_EXECUTION_PLAN.md`.
 
-## 1. R1 scope, file count, and dependency rules
+## 1. P3 原始资料入库底座范围、文件数量与依赖规则
 
-R1 covers only data-root resolution, raw SQLite opening/migration, text/file/
+P3 covers only data-root resolution, raw SQLite opening/migration, text/file/
 export capture, first-party create/revise/annotate, raw asset staging/finalising,
 read-back detail, and CLI output.
 
 ```text
 Package                         Rust files   Responsibility
-01_compass_domain                         6   Pure model and validation
-02_compass_application                    9   Use cases, DTOs, ports
-03_compass_infrastructure                 9   Config, SQLite, assets, logging
-04_compass_cli                            5   CLI parsing, wiring, rendering
+01_babata_domain                         6   Pure model and validation
+02_babata_application                    9   Use cases, DTOs, ports
+03_babata_infrastructure                 9   Config, SQLite, assets, logging
+04_babata_cli                            5   CLI parsing, wiring, rendering
 Total                                    29
 ```
 
 The count excludes `Cargo.toml`, SQL migrations, generated files, fixture files,
-and test modules. `05_compass_local_api` and `06_compass_worker` contain no
-source in R1. Do not create placeholders for deferred capability.
+and test modules. `05_babata_local_api`, `06_babata_worker` and all later
+capability modules already have P2 skeletons, but P3 does not activate their
+functional behaviour.
 
 ```text
 domain <- application <- infrastructure
        ^                ^
-       +--- cli (R1) / local_api / worker composition roots ---+
+       +--- cli (P3) / local_api / worker composition roots ---+
 ```
 
-`domain` depends on no Compass crate. `application` depends only on `domain`.
+`domain` depends on no Babata crate. `application` depends only on `domain`.
 `infrastructure` implements application port traits. CLI/API/worker may depend
 on all three and only compose dependencies/map I/O. No reverse dependency is
 permitted.
@@ -39,10 +43,12 @@ permitted.
 ```text
 01_app/
 ├── Cargo.toml
-├── 01_compass_domain/Cargo.toml
-├── 02_compass_application/Cargo.toml
-├── 03_compass_infrastructure/Cargo.toml
-└── 04_compass_cli/Cargo.toml
+├── 01_babata_domain/Cargo.toml
+├── 02_babata_application/Cargo.toml
+├── 03_babata_infrastructure/Cargo.toml
+├── 04_babata_cli/Cargo.toml
+├── 05_babata_local_api/Cargo.toml
+└── 06_babata_worker/Cargo.toml
 ```
 
 ```text
@@ -56,9 +62,9 @@ Outside Infrastructure, forbid SQLite drivers, filesystem mutation, provider
 SDKs, process execution, HTTP client/server, secret loading, and direct data-root
 paths. Domain also excludes system clock reads; time comes from input or a port.
 
-## 3. Exact R1 file inventory
+## 3. Exact P3 file inventory
 
-### 3.1 `01_compass_domain` (6 files)
+### 3.1 `01_babata_domain` (6 files)
 
 | File | Public types/functions | Owns / forbids |
 | --- | --- | --- |
@@ -73,7 +79,7 @@ Target public surface: roughly 25 constructors/parsers/validators. Reading a
 file, hashing bytes, starting a transaction, or invoking a provider is forbidden.
 Tests live inline beside each owner; minimum six domain tests.
 
-### 3.2 `02_compass_application` (9 files)
+### 3.2 `02_babata_application` (9 files)
 
 | File | Public types/functions/traits | Owns / forbids |
 | --- | --- | --- |
@@ -92,7 +98,7 @@ asset-store methods. Capture/workspace use mocks in this package; minimum six
 use-case tests. A `ClockPort` may be declared in `ports/mod.rs` only if needed
 for deterministic tests; do not add a separate one-method file.
 
-### 3.3 `03_compass_infrastructure` (9 files)
+### 3.3 `03_babata_infrastructure` (9 files)
 
 | File | Public types/functions | Owns / forbids |
 | --- | --- | --- |
@@ -116,10 +122,10 @@ Required raw SQL migration inventory:
 03_migrations/01_raw/
 ├── 0001_raw_schema.sql       # sources, collections, items, revisions, assets, relations
 ├── 0002_raw_indexes.sql      # source identity, root/revision, time/hash indexes
-└── 0003_raw_fts.sql          # raw faithful-text FTS and triggers, if enabled in R1
+└── 0003_raw_fts.sql          # raw faithful-text FTS and triggers, if enabled in P3
 ```
 
-### 3.4 `04_compass_cli` (5 files)
+### 3.4 `04_babata_cli` (5 files)
 
 | File | Public types/functions | Owns / forbids |
 | --- | --- | --- |
@@ -133,16 +139,16 @@ Target surface: one entry, one dependency builder, four command executors, two
 renderers. Minimum two parser/render command tests. Do not add process/explore/
 view/API command variants before the matching application use case exists.
 
-## 4. R1 commands and result envelopes
+## 4. P3 commands and result envelopes
 
 ```text
-compass data status
-compass capture text --provider <name> --text <text> [--context <id>]
-compass capture file --provider <name> --path <file> [--context <id>]
-compass capture export --provider <name> --path <file> [--context <id>]
-compass create --text <text>|--path <file>
-compass revise --parent <revision-id> --text <text>|--path <file>
-compass annotate --target <id> --text <text>|--path <file>
+babata data status
+babata capture text --provider <name> --text <text> [--context <id>]
+babata capture file --provider <name> --path <file> [--context <id>]
+babata capture export --provider <name> --path <file> [--context <id>]
+babata create --text <text>|--path <file>
+babata revise --parent <revision-id> --text <text>|--path <file>
+babata annotate --target <id> --text <text>|--path <file>
 ```
 
 Success `--json` envelope:
@@ -181,7 +187,7 @@ delete an already-finalised original.
 
 ## 6. Required test inventory
 
-R1 starts with at least 20 Rust tests:
+P3 starts with at least 20 Rust tests:
 
 ```text
 domain unit tests            >= 6
@@ -196,21 +202,22 @@ lineage, staged-file failure, SQLite rollback, asset hash match, migration
 idempotence/foreign keys, CLI DTO mapping/JSON envelope, and no-second-writer
 dependency checks. Runtime test data is created outside Git.
 
-## 7. Deferred file placement and activation gates
+## 7. Later-capability activation gates
 
-| Capability | Future file location | Create only when |
+| Capability | P2 skeleton location | Replace unavailable shell only when |
 | --- | --- | --- |
 | Derived/task queue | application `ports/{derived_repository,job_repository,process_provider}.rs`, `usecases/process.rs`; infrastructure SQLite repositories | Raw loop works and a real Bailian run is approved |
-| Bailian CLI/API | infrastructure `providers/{bailian_cli,bailian_api}.rs` | Pipeline, privacy, cost/retry tests are approved |
-| Source importers | infrastructure `importers/<provider>.rs` | One permitted source has a real fixture/export and declared coverage |
-| Python/browser candidates | infrastructure `candidates/{runner,envelope}.rs` | A proven Python-only tool or browser handoff exists |
+| Bailian CLI/API | infrastructure `processing/{bailian_cli,bailian_api}.rs` | Pipeline, privacy, cost/retry tests are approved |
+| Source importers | infrastructure `sources/providers/<provider>.rs` | One permitted source has a real fixture/export and declared coverage |
+| Python/browser candidates | infrastructure `sources/candidate.rs` and `08_adapters/` | A proven Python-only tool or browser handoff exists |
 | Search/views | application `usecases/{explore,views}.rs`; infrastructure `views/{datasette,obsidian}.rs` | Real query/view requirement exists |
-| Loopback API | `05_compass_local_api/{lib,main,state,auth,routes,requests,responses,error}.rs` | Browser/local UI needs more than CLI |
-| Worker | `06_compass_worker/{main,runner,lease}.rs` | Work must outlive one CLI invocation |
-| Backup | application `usecases/ops.rs`; infrastructure `backup/{driver,sqlite_snapshot,manifest}.rs` | Real data needs protected backup beyond fixtures |
+| Loopback API | `05_babata_local_api` | Browser/local UI needs more than CLI |
+| Worker | `06_babata_worker` | Work must outlive one CLI invocation |
+| Backup | application `usecases/ops.rs`; infrastructure `backup/{sqlite_snapshot,restic,manifest}.rs` | Real data needs protected backup beyond fixtures |
 
 Each activation must add acceptance/test mapping, package/file count, public
-functions, and dependency assertions before files are created.
+functions, and dependency assertions before its P2 unavailable shell receives a
+real implementation.
 
 ## 8. Forbidden file patterns
 
