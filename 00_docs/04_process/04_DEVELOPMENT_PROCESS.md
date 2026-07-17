@@ -27,9 +27,11 @@ P8  备份、恢复、运维与长期加固                      未开始
   ReadProjection 和 OutputBuilder 均有明确位置与 unavailable 壳。
 - P2 的工程骨架 gate 已通过；逐来源现有工具调查和路线决策已经写入
   `03_architecture/08_SOURCE_TOOL_RESEARCH.md`。飞书官方 `lark-cli` 已达到真实授权
-  调用证据；OpenCLI、语雀、OneNote、Evernote、微信、内容平台、浏览器和对话平台
-  已调查首选工具与最低授权；其中抖音旧路线已被证伪并保留为明确缺口。多数来源还没有
-  真实账号下的候选、选择、附件和重收集证据，因此 P2 不得标记完成。
+  调用证据；第三轮已按用户纠正补查 Browser Use、Agent Browser、Playwright CLI 与
+  OpenCLI，不再把逐站工具或 OpenCLI Bridge 当作唯一浏览器主线。Agent Browser 已有本机
+  E1，Browser Use 本机安装因依赖下载停滞而中止并清理，仍待 Agent 修复；抖音旧路线
+  已被证伪。多数来源还没有真实账号下
+  “给出一次范围后 Agent 自主完成”的候选、附件和重收集证据，因此 P2 不得标记完成。
 - 已有 29 个 P3 活跃文件、raw migrations、命令与测试属于提前工作。它们应保留并
   在 P2 修正后重新审阅，不代表 P3 已开始或完成。
 - 已有飞书导出、书签 HTML、CandidateEnvelope、route evidence 和 fixture 属于 P4
@@ -157,10 +159,14 @@ AC 已完成。
 - 离线 route evidence 可以记录覆盖，但不能单独把飞书/浏览器标记 enabled；来源仍
   等待 P4 真实上下文候选与选择证据；
 - 来源工具调查已覆盖 00 点名的全部来源。已实际核验本机 `lark-cli 1.0.68` 的用户
-  OAuth 和 Wiki/Docs 只读调用；已实际运行 OpenCLI 1.8.6 的命令发现、站点 help 和
-  doctor，确认其覆盖 Bilibili、知乎、小红书、豆包、Kimi、ChatGPT 和公众号文章，
-  同时确认本机 Browser Bridge 尚未连接；
-- 已完成无需账号权限的工具准备：全局安装 OpenCLI 1.8.6 和 `yuque-dl 1.0.85`，安装
+  OAuth 和 Wiki/Docs 只读调用；已实际安装并运行 `agent-browser 0.32.1` 的
+  version/help/doctor，doctor 7 pass、0 warn、0 fail 且 headless launch 通过，并核验其
+  CDP、snapshot、network、download、Skill 与安全策略；Browser Use 0.13.6 的
+  官方 CLI/Skill、真实 Chrome/CDP 路线已核，本机安装因依赖下载停滞中止且 doctor 尚未
+  完成；已实际运行
+  OpenCLI 1.8.6 的命令发现、站点 help 和 doctor，其确定性站点命令降为第二层；
+- 已完成无需账号权限的工具准备：全局安装 Agent Browser 0.32.1、Playwright CLI 0.1.17、
+  OpenCLI 1.8.6 和 `yuque-dl 1.0.85`，安装
   Microsoft Graph Authentication/Notes 2.38.1、`evernote-backup 1.13.1`、
   `yt-dlp 2026.07.04`，并确认本机已有 ffmpeg 8.1.1；OpenCLI 官方扩展 1.0.22 已按
   release SHA-256 校验并解压，但其 `<all_urls>`/cookies/debugger 权限必须由用户明确
@@ -175,9 +181,10 @@ AC 已完成。
 - 29 文件 P3 提前实现及 34 个 raw 功能测试继续可运行，但不作为 P2 产品验收，也不
   代表 P3 已开始。
 
-上述证明 P2-G1 至 P2-G6，并完成了 P2-G7 的逐来源调查；除抖音外已形成路线决策，
-抖音已形成诚实的缺口和下一验证顺序。P2-G7 仍部分通过：除飞书外，多数来源还只有
-工具/命令证据，没有真实授权的候选 -> 用户选择 -> 正文/
+上述证明 P2-G1 至 P2-G6，并完成了 P2-G7 的逐来源调查和通用 Agent 浏览器补调研；
+网页登录来源的主次路线仍需 Browser Use/Agent Browser 同场实证，抖音已形成诚实的
+缺口和下一验证顺序。P2-G7 仍部分通过：除飞书外，多数来源还只有工具/命令证据，没有
+真实授权的“用户给出一次范围 -> Agent 自主候选/翻页/下载 -> 正文/
 附件 -> 重收集探针。下一步按 `03_architecture/08_SOURCE_TOOL_RESEARCH.md` 第 13 节做
 小范围只读实证；在此之前不继续增加来源 adapter、协议或手工导出主路径。
 
@@ -214,8 +221,10 @@ P3 为 AC-03、AC-06、AC-10 提供部分底座，不满足 AC-01、AC-02 或完
 P4 按 `07_P4_FIRST_COLLECTION_PATHS.md` 实现：
 
 1. 飞书官方授权连接、文档/Wiki/知识库候选、层级和附件限制；
-2. 浏览器扩展配对、页面/选区/链接/书签候选；
-3. 用户选择单条、可见集合或明确范围后才写 C0；
+2. Browser Use/Agent Browser 复用已登录 Chrome 的自主导航探针，以及长期浏览器扩展
+   配对、页面/选区/链接/书签候选；
+3. 用户给出单条、可见集合、收藏夹、会话或明确范围一次后，Agent 自主完成范围内收集；
+   未给范围或范围有歧义时不写 C0；
 4. queued/running/saved/skipped/failed、局部成功和重试；
 5. changed/unchanged/inaccessible/removed 重收集；
 6. 真实授权证据与 fixture 机制证据分开。
@@ -225,8 +234,8 @@ P4 按 `07_P4_FIRST_COLLECTION_PATHS.md` 实现：
 | Gate | 本阶段判定 |
 | --- | --- |
 | P4-G1 | 飞书真实上下文候选成立 |
-| P4-G2 | 浏览器扩展候选与配对成立 |
-| P4-G3 | 未确认不写入，只提交选择范围 |
+| P4-G2 | 通用 Agent 浏览器自主导航成立；长期扩展候选与配对成立 |
+| P4-G3 | 一次明确范围内可连续收集；未授权范围不写入 |
 | P4-G4 | 逐条状态、局部成功和重试成立 |
 | P4-G5 | 四种重收集结果不覆盖旧 C0 |
 | P4-G6 | 真实证据与 fixture 分开，未验证来源保持 disabled |

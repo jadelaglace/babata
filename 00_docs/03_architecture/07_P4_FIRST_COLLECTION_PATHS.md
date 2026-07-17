@@ -124,24 +124,25 @@ AC-01 的正常飞书上下文体验已经通过。
 
 ### 5.1 正常路径
 
-浏览器扩展在用户当前上下文中提供候选。书签直接用官方 `chrome.bookmarks` API，
-当前页/选区使用 `activeTab` + `scripting`，完整网页原貌复用 SingleFile；Agent 需要
-已登录浏览器时优先复用 OpenCLI Browser Bridge。具体证据见
-`08_SOURCE_TOOL_RESEARCH.md` 第 5、9 节：
+首个真实探针先用 Browser Use CLI/Agent Browser 通过 Chrome 原生 CDP 复用用户当前
+已登录浏览器，让 Agent 在一次给定范围内自主导航、翻页、发现和读取；已有稳定站点命令
+时再调用 OpenCLI。长期浏览器扩展负责更窄的当前上下文触发：书签直接用官方
+`chrome.bookmarks` API，当前页/选区使用 `activeTab` + `scripting`，完整网页原貌复用
+SingleFile。具体证据见 `08_SOURCE_TOOL_RESEARCH.md` 第 5、9 节：
 
 ```text
-当前页面 / 当前选区 / 当前链接（activeTab）
-或用户明确选择的书签文件夹/可见书签集合
-  -> 扩展展示候选和将要提交的范围
-  -> 用户确认
-  -> 需要保真页面时调用 SingleFile；需要 Agent 读取登录态站点时调用 OpenCLI
+用户给定当前页面、站点、收藏夹、会话、时间段或书签文件夹范围
+  -> Browser Use/Agent Browser 复用已登录 Chrome，自主发现候选和遍历范围
+  -> 需要稳定站点命令时调用 OpenCLI；需要保真页面时调用 SingleFile
+  -> 只有范围有实质歧义、会越界或平台要求登录/授权时才再次找用户
   -> 与本机 Babata 配对
   -> loopback API 调用 CollectorSession/Capture 用例
 ```
 
 候选可包含 URL、标题、选区/页面内容、声明元数据、书签层级、页面更新时间和已知
-限制。默认不申请永久 `<all_urls>`；当前页由用户点击临时授权，书签权限按需申请。
-扩展不读取 Chrome profile 文件，不持有数据根路径、SQLite 凭据或最终资产权限。
+限制。CDP 探针只在用户一次批准当前 Chrome 实例后运行，并使用只读/导航优先的动作
+策略；长期扩展默认不申请永久 `<all_urls>`，当前页由用户触发临时授权，书签权限按需
+申请。任何浏览器工具都不持有数据根路径、SQLite 凭据或最终资产权限。
 
 loopback API 只绑定本机，使用安装级凭据、来源限制和请求大小限制。配对失败、核心
 不可用或 payload 超限必须在扩展中显示明确失败，不转存成隐藏权威副本。
