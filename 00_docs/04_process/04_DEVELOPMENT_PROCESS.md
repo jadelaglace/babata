@@ -160,6 +160,11 @@ AC 已完成。
   OAuth 和 Wiki/Docs 只读调用；已实际运行 OpenCLI 1.8.6 的命令发现、站点 help 和
   doctor，确认其覆盖 Bilibili、知乎、小红书、豆包、Kimi、ChatGPT 和公众号文章，
   同时确认本机 Browser Bridge 尚未连接；
+- 已完成无需账号权限的工具准备：全局安装 OpenCLI 1.8.6 和 `yuque-dl 1.0.85`，安装
+  Microsoft Graph Authentication/Notes 2.38.1、`evernote-backup 1.13.1`、
+  `yt-dlp 2026.07.04`，并确认本机已有 ffmpeg 8.1.1；OpenCLI 官方扩展 1.0.22 已按
+  release SHA-256 校验并解压，但其 `<all_urls>`/cookies/debugger 权限必须由用户明确
+  批准后才能安装；
 - 已淘汰飞书手动 Markdown 主路线、已归档的 BBDown/bilibili-api-python 和已被 DMCA
   屏蔽的 `wx-cli`；语雀、OneNote、Evernote、微信和浏览器均已有明确直接使用、组合
   工具或窄适配决策；
