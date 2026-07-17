@@ -1,128 +1,189 @@
-# Babata Reboot Requirements
+# Babata 原始需求
 
-## 1. Reset and purpose
+## 1. 我真正想做的是什么
 
-Babata 2.0 is frozen at `C:\Users\Aiano\Babata-2.0-frozen`. Its multi-repo,
-contract-first design is reference material only. The reboot builds a useful
-local personal knowledge system before introducing service boundaries.
+Babata 不是为了做一个很严格的协议、很多接口、很宏观的架构。
 
-The system must make real material easy to capture, preserve the original,
-derive useful multimodal representations, and support human thought without
-confusing derived model output with source truth.
+它要做的是：把我分散在各种地方的真实资料，尽量低成本、低摩擦地收进来；保留它原本的样子；做必要的清洗；然后慢慢消化、沉淀、关联、使用和输出。
 
-## 2. Required flow
+它首先是本地优先的个人系统。当前以一个本地应用和一个代码仓库推进；逻辑上有不同部分，但不因为逻辑分层而提前拆成很多独立产品、服务或仓库。
+
+## 2. 整体逻辑
 
 ```text
-external source or first-party creation
-  -> 01 raw collection and append-only storage
-  -> 02 derived multimodal processing
-  -> 03 human workspace and rebuildable views
+外部来源 / 自己创作
+  -> 收集
+  -> 清洗和标准化接入
+  -> 消化、吸收、沉淀、建模和管理
+  -> 检索、子库、输出、传播和调用
 ```
 
-The initial implementation is one local application repository, not independent
-Collector/Ingest/Core/Output repositories. Functions may later split only after
-a real independent deployment or consumer proves that need.
+这四个部分要分清边界，但最终服务于同一件事：真实资料能被收进来、留住、看懂、找得到、用起来。
 
-## 3. Source and originality requirements
+## 3. 收集：只负责“拿到东西”
 
-- Every item enters the raw layer as either `external` or `first_party`.
-- `first_party` covers personal notes, drafts, revisions, annotations,
-  reflections, and manual metadata decisions. It is a source kind alongside
-  Feishu, Bilibili, Zhihu, and other providers, not a special bypass.
-- A revision creates a new immutable revision with an optional parent revision.
-  An annotation creates a first-party item related to the annotated item.
-- Raw records preserve source context: favorites/list membership, conversation
-  identity/order, workspace/notebook/document hierarchy, or authoring context.
-- Original bytes, text, images, audio, video, exports, and attachments remain
-  available unchanged whenever lawfully obtainable.
+收集部分是一个收集者，类似爬虫、脚本、浏览器插件、官方导出和现有工具方法的聚合体。
 
-## 4. Derived-processing requirements
+它只负责把东西拿到，不承担深入理解、知识判断、建模或内容改写。优先使用已有方案；确实没有现成路径，才针对性开发很窄的适配器。
 
-- The raw layer is read-only to processors. A process produces a separately
-  recorded derivative with input hash, run/tool/model/prompt version, status,
-  cost, error/retry data, and output hash.
-- Faithful extraction (`faithful_text`, OCR, subtitle extraction, transcript)
-  is distinct from model interpretation (summary, tags, classification,
-  quality/relationship suggestions).
-- Images, audio, video, animations, and their original assets are not discarded
-  merely because text or a summary was derived. Time anchors, keyframes, and
-  visual descriptions are additional derivatives.
-- Alibaba Bailian CLI is the first interactive processing tool. Bailian/Qwen
-  APIs and batch processing are the intended paid path for queues and scale.
-  Free-only operation is not a product goal.
-- Processing is queued by value, rights, privacy, modality, and cost; not every
-  item must be processed immediately.
+对于已连接的来源，正常体验应该是在资料正在被阅读、收藏或整理的地方发现候选，显示标题、来源位置、层级、类型、更新时间、附件可得性和已知限制，由我选择单条、可见集合或一个明确范围后再收集。不要因为已经连接就静默全量复制。
 
-## 5. Storage, repository, and recovery requirements
+收集应有每条资料的 queued、running、saved、skipped、failed 状态。失败必须可理解、可重试，不能让已经成功的资料丢失。重收集是正常动作：应分清 changed、unchanged、inaccessible 和 removed，并追加溯源，而不是覆盖原始资料。
 
-- `C:\Users\Aiano\Babata` is the sole Git application repository for code,
-  skills, migrations, docs, tests, and configuration templates.
-- Real data lives under a configured external `BABATA_DATA_HOME`, initially
-  `C:\Users\Aiano\BabataData`; database records use relative asset keys, not
-  hard-coded machine paths.
-- Backup criticality is independent of project phases: raw evidence and
-  first-party records are C0; derived data is C1; rebuildable views are C2;
-  runtime state and logs are C3.
-- SQLite and assets require consistent encrypted incremental backups. NAS/cloud
-  copies receive SQLite-consistent snapshots, never blind concurrent sync of a
-  live database file.
-- Datasette is the first inspection/search view. Obsidian is optional generated
-  output only; it is never the sole source of truth and can be deleted/rebuilt.
+首批候选来源包括但不限于：
 
-## 5.1 Technical implementation requirements
+- 微信收藏、公众号、视频号、聊天记录；
+- 飞书文档、Wiki、知识库、云文档；
+- 语雀；
+- OneNote、印象笔记；
+- 豆包、Kimi、GPT 聊天记录；
+- Bilibili、抖音、小红书、知乎收藏；
+- 浏览器书签、网页收藏；
+- 本地文件；
+- 我自己写的内容。
 
-- Rust is the default and preferred implementation language for every Babata
-  capability: domain types, SQLite access, migrations, asset placement,
-  hashing, source importers, version/relationship rules, task queue, processing
-  provenance, provider adapters, CLI, local API, worker, views, and backup
-  orchestration.
-- JavaScript/TypeScript is allowed only for code that must execute in a browser,
-  such as an extension/userscript capture UI and DOM extraction. It never writes
-  SQLite, finalises assets, or owns processing/business rules.
-- Python is an exception-only escape hatch for a mature Python-only parser/tool
-  whose value outweighs a Rust implementation. It runs as a versioned child
-  process, emits a candidate envelope, and never writes SQLite, finalises
-  assets, owns queue state, or becomes a general application layer.
-- The Rust core owns every mutation. Peripheral tools submit candidate data to
-  the local CLI/API or emit a versioned candidate envelope for the Rust core to
-  validate and persist.
-- The default interaction surface is the `babata` CLI. A loopback-only local
-  API exists only for real local callers such as a browser extension or local
-  UI; it is not a public service or future distributed contract by default.
-- Secrets and provider tokens reside in protected local configuration outside
-  Git. The API binds to loopback, requires an installation-local token, and has
-  no remote listener in the initial architecture.
-- Before any single capability is developed to completion, P2 must define and
-  establish the whole-system skeleton: every planned module, Cargo crate,
-  source file, responsibility, public type/function/trait, command group, API
-  route, worker entry, peripheral adapter, Skill specification, migration area,
-  test area, engineering check, configuration template, and external-tool
-  boundary.
-- P2 fixes ownership and dependency direction but does not implement platform
-  collection, processing, search, view, export, or backup algorithms. Inactive
-  capabilities must report an explicit unavailable state and must not claim
-  support.
-- Existing early implementation in one module may be retained, but it does not
-  move that module ahead of the whole-system skeleton and is not accepted until
-  its later functional phase.
+来源路径以“合法且最少摩擦”为原则：已连接来源优先官方 API 或浏览器扩展/用户脚本，前提是它们能在上下文中让我发现和选择资料；官方导出、成熟 CLI/SDK/开源工具、窄本地适配器、PDF、复制、截图和录屏是恢复、离线传递或确实不支持时的路径。没有现成能力时再开发，不为平台先造重型爬虫。
 
-## 6. Source-route policy
+每次收集都应尽量留下来源链接或导出路径、平台、作者/账号、采集时间、原始哈希、附件、所在收藏夹/对话/知识库层级、访问条件和收集工具版本。拿到一段孤立文本不算完成。
 
-Use this route order: official export/API, maintained CLI/SDK/open-source tool,
-browser extension/userscript, narrow local adapter, then PDF/screenshot/copy or
-screen-recording fallback. A listed source is not "supported" until it imports
-permitted material successfully and preserves its declared coverage/limits.
+权限不足、来源受限、资料不完整或收集失败的情况不能假装收好了；必须是明确可见的受限、失败或待处理状态。
 
-Initial route pool: Feishu Docs/Wiki/knowledge bases, Yuque, OneNote, Evernote,
-WeChat favorites and chats, Zhihu, Bilibili, Xiaohongshu, Douyin, browser
-bookmarks and pages, Doubao/Kimi/GPT conversations, local files, and first-party
-authoring.
+## 4. 清洗和标准化接入
 
-## 7. Explicit non-goals
+清洗要单独拎出来，不和收集混在一起。
 
-- No return to a five-repository protocol architecture.
-- No universal crawler, access-control bypass, or unverified third-party tool
-  treated as product support.
-- No model output overwriting original content or becoming automatic knowledge
-  truth.
-- No custom UI before import, processing, and local search work on real data.
+收集拿到的是原件、导出件、链接、截图、录屏、网页和文件。清洗负责把它们变成系统可以继续使用的资料，例如：
+
+- 网页和文本提取；
+- 文档解析；
+- PDF、图片 OCR；
+- 音频、视频转文字；
+- 字幕、关键帧、视觉描述；
+- 媒体元数据；
+- 格式统一和基础去重。
+
+我不追求一分钱不花。多模态清洗优先考虑百炼 CLI，或者通义/百炼 API；付费解决是可以接受的。
+
+但清洗要尽可能保持原味。
+
+原视频、原图、原音频、原文件、原文、原导出件都可以留着，很多情况下应该留着。很多资料的价值本来就在视觉、动态、语气、排版和上下文里，不能因为转成文字或生成了摘要，就把原来的东西丢掉。
+
+OCR、转写、摘要、标签、结构化结果和模型理解都是派生物，不是原件，也不能覆盖原件。每一步清洗都应能追溯输入、工具或模型、版本、处理状态、输出和哈希。
+
+## 5. 消化、吸收、沉淀、运用、分析、记录、建模和管理
+
+这是原 Compass 最核心的部分，也是 Babata 最终真正要承担的部分。
+
+它负责让我对收进来的资料做审阅、理解、记录、关联、分类、建模、评分、分析、沉淀和长期管理。
+
+模型可以帮忙，但模型输出不是事实，不应自动变成知识真相，更不能覆盖原始资料。
+
+我自己手写的内容不是一个特殊旁路。
+
+我写的新笔记、草稿、反思、批注和人工判断，和飞书、Bilibili、知乎里的内容一样，都是一种来源，只不过这个来源是 first-party。
+
+- 我新写一篇，是新增资料；
+- 我修改一篇，是一个新版本；
+- 我对别的资料写批注，是一条独立资料，再和目标建立关系；
+- 不直接把旧内容原地改掉。
+
+这样既能保留我当时写东西的原味，也能保留后续的变化和判断。
+
+## 6. 输出、子库、分类、传播和调用
+
+Babata 最后要能随时大规模地把沉淀过的东西用出来。
+
+可以是检索、阅读、筛选和回看；可以是分类子库；可以是报告、卡片、文章、网页；可以给别的应用调用；也可以是各种传播和输出形式。
+
+这一部分暂时不预设最终产品形态。它可以以后成为独立应用，也可以继续放在核心里。先保证资料是真的、完整的、可追溯的、可消化的；输出形态按真实使用价值长出来。
+
+输出和视图默认不反向修改核心资料。删除一个 Obsidian 库、一个网页视图或一个导出物，不应该导致原始资料、清洗结果或我的手写内容丢失。
+
+Obsidian 可以有，但它只是展示和阅读形式之一，不是唯一存储，也不应该要求手工直接维护。清洗后的数据、Obsidian 数据和各种展示页面，尽量都应从权威资料重建。
+
+## 7. 数据、版本和权威
+
+代码、文档、测试和配置模板进入 Git。
+
+真实原件、SQLite、清洗产物、缓存、日志、凭据和运行状态不和代码 Git 混在一起，放在外部数据根，再通过一致性快照、加密增量备份、NAS/云端副本和恢复验证来保护。
+
+原始资料和第一方资料是最高优先级的 C0 数据；派生资料是 C1；可重建视图是 C2；运行状态和日志是 C3。
+
+原始资料应尽量 append-only。派生资料单独记录，可重建；视图可删除重建；任何下游展示、脚本、插件或模型服务都不能成为另一个隐藏的权威写入者。
+
+## 8. 交互、Skill 和自动化
+
+Skill、脚本、浏览器插件和模型服务都只是入口、工具或候选资料生产者，不是数据权威。
+
+Skill 可以接收链接、文件或指令，交给收集链路；也可以调用已经验证过的本地能力。但 Skill 不应绕过核心直接写资料，也不应在没有真实命令和测试时假装支持某项能力。
+
+未来可以做 Agent 自动化，但默认倾向人工触发或人工确认。可以在资料积累到一定程度后手动批处理，不因为“能自动”就让它自动做知识判断或大规模收集。
+
+命令行是自动化、恢复和运维入口；它不应该成为我日常收集资料时必须手动输入导出路径、元数据或导入命令的主要体验。需要时应有很窄的收集器 UI 或浏览器扩展，通过本地受保护接口调用同一条核心链路。
+
+## 9. 技术边界
+
+Babata 当前是一个本地优先的系统，不急着拆成很多独立仓库、服务、协议或对外 API。
+
+Rust 尽量承担核心：领域、存储、迁移、处理、来源适配、CLI、worker 和备份。JavaScript/TypeScript 只在浏览器插件等必须在浏览器运行的地方使用。Python 只在有成熟 Python 工具确实无法替代时使用，而且只能作为受控边界，不能直接写核心数据。
+
+最终持久化真实资料的路径必须统一。浏览器扩展、脚本、Skill、Python 工具、模型服务和视图只能提交候选资料、调用本地能力或读取结果，不能绕过核心直接写数据库或落最终原件。
+
+## 10. 不要做什么
+
+- 不回到五仓库、多协议、先接口化再找用途的架构；
+- 不为了宏观、通用、未来可能性而忘记真实目的；
+- 不做万能爬虫、绕过访问控制或把未经验证的第三方工具当成已支持；
+- 不让模型输出覆盖原件或自动成为知识真相；
+- 不把手工导出、手填路径、手填元数据和命令行导入变成正常收集路径；
+- 不做营销式前端；
+- 不因为逻辑上有收集、清洗、核心和输出，就提前把它们拆成互相复杂依赖的独立系统。
+
+## -1. 用户原话剪切板
+
+这一节是需求最后的救援锚点，不是第二份解读，也不是设计文档。以下保留与 Babata 相关的关键用户原话片段，按历史顺序摘录；除新增片段外不润色、不改写、不为一致性修正语气或措辞。上文出现偏差时，先回到这里核对；冲突按最新明确用户意图处理。
+
+### 关于真正要做的东西
+
+> 好的 现在我要提高维度 这个compass 其实是处理+存储持久这个部分。
+>
+> 真实我期待的compass 其实是三个部分
+>
+> 1. 收集，吸收，初步归档的部分，类似爬虫 脚本 浏览器插件 现有工具方法的聚合体，作用就是比如微信收藏公众号视频号 onenote 其他笔记 语雀 豆包聊天记录 kim gpt聊天记录 哔哩哔哩收藏 抖音收藏 知乎收藏之类的 收集聚合
+> 2. 第二部分 是处理 消化 吸收 沉淀 运用 分析记录 建模 管理的（目前的compass）
+> 3. 随时大规模输出 输出子库 分类/传播 被调用 各种形式输出的部分（偏应用，但是还没想好，也许和目前的compass本身比较重叠 也许不会有这个部分 也许直接放进2. 也许把2.里的后续完全拆出来）
+
+### 关于四段和边界
+
+> 我期待的是 ingest最少量开发 定义为现有插件/脚本的聚合 少量开发 然后内容都要尽量的实际内容 然后来源引用是肯定有的 然后能初步做清洗最好了 比如视频/音频转文字 图片提取之类的清洗工作 是这个样子的。 就是一个快速收集的模块 尽量用已有解决方案 少开发的
+>
+> 我觉得可以， ingest就只收集 实在没有插件功能的再针对性开发。
+>
+> 然后加一步 把初步清洗单独拎出去 一个模块 ，负责音视频多模态处理啊这些。
+
+> 1. 收集，吸收，初步归档的部分，类似爬虫 脚本 浏览器插件 现有工具方法的聚合体，作用就是比如微信收藏公众号视频号 onenote 其他笔记 语雀 豆包聊天记录 kim gpt聊天记录 哔哩哔哩收藏 抖音收藏 知乎收藏 飞书文档/wiki/知识库 之类的 收集聚合 就只收集 实在没有插件功能的再针对性开发
+> 2 把初步清洗单独拎出去 一个模块 ，负责音视频多模态处理啊这些
+> 3. 是处理 消化 吸收 沉淀 运用 分析记录 建模 管理的（旧的compass）
+> 4. 随时大规模输出 输出子库 分类/传播 被调用 各种形式输出的部分（偏应用，但是还没想好）
+
+### 关于原创、原味和清洗
+
+> 原创这里 我在想 是不是也要走收集清理环节？走的话可以保证基础正确 路径唯一 不走的话可以保留原味 能让人类字里行间更敏锐感受当时意境。由此引申 是不是清洗也要遵循尽可能保持原味？
+>
+> 清洗数据我想了一下，原视频原图这些也是可以留的，或者切片的，毕竟有些东西就是视觉的动画的。
+>
+> obsidian 我想了一下 也不是不可或缺的 它只是我清洗后的数据的一种展示形式 不算存储形式
+
+> 那么还需要一个手动维护的池子 就是我自己手写创建维护的 我觉得可以把自己的新增的也作为外部源 通过狂野收集者收集进来 如果修订的话 那么其实是版本迭代 也不是直接修改，那么手工创作的 是不是算一种外部来源
+
+### 关于工具、数据和自动化
+
+> 多模态清洗，我首选是百炼 CLI，或者通义 API，付费解决，不追求一分不花。
+
+> Skill 交互现在我看都在output 有时候其实也会用skill直接发消息 给collector 比如甩个链接 快速抓一下 后续自动走链路/或者积累到一定程度手动触发 （倾向手动）
+
+> 清洗后的数据 或者 obsidian 数据 尽量不手动维护
+
+### 关于当前推进原则
+
+> 进度错了，首先，所有子模块，什么结构，代码骨架，文件，接口，工具，都先定义好不去写具体的函数算法，但是架子要全部弄好，不急于单一模块的验收。现在的p2延后，把我说的插进去当p2.
