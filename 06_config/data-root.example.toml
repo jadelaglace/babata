@@ -1,7 +1,7 @@
-# Copy outside Git, then set COMPASS_DATA_HOME to this directory.
-# Example: C:\\Users\\Aiano\\CompassData
+# Copy outside Git, then set BABATA_DATA_HOME to this directory.
+# Example: C:\\Users\\Aiano\\BabataData
 [data]
-root = "C:\\Users\\Aiano\\CompassData"
+root = "C:\\Users\\Aiano\\BabataData"
 
 # No production credentials belong in this repository or this template.
 [providers.bailian]

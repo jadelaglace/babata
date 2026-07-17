@@ -1,0 +1,10 @@
+use babata_application::ApplicationError;
+use babata_domain::{ViewDescriptor, ViewKind};
+
+pub fn descriptor() -> ViewDescriptor {
+    super::descriptor(ViewKind::Datasette, "P6")
+}
+
+pub fn unavailable() -> ApplicationError {
+    ApplicationError::capability_unavailable("views.datasette", "P6")
+}

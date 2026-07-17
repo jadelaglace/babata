@@ -1,0 +1,30 @@
+pub mod asset_store;
+pub mod backup_driver;
+pub mod candidate_runner;
+pub mod capability_registry;
+pub mod clock;
+pub mod derived_repository;
+pub mod job_repository;
+pub mod output_builder;
+pub mod process_provider;
+pub mod raw_repository;
+pub mod read_projection;
+pub mod source_adapter;
+pub mod view_builder;
+
+pub use asset_store::{AssetStorePort, StagedAsset};
+pub use backup_driver::BackupDriverPort;
+pub use candidate_runner::CandidateRunnerPort;
+pub use capability_registry::CapabilityRegistryPort;
+pub use clock::ClockPort;
+pub use derived_repository::DerivedRepositoryPort;
+pub use job_repository::JobRepositoryPort;
+pub use output_builder::OutputBuilderPort;
+pub use process_provider::ProcessProviderPort;
+pub use raw_repository::{
+    NewAsset, NewCollection, NewItem, NewRelation, NewRevision, NewRouteEvidence, NewSource,
+    PersistGraph, RawRepositoryPort,
+};
+pub use read_projection::ReadProjectionPort;
+pub use source_adapter::SourceAdapterPort;
+pub use view_builder::ViewBuilderPort;

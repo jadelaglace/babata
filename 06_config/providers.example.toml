@@ -1,0 +1,5 @@
+[bailian_cli]
+enabled = false
+
+[bailian_api]
+enabled = false

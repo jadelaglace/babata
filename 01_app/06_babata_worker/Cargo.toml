@@ -1,0 +1,18 @@
+[package]
+name = "babata-worker"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+default = []
+worker-runtime = []
+
+[dependencies]
+babata-domain = { path = "../01_babata_domain" }
+babata-application = { path = "../02_babata_application" }
+babata-infrastructure = { path = "../03_babata_infrastructure" }

@@ -1,14 +1,15 @@
-# Real Compass data belongs under COMPASS_DATA_HOME, outside this repository.
+# Real Babata data belongs under BABATA_DATA_HOME, outside this repository.
 .env
 .env.*
 !.env.example
 data/
-CompassData/
+BabataData/
 *.db
 *.sqlite
 *.sqlite3
 *.sqlite-wal
 *.sqlite-shm
+/01_app/target/
 
 # Local runtime state and generated views.
 .cache/

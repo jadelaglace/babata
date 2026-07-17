@@ -1,0 +1,199 @@
+use babata_domain::{
+    AssetId, AssetRole, BuildTarget, CandidateEnvelope, ContentType, HealthState, ItemId, JobId,
+    Metadata, PageCursor, PipelineId, QueryFilter, RecordSummary, RelationKind, RevisionId,
+    RouteCoverage, SnapshotRef, SourceKind, SourceRouteId, UtcTimestamp, ViewDescriptor, ViewId,
+};
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone)]
+pub struct CaptureTextCommand {
+    pub provider: String,
+    pub text: String,
+    pub context: Option<String>,
+    pub locator: Option<String>,
+    pub native_id: Option<String>,
+    pub identity: Option<String>,
+    pub metadata: Metadata,
+    pub source_published_at: Option<UtcTimestamp>,
+}
+
+#[derive(Debug, Clone)]
+pub struct CaptureFileCommand {
+    pub provider: String,
+    pub path: String,
+    pub context: Option<String>,
+    pub locator: Option<String>,
+    pub native_id: Option<String>,
+    pub identity: Option<String>,
+    pub metadata: Metadata,
+    pub source_published_at: Option<UtcTimestamp>,
+}
+
+#[derive(Debug, Clone)]
+pub struct CaptureImportAsset {
+    pub path: String,
+    pub role: AssetRole,
+}
+
+#[derive(Debug, Clone)]
+pub struct CaptureImportCommand {
+    pub provider: String,
+    pub text: String,
+    pub context: Option<String>,
+    pub locator: Option<String>,
+    pub native_id: Option<String>,
+    pub identity: Option<String>,
+    pub content_type: ContentType,
+    pub metadata: Metadata,
+    pub source_published_at: Option<UtcTimestamp>,
+    pub assets: Vec<CaptureImportAsset>,
+    pub route_evidence: Option<RouteEvidenceCommand>,
+}
+
+#[derive(Debug, Clone)]
+pub struct RouteEvidenceCommand {
+    pub route_id: SourceRouteId,
+    pub authorization_id: String,
+    pub source_reference: String,
+    pub coverage: RouteCoverage,
+}
+
+#[derive(Debug, Clone)]
+pub struct CaptureExportCommand(pub CaptureFileCommand);
+
+#[derive(Debug, Clone)]
+pub struct CreateNoteCommand {
+    pub text: String,
+    pub path: Option<String>,
+    pub context: Option<String>,
+    pub metadata: Metadata,
+}
+
+#[derive(Debug, Clone)]
+pub struct ReviseCommand {
+    pub parent: RevisionId,
+    pub text: String,
+    pub path: Option<String>,
+    pub note: Option<String>,
+    pub metadata: Metadata,
+}
+
+#[derive(Debug, Clone)]
+pub struct AnnotateCommand {
+    pub target_item: ItemId,
+    pub target_revision: Option<RevisionId>,
+    pub text: String,
+    pub path: Option<String>,
+    pub context: Option<String>,
+    pub metadata: Metadata,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CaptureOutcome {
+    pub operation_id: String,
+    pub item_id: ItemId,
+    pub revision_id: RevisionId,
+    pub asset_ids: Vec<AssetId>,
+    pub status: String,
+    pub duplicate_of: Option<RevisionId>,
+    pub reimported: bool,
+    pub warnings: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RecordDetail {
+    pub item_id: ItemId,
+    pub source_kind: SourceKind,
+    pub provider: String,
+    pub content_type: ContentType,
+    pub revisions: Vec<RevisionDetail>,
+    pub assets: Vec<AssetDetail>,
+    pub relations: Vec<RelationDetail>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RevisionDetail {
+    pub revision_id: RevisionId,
+    pub parent_revision_id: Option<RevisionId>,
+    pub kind: String,
+    pub ordinal: u32,
+    pub raw_text: Option<String>,
+    pub text_sha256: Option<String>,
+    pub state: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AssetDetail {
+    pub asset_id: AssetId,
+    pub role: AssetRole,
+    pub logical_path: String,
+    pub sha256: String,
+    pub byte_size: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RelationDetail {
+    pub kind: RelationKind,
+    pub from_item_id: ItemId,
+    pub from_revision_id: Option<RevisionId>,
+    pub to_item_id: ItemId,
+    pub to_revision_id: Option<RevisionId>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EnqueueProcessCommand {
+    pub pipeline_id: PipelineId,
+    pub revision_id: RevisionId,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SearchQuery {
+    pub filter: QueryFilter,
+    pub cursor: Option<PageCursor>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SearchPage {
+    pub records: Vec<RecordSummary>,
+    pub next_cursor: Option<PageCursor>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RouteCollectCommand {
+    pub route_id: SourceRouteId,
+    pub source_reference: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ViewBuildCommand {
+    pub view_id: ViewId,
+    pub target: BuildTarget,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OperationStatus {
+    pub health: HealthState,
+    pub detail: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CandidateCaptureCommand {
+    pub candidate: CandidateEnvelope,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProcessJobOutcome {
+    pub job_id: JobId,
+    pub status: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ViewBuildOutcome {
+    pub descriptor: ViewDescriptor,
+    pub status: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BackupOutcome {
+    pub snapshot: SnapshotRef,
+}

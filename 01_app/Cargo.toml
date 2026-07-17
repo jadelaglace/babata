@@ -1,0 +1,28 @@
+[workspace]
+members = [
+    "01_babata_domain",
+    "02_babata_application",
+    "03_babata_infrastructure",
+    "04_babata_cli",
+    "05_babata_local_api",
+    "06_babata_worker",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.85"
+license = "UNLICENSED"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+missing_errors_doc = { level = "allow", priority = 1 }
+must_use_candidate = { level = "allow", priority = 1 }
+needless_pass_by_value = { level = "allow", priority = 1 }
+cast_possible_truncation = { level = "allow", priority = 1 }
+cast_possible_wrap = { level = "allow", priority = 1 }
+cast_sign_loss = { level = "allow", priority = 1 }

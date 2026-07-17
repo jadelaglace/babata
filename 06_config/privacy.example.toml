@@ -1,0 +1,2 @@
+default_class = "private"
+require_confirmation_for_external_processing = true

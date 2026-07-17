@@ -1,0 +1,3 @@
+[defaults]
+enabled = false
+require_user_confirmation = true

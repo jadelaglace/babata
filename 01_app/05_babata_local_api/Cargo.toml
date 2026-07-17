@@ -1,0 +1,21 @@
+[package]
+name = "babata-local-api"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+default = []
+listener = []
+
+[dependencies]
+babata-domain = { path = "../01_babata_domain" }
+babata-application = { path = "../02_babata_application" }
+babata-infrastructure = { path = "../03_babata_infrastructure" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0"
