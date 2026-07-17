@@ -1,21 +1,250 @@
-# Babata Reboot Test Cases
+# Babata 测试用例
 
-| ID | Acceptance | Scenario | Expected result |
-| --- | --- | --- | --- |
-| TC-01 | AC-01 | Configure a temporary data root; run Git scan | SQLite/assets/logs remain outside Git and configuration uses data-root-relative paths |
-| TC-02 | AC-02 | Capture text, a local file/export, and a first-party note; re-import/revise | Each has a stable revision/hash/context; re-import/revision creates links without overwrite |
-| TC-03 | AC-03 | Run text extraction and one media derivative | Raw source text/assets retain hashes; derivatives reference input revision/run |
-| TC-04 | AC-04 | Force one provider failure then retry; delete derived output and rerun | Failure/retry is recorded; raw remains unchanged; rebuilt derivative is traceable |
-| TC-05 | AC-05 | Create note, revision, and annotation of an external fixture | First-party provenance, parent/relation links, and original wording are queryable |
-| TC-06 | AC-06 | Search raw/derived fixture; build and remove generated view | Search reveals lineage; removing/rebuilding view changes no authority data |
-| TC-07 | AC-07 | Import permitted Feishu/export and browser/bookmark fixture; try incomplete route | Successful routes record coverage/limits; incomplete route is not marked enabled |
-| TC-08 | AC-08 | Back up fixture SQLite/assets, restore into isolated path, sample hashes | Restored indexes open and sampled asset hashes match; no live database sync is required |
-| TC-09 | AC-09 | Inspect Rust CLI/API use-case dependency graph; run JS/Python adapter fixtures | Rust owns all writes/finalisation/queue state; JS is browser-only; Python is an exception-only candidate adapter; loopback API rejects missing/invalid token and never binds remotely |
-| TC-10 | AC-10 | Run workspace dependency checks and architecture tests with a mock port implementation | Domain/application compile without IO infrastructure; infrastructure implements ports; CLI/API/worker only compose use cases; reverse dependencies and direct secondary writers are rejected |
-| TC-11 | AC-11 | Compare the P2 workspace against the full-system skeleton blueprint; run Cargo workspace check plus inventory, dependency, interface-ownership, document-traceability, and no-secondary-writer checks | All six crates, 117 Rust files, peripheral skeletons, commands, routes, ports, tools, tests and configuration templates exist with one owner and activation phase; inactive capabilities report unavailable; no single module's functional test is required to close P2 |
+## 1. 测试职责
 
-## Skill test rule
+本文证明 `02_ACCEPTANCE_CRITERIA.md` 的可观察结果。测试可以使用 unit、contract、
+integration、end-to-end、人工验证和真实授权样本，但不能用架构文件数量代替产品场景。
 
-A Skill is added only after its underlying CLI command has passed the mapped
-test case. Skill tests validate routing and output references; they do not
-replace capture, processing, workspace, or backup tests.
+测试证据分为：
+
+- **合成/夹具证据**：证明序列化、解析、状态、边界、失败和确定性机制；
+- **真实授权证据**：证明来源、附件、上下文、权限和正常交互路径实际可用；
+- **工程 gate**：证明文件、依赖、所有权和单一写入边界；不等同于产品 AC。
+
+真实资料、token、数据库、模型输出和日志保留在外部数据根或受保护测试位置，不进入
+Git。所有 destructive 测试使用临时或隔离数据根。
+
+## 2. 产品测试用例
+
+### TC-01：来源上下文候选与选择性收集
+
+关联：AC-01，阶段 P4。
+
+场景：分别使用一个用户授权的飞书来源和一个已配对浏览器扩展。
+
+步骤：
+
+1. 连接来源并打开飞书文档/Wiki/知识库层级、浏览器页面/选区/书签上下文。
+2. 查看候选标题、位置/层级、类型、更新时间、附件可得性和限制。
+3. 在不确认、取消、选择单条、选择可见集合和选择明确范围下分别操作。
+4. 对一个不完整/无权限候选和一个只支持回退导出的来源操作。
+5. 检查候选发现前后及确认前后的 C0 变化。
+
+预期：
+
+- 候选字段真实可得，缺失与限制明确；
+- 未确认和取消不写 C0，不发生账号级静默全量复制；
+- 确认后只收集选中范围；
+- 正常路径不要求手填导出路径、内部 metadata 或候选 JSON；
+- 回退路径被明确标识，未验证来源不显示 available。
+
+### TC-02：逐条状态、局部失败、重试与重收集
+
+关联：AC-02，阶段 P4。
+
+场景：选择一个含成功、跳过和可重试失败项的集合；随后修改、保持、限制访问和删除
+不同来源项后重收集。
+
+步骤：
+
+1. 观察每项从 queued 到 running 再到终态。
+2. 对失败项重试，取消尚未开始的项。
+3. 确认已成功项没有因局部失败或取消而丢失/重复覆盖。
+4. 重收集并检查 changed、unchanged、inaccessible、removed。
+5. 回看旧版本、旧上下文和本次检查记录。
+
+预期：逐条状态与原因可见；重试只影响目标项；changed 追加版本；unchanged 保留检查
+事件；inaccessible/removed 不删除旧 C0；局部成功始终保留。
+
+### TC-03：C0、C1、C2 与第一方资料可辨别
+
+关联：AC-03，阶段 P3/P5/P6。
+
+场景：收集文本、文档、图片、音频或视频，创建第一方资料，生成至少一种 C1 和 C2。
+
+步骤：
+
+1. 记录 C0 原文/原件哈希与来源。
+2. 运行 OCR、转写或其他处理并生成视图/子库物化。
+3. 从 C1/C2 回到输入版本、来源上下文和处理记录。
+4. 删除并重建 C1（允许时）和 C2。
+5. 使用缺附件或缺来源字段的受限样本重复检查。
+
+预期：C0 内容与哈希不变；外部原件、first-party、机器派生物和视图可辨别；C1/C2
+删除不会损伤 C0；不完整资料保持明确限制。
+
+### TC-04：忠实清洗、失败重试与百炼路径
+
+关联：AC-04，阶段 P5。
+
+场景：对文档/网页、图片、音频和视频中的已启用类型运行真实处理，其中至少一项经
+百炼 CLI，至少一项故意失败后重试。
+
+步骤：
+
+1. 检查 input、pipeline、工具/模型、版本、运行状态和输出哈希。
+2. 比较派生文本/结构与原件，记录视觉、时序、语气或版式损失。
+3. 注入 provider 错误，重试并保留两次运行记录。
+4. 删除一个可重建派生物后重新运行。
+5. 对未启用处理类型发起请求。
+
+预期：处理可检查、失败可理解、重试不改 C0；多次结果可并存/比较；原媒体可回看；
+未启用能力返回 unavailable；百炼输出不被当作原件或人工事实。
+
+### TC-05：核心人工沉淀与模型建议边界
+
+关联：AC-05，阶段 P6.1。
+
+场景：用户审阅一条外部资料及其 C1，建立人工记录、关系、分类、模型/结构、评分和
+分析；模型同时提出一个建议。
+
+步骤：
+
+1. 在同一审阅上下文查看原件、派生物、来源、版本和关系。
+2. 创建并修订至少一种人工判断及其依据。
+3. 接受、修改和拒绝不同模型建议。
+4. 搜索和回看人工记录、旧版本、原建议和决定。
+5. 检查与原始证据冲突的模型建议。
+
+预期：人工成果拥有作者、时间、目标、依据和版本；模型建议始终为 C1；接受/修改会
+创建新的 first-party C0；拒绝不删除建议；任何建议都不覆盖原件或唯一分类。
+
+### TC-06：第一方创建、修订和批注
+
+关联：AC-06，阶段 P3/P6.1。
+
+场景：新写一篇内容，连续修订两次，对一个外部资料的特定版本写批注，并生成/删除
+一个展示视图。
+
+步骤：
+
+1. 创建 first-party 内容并记录原始措辞和附件。
+2. 修订两次并查看完整版本顺序。
+3. 创建独立 annotation，关联外部目标版本。
+4. 混入一段模型生成内容，检查来源类型。
+5. 删除并重建视图。
+
+预期：新写、修订、批注都是 C0；旧措辞和附件不变；批注是独立 item；人工/模型
+可辨别；视图删除不影响任何版本和关系。
+
+### TC-07：检索、关系导航与子库
+
+关联：AC-07，阶段 P6.2/P6.3。
+
+场景：准备含正文、媒体-only、附件-only、受限项、版本、人工分类和关系的资料集，
+创建一个有纳入/排除规则的子库。
+
+步骤：
+
+1. 组合正文、来源、时间、类型、状态、人物、分类、关系和处理状态检索。
+2. 从结果沿原件、版本、派生物、人工记录和关系导航。
+3. 找到没有 OCR/转写的媒体-only 和受限项。
+4. 创建、修订子库定义并生成物化结果。
+5. 删除物化目录和搜索投影后重建。
+
+预期：各类资料均可发现；断链显示明确状态；子库人工定义/版本不随物化删除；重建
+不复制第二套权威资料。
+
+### TC-08：可追溯输出与只读边界
+
+关联：AC-08，阶段 P6.3。
+
+场景：对单项和明确集合分别生成人类可读输出与结构化输出，并对生成文件做外部修改、
+删除和重建。
+
+步骤：
+
+1. 检查输出 scope、输入版本、builder/template 版本、manifest 和状态。
+2. 从输出定位回 C0/C1 与人工记录。
+3. 外部编辑生成文件，检查核心是否被反写。
+4. 删除并按相同输入范围重建。
+5. 请求一个未实现输出类型。
+
+预期：输出可回溯且支持明确批量；外部编辑/删除不改变权威资料；重建差异有记录；
+未实现类型不显示可用。
+
+### TC-09：Skill、脚本、浏览器入口与 Agent 受控
+
+关联：AC-09，阶段 P7。
+
+场景：从 CLI、Skill、浏览器扩展、脚本和 Agent 调用同一可用/不可用能力，并尝试
+扩大批处理范围或直接写数据。
+
+步骤：
+
+1. 比较各入口返回的状态、引用、限制和错误。
+2. 对 unavailable 能力调用 Skill。
+3. 取消一个明确范围的批处理并检查后续项。
+4. 让 Agent 尝试未确认全量收集和自动确认模型建议。
+5. 扫描 JS/Python/Skill 的数据库和最终资产写入路径。
+
+预期：所有入口调用同一核心结果；unavailable 不伪成功；取消后范围不扩张；未确认
+自动化被拒绝；外围无第二权威写入；Skill 测试不替代底层能力测试。
+
+### TC-10：外部数据根、数据级别与隔离恢复
+
+关联：AC-10，阶段 P3/P8。
+
+场景：使用全新数据根通过多个入口产生 C0–C3，创建一致备份，在隔离数据根恢复并
+分别删除/重建各级允许内容。
+
+步骤：
+
+1. 扫描 Git 与数据根，确认真实数据/凭据边界。
+2. 验证不同入口的最终资料都能被同一核心解析。
+3. 删除 C3、C2、可重建 C1，确认 C0 不受影响。
+4. 从一致快照恢复到隔离根，打开索引并校验资产/版本/关系哈希。
+5. 模拟 C0 损坏、C1 缺失、C2/C3 未重建和凭据缺失。
+
+预期：只有 C0 损坏阻止权威恢复通过；C1/C2/C3 按级别报告和重建；Git 无真实数据；
+不存在多个活动写入者；恢复报告准确区分故障类型。
+
+### TC-11：完整本地 raw-to-view 闭环
+
+关联：AC-11，阶段 P4–P8 系统级验收。
+
+场景：使用一个真实授权来源和一条 first-party 内容贯通收集、清洗、人工沉淀、检索、
+子库、输出、删除重建和隔离恢复，并注入一次局部失败。
+
+步骤：
+
+1. 在来源上下文选择资料并观察逐条状态；创建 first-party 内容。
+2. 回看 C0，对一项执行真实清洗并保留 C1 溯源。
+3. 建立人工判断和关系，处理一个模型建议。
+4. 检索资料、创建子库并生成可回溯输出。
+5. 删除/重建 C2，执行一致备份和隔离恢复。
+6. 在收集或处理环节注入局部失败并重试。
+
+预期：四段链路在同一权威体系中成立；C0/C1/人工沉淀/子库定义不因 C2 删除而改变；
+恢复后链路可读；成功项不因局部失败丢失；没有半成品伪装成功。
+
+## 3. P2 工程 Gate 测试
+
+这些测试不映射产品 AC：
+
+| ID | Gate | 验证 |
+| --- | --- | --- |
+| GT-P2-01 | P2-G1 | 6 crate、137 个目标 Rust 源文件和外围规格位置齐全 |
+| GT-P2-02 | P2-G2 | 12 service、13 port、13 CLI 模块、local API/worker owner 唯一 |
+| GT-P2-03 | P2-G3 | domain/application/infrastructure/composition root 依赖单向且可编译 |
+| GT-P2-04 | P2-G4 | 未激活能力统一 unavailable，不启动真实来源/provider/worker |
+| GT-P2-05 | P2-G5 | JS/Python/Skill/provider/view/output 无 C0/C1 直接写入路径 |
+| GT-P2-06 | P2-G6 | 00–05、蓝图、脚本、配置和测试标识追溯一致 |
+| GT-P2-07 | P2-G7 | 全部已列来源有现有工具证据、最小授权、实际调用结果和直接用/薄包装/窄适配/回退决策 |
+
+## 4. 阶段测试映射
+
+| 阶段 | 产品测试 | 工程/阶段证据 |
+| --- | --- | --- |
+| P2 | 无 | GT-P2-01..06 |
+| P3 | TC-03、TC-06、TC-10 的底座部分 | P3-G1..06、raw integration/CLI tests |
+| P4 | TC-01、TC-02 | P4-G1..06、真实授权证据 |
+| P5 | TC-03、TC-04 | C1/provider/integrity tests |
+| P6 | TC-05、TC-06、TC-07、TC-08 | core/read projection/output tests |
+| P7 | TC-09 | Skill/Agent/extra-source tests |
+| P8 | TC-10、TC-11 | backup/restore/end-to-end evidence |
+
+## 5. Skill 测试规则
+
+Skill 只有在对应本地能力的 TC 已通过后才激活。Skill 测试验证参数路由、授权范围、
+状态和结果引用；它不替代来源、处理、核心、输出或恢复的真实测试。

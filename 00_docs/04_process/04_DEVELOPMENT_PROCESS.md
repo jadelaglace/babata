@@ -1,85 +1,133 @@
-# Babata Development Process
+# Babata 开发流程与实时进度
 
-本文是 Babata 唯一的实时进度和交付顺序来源。需求、PRD、验收标准与架构定义“为什么、做什么、怎样算完成、边界在哪里”；本文只维护“现在到哪、下一步做什么、哪道门通过后才能进入下一阶段”。
+本文是 Babata 唯一的实时阶段状态和交付顺序来源。00–03 定义为什么做、做什么、
+怎样算产品完成以及技术边界；架构补充定义文件和阶段设计；本文只维护现在到哪、
+下一步是什么、通过哪道交付门才能进入下一阶段。
 
 ## 1. 当前状态
 
-**更新时间：2026-07-16**
+**更新时间：2026-07-17**
 
 ```text
 P0  冻结旧版本                                    已完成
-P1  需求、PRD、验收、全局技术架构                   已完成
-P2  全系统模块与代码骨架                            当前阶段：文档已定义，骨架尚未实施
-P3  原始资料入库与不可变存储                        延后；已有早期实现，不视为完成
-P4  首批真实收集路径                                未开始
-P5  多模态清洗与百炼处理                            未开始
-P6  检索、视图、输出与子库                          未开始
-P7  扩展来源、Skill 与 Agent 自动化                 未开始
+P1  真实需求、PRD、产品验收、全局技术架构           已完成
+P2  全系统模块、目录、代码与工具骨架                 进行中
+P3  C0 原始资料与第一方版本底座                     未开始（存在提前工作）
+P4  飞书与浏览器首批真实收集路径                     未开始（存在提前工作）
+P5  C1 多模态清洗与百炼处理                         未开始
+P6  核心沉淀、检索、子库与输出                      未开始
+P7  扩展来源、正式 Skill 与受控 Agent               未开始
 P8  备份、恢复、运维与长期加固                      未开始
 ```
 
-现有 29 个原始入库 Rust 文件是提前出现的 P3 工作。它们保留在工作区，但不再驱动当前路线，也不能代替 P2 的全系统骨架。P2 必须先把其余模块、文件、接口和工具壳补齐，再回到 P3 做原始入库功能验收。
+当前真实情况：
 
-项目阶段只使用 P0–P8。数据备份等级单独使用 C0–C3。
+- P2 已在旧 117 文件基础上补齐 20 个 Rust 责任文件和 3 份 Skill 规格，达到 6 个
+  crate、137 个 Rust 源文件；CollectorSession、Knowledge、Sublibrary、Output、
+  ReadProjection 和 OutputBuilder 均有明确位置与 unavailable 壳。
+- P2 的工程骨架 gate 已通过，但逐来源现有工具调研尚未完成。飞书、语雀、微信、内容
+  平台、浏览器和对话平台还缺真实 CLI/API/插件/SDK/Agent 工具证据、最小授权和路线
+  决策，因此 P2 不得标记完成。
+- 已有 29 个 P3 活跃文件、raw migrations、命令与测试属于提前工作。它们应保留并
+  在 P2 修正后重新审阅，不代表 P3 已开始或完成。
+- 已有飞书导出、书签 HTML、CandidateEnvelope、route evidence 和 fixture 属于 P4
+  提前工作/回退路径证据。正常的飞书上下文候选、浏览器扩展候选与选择尚未通过，
+  所以 P4 不得标记进行中或 enabled。
 
-## 2. 进度维护规则
+项目阶段只使用 P0–P8；C0–C3 是数据权威级别，不是项目阶段。
 
-1. 本节是唯一实时状态；阶段变化时必须与对应文档/代码证据在同一提交中更新。
-2. 状态只使用“未开始、进行中、已完成、阻塞”，并写明完成证据和下一道门。
-3. 已经提前写出的代码只记为“提前工作”，不得反向篡改阶段顺序。
-4. 单个模块跑通不再自动推动全局阶段；必须满足当前阶段的全局完成标准。
-5. 对产品范围的修改按 `Requirements -> PRD -> Acceptance -> Architecture -> Development Process -> Test Cases` 顺序更新。
-6. `AGENTS.md` 只记录本地协作，不是产品或进度权威。
+## 2. 状态维护规则
 
-## 3. P2：全系统模块与代码骨架
+1. 状态只使用“未开始、进行中、已完成、阻塞”；提前代码写在说明中，不改变阶段。
+2. 阶段状态变化必须与对应文档、代码和验证证据在同一提交中更新。
+3. 局部实现、旧测试通过、文件已经存在或接口能够返回，不自动推动阶段。
+4. P2 使用工程交付 gate；P3 以后按 phase gate 和对应 AC/TC 判断，二者不得混用。
+5. 产品意图变化按 `00 -> 01 -> 02 -> 03 -> process -> tests -> code` 顺序传播。
+6. 架构补充与主架构冲突时先改补充和骨架，再改代码；不为保留旧数字扭曲产品。
+7. `AGENTS.md` 只提供本地操作上下文，不是产品、架构或进度权威。
 
-### 3.1 P2 目的
+## 3. P0：冻结旧版本
 
-在任何单一模块深入开发前，先建立完整、可导航、可编译、边界清楚的系统架子：
+旧版本保留在 `C:\Users\Aiano\Babata-2.0-frozen`，不在 reboot 工作区继续演化。
+P0 已完成。
 
-- 全部 Rust crate 和子模块目录；
-- 全部计划文件及唯一职责；
-- domain 类型、application DTO/service/port 签名；
-- infrastructure 中来源、处理、视图、备份、工具适配位置；
-- CLI 命令树、loopback API 路由树、worker 生命周期；
-- 浏览器/Python 边界适配器；
-- Skill 规格、迁移目录、测试目录、工程脚本和配置模板；
-- 每个能力的当前状态与未来激活阶段。
+## 4. P1：真实需求到全局架构
 
-P2 不追求任何一个模块的业务闭环，不实现平台抓取、模型处理、搜索、导出或备份算法。详细文件清单和接口定义以 `04_SYSTEM_SKELETON_BLUEPRINT.md` 为准。
+P1 交付链：
 
-### 3.2 P2.1：文档与清单基线
+```text
+00_REQUIREMENTS.md（含 append-only 原话证据）
+  -> 01_PRD.md
+  -> 02_ACCEPTANCE_CRITERIA.md
+  -> 03_ARCHITECTURE.md
+```
 
-1. 固定 6 个 Rust crate、117 个 Rust 源文件及外围目录清单。
-2. 固定 8 个 application service、11 个 port、26 个 service 方法和 48 个 port 方法。
-3. 固定 9 组 CLI、12 个 API endpoint、worker 生命周期和工具注册表。
-4. 给每个文件写明 owner、允许依赖、禁止依赖、激活阶段和测试位置。
-5. 将现有原始入库代码标记为 P3 提前实现，不删除、不提前验收。
+P1 当前已完成：00 恢复真实意图，01 恢复四段产品行为，02 将 PRD-01..10 映射到
+AC-01..11，03 明确四段信息流、C0–C3、唯一 Rust writer 和代码边界。
 
-完成证据：架构、骨架蓝图、AC-11 和 TC-11 对同一清单无冲突。
+后续若真实意图变化，P1 文档按链路重新打开；不能在 process 或 code 中偷偷新增
+产品决定。
 
-### 3.3 P2.2：仓库和 Cargo 骨架
+## 5. P2：全系统骨架
 
-1. 创建 6 个 Cargo crate 及全部 module 文件。
-2. 创建 `08_adapters`、Skill 规格、迁移、测试、脚本和配置模板目录。
-3. 所有未激活能力使用统一 `CapabilityStatus` 和 `capability_unavailable` 错误。
-4. Cargo features 只控制是否编译/启用外围能力，不改变 domain/application 规则。
+### 5.1 P2 目的
 
-完成证据：`cargo metadata` 显示完整 workspace，`cargo check --workspace` 通过。
+在单一模块深入实现前，建立修正后全系统的完整位置：
 
-### 3.4 P2.3：接口和组合根骨架
+- 6 个 Rust crate、137 个目标 Rust 源文件；
+- 12 个 application service、13 个 port；
+- 13 个 CLI 命令模块、受保护 local API 路由模块和 worker 生命周期；
+- 浏览器/Python 边界；
+- 9 份 Skill 规格；
+- C0/C1/C3 migration、测试、脚本和配置位置；
+- 每个能力的 owner、允许/禁止依赖和激活阶段。
 
-1. 定义 domain 全局类型，但不加入 IO 或 provider 逻辑。
-2. 定义全部 DTO、service 与 port 签名。
-3. CLI 注册完整命令树；API 注册完整路由映射；worker 建立生命周期壳。
-4. Infrastructure 每个 adapter 只暴露 descriptor、配置和 unavailable 壳。
-5. Composition root 能构造 capability registry，但默认不启动 API、worker 或外部工具。
+完整清单见 `03_architecture/04_SYSTEM_SKELETON_BLUEPRINT.md`。
 
-完成证据：接口所有权检查通过，所有命令/路由能报告真实 capability 状态。
+### 5.2 P2.1：文档和目标清单
 
-### 3.5 P2.4：工程工具和全局边界
+1. 以 00–03 为上游，修正 04–07 架构补充、开发流程和测试映射。
+2. 固定旧 117 文件之外新增的 20 个责任文件。
+3. 固定 service/port/CLI/local API/worker/Skill 的所有权。
+4. 区分产品 AC/TC 与 P2 工程 gate。
 
-建立并通过：
+完成证据：文档追溯检查覆盖 PRD-01..10、AC-01..11、TC-01..11；下游不存在旧
+`AC-11 = 117 文件` 或 `P4 = 导出导入` 的表述。
+
+### 5.3 P2.2：代码与外围骨架对齐
+
+1. 保留现有 117 文件，不 reset、checkout 或盲目删除用户工作。
+2. 添加蓝图列出的 20 个责任文件，目标达到 137。
+3. 添加 Knowledge、Sublibrary、Output Skill 规格位置。
+4. 更新 module export、DTO、capability descriptor 和 unavailable 壳。
+5. 不在此步骤实现真实来源、模型、知识算法、搜索排序和输出模板。
+
+完成证据：P2 inventory 检查报告 6 crate、137 文件和外围规格位置齐全。
+
+### 5.4 P2.3：接口和 composition roots
+
+1. 新增 CollectorSession、Knowledge、Sublibrary、Output service 壳。
+2. 新增 ReadProjectionPort 和 OutputBuilderPort。
+3. 扩展 RawRepositoryPort 的未来责任但不提前实现 P6 SQL。
+4. CLI 添加对应模块；local API 只添加路由 owner，不固定没有真实调用者的 endpoint。
+5. worker、browser、Python、provider、view/output builder 全部只调用 application 用例。
+
+完成证据：interface ownership 和 Rust boundary 检查使用新清单；无万能 service、
+反向依赖或第二 C0/C1 写入者。
+
+### 5.5 P2.4：工程 gate
+
+必须同时通过 `04_SYSTEM_SKELETON_BLUEPRINT.md` 的工程门：
+
+| Gate | 本阶段判定 |
+| --- | --- |
+| P2-G1 | 6 crate、137 文件和外围规格位置齐全 |
+| P2-G2 | service、port、CLI、API/worker owner 完整 |
+| P2-G3 | 依赖单向、workspace 可编译 |
+| P2-G4 | 未激活能力诚实 unavailable |
+| P2-G5 | 只有 Rust application/infrastructure 可最终写 C0/C1 |
+| P2-G6 | 文档、蓝图、脚本和测试追溯一致 |
+| P2-G7 | 00 列出的来源完成现有工具调研、实际验证、最小授权和路线决策 |
 
 ```text
 check-p2-skeleton-inventory.ps1
@@ -87,83 +135,169 @@ check-rust-boundaries.ps1
 check-interface-ownership.ps1
 check-doc-traceability.ps1
 check-no-secondary-writer.ps1
+cargo metadata / check / fmt / clippy / architecture tests
 ```
 
-这些检查证明文件齐全、依赖单向、接口只有一个 owner、文档可追踪、Rust core 仍是唯一写入者。它们不测试业务算法。
+这些 gate 证明骨架完整、依赖正确、能力诚实和写入边界唯一。它们不证明任何产品
+AC 已完成。
 
-### 3.6 P2 完成门
+### 5.6 P2 当前证据与未完成项（2026-07-17）
 
-P2 完成必须同时满足：
+- 6 个 crate、137 个 Rust 源文件、12 个 application service、13 个 port、13 个 CLI
+  命令模块、local API route owner、worker 生命周期和 9 份 Skill 规格位置全部存在；
+- `cargo check --workspace`、`cargo fmt --all --check`、`cargo clippy --workspace
+  --all-targets -- -D warnings` 通过；
+- `cargo test --workspace` 通过 41 个测试；
+- P2 inventory、interface ownership、document traceability、Rust boundary 和
+  no-secondary-writer 检查全部通过；
+- 新增 CollectorSession、Knowledge、Sublibrary、Output、ReadProjection 和
+  OutputBuilder 只提供边界与 unavailable 壳，没有业务算法；
+- 离线 route evidence 可以记录覆盖，但不能单独把飞书/浏览器标记 enabled；来源仍
+  等待 P4 真实上下文候选与选择证据；
+- 29 文件 P3 提前实现及 34 个 raw 功能测试继续可运行，但不作为 P2 产品验收，也不
+  代表 P3 已开始。
 
-- `04_SYSTEM_SKELETON_BLUEPRINT.md` 的全部目录、文件和接口存在；
-- 6 个 crate 与外围边界都可被工具识别；
-- workspace 编译、格式化和架构检查通过；
-- 未激活能力显式 unavailable，不伪装支持；
-- 没有新增业务算法、真实 provider 调用或第二持久化写入者；
-- 不以原始入库、飞书、百炼或任何单一模块的功能验收作为 P2 完成条件。
+上述只证明 P2-G1 至 P2-G6。P2-G7 尚未完成。下一步必须先完成
+`03_architecture/08_SOURCE_TOOL_RESEARCH.md`，逐来源真实调查并尽可能调用现有工具；
+在此之前不继续增加来源 adapter、协议或手工导出主路径。
 
-## 4. P3：原始资料入库与不可变存储
+## 6. P3：C0 原始资料与第一方版本底座
 
-P3 才接回原来的“原始资料入库底座”工作。29 个活跃实现文件见 `05_RAW_FOUNDATION_BLUEPRINT.md`；SQL 所有权、写入顺序、fixtures、测试和命令验收见 `06_RAW_FOUNDATION_EXECUTION_PLAN.md`。
+前置：P2-G1 至 P2-G7 全部通过。
 
-P3 工作包括：
+P3 按 `05_RAW_FOUNDATION_BLUEPRINT.md` 和 `06_RAW_FOUNDATION_EXECUTION_PLAN.md`
+重新审阅已有 29 文件提前实现，完成：
 
-1. 将现有提前实现与 P2 全系统接口统一；
-2. 完成 text/file/export 与 first-party create/revise/annotate；
-3. 完成 raw SQLite、原件资产、哈希、溯源、失败补偿和 read-back；
-4. 使用临时数据根完成命令级验收；
-5. 不接真实平台、不做多模态处理、不做视图。
+1. 显式 text/file/export 的统一 C0 提交；
+2. first-party create/revise/annotate；
+3. raw SQLite、不可变资产、哈希、版本、关系与 read-back；
+4. transaction、journal、orphan/quarantine 和故障补偿；
+5. 临时数据根下的工程/恢复 CLI 验证。
 
-P3 完成后，才能把“资料可靠入库”标记为可用。
+P3 gate：
 
-## 5. P4：首批真实收集路径
+| Gate | 本阶段判定 |
+| --- | --- |
+| P3-G1 | 外部数据根与编号分区正确 |
+| P3-G2 | text/file/export 形成可回读 C0 |
+| P3-G3 | first-party create/revise/annotate 版本关系正确 |
+| P3-G4 | 失败不产生伪 ready，journal/orphan 可诊断 |
+| P3-G5 | DB/资产写入 owner 唯一 |
+| P3-G6 | P2 gate 继续成立且未提前激活其他能力 |
 
-P4 证明来源模块不是空架子，首批只做两条真实路径：
+P3 为 AC-03、AC-06、AC-10 提供部分底座，不满足 AC-01、AC-02 或完整 AC-11。
 
-1. 飞书文档/Wiki/知识库：优先官方导出或 OpenAPI，记录标题、层级、原链接、附件、native identity、重导行为和缺失字段。
-2. 浏览器书签/页面/剪藏：优先 HTML 导出或浏览器扩展候选包；确有需要才启用 loopback API。
+## 7. P4：飞书与浏览器首批真实收集路径
 
-来源 adapter 只能生成 CandidateEnvelope 或调用 CaptureService，不能写 SQLite。
+前置：P3 C0 写入和故障边界稳定。
 
-## 6. P5：多模态清洗与百炼处理
+P4 按 `07_P4_FIRST_COLLECTION_PATHS.md` 实现：
+
+1. 飞书官方授权连接、文档/Wiki/知识库候选、层级和附件限制；
+2. 浏览器扩展配对、页面/选区/链接/书签候选；
+3. 用户选择单条、可见集合或明确范围后才写 C0；
+4. queued/running/saved/skipped/failed、局部成功和重试；
+5. changed/unchanged/inaccessible/removed 重收集；
+6. 真实授权证据与 fixture 机制证据分开。
+
+已有导出、书签 HTML 和 CandidateEnvelope 只作为回退/提前证据。P4 gate：
+
+| Gate | 本阶段判定 |
+| --- | --- |
+| P4-G1 | 飞书真实上下文候选成立 |
+| P4-G2 | 浏览器扩展候选与配对成立 |
+| P4-G3 | 未确认不写入，只提交选择范围 |
+| P4-G4 | 逐条状态、局部成功和重试成立 |
+| P4-G5 | 四种重收集结果不覆盖旧 C0 |
+| P4-G6 | 真实证据与 fixture 分开，未验证来源保持 disabled |
+
+只有 P4-G1 至 P4-G6 和 TC-01、TC-02 通过后，才能把首批来源标记 available，并
+满足 AC-01、AC-02。
+
+## 8. P5：C1 多模态清洗与百炼
+
+前置：至少一条真实 C0 来源可稳定回看。
 
 依次激活：
 
-1. derived schema、job、process run 和 derivative 存储；
-2. 本地机械文本/文档提取；
-3. Bailian CLI 的一个真实 pipeline；
+1. C1 schema、process run、job 和 derivative；
+2. 文档/网页机械提取；
+3. 百炼 CLI 的真实 pipeline；
 4. 图片 OCR、音频转写、视频字幕/关键帧/视觉描述；
-5. Bailian/Qwen API 或批处理，以及重试、成本、隐私和限流。
+5. 百炼/通义 API 或批处理、隐私、成本、限流和重试；
+6. 原件/派生物对照与转换损失说明。
 
-原件、原文和原哈希永不被覆盖。
+P5 主要交付 AC-03、AC-04 和 TC-03、TC-04。C1 不覆盖 C0，模型输出不自动成为
+人工判断。
 
-## 7. P6：检索、视图、输出与子库
+## 9. P6：核心沉淀、检索、子库与输出
 
-激活 ExploreService、ViewService、Datasette、Obsidian 和导出 builder：
+P6 必须按核心价值顺序进行，不能直接跳到 Datasette/Obsidian：
 
-- 查询 raw 与 derived；
-- 展示来源、版本、处理链和附件；
-- 生成可删除重建的阅读视图；
-- 输出分类子库、报告或供其他应用消费的快照；
-- 下游视图不得反写权威数据。
+### P6.1 核心人工沉淀
 
-## 8. P7：扩展来源、Skill 与 Agent 自动化
+- 聚合查看原件、派生物、来源、版本和关系；
+- 人工记录、判断、关系、分类、主题/结构模型、评分和分析；
+- ModelSuggestion 与人工接受/修改/拒绝分离；
+- first-party 与人工知识记录的版本历史。
 
-按实际价值逐条扩展飞书以外的来源：语雀、OneNote、印象笔记、微信、知乎、Bilibili、小红书、抖音、浏览器、豆包/Kimi/GPT、local files 和 first-party。
+交付 AC-05、AC-06 和 TC-05、TC-06。
 
-每条路径遵循：官方导出/API -> 成熟 CLI/SDK/开源工具 -> 浏览器适配 -> 窄适配器 -> 手动截图/PDF/录屏。
+### P6.2 检索与关系导航
 
-P2 中的 Skill 规格在对应 CLI 真实通过验收后才转成可用 `SKILL.md`。Agent 自动触发默认保持人工确认，可在积累到一定程度后手动批处理。
+- C0/C1 可重建读投影；
+- 正文、来源、时间、类型、状态、人物、分类、关系和处理状态检索；
+- 媒体-only、附件-only 和受限资料仍可发现；
+- 版本、来源、关系导航。
 
-## 9. P8：备份、恢复、运维与长期加固
+交付 AC-07 的检索和关系部分。
 
-实现 SQLite-consistent snapshot、Restic 加密增量备份、隔离恢复验证、完整性抽样、日志轮转、doctor、成本监控和故障恢复。
+### P6.3 子库与输出
 
-C0 原始/first-party 数据优先于 C1 derived；C2 views 和 C3 runtime/logs 可重建。
+- 版本化 SublibraryDefinition；
+- 可删除重建的子库物化；
+- 人类可读和结构化输出；
+- manifest、来源/版本回溯和只读 builder；
+- Obsidian、网页、报告等在真实用途出现后逐项启用。
 
-## 10. 提交与验收纪律
+交付 AC-07、AC-08 和 TC-07、TC-08。
 
-- P2 的提交按“文档/清单 -> crate/目录 -> 接口 -> composition roots -> 工程检查”分组，不混入业务算法。
-- P3 以后每次功能提交引用对应 AC/TC。
-- 功能阶段若发现骨架接口错误，先更新架构与 P2 蓝图，再改代码。
-- 当前文档更改完成并 push 后，下一步是实施 P2.2，而不是继续验收现有原始入库模块。
+## 10. P7：扩展来源、正式 Skill 与受控 Agent
+
+按真实价值扩展语雀、OneNote、印象笔记、微信、知乎、Bilibili、小红书、抖音、
+豆包/Kimi/GPT、本地文件等来源。每条来源继续优先官方能力和现有工具，不先造重型
+爬虫。
+
+对应底层能力通过自己的 AC/TC 后，P2 Skill 规格才转成真实 `SKILL.md`。Agent 默认
+人工触发或确认，批处理携带明确范围，不自动扩张授权或把模型判断升级为事实。
+
+P7 主要交付 AC-09 和 TC-09。
+
+## 11. P8：备份、恢复、运维与长期加固
+
+实现一致快照、加密增量备份、NAS/云端副本、隔离恢复、hash 验证、日志轮转、doctor、
+成本与故障监控。恢复报告区分 C0 损坏、C1 可重建、C2/C3 未重建和凭据重授权。
+
+P8 完成 AC-10、TC-10，并与 P4–P7 的真实路径共同完成 AC-11、TC-11 的完整本地
+raw-to-view 闭环。
+
+## 12. 阶段与验收映射
+
+| 阶段 | 主要产品验收 | 说明 |
+| --- | --- | --- |
+| P2 | 无产品 AC；P2-G1..G7 | 工程骨架与现有工具路线门，不冒充产品完成 |
+| P3 | AC-03/06/10 的底座部分 | C0、first-party、单一写入；无真实来源/清洗/恢复 |
+| P4 | AC-01、AC-02 | 首批真实上下文收集 |
+| P5 | AC-03、AC-04 | 原件/派生物与忠实清洗 |
+| P6 | AC-05、AC-06、AC-07、AC-08 | 核心先于检索/视图/输出 |
+| P7 | AC-09 | 扩展来源、Skill、Agent |
+| P8 | AC-10、AC-11 | 一致恢复与完整系统闭环 |
+
+## 13. 提交与验收纪律
+
+- P2 提交按文档/清单、责任文件、接口、composition roots、工程检查分组，不混入算法。
+- P3 以后每项功能提交引用 phase gate 和对应 AC/TC。
+- 功能阶段发现接口不对，先更新 03 架构/补充与 P2 蓝图，再改代码。
+- 真实数据、授权信息、数据库、模型输出和日志不进入 Git。
+- 未通过当前阶段门，不提前激活或宣告下一阶段。
+- 工作树中已有用户改动默认保留；不 reset、checkout、删除或盲目提交。

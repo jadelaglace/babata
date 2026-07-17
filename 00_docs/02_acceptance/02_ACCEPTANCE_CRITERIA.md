@@ -1,104 +1,248 @@
-# Babata Reboot Acceptance Criteria
+# Babata 验收规范
 
-## AC-01: External data root and Git boundary
+## 1. 文档职责
 
-The application resolves `BABATA_DATA_HOME`; all real SQLite files, source
-assets, exports, derived outputs, logs, runtime state, and credentials stay
-outside the repository. A Git scan finds only code, docs, tests, migrations, and
-templates.
+本文承接 `00_REQUIREMENTS.md` 和 `01_PRD.md`，只回答“什么可观察结果证明
+产品行为已经成立”。它不规定 crate 数量、文件清单、接口路径、命令名称、数据库
+表或具体测试代码；这些分别属于架构、开发流程和测试用例。
 
-## AC-02: Raw capture is append-only and contextual
+每个开发阶段可以引用本文的一部分作为阶段验收，但一个局部能力通过，不代表
+Babata 整体完成。没有真实资料参与的骨架、夹具或空接口，也不能证明一条真实
+产品路径已经可用。
 
-Text, a file/export, and a first-party note each create resolvable raw revisions
-with hashes, provider/source kind, capture/creation time, asset references, and
-collection/authoring context. Re-import or revision produces a linked record,
-not an overwrite.
+## 2. 通用判定规则
 
-## AC-03: Original media and wording survive processing
+- **可观察**：用户能够看到结果、状态、来源、限制和失败原因，不能只靠内部日志
+  或“代码已经存在”宣称完成。
+- **真实路径与机制分开**：合成夹具可以证明解析、状态和边界机制；来源只有经过
+  用户授权的真实资料验证后，才能显示为已支持。
+- **失败不伪装成功**：权限不足、附件缺失、来源不可达、处理失败和能力未实现都
+  必须保持明确状态。
+- **原件优先**：任何处理、理解、视图、输出和恢复操作都不能静默覆盖或丢失 C0。
+- **人工与模型可辨别**：模型建议、人工判断、外部原件和第一方创作在查看、检索
+  与输出时始终可区分。
+- **范围受控**：收集、批处理和输出都针对用户选择的单条、可见集合或明确范围；
+  连接成功、定时运行或 Agent 可用本身不构成全量操作授权。
 
-After text extraction, OCR, transcript, or a model run, the original raw text
-and every original asset hash/path remain unchanged and resolvable. Derivatives
-identify their input revision and processing run.
+## 3. 产品验收标准
 
-## AC-04: Processing is traceable and retryable
+### AC-01：来源上下文中的选择性收集
 
-A Bailian CLI/API run records tool/model/prompt or pipeline version, input hash,
-status, output hash, cost where supplied, and error/retry information. A failed
-run retries without changing raw data; a derivative can be deleted/rebuilt.
+关联产品行为：PRD-01。
 
-## AC-05: First-party creation, revision, and annotation are unified
+通过条件：
 
-An authored note, a revision, and an annotation of an external item are stored
-as first-party records with explicit version or relation links. The authored
-original remains readable without requiring any generated view.
+1. 对一个已连接的真实来源，用户在任何 C0 写入发生前，可以看到当前上下文中的
+   候选及其标题、来源位置/层级、类型、更新时间、附件可得性和已知限制；来源无法
+   提供的字段应明确为空或受限，而不是猜测补齐。
+2. 用户可以选择单条、当前可见集合或一个明确范围再开始收集；取消或未确认不会
+   因为“来源已连接”而触发静默全量复制。
+3. 飞书文档/Wiki/知识库与浏览器页面/选区/书签各有一条经过真实授权验证的上下文
+   收集路径。正常路径不要求用户手填导出文件路径、来源元数据或内部候选结构。
+4. 当正常连接不可用时，产品可以提供导出、文件、复制、截图或录屏等恢复路径，
+   但界面与能力状态会如实说明它是回退路径及其信息损失。
+5. 一个来源只有在内容、上下文、附件、限制和重收集行为被真实验证后，才显示为
+   已支持；预留适配器、合成夹具或未经授权的测试不满足该条件。
+6. 对 00 已列出的每个来源，都存在可核验的工具路线调查：官方能力、CLI/SDK、浏览器
+   插件/用户脚本、Agent 可调用工具和维护中的开源方案已比较；选择路线说明最小授权、
+   实际调用证据和限制。成熟工具可用时，不以自建适配器或手工导出替代。
 
-## AC-06: Search and views have no hidden authority
+### AC-02：收集状态、失败与重收集
 
-Local search locates raw and derived content by text and metadata and exposes
-source/assets/processing lineage. Removing a generated Obsidian or export view
-does not remove raw, derived, or first-party records and the view can rebuild.
+关联产品行为：PRD-02。
 
-## AC-07: Route enablement is evidence based
+通过条件：
 
-A source route is marked enabled only after an authorised test/import records
-its coverage, limitations, metadata/attachment result, and re-import behaviour.
-Unauthorized, incomplete, or failed routes remain explicit and do not claim
-support.
+1. 一次收集中的每条资料都能独立显示 `queued`、`running`、`saved`、`skipped`
+   或 `failed`；集合进度不会遮蔽单条结果。
+2. 单条失败会显示可理解原因和可执行的重试入口，重试不会丢失同一批次中已经
+   保存成功的资料，也不会重复覆盖成功原件。
+3. 对同一来源再次收集时，每条资料会得到 `changed`、`unchanged`、
+   `inaccessible` 或 `removed` 结果；暂时不可访问不会被当作已经删除。
+4. `changed` 会形成可追溯的新版本或新收集事件；`unchanged` 也保留本次检查结果；
+   任何结果都不会原地改写旧原件或旧来源记录。
+5. 查看一次收集或重收集时，可以看到来源、账号/作者、来源标识、来源与采集时间、
+   上下文、附件、原始哈希、工具版本及已知访问限制中实际可得的部分。
 
-## AC-08: Backup is SQLite consistent
+### AC-03：原件、第一方资料、派生物和视图保持可辨别
 
-An isolated restore from an encrypted incremental backup yields readable SQLite
-indexes and assets whose sampled hashes match the snapshot manifest. NAS/cloud
-replication consumes the created snapshot rather than a live SQLite file.
+关联产品行为：PRD-03。
 
-## AC-09: Rust core is the only persistent writer
+通过条件：
 
-Every repository mutation path is implemented or specified through the Rust
-core's CLI/API/use-case layer. Rust is the default implementation for all
-application capabilities. JavaScript browser code and exception-only Python
-adapters can only submit capture/process candidates or invoke the CLI; they have
-no SQLite driver configuration, direct database write path, asset-finalisation,
-queue-state, or business-rule path.
-The local API listens only on loopback, rejects requests without an
-installation-local token, and shares the same use-case implementation as the
-CLI rather than duplicating business rules.
+1. 收集文本、文档、图片、音频或视频后，对应原文、原文件或原媒体仍可读取并可
+   校验；后续处理不改变它们的内容和哈希。
+2. OCR、转写、字幕、关键帧、视觉描述、摘要、标签、结构化结果和模型理解以独立
+   派生结果存在，并能回到输入版本、来源上下文和处理记录。
+3. 用户查看一项资料时，可以辨别它是外部原件、第一方资料、机器派生结果还是
+   可重建视图；任何一种类型都不会冒充另一种类型。
+4. 删除或重建派生物、搜索索引、子库物化结果或展示视图，不会删除或改变 C0。
+5. 内容、附件或来源信息不完整时，该资料仍可保留，但会明确显示缺失和限制，
+   不会被表现成完整原件。
 
-## AC-10: Rust dependency direction is explicit and acyclic
+### AC-04：清洗忠实、可检查、可重试
 
-The Rust workspace separates pure domain types, application use cases and port
-traits, infrastructure implementations, and delivery composition roots. Domain
-has no IO dependencies; application has no SQLite/filesystem/HTTP/provider
-dependencies; infrastructure implements application ports; CLI/API/worker wire
-dependencies and contain no business decisions. Dependency checks and tests
-reject reverse imports or a second persistence writer.
+关联产品行为：PRD-04。
 
-## AC-11: Whole-system skeleton is complete and coherent
+通过条件：
 
-Before any single module is accepted functionally, the architecture names and
-the P2 workspace establishes the full module skeleton: six Rust crates, all
-planned Rust source files, application services and ports, CLI command groups,
-loopback API routes, worker lifecycle, source/process/view/backup adapter
-locations, peripheral browser/Python boundaries, Skill specifications,
-migrations, tests, engineering scripts, configuration templates, and external
-tool ownership.
+1. 每个被声明支持的清洗能力都能展示输入、处理步骤、工具或模型、版本、状态、
+   输出、输出哈希和错误信息；使用外部模型时还能看到实际可得的任务与成本信息。
+2. 文档/网页提取、PDF/图片 OCR、音视频转写、字幕、关键帧、视觉描述和媒体元数据
+   中每个已启用能力都有对应的真实样本结果；尚未启用的能力明确返回不可用。
+3. 失败处理可以在不改变原件的前提下重试；同一输入的多次处理结果可以并存、比较
+   或删除后重建，而不是静默替换成新的唯一真相。
+4. 对包含视觉、时序、语气或版式信息的样本，用户可以从派生结果回看原件，并能
+   看见转换已知会损失什么。
+5. 百炼 CLI 是首个可实际使用的多模态处理路径；后续百炼/通义 API 或批处理使用
+   同一套可追溯与不覆盖原件的验收规则。
 
-The complete workspace compiles and every file/interface has one owner, allowed
-dependencies, forbidden dependencies, activation phase, and test home. Inactive
-capabilities return an explicit unavailable state; they do not perform real
-provider calls, claim support, introduce a second writer, or require one module's
-functional acceptance to close P2. Early raw-capture code may remain but is not
-accepted until P3.
+### AC-05：核心区能够形成可持续的个人沉淀
 
-## Traceability
+关联产品行为：PRD-05。
 
-| Requirement / PRD | Acceptance | Test |
+通过条件：
+
+1. 用户审阅资料时，可以同时查看相关原件、派生内容、来源、版本、限制和已有关系，
+   不必在彼此断开的工具中猜测它们是否属于同一资料。
+2. 用户可以针对资料建立自己的记录、关系、分类、主题/结构模型、评分和分析，
+   并在之后检索、回看和继续修订这些人工成果。
+3. 每一项人工判断都保留作者、时间、目标、依据或关联来源及自身版本；修改形成
+   新版本，旧判断仍可回看，不直接改写被判断的资料。
+4. 模型生成的摘要、标签、关系、分类、评分或分析建议始终标明模型身份。未经明确
+   确认，它不会出现在“人工判断”或“已确认事实”中，也不会成为唯一分类。
+5. 用户接受、修改或拒绝模型建议时，结果和原建议都可追溯；接受或修改会形成新的
+   人工记录，而不是把机器记录改名为人工记录。
+6. 至少一个真实工作例能够从“审阅一条资料”走到“形成可回顾、可关联、可继续使用
+   的个人沉淀”，而不以全文搜索或原始库浏览代替核心工作。
+
+### AC-06：第一方创作与版本关系完整
+
+关联产品行为：PRD-06。
+
+通过条件：
+
+1. 用户可以新建笔记、草稿或反思；新建内容作为 first-party C0 资料进入同一权威
+   链路，不依赖生成视图才能读取。
+2. 修改第一方内容会创建可追溯的新版本，版本历史能够按顺序阅读，旧措辞和附件
+   保持不变。
+3. 对外部或第一方资料写批注时，批注是独立的第一方资料，并明确关联被批注目标
+   及其当时版本。
+4. 人工判断、第一方正文和模型内容在创建、查看、检索和输出时保持可辨别。
+5. 删除编辑器缓存、Obsidian、网页视图或其他 C2 输出后，第一方内容、版本和批注
+   仍完整可读并可重新生成视图。
+
+### AC-07：检索、回看、关系与子库可用
+
+关联产品行为：PRD-07。
+
+通过条件：
+
+1. 用户可以按正文、来源、时间、类型、状态、人物、人工分类、关系及处理情况组合
+   检索，并从结果进入原件、版本、派生物、人工记录和相关资料。
+2. 只有原始媒体、附件、受限状态或尚无可搜索文本的资料仍能按元数据和关系被找到，
+   不会因为没有转写/OCR 而从系统中消失。
+3. 用户可以为主题、项目、阶段或传播目标保存一个子库定义，明确它的选择范围、
+   人工纳入/排除和组织规则。
+4. 子库的人工定义与用户判断受到权威保护；从该定义生成的文件、索引或展示结果
+   可以删除并重建，不需要维护第二套同步资料。
+5. 沿关系、版本和来源导航时不会出现断链到已被覆盖内容；目标受限或缺失时显示
+   明确状态。
+
+### AC-08：输出可追溯、可批量且不反写权威资料
+
+关联产品行为：PRD-08。
+
+通过条件：
+
+1. 用户可以对单项或明确范围生成至少一种供人阅读的输出和一种供其他应用消费的
+   结构化输出；每次生成都有范围、时间、版本和生成状态。
+2. 输出包含其用途所需的来源、版本和引用信息，用户能够从输出定位回权威资料。
+3. 报告、卡片、文章、网页、Obsidian 或其他输出形态只有在实际实现并验证后才显示
+   可用；未确定的最终产品形态保持开放，不以空入口冒充支持。
+4. 输出和视图默认只读；对输出文件的修改或删除不会反向改写或删除 C0/C1、人工
+   关系、子库定义和历史版本。
+5. 使用同一资料范围和明确的生成版本可以重建输出；无法完全重现的外部依赖和差异
+   会被记录，而不是静默声称结果相同。
+
+### AC-09：Skill、脚本、浏览器入口与 Agent 受控
+
+关联产品行为：PRD-09。
+
+通过条件：
+
+1. Skill、脚本、浏览器插件或 Agent 调用一项能力时，返回与本地核心一致的状态、
+   结果引用、限制和失败原因；底层能力不可用时明确拒绝，不模拟成功。
+2. 任一外围入口提交的资料都能在统一权威链路中找到；入口自身不存在最终原件、
+   核心记录、队列结果或数据库的另一份权威写入。
+3. 日常收集、处理和知识判断默认需要用户触发或确认。批处理必须展示并限制所选
+   范围，取消后不会继续扩张到未授权资料。
+4. Agent 或定时任务不会仅因连接、登录或具备权限就自动全量收集，也不会自动把
+   模型判断升级为事实或覆盖人工内容。
+5. 一项 Skill 只有在对应本地能力通过自身验收后才显示可用；Skill 的测试不能替代
+   被调用能力的真实验收。
+
+### AC-10：本地权威、数据分级与恢复成立
+
+关联产品行为：PRD-10。
+
+通过条件：
+
+1. 在一个新环境中配置外部数据根后，真实原件、数据库、派生结果、视图、日志、
+   凭据和运行状态均落在该数据根或受保护的本地配置位置；Git 工作区只包含代码、
+   文档、测试、迁移和配置模板。
+2. 从收集器、第一方创作、Skill、脚本、处理器和输出入口分别执行操作后，所有最终
+   资料都能在同一权威体系中解析，没有入口私自形成无法被核心看到的最终副本。
+3. C0 原件与第一方资料按版本追加并获得最高保护；C1 可追溯和重建；C2 可删除重建；
+   C3 可清理。对每一级执行允许的删除/重建操作不会跨级误删权威资料。
+4. 备份来自一致的数据快照而不是正在变化的半成品。把备份恢复到隔离数据根后，
+   原件、第一方版本、关系、派生记录和必要索引可读取，抽样哈希与清单一致。
+5. 缓存、视图、运行日志或凭据缺失不会被误报为 C0 丢失；真正的原件缺失或校验
+   失败会阻止恢复验收并给出明确报告。
+
+### AC-11：完整的本地 raw-to-view 闭环
+
+关联产品行为：PRD-01 至 PRD-10。
+
+Babata 的首个系统级闭环只有同时满足以下结果才通过：
+
+1. 用户从一个真实授权的来源上下文中选择资料，并看到逐条收集状态；同时创建一条
+   第一方资料。
+2. 两项资料的原件、来源、版本和附件可回看；对其中一项执行真实清洗后，原件保持
+   不变且派生结果可追溯。
+3. 用户在核心区基于这些资料形成至少一项人工判断和一条关系，模型建议若参与则
+   保持为可辨别的建议。
+4. 用户能够检索到原件、派生结果和人工沉淀，把它们组织进一个子库，并生成一个
+   可回溯来源的输出。
+5. 删除并重建输出/视图后，C0、C1、人工判断、关系和子库定义不变；执行隔离恢复后，
+   同一链路仍可读取。
+6. 在收集或处理环节注入一次局部失败后，成功项仍保留，失败项可重试，整个链路不
+   产生被伪装成成功的半成品。
+
+仅完成目录、接口、命令、数据库结构或某一个模块的功能，不满足 AC-11。
+
+## 4. PRD 追溯
+
+| PRD | 直接验收 | 系统级验收 |
 | --- | --- | --- |
-| PRD-01 | AC-01, AC-02, AC-07 | TC-01, TC-02, TC-07 |
-| PRD-02 | AC-02, AC-05 | TC-02, TC-05 |
-| PRD-03, PRD-04 | AC-03, AC-04 | TC-03, TC-04 |
-| PRD-05 | AC-06 | TC-06 |
-| PRD-06 | AC-01, AC-07 | TC-07 |
-| PRD-07 | AC-09 | TC-09 |
-| PRD-07 | AC-10 | TC-10 |
-| PRD-07 | AC-11 | TC-11 |
-| Storage/recovery | AC-08 | TC-08 |
+| PRD-01 | AC-01 | AC-11 |
+| PRD-02 | AC-02 | AC-11 |
+| PRD-03 | AC-03 | AC-11 |
+| PRD-04 | AC-04 | AC-11 |
+| PRD-05 | AC-05 | AC-11 |
+| PRD-06 | AC-06 | AC-11 |
+| PRD-07 | AC-07 | AC-11 |
+| PRD-08 | AC-08 | AC-11 |
+| PRD-09 | AC-09 | AC-11 |
+| PRD-10 | AC-10 | AC-11 |
+
+## 5. 不属于产品验收的事项
+
+以下内容可以是架构约束或阶段门槛，但不能单独证明 PRD 已完成：
+
+- crate、目录、文件、service、port、命令或 endpoint 数量；
+- 代码能够编译、空命令能够返回或迁移文件已经存在；
+- 未连接真实调用者的本地 API；
+- 未运行真实资料的来源、模型或 Skill 占位实现；
+- 合成夹具通过但真实授权路径尚未验证；
+- 某一个模块通过，而四段 raw-to-view 闭环尚未成立。

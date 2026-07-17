@@ -1,394 +1,487 @@
-# Babata Reboot Technical Architecture
+# Babata 全局技术架构
 
-## 1. Architectural decision
+## 1. 架构职责与依据
 
-Babata is one Rust application workspace with local SQLite databases and an
-external numbered data root. Rust is the default implementation for every
-capability and the sole business/persistence core. The system is CLI-first, with
-an optional loopback API for genuine local callers. JavaScript/TypeScript and
-Python are constrained boundary exceptions, never alternative application cores.
+本文承接：
 
 ```text
-Skill / shell / scheduler              browser extension or local UI
-          |                                           |
-          +------------- babata CLI -----------------+
-                                |                       |
-                                +--- loopback API -------+
-                                           |
-                                 Rust application core
-       +---------------------------+--------------------------+
-       |                           |                          |
- raw capture/workspace        process/worker              explore/views/ops
-       |                           |                          |
- raw.sqlite + raw assets       derived.sqlite            generated views/snapshots
+00_REQUIREMENTS.md
+  -> 01_PRD.md
+  -> 02_ACCEPTANCE_CRITERIA.md
+  -> 03_ARCHITECTURE.md（本文）
 ```
 
-This is an in-process architecture, not a networked microservice graph. The API
-is a convenience entry point that invokes the same Rust use cases as the CLI.
+00 决定真实目的和不可丢失的约束，01 决定用户可见行为，02 决定可观察的完成结果。
+本文只回答：信息如何流动、哪些模块承担责任、每类数据由谁拥有、哪些技术边界防止
+产品意图再次被实现细节缩窄。
 
-The complete P2 file inventory, interfaces, commands, routes, tools and
-peripheral skeleton are defined in
-[system skeleton blueprint](04_SYSTEM_SKELETON_BLUEPRINT.md). The delayed P3
-raw-storage implementation detail is preserved separately in
-[raw foundation blueprint](05_RAW_FOUNDATION_BLUEPRINT.md). Both are part of
-this architecture.
+文件清单、精确方法数量、命令树和 endpoint 清单属于架构补充或 P2 骨架蓝图；阶段
+顺序和完成状态属于开发流程。它们不得反过来改写本文的四段边界与数据权威。
 
-## 2. Repository layout and Rust workspace
+## 2. 总体架构决策
 
-The numbered repository layout remains the governing physical layout. Rust code
-under `01_app/` is a Cargo workspace rather than a collection of standalone
-applications.
+Babata 当前采用一个本地优先的模块化单体和一个代码仓库。Rust 是领域规则、应用
+用例、持久化、迁移、处理编排、来源适配、worker、备份和恢复的默认实现，也是唯一
+可以最终写入权威资料的核心。
+
+四段是同一个应用内部的逻辑边界，不是四个仓库、四个网络服务或四套协议：
+
+```text
+来源中的窄收集入口 / 第一方创作入口
+                    |
+                    v
+        +---------------------------+
+        |       Rust 应用核心       |
+        |                           |
+        | 收集 -> 清洗 -> 核心 -> 输出 |
+        +---------------------------+
+             |       |       |
+             v       v       v
+            C0      C1      C2
+             \_______ C3 ______/
+                    |
+             BABATA_DATA_HOME
+```
+
+正常日常体验不是 CLI-first。飞书来源、浏览器页面/书签和未来来源应在用户正在阅读、
+收藏或整理资料的上下文中提供候选与确认。命令行是自动化、恢复、诊断和运维入口；
+浏览器扩展或确有需要的窄本地 UI 通过受保护的 loopback API 调用同一应用用例。
+
+本地 API 不是第二套业务实现，也不因“未来可能使用”而扩张成对外平台 API。只有
+出现真实本地调用者时才启用对应路由。模块、仓库、服务或协议的进一步拆分，需要
+独立部署、权限、生命周期、团队或发布节奏等真实证据。
+
+## 3. 端到端信息流
+
+### 3.1 发现候选，不等于收集
+
+```text
+已授权来源上下文
+  -> SourceAdapter 只读发现
+  -> CandidateSummary 列表
+  -> 用户选择单条 / 可见集合 / 明确范围
+```
+
+候选发现只读取当前授权范围，并产生临时会话状态。连接来源、列出候选或打开页面
+不会创建 C0。候选至少携带实际可得的标题、来源位置/层级、类型、更新时间、附件
+可得性和限制；缺失字段保持缺失，不由适配器猜测。
+
+### 3.2 被选择的资料进入统一 C0 路径
+
+```text
+CollectionSelection
+  -> 来源适配器读取被选内容
+  -> AcquisitionPackage（原件 + 来源 + 上下文 + 限制）
+  -> Rust 核心校验、暂存、计算哈希
+  -> 一次权威提交
+  -> C0 原件、版本、附件和溯源
+```
+
+来源适配器、浏览器扩展、Skill 和 Python 工具只能提交候选或读取被授权输入。ID 分配、
+版本判断、资产最终落盘、关系建立和持久化提交全部由 Rust 应用用例完成。
+
+### 3.3 清洗从 C0 读取，向 C1 追加
+
+```text
+C0 revision
+  -> 用户选择或明确范围的处理任务
+  -> 本地解析器 / Bailian CLI / 后续 Bailian API
+  -> 处理运行记录
+  -> C1 派生物
+```
+
+处理器不接收权威数据库写权限。它只读取批准的输入，在受控暂存区产生输出，再由
+Rust 核心校验和登记。失败、重试或重跑都不修改 C0。
+
+### 3.4 核心区把审阅变成人工沉淀
+
+```text
+C0 原件 + C1 派生物 + 已有关系
+  -> 审阅
+  -> 第一方记录 / 判断 / 关系 / 分类 / 模型 / 评分 / 分析
+  -> 新的 C0 人工资料或版本
+```
+
+模型可以在 C1 生成建议。用户接受、修改或拒绝建议后，人工结果作为新的 first-party
+C0 记录存在，并引用原建议和证据；机器记录本身不会被改名为人工判断。
+
+第一方新写内容可以直接进入 C0 以保留原味，不要求先经过清洗。之后如需提取结构、
+摘要或其他处理，再从该第一方版本产生 C1。
+
+### 3.5 输出只读消费权威资料
+
+```text
+C0 + C1 + 可重建读模型
+  -> 检索 / 关系导航
+  -> 子库定义（人工组织属于 C0）
+  -> 子库物化 / 报告 / 网页 / Obsidian / 应用输出（C2）
+```
+
+子库的人工选择、排除和组织规则是用户沉淀的一部分，不能随视图删除；根据这些规则
+生成的文件、索引和展示结果属于 C2。任何 C2 builder 都只读 C0/C1，不获得反写
+权威资料的能力。
+
+## 4. 数据分级与唯一权威
+
+| 级别 | 权威内容 | 允许的写入者 | 删除与重建规则 |
+| --- | --- | --- | --- |
+| C0 | 外部原件、原始媒体、来源快照、第一方正文及版本、批注、人工判断、人工关系/分类/模型/评分/分析、子库定义 | Rust 应用用例 | 内容不原地覆盖；修改追加版本或新事件；最高优先备份 |
+| C1 | 提取文本、OCR、转写、字幕、关键帧、视觉描述、摘要、标签、结构化结果、模型建议、处理运行记录 | Rust 应用用例登记处理器输出 | 可并存、比较、删除后重建；必须引用 C0 输入和处理身份 |
+| C2 | 搜索投影、子库物化、Datasette/Obsidian、网页、报告、卡片、导出包及其他生成视图 | Rust 控制的只读 builder | 可整体删除重建；不拥有 C0/C1，不接受反向编辑 |
+| C3 | 候选会话、队列租约、缓存、临时文件、日志、运行指标和能力状态 | Rust runtime；外围仅能持有本地临时会话 | 可清理；终态收集/处理结果需归档到对应 C0/C1 溯源记录 |
+| 机密配置 | 来源令牌、API 密钥、本地 API 凭据和隐私授权 | 受保护配置组件 | 不进入 Git、候选包、日志、视图或备份明文清单 |
+
+所有数据类都使用稳定标识和相对数据根的逻辑资产键。真实资料只有一条最终持久化
+路径；外围产生的临时副本不因存在文件就成为权威。
+
+### 4.1 C0 的版本规则
+
+- 收集到的新资料创建资料与首个版本；同一来源的变化创建新版本或新收集事件。
+- `unchanged`、`inaccessible` 和 `removed` 是重收集结果，不重写旧版本。
+- 第一方修改创建新版本；批注是独立资料并关联目标版本。
+- 人工判断的修订创建新版本；人工关系、分类、模型和评分的变化保留历史。
+- 物理资产按内容哈希保留，去重只共享不可变资产，不删除收集事件和来源差异。
+
+### 4.2 溯源最小集
+
+每个 C0/C1 结果在实际可得范围内保留：
+
+```text
+稳定输入标识
+来源链接、导出路径或原生标识
+来源平台、账号/作者和上下文层级
+来源时间、收集时间或创作时间
+原始内容与附件哈希
+适配器、工具、模型、pipeline 和版本
+运行状态、限制、错误与重试关系
+输出标识与哈希
+```
+
+缺少关键溯源的资料进入明确的受限/隔离状态，不会被伪装成完整资料或已确认知识。
+
+## 5. 逻辑能力边界
+
+下面是应用内部责任，不是需要网络化的服务。
+
+| 能力边界 | 主要责任 | 明确禁止 |
+| --- | --- | --- |
+| CollectorSession | 连接已授权来源、发现候选、保存用户选择、显示逐条状态 | 不持久化最终原件，不做内容理解 |
+| Capture | 校验 acquisition、落 C0、建立来源/版本/附件、记录重收集结果 | 不生成摘要、分类或知识判断 |
+| Process | 选择 pipeline、排队、执行/重试、登记 C1 | 不修改 C0，不自动确认模型建议 |
+| Workspace | 新建、修订和批注 first-party 内容 | 不原地改写旧版本 |
+| Knowledge | 记录、关联、分类、建模、评分、分析；处理模型建议的接受/修改/拒绝 | 不把 C1 静默升级为人工事实 |
+| Explore | 检索、详情、版本/来源/关系导航 | 不成为持久化写入口 |
+| Sublibrary | 保存和修订人工子库定义，生成可重建物化请求 | 不复制出第二套权威资料 |
+| Output | 按明确范围生成报告、网页、Obsidian、结构化调用结果和 manifest | 不反写 C0/C1 |
+| Capability | 报告来源、处理器、Skill 和输出的真实可用性及限制 | 不因有占位文件就标记可用 |
+| Ops | 数据根状态、诊断、备份、隔离恢复和完整性报告 | 不把实时数据库目录当同步盘 |
+
+应用层的最小内部请求/结果概念如下，名称可以随实现演化，但责任不能越界：
+
+```text
+CandidateSummary       展示候选所需的来源上下文和限制
+CollectionSelection    用户明确选择的范围与授权
+AcquisitionPackage     原件、附件、来源、上下文、限制和适配器身份
+CollectionResult       逐条 queued/running/saved/skipped/failed 及引用
+RecollectionResult     changed/unchanged/inaccessible/removed 及旧新关系
+ProcessRequest/Result  输入版本、pipeline、授权范围、运行和 C1 引用
+KnowledgeRecord        人工记录/判断/分类/模型/评分/分析及版本
+SuggestionDecision     接受/修改/拒绝模型建议并生成的人工记录引用
+SublibraryDefinition   人工选择、排除、组织规则和版本
+OutputBuild            明确范围、格式、生成版本、manifest 和结果引用
+```
+
+只在真实调用者出现时固化序列化协议。应用内部 Rust 类型不是承诺给多个未来消费者的
+外部协议。
+
+## 6. 代码与依赖架构
+
+Rust 代码继续使用六个 crate 的单 workspace 结构：
 
 ```text
 01_app/
-├── Cargo.toml                     # workspace manifest
-├── 01_babata_domain/             # IDs, domain types, invariants, errors
-├── 02_babata_application/        # use cases, input/output types, port traits
-├── 03_babata_infrastructure/     # SQLite, assets, config, Bailian, backup, adapters
-├── 04_babata_cli/                # clap `babata` executable and composition root
-├── 05_babata_local_api/          # axum loopback API skeleton; disabled by default
-└── 06_babata_worker/             # queue worker and composition root
+├── 01_babata_domain/          # 领域类型、状态、版本与权威不变量
+├── 02_babata_application/     # 四段用例、请求/结果和 port traits
+├── 03_babata_infrastructure/  # SQLite、资产、来源、处理器、视图和备份实现
+├── 04_babata_cli/             # 自动化、恢复、诊断和运维 composition root
+├── 05_babata_local_api/       # 浏览器/窄本地 UI 的受保护 composition root
+└── 06_babata_worker/          # C3 任务领取与处理 composition root
 ```
 
-Names may be shortened in Cargo package metadata, but the numeric directories
-are retained for repository readability. The core crate dependency direction is:
+依赖方向固定为：
 
 ```text
 domain <- application <- infrastructure
        ^                ^
-       +---- cli / local_api / worker (composition roots) ----+
+       +--- cli / local_api / worker composition roots ---+
 ```
 
-- `01_babata_domain` contains no filesystem, SQLite, HTTP, provider, or CLI
-  dependency.
-- `02_babata_application` defines business invariants and the repository,
-  asset, provider, clock, and backup port traits it requires. It never imports
-  SQLite, filesystem, HTTP, provider SDK, or process-execution crates.
-- `03_babata_infrastructure` is the only component that opens raw/derived
-  SQLite or finalises assets under the data root. It implements application
-  ports and supplies Rust source importers, Bailian providers, and backup
-  drivers.
-- CLI, API, and worker are composition roots: they construct infrastructure,
-  call application use cases, map I/O, and contain no business decisions.
-- Skills, JS, and Python are callers or candidate producers; provider adapters
-  may read inputs and return outputs but never write data directly.
+- `domain` 不依赖文件系统、SQLite、HTTP、provider SDK、CLI 或 UI。
+- `application` 定义用例与所需 port，不导入具体数据库、文件系统、HTTP、SDK 或
+  进程执行实现。
+- `infrastructure` 实现持久化、资产、来源适配、处理 provider、读模型、视图和备份。
+- CLI、local API 和 worker 只做鉴权、输入映射、依赖装配与结果映射，不复制业务规则。
+- 任何 crate 都不能绕过 application 用例另建 C0/C1 写入路径。
 
-P2 creates all six crate and module skeletons before a single capability is
-accepted. Existing raw-capture implementation is retained as early P3 work, but
-P2 completion is determined by whole-workspace structure, ownership and compile
-checks rather than raw-capture behaviour.
+### 6.1 应用 ports
 
-The rest of the repository skeleton is:
+架构需要以下责任边界；精确 trait、方法和文件由 P2 骨架蓝图维护：
 
-```text
-02_skills/       inactive Skill specifications first; live SKILL.md later
-03_migrations/   raw / derived / runtime migration ownership
-04_tests/        architecture / contract / integration / end-to-end / fixtures
-05_scripts/      inventory, boundary, ownership, traceability, writer checks
-06_config/       app, routes, providers, pipelines, views, privacy, backup templates
-08_adapters/     browser TypeScript boundary and exception-only Python bridge
-```
-
-## 3. Runtime configuration and data root
-
-The executable resolves `BABATA_DATA_HOME` first, then an explicit config path,
-then a documented local default. The initial default is
-`C:\Users\Aiano\BabataData`.
-
-```text
-00_inbox/     temporary external exports and first-party input
-01_raw/       raw index, originals, imports, quarantine, manifests
-02_derived/   derived index, text/media/structured artifacts
-03_views/     Datasette, Obsidian, exports, sublibraries
-04_runtime/   queue, cache, indexes, sessions, protected local config
-05_logs/      capture, process, views, operations logs
-```
-
-Configuration types:
-
-```text
-DataRootConfig       data root and partition resolution
-SqliteConfig         journal mode, busy timeout, migration policy
-ProviderConfig       provider executable/endpoint/model selection; no secrets in Git
-PrivacyPolicy        source/type processing permission and upload rules
-ApiConfig            loopback bind, enabled flag, token location, allowed origins
-BackupConfig         snapshot staging and target policy
-```
-
-Database paths and asset references are logical keys relative to numbered
-partitions. Moving `BABATA_DATA_HOME` does not modify row content.
-
-## 4. Persistence and concurrency model
-
-`raw.sqlite` is the authority for sources, contexts, items, immutable revisions,
-raw assets, and relations. `derived.sqlite` is the authority for process runs,
-jobs, and derivative artifacts. Their schemas live in
-`03_migrations/01_raw` and `03_migrations/02_derived`; a migration ledger is
-stored in each database.
-
-SQLite runs in WAL mode with foreign keys enabled, a bounded busy timeout, and
-short write transactions. A write use case validates input, stages/copies assets
-into a temporary partition, hashes them, starts `BEGIN IMMEDIATE`, inserts rows,
-atomically finalises staged files, and commits. Failure removes staging or leaves
-an explicit recoverable journal entry; it never presents a partial revision as
-complete.
-
-The initial topology is one active writer machine. A worker claims process jobs
-transactionally with a lease/heartbeat; it may process many jobs concurrently,
-but each claim/result transition is short and transactional. NAS/cloud is backup
-or restored-copy storage, not a live multi-writer database mount.
-
-## 5. Domain types and core services
-
-These are Rust types/use cases, not external contracts. They are intentionally
-small enough to evolve with the working system.
-
-```text
-SourceKind             External | FirstParty
-RevisionKind           Capture | Import | Authored | Edit | Annotation
-ContentType            Text | Document | Image | Audio | Video | WebPage | Archive | Unknown
-DerivativeKind         FaithfulText | OcrText | Subtitle | Transcript |
-                       VisualDescription | Keyframes | Summary | Structure | Interpretation
-ProcessingState        Queued | Running | Succeeded | Failed | Skipped | Cancelled
-AssetRole              Original | Attachment | Export | Cover | Derived | Preview
-RelationKind           Revises | Annotates | Quotes | RespondsTo | RelatedTo
-CapabilityStatus        Planned | Scaffolded | Available | Disabled | Unavailable
-```
-
-Core request/result types:
-
-```text
-CaptureRequest         source kind/provider/locator/context/raw payload/assets/metadata
-CaptureResult          item ID/revision ID/asset IDs/duplicate signal/status
-CreateRequest          first-party content/authoring context/assets/metadata
-ReviseRequest          parent revision/content/assets/revision note
-AnnotateRequest        target item/revision/content/authoring context
-ProcessRequest         raw revision/pipeline/options/priority/privacy approval
-ProcessResult          process run/job IDs/state/derivative IDs/cost/error
-QueryRequest           text/metadata/source/time/type/status filters/page cursor
-RecordDetail           item/revisions/assets/relations/derivatives/lineage
-BuildViewRequest       view kind/filter/template/build target
-BackupRequest          partition scope/staging target/verification mode
-```
-
-Use-case service interfaces:
-
-```text
-CaptureService.capture(CaptureRequest) -> CaptureResult
-WorkspaceService.create(CreateRequest) -> CaptureResult
-WorkspaceService.revise(ReviseRequest) -> CaptureResult
-WorkspaceService.annotate(AnnotateRequest) -> CaptureResult
-ProcessService.enqueue(ProcessRequest) -> ProcessResult
-ProcessService.run_once(job_id) -> ProcessResult
-ProcessService.retry(job_id) -> ProcessResult
-ExploreService.search(QueryRequest) -> Page<RecordSummary>
-ExploreService.show(item_or_revision_id) -> RecordDetail
-ViewService.build(BuildViewRequest) -> BuildResult
-OpsService.status() -> SystemStatus
-OpsService.backup(BackupRequest) -> BackupResult
-OpsService.restore_verify(snapshot_ref) -> RestoreReport
-RouteService.list() -> Vec<SourceRouteDescriptor>
-RouteService.show(route_id) -> SourceRouteDescriptor
-RouteService.evaluate(route_id, input) -> RouteCoverage
-RouteService.collect(route_id, request) -> CaptureResult
-CapabilityService.list() -> Vec<CapabilityDescriptor>
-```
-
-Application port traits below those services:
-
-```text
-RawRepositoryPort      source/context/item/revision/relation transactions
-DerivedRepositoryPort  jobs/runs/derivatives transactions
-AssetStorePort         stage/hash/finalise/open asset by logical key
-JobRepositoryPort      enqueue/claim/heartbeat/complete/fail/retry
-ProcessProviderPort    prepare/run/poll/cancel/fetch output
-SourceAdapterPort      describe/probe/collect/coverage
-CandidateRunnerPort    execute peripheral adapter and parse candidate envelope
-ViewBuilderPort        query/read only, write generated view files
-BackupDriverPort       SQLite-consistent snapshot/restore/hash verification
-CapabilityRegistryPort list/get capability state and activation phase
-ClockPort              current time supplied to application services
-```
-
-No provider, adapter, or view builder receives a mutable database connection.
-Only the Rust `Sqlite*Repository` and `FileAssetStore` infrastructure
-implementations mutate persistent state, and only when called by an application
-use case.
-
-## 6. CLI surface
-
-The first executable is `babata`. Human operators, Skills, scheduled tasks,
-JS bridges, and Python wrappers prefer this interface. Output defaults to
-human-readable text; `--json` emits stable command result objects for automation.
-
-```text
-babata data status
-babata capture text --provider <name> --text <text> [--context <id>]
-babata capture file --provider <name> --path <file> [--context <id>]
-babata capture export --provider <name> --path <export> [--context <id>]
-babata capture candidate --path <candidate-envelope.json>
-
-babata create --path <file>|--text <text>
-babata revise --parent <revision-id> --path <file>|--text <text>
-babata annotate --target <item-or-revision-id> --path <file>|--text <text>
-
-babata process enqueue --revision <id> --pipeline <name> [--priority <n>]
-babata process run --job <id>
-babata process worker
-babata process status [--job <id>]
-babata process retry --job <id>
-babata process cancel --job <id>
-
-babata explore search <query> [filters]
-babata explore show <item-or-revision-id>
-babata views build datasette|obsidian [filters]
-
-babata routes list|show|evaluate
-babata ops backup [--scope raw|derived|all]
-babata ops restore-verify --snapshot <ref>
-babata ops doctor
-```
-
-P2 registers the complete command tree and stable request/result shells. Commands
-whose capability is not active return `capability_unavailable`. Later phases
-replace those shells with real use-case composition in dependency order; a live
-Skill is still created only after its corresponding command is working.
-
-## 7. Loopback local API
-
-The local API crate, request/response types and route tree are created in P2,
-but the server is disabled by default and begins listening only when a browser
-extension or local UI has a demonstrated need. When active it binds to
-`127.0.0.1` or `::1`, never a LAN interface. It has an installation-local
-bearer token stored outside Git and strict request-size/origin configuration.
-
-It maps directly to use cases; it is not a second implementation:
-
-```text
-POST /v1/captures/text              -> CaptureService.capture
-POST /v1/captures/file              -> CaptureService.capture
-POST /v1/captures/web               -> CaptureService.capture
-POST /v1/workspace/notes            -> WorkspaceService.create
-POST /v1/workspace/revisions        -> WorkspaceService.revise
-POST /v1/workspace/annotations      -> WorkspaceService.annotate
-POST /v1/process/jobs               -> ProcessService.enqueue
-POST /v1/process/jobs/{id}/retry    -> ProcessService.retry
-GET  /v1/process/jobs/{id}          -> job/run status
-GET  /v1/records/{id}               -> ExploreService.show
-GET  /v1/search                     -> ExploreService.search
-GET  /v1/health                     -> OpsService.status
-```
-
-The API returns command-result-style JSON IDs and status, never raw SQLite
-handles or direct filesystem authority. Asset upload/download, CORS policy,
-extension pairing, and web capture payload limits are implementation decisions
-for the later concrete development plan.
-
-## 8. Peripheral adapters
-
-### JavaScript / TypeScript
-
-Use only when browser execution is the most direct solution:
-
-```text
-browser extension/userscript
-  -> gather URL/title/selected or extracted DOM/declared page metadata
-  -> submit to loopback API after explicit local pairing
-  -> or save a candidate envelope for `babata capture candidate`
-```
-
-It does not include a SQLite driver, data-root write permission, provider
-credential store, or independent processing rules.
-
-### Python (exception only)
-
-Use only when a maintained Python-only parser/library/tool has a demonstrated
-benefit that a Rust crate, Rust implementation, or stable CLI cannot reasonably
-provide. Rust source importers are the default.
-
-```text
-versioned python child process
-  -> reads authorised input
-  -> writes temporary files only under 04_runtime staging
-  -> emits CandidateEnvelope JSON to stdout/file
-  -> Rust `CandidateRunner` validates and calls CaptureService
-```
-
-`CandidateEnvelope` contains provider/source/context metadata, text/file
-references relative to the adapter staging directory, declared asset roles,
-and adapter name/version. It contains no credentials or direct database paths.
-The Rust core hashes, copies/finalises assets, assigns IDs, and persists results.
-It records the child process name/version and rejects envelopes outside the
-declared staging root.
-
-## 9. Processing provider architecture
-
-`ProcessProvider` has two initial implementations:
-
-```text
-BailianCliProvider
-  - invokes configured `bl` executable for an approved pipeline
-  - stages only authorised inputs
-  - records command version, normalized arguments, task IDs, stderr/stdout refs,
-    output artifacts, cost when available, and exit/error state
-
-BailianApiProvider
-  - uses the configured Bailian/Qwen API for queued or batch execution
-  - manages submit/poll/fetch/cancel and provider task IDs
-  - follows the same ProcessProvider result path as the CLI provider
-```
-
-Pipeline definitions are versioned configuration, not hard-coded model truth:
-
-```text
-mechanical_document_extract
-faithful_text
-image_ocr_and_description
-audio_transcript
-video_subtitle_keyframes_and_description
-structure_and_summary
-```
-
-The pipeline decides which derivatives it may produce. A privacy policy resolves
-before any provider receives bytes; denied items remain raw and are reported as
-skipped rather than silently processed.
-
-## 10. Skills and views
-
-P2 first creates inactive Skill specifications around the complete CLI map:
-
-```text
-01_babata_capture   -> babata capture / create / revise / annotate
-02_babata_process   -> babata process
-03_babata_workspace -> babata create / revise / annotate / explore show
-04_babata_explore   -> babata explore / views build
-05_babata_ops       -> babata data / ops
-```
-
-Those specifications become live `SKILL.md` packages only after their mapped
-commands pass functional acceptance. Datasette opens local read-only SQLite/query views. Obsidian generation is a
-`ViewBuilder` target that writes only `03_views/02_obsidian`; deletion/rebuild
-does not affect raw or derived authority.
-
-## 11. Backup and recovery
-
-`BackupDriver` checkpoints/copies each SQLite database through SQLite's backup
-mechanism into isolated staging, records an inventory with logical asset keys
-and hashes, then invokes the selected encrypted incremental backup target.
-Restore writes to an isolated data root, opens indexes, and samples hashes before
-any operator switches a live data root. C0 raw/first-party data precedes C1
-derived data; C2/C3 may be rebuilt.
-
-## 12. Architecture coverage
-
-| Acceptance | Architectural enforcement |
+| Port | 责任 |
 | --- | --- |
-| AC-01 | DataRootConfig, relative asset keys, Git ignore boundary |
-| AC-02, AC-05 | RawRepository, Capture/Workspace services, immutable revisions |
-| AC-03, AC-04 | DerivedRepository, ProcessProvider, JobRepository, no raw writer |
-| AC-06 | Read-only QueryService and ViewBuilder |
-| AC-07 | Route evaluation records through CaptureService/configuration |
-| AC-08 | BackupDriver and isolated restore verification |
-| AC-09 | Rust domain/store/usecase ownership; CLI/API shared services; peripheral runner boundary |
-| AC-10 | Acyclic domain/application/infrastructure dependency rules and composition roots |
-| AC-11 | Complete P2 whole-system skeleton, 117-file Rust inventory, interface/tool ownership, inactive-capability behavior, and no-second-writer gates |
+| C0RepositoryPort | 来源、上下文、资料、版本、附件引用、第一方记录、人工知识记录、关系和子库定义的事务 |
+| C1RepositoryPort | 处理运行、派生物、模型建议及其输入/输出溯源 |
+| AssetStorePort | 暂存、哈希、最终落盘、打开和校验不可变资产 |
+| JobRepositoryPort | C3 队列、租约、心跳、完成、失败、重试和取消 |
+| SourceAdapterPort | 描述能力、只读发现候选、读取被选资料、报告覆盖和限制 |
+| ProcessProviderPort | 描述、准备、提交、轮询、取消和获取处理输出 |
+| ReadProjectionPort | 从 C0/C1 构建和查询可重建读模型 |
+| OutputBuilderPort | 只读生成 C2、manifest 和验证报告 |
+| BackupDriverPort | 一致快照、隔离恢复和哈希验证 |
+| CapabilityRegistryPort | 返回能力状态、证据、限制和依赖条件 |
+| ClockPort | 为可测试用例提供时间 |
+
+来源适配器、处理 provider 和 output builder 都不能获得可写数据库连接或资产最终
+落盘权限。
+
+### 6.2 JavaScript / TypeScript 边界
+
+只在浏览器环境确实最直接时使用：
+
+```text
+浏览器扩展 / user script
+  -> 读取当前 URL、标题、选区/页面、书签上下文和声明元数据
+  -> 展示候选并取得明确选择
+  -> 配对后提交 loopback API
+```
+
+浏览器端不包含 SQLite driver、数据根写权限、最终资产管理、知识判断或独立队列。
+
+### 6.3 Python 例外边界
+
+只有成熟的 Python-only 工具明显优于 Rust crate、Rust 实现或稳定 CLI 时才使用受控
+子进程。Python 读取明确授权的输入，只能写 C3 暂存区，并输出待校验的候选或处理
+结果；Rust 核心负责哈希、ID、版本、资产最终落盘和 C0/C1 提交。
+
+## 7. 数据根与持久化
+
+运行时优先解析 `BABATA_DATA_HOME`，再使用显式本地配置；仓库只保存配置模板。
+数据根采用编号分区：
+
+```text
+00_inbox/     用户明确放入的待处理文件与导出件；未收集前不是 C0
+01_raw/       C0 索引、原件、附件、来源快照、隔离区和 manifests
+02_derived/   C1 索引、派生文件和处理记录
+03_views/     C2 搜索投影、子库物化、Obsidian、网页和导出物
+04_runtime/   C3 队列、缓存、暂存、会话和受保护本地配置
+05_logs/      C3 收集、处理、输出和运维日志
+```
+
+初始实现可以继续使用：
+
+- `raw.sqlite`：C0 来源、上下文、资料、版本、资产引用、第一方记录、人工知识记录、
+  关系和子库定义；
+- `derived.sqlite`：C1 处理运行、派生物和模型建议；
+- `runtime.sqlite` 或等价运行存储：C3 队列、租约、会话和能力运行状态；
+- C2 索引/文件：可从 C0/C1 与生成配置重建。
+
+数据库记录只保存相对数据根的逻辑资产键。移动或隔离恢复数据根不需要批量改写
+权威行内容。
+
+### 7.1 写入与故障边界
+
+一次 C0/C1 提交遵循：
+
+```text
+校验输入和授权范围
+  -> 暂存并计算哈希
+  -> 开启短事务
+  -> 写入版本、关系、溯源和资产清单
+  -> 原子最终落盘
+  -> 提交终态
+```
+
+失败时清理暂存或留下明确可恢复 journal，不把半成品展示为 `saved`/`succeeded`。
+SQLite 使用外键、WAL、有限 busy timeout 和短写事务。初始拓扑只有一台活动写入
+机器；NAS/云端保存快照或恢复副本，不挂载为实时多写数据库。
+
+运行中的 `queued`/`running` 和 worker 租约属于 C3；最终收集结果、来源变化与处理
+运行溯源分别归档到 C0/C1，清理队列不会抹去已完成历史。
+
+## 8. 收集架构
+
+### 8.1 来源能力状态
+
+每条来源路径维护：
+
+```text
+planned -> scaffolded -> disabled -> available
+                         \-> unavailable（带原因）
+```
+
+代码或夹具存在最多证明 `scaffolded`。只有用户授权的真实路径验证了候选发现、内容、
+上下文、附件、限制、失败与重收集，才进入 `available`。能力状态由核心登记，适配器
+不能自报成功。
+
+### 8.2 适配器选择顺序
+
+1. 已实际验证、能被 Agent 或本地流程调用的官方 API、CLI、SDK 或官方客户端能力；
+2. 位于真实阅读上下文中的成熟浏览器扩展、用户脚本或浏览器自动化工具；
+3. 仍在维护、授权和输出边界清楚的开源工具或官方导出；
+4. 窄 Rust 适配器；
+5. PDF、复制、截图、录屏等受限恢复路径。
+
+不为了来源数量先造重型爬虫，不绕过访问控制。首批 `available` 目标是飞书文档/Wiki/
+知识库与浏览器页面/书签；具体来源工具与限制在来源路径补充文档中维护。
+
+选择任何路线前必须完成 `08_SOURCE_TOOL_RESEARCH.md` 的逐来源调查并保留官方文档、
+项目维护状态、实际调用、最小授权、数据覆盖和限制证据。provider 文件、候选协议、
+本地 fixture 和“可能可用”的工具名都不能代替调查。现有工具能够完成时，adapter
+只负责调用和规范化；不能为了统一内部形状重写已有工具能力。
+
+### 8.3 重收集判断
+
+来源原生标识与来源上下文用于找到既有资料，内容/附件哈希与可达状态用于判断
+`changed`、`unchanged`、`inaccessible` 和 `removed`。文本相同只代表可能重复，
+不删除新的收集事件；来源变化也不覆盖历史版本。
+
+## 9. 清洗与处理架构
+
+处理由可版本化 pipeline 编排。pipeline 可以组合机械提取、本地工具和模型步骤，
+但每一步都必须产生独立状态和溯源，且只声明自己能够产生的 C1 类型。
+
+首个多模态 provider 是百炼 CLI；百炼/通义 API 用于后续队列和批处理。两者实现同一
+`ProcessProviderPort` 责任，并记录可得的可执行文件/模型版本、规范化参数、provider
+任务标识、输入/输出哈希、错误、重试和成本。
+
+隐私策略在任何字节离开本机前执行。未获批准的资料保持 C0，并以 `skipped` 或受限
+状态结束，不静默上传。视频和音频处理保留原媒体；关键帧、字幕、转写和视觉描述
+分别登记，不能压成一个唯一权威文本字段。
+
+## 10. 核心沉淀架构
+
+核心区不等同于 `create/revise/annotate` 三个写作命令。它至少承载以下领域概念：
+
+```text
+FirstPartyContent      笔记、草稿、反思和正文版本
+Annotation             独立批注及其目标版本
+Judgment               人工判断、依据和版本
+Relation               人工或建议关系；人工与机器来源可辨别
+Classification         人工分类体系及资料归属
+KnowledgeModel         用户建立的主题、结构或其他模型及版本
+Score                  评分维度、值、依据和版本
+Analysis               分析记录、引用证据和版本
+ModelSuggestion        C1 机器建议
+SuggestionDecision     用户接受、修改或拒绝建议的行为
+```
+
+这些概念先以简单、可演化的记录和关系实现，不预先设计万能知识图谱或宏大 ontology。
+人工内容和机器建议使用不同类型与权威级别；确认机器建议会创建引用它的人工记录，
+而不是修改机器记录的作者或类型。
+
+核心工作需要读取原件、派生物、来源、版本和关系的聚合详情。读模型可以为体验优化，
+但写入仍通过 Workspace/Knowledge 用例进入 C0。具体审阅和建模 UI 保持开放，直到
+raw-to-view 闭环证明最有价值的交互。
+
+## 11. 检索、子库与输出架构
+
+Explore 从 C0/C1 构建可重建读投影，支持正文、来源、时间、类型、状态、人物、人工
+分类、关系和处理状态。没有 OCR/转写的媒体资料仍通过 C0 元数据、附件和关系进入
+索引；索引缺失不等于资料缺失。
+
+`SublibraryDefinition` 是带版本的 C0 人工资料，保存选择范围、人工纳入/排除和组织
+规则。子库 builder 根据定义产生 C2 物化结果。删除物化目录不会删除定义或成员的
+C0/C1。
+
+Output builder 接收明确范围与输出类型，只读权威资料并生成：
+
+```text
+输出文件或结构化结果
+生成 manifest
+输入资料与版本引用
+builder / 模板 / 配置版本
+成功、限制和错误状态
+```
+
+Obsidian、网页、报告、卡片和应用调用只是 builder 类型，不是新的存储权威。输出
+文件的外部修改默认不导回核心；未来若出现真实回写需求，必须作为新的明确输入和
+第一方版本重新进入统一链路。
+
+## 12. Skill、自动化与本地入口
+
+Capability registry 统一报告来源、处理、核心、输出、Skill 和运维能力的真实状态。
+Skill 规格可以提前存在，但只有底层用例通过对应验收后才成为可用 Skill。
+
+所有自动化请求都携带明确范围、调用身份和确认/授权信息。默认策略是：
+
+- 日常收集由用户在上下文中触发；
+- 批处理由用户选择范围后触发；
+- 模型建议不自动升级为人工判断；
+- 定时任务和 Agent 不自动扩张授权范围；
+- 任一入口得到与核心一致的结果状态和引用。
+
+CLI 暴露自动化、恢复、诊断和运维能力，也可作为底层功能调试入口，但不要求普通
+日常收集者手填内部路径和元数据。loopback API 只绑定 `127.0.0.1`/`::1`，使用安装
+级本地凭据、来源限制和请求大小限制，并直接调用相同 application 用例。
+
+## 13. 备份、恢复与完整性
+
+BackupDriver 通过数据库一致快照机制复制索引，冻结本次资产清单和哈希，再交给加密
+增量备份、NAS 或云端副本。优先级是 C0 > C1 > C2/C3；C2/C3 可按策略省略并在恢复
+后重建。
+
+恢复必须写入隔离数据根，完成数据库打开、迁移兼容、资产存在性和抽样/全量哈希
+验证后，才允许切换为活动数据根。恢复报告区分：
+
+- C0 缺失或损坏；
+- C1 可重建但当前缺失；
+- C2/C3 尚未重建；
+- 凭据需要重新授权。
+
+实时数据库目录不直接作为同步盘；备份系统消费一致快照，避免制造多个活动写入者。
+
+## 14. 验收标准到架构的追溯
+
+| 验收 | 架构责任 |
+| --- | --- |
+| AC-01 | CollectorSession、SourceAdapter、Selection、Capability registry、窄本地入口 |
+| AC-02 | CollectionResult、RecollectionResult、C3 状态与 C0 终态溯源分离 |
+| AC-03 | C0/C1/C2 类型边界、不可变资产、输入/输出关系和隔离状态 |
+| AC-04 | Process、Job、ProcessProvider、版本化 pipeline 和受控暂存 |
+| AC-05 | Knowledge 用例、人工知识记录、ModelSuggestion 与 SuggestionDecision |
+| AC-06 | Workspace、first-party 版本图和独立 Annotation |
+| AC-07 | Explore 读投影、关系导航、SublibraryDefinition 与 C2 物化 |
+| AC-08 | OutputBuilder、明确范围、manifest、只读生成和可重建 C2 |
+| AC-09 | Capability registry、统一 application 用例、范围授权和外围无写权 |
+| AC-10 | BABATA_DATA_HOME、唯一 Rust writer、C0-C3、BackupDriver 与隔离恢复 |
+| AC-11 | 同一 composition root 下贯通收集、清洗、核心、检索/子库、输出和恢复 |
+
+## 15. 架构补充文档的继承关系
+
+- `04_SYSTEM_SKELETON_BLUEPRINT.md` 负责 P2 目录、文件、service、port、命令、API、
+  worker、工具与测试位置。它必须补齐 CollectorSession、Knowledge、Sublibrary 和
+  Output 责任；旧的 8 service/11 port/117 文件清单若与本文冲突，以本文为准并重新
+  计算，不为保持数字而漏掉产品能力。
+- `05_RAW_FOUNDATION_BLUEPRINT.md` 与 `06_RAW_FOUNDATION_EXECUTION_PLAN.md` 负责
+  P3 C0 原始入库细节。它们可以先实现外部原件和第一方版本，但不得把 C0 永久缩窄
+  成“导入表”；后续人工知识记录继续使用同一权威与版本原则。
+- `07_P4_FIRST_COLLECTION_PATHS.md` 负责飞书与浏览器真实收集路径。它必须以来源
+  上下文候选、用户选择和真实连接为正常路径；手工导出只能是恢复或暂时回退路径。
+- `08_SOURCE_TOOL_RESEARCH.md` 负责逐来源现有工具调查、实际证据、最小授权和路线
+  决策。没有该证据，不允许用 adapter、协议或手工导出替代来源规划。
+
+补充文档不能新增产品决定，也不能以阶段已实现的局部能力覆盖 00–03 的全局边界。
+
+## 16. 保持开放的架构决定
+
+以下决定等待真实 raw-to-view 闭环提供证据：
+
+- 核心区审阅、关联、建模和长期管理的具体 UI 技术与交互形态；
+- 输出能力是否长期留在同一应用，或在出现独立部署/消费者后拆分；
+- 飞书和浏览器之后的来源顺序及每个来源的具体工具；
+- 哪些人工触发可以升级为人工确认或受控定时运行；
+- C0 人工知识记录的最终表结构和读投影策略；
+- 哪些本地 API 路由确实有浏览器扩展或窄 UI 调用者。
+
+这些开放项不阻止 P2 建立完整责任位置，但 P2 只能建立可演化骨架，不能用未验证
+的复杂协议、通用知识模型或空服务替用户提前做决定。

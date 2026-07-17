@@ -1,110 +1,250 @@
-# Babata Reboot PRD
+# Babata 产品需求文档
 
-## 1. Product definition
+## 1. 产品定义
 
-Babata is a local-first personal material system. It accepts external and
-first-party content into an immutable raw library, creates replayable multimodal
-derivatives, and exposes them through query and reading views. Human writing,
-revision, annotation, and judgement are first-party records, not manual edits
-to generated data.
+Babata 是一个本地优先的个人真实资料系统。它面对的不是单一收藏场景，
+而是散落在平台、设备和个人创作中的真实资料从进入、保留、清洗、理解、
+沉淀到再次使用的完整过程。
 
-## 2. Product surfaces
+Babata 的价值不在于建立很多协议、接口或宏观架构，而在于让下面这条链路
+长期可用，并且尽量低成本、低摩擦：
 
-| Surface | User outcome | Authority |
+```text
+外部来源 / 自己创作
+  -> 收集
+  -> 清洗和标准化接入
+  -> 消化、吸收、沉淀、建模和管理
+  -> 检索、子库、输出、传播和调用
+```
+
+产品成功不只意味着“资料已经入库”。资料还必须保留原貌和上下文，能够追溯、
+理解、关联和长期管理，并最终能在需要时被找到、组织和使用。
+
+## 2. 用户与使用起点
+
+当前主要用户是 Babata 的拥有者本人。用户通常从以下情境开始：
+
+- 正在飞书、浏览器、内容平台或聊天工具中阅读、收藏或整理资料；
+- 已有一批平台导出件、本地文件、书签、媒体或历史记录需要收进来；
+- 想写一篇新笔记、修改旧稿、记录反思，或对已有资料作批注和判断；
+- 想回看、检索、比较、分析或重新组织已经积累的资料；
+- 想把沉淀结果变成子库、报告、卡片、文章、网页或其他应用可用的输出。
+
+日常使用不应要求用户理解内部数据结构，也不应要求手填导出路径、来源元数据或
+候选协议。命令行可以服务自动化、恢复和运维，但不是正常收集体验的前提。
+
+## 3. 四段产品边界
+
+| 阶段 | 用户得到什么 | 这一阶段不做什么 |
 | --- | --- | --- |
-| Raw capture | Get text, files, exports, browser clips, and personal writing in quickly | `01_raw` |
-| Derived processing | Obtain faithful text, OCR, transcripts, visual/media derivatives, and optional model aids | `02_derived` |
-| Workspace | Create/revise/annotate material and connect it to other records | First-party raw revisions and relations |
-| Views | Search, read, filter, export, and optionally browse generated notes | Rebuildable only |
-| Skills | Let people/agents invoke real local commands safely | No data authority |
+| 收集 | 在来源上下文中发现和选择资料，看到逐条进度，并把原件连同来源上下文可靠拿到 | 不深入理解、不做知识判断、不改写内容 |
+| 清洗 | 得到可继续使用的文本、结构、字幕、关键帧和媒体信息，同时保留原件与处理记录 | 不覆盖原件，不把模型解释当成事实 |
+| 核心 | 审阅、理解、记录、关联、分类、建模、评分、分析、沉淀并长期管理资料 | 不把自动生成结果静默升级为知识真相 |
+| 输出 | 检索、阅读、筛选、回看、组织子库并生成各种可消费结果 | 默认不反向修改权威资料，不成为第二套存储 |
 
-## 3. Main behaviours
+四段必须边界清楚，但对用户仍是一条连续链路。一个入口、适配器或视图不能绕过
+这条链路成为隐藏的数据权威。
 
-### PRD-01: Unified capture
+## 4. 产品行为
 
-`babata capture` accepts text, local files, authorised exports, and later web
-clips. It stores a raw revision and references copied or imported original assets
-under the configured data root. It records provider, source locator/native ID,
-collection context, source/capture times, hash, content type, and arbitrary raw
-metadata. Duplicate detection signals a relationship; it never silently deletes
-an event.
+### PRD-01：在来源上下文中选择性收集
 
-### PRD-02: First-party authoring
+关联需求：00 §1、§3、§8。
 
-`babata create`, `revise`, and `annotate` create `first_party` raw revisions.
-A new note has no external source. A revision points to its parent. An annotation
-is its own authored record with an `annotates` relation. Original wording is
-always preserved; model-generated format or interpretation is separate.
+用户连接来源后，应先看到当前上下文中的候选，而不是因为“连接成功”就触发
+静默全量复制。候选应尽可能显示标题、来源位置和层级、类型、更新时间、附件
+可得性及已知限制。用户可以选择单条、当前可见集合或一个明确范围后再收集。
 
-### PRD-03: Derivative production
+正常收集应发生在用户正在阅读、收藏或整理资料的地方。优先复用官方 API、
+浏览器扩展、用户脚本、成熟工具和官方导出；没有合适路径时才增加窄适配能力。
+导出件、PDF、复制、截图和录屏可以作为恢复、离线传递或来源受限时的路径，
+但不应被包装成所有来源的日常体验。
 
-`babata process` selects a configured pipeline for a raw revision. Mechanical
-extraction happens before model work. Bailian CLI handles interactive processing;
-Bailian/Qwen API or batch processing handles queued scale. Each run is
-inspectable and retryable without mutating raw data.
+每个来源在进入开发前都必须有真实工具调研：检查并尽可能实际调用官方 API/导出、
+CLI、SDK、浏览器插件/用户脚本、MCP/Agent 工具和维护中的开源项目，记录能取得的
+内容、层级、附件、历史、重收集能力、最小授权和限制。成熟工具可用时，产品路线
+应直接调用或薄包装它，而不是先建设自有协议或适配器。
 
-### PRD-04: Media fidelity
+首批需要跑通的真实上下文是飞书文档/Wiki/知识库和浏览器页面/书签。后续来源
+是否启用，取决于它能否合法、可靠地给出真实内容、上下文、附件和限制，而不是
+取决于是否已经为它预留了名称或空接口。
 
-For image/audio/video content, Babata retains the original asset and stores
-OCR, transcript, subtitle, keyframe, visual-description, or summary outputs as
-separate linked derivatives. It does not flatten visual or temporal meaning into
-a single authoritative text field.
+### PRD-02：收集过程可见、可重试、可重收集
 
-### PRD-05: Search and generated views
+关联需求：00 §3、§7。
 
-Datasette or an equivalent local SQL browser exposes raw and derived search by
-text, source, collection, date, type, status, and manual metadata. Obsidian is
-an optional one-way generated reading view; rebuilding it must not lose facts or
-human work.
+一次收集中的每条资料都有明确的 `queued`、`running`、`saved`、`skipped` 或
+`failed` 状态。失败信息应能让用户理解问题并重试；局部失败不影响已经成功保存
+的资料。
 
-### PRD-06: Skill interaction
+对同一来源再次收集是正常操作。系统应区分 `changed`、`unchanged`、
+`inaccessible` 和 `removed`，保留每次收集的时间、结果和来源变化，不用新结果
+覆盖旧原件，也不把“暂时访问不到”误判为“资料已删除”。
 
-Skills invoke available local `babata` CLI commands. Planned skills are
-Capture, Process, Workspace, Explore, and Ops; each is created only after its
-underlying command passes its own tests. A Skill neither stores material nor
-creates hidden bypass paths.
+成功收集的资料应尽可能带有来源链接或导出路径、平台、作者或账号、来源原生
+标识、采集时间、来源时间、原始哈希、附件、所在收藏夹/对话/知识库层级、访问
+条件和收集工具版本。权限不足、内容不完整或附件缺失必须保持为明确可见的限制。
 
-### PRD-07: Local Rust core and peripheral adapters
+### PRD-03：原件、第一方资料与派生物分开保留
 
-The `babata` Rust application is the only owner of raw/derived SQLite writes,
-asset finalisation, revision rules, processing tasks, and backup snapshots. Its
-CLI is the default interface for people, Skills, scripts, and scheduled tasks.
-When a browser clipper or local UI needs direct interaction, the same Rust
-application exposes a loopback-only, token-protected local API. Rust is the
-default implementation for importers, provider adapters, views, and operations.
-JavaScript is limited to browser-facing capture. Python is an exception-only
-child-process adapter for mature Python-only tooling. Both submit validated
-candidates to the Rust core rather than owning storage or business decisions.
+关联需求：00 §4、§5、§7。
 
-## 4. Initial source route matrix
+原视频、原图、原音频、原文件、原文和原导出件属于需要长期保护的资料。系统
+不得因为已经提取文字、生成摘要或创建视图而丢弃原件。视觉、动态、语气、排版
+和上下文本身都可能是内容的一部分。
 
-| Source | Preferred route | Candidate tools / light work | Fallback |
-| --- | --- | --- | --- |
-| Feishu Doc/Wiki/knowledge base | Official export/OpenAPI | Wiki node-to-document resolution, export/import adapter | PDF/manual export |
-| Yuque | Export/OpenAPI | `yuque-exporter`-class tool or importer | Markdown/PDF/copy |
-| OneNote | Office export | Microsoft Graph Pages adapter | PDF/Word/copy |
-| Evernote | ENEX export | ENEX importer | HTML/PDF |
-| WeChat favorites/chats | Official/local backup first | Web clipper for saved articles; local parser candidates after privacy review | Original backup/screenshot/PDF |
-| Zhihu/Bilibili/Xiaohongshu/Douyin | Export/list route where available | Browser exporter, user script, source-specific adapter; `yt-dlp` for permitted media | Link/PDF/screenshot/recording |
-| Browser bookmarks/pages | Browser HTML export / clipper | Bookmark importer; extension/userscript plus local command | Copy/PDF |
-| Doubao/Kimi/GPT | Official export | Export parser or share-page clipper | Copy/screenshot |
-| First-party content | Inbox/CLI | Folder watch, shortcut, editor command, local form | Paste |
+OCR、转写、字幕、关键帧、视觉描述、摘要、标签、结构化结果和模型理解都是
+与输入相连的派生物。它们可以重做、比较或删除后重建，但不能覆盖原件，也不能
+伪装成人工确认过的事实。
 
-All candidate tools are validated against permitted material before enablement.
+用户应能从派生结果回到对应原件、输入版本和来源上下文，也能看出一项内容是
+外部原件、第一方资料、机器派生结果还是可重建视图。
 
-## 5. First release slice
+### PRD-04：清洗独立、忠实且可检查
 
-1. Establish the complete Babata module/file/interface/tool skeleton without
-   implementing the individual business algorithms.
-2. Set an external data root and create the raw schema.
-3. Capture text, a local file/export, and one first-party note.
-4. Import one Feishu export and one browser/bookmark/web input.
-5. Produce faithful text for one document and one media derivative through
-   Bailian CLI.
-6. Search both raw and derived data locally.
-7. Demonstrate original/revision/annotation history and rebuild an optional view.
+关联需求：00 §4。
 
-## 6. Non-goals
+清洗能够处理网页和文本提取、文档解析、PDF/图片 OCR、音视频转写、字幕、
+关键帧、视觉描述、媒体元数据、格式统一和基础去重。多模态处理优先支持用户
+选择的百炼 CLI，并为后续通义/百炼 API 或批处理保留可替换的处理方式。
 
-No full-platform rollout, custom frontend, automatic knowledge decisions,
-manual maintenance of derived/Obsidian records, or pre-built empty Skill set.
+每次处理都应记录输入、工具或模型、版本、状态、输出和哈希；失败可理解、可重试，
+重跑不会改变原件。用户可以检查原件与派生结果的对应关系，并在资料积累后手动
+触发明确范围的批处理。
+
+清洗的目标是让资料可继续使用，而不是把所有内容压成一份“标准文本”。当转换
+会损失视觉、时序、语气、版式或上下文时，系统应保留这些限制和回看原件的能力。
+
+### PRD-05：核心区支持理解、沉淀和长期管理
+
+关联需求：00 §1、§2、§5。
+
+核心区是 Babata 的主要价值所在。用户可以审阅收进来的资料，并对其进行理解、
+记录、关联、分类、建模、评分、分析、沉淀和长期管理，而不只是浏览一份原始库
+或全文搜索结果。
+
+用户在工作时应能同时看到相关原件、派生内容、来源、版本和已有关系；可以形成
+自己的判断、主题、结构和关联，并继续修订这些人工成果。具体交互形态暂不锁定，
+但必须支持从“看过一条资料”走到“形成可回顾、可关联、可继续使用的个人沉淀”。
+
+模型可以提出摘要、标签、关系、分类、评分或分析建议，但这些结果必须标明是
+模型输出。未经用户确认，它们不能自动成为事实、人工判断或唯一分类，也不能
+覆盖与其冲突的原始证据。
+
+### PRD-06：第一方创作走同一条资料链路
+
+关联需求：00 §5。
+
+用户可以新写笔记、草稿和反思，也可以修订已有作品或对其他资料写批注。第一方
+创作不是绕过系统的特殊旁路：
+
+- 新写内容形成一条新增资料；
+- 修改形成可追溯的新版本，旧版本仍可回看；
+- 批注是独立资料，并与被批注目标建立关系；
+- 人工判断与模型生成内容保持可辨别。
+
+用户应能保留每次写作当时的原味，同时沿版本和关系看到后续变化。删除任何生成
+视图都不能造成第一方内容或其历史丢失。
+
+### PRD-07：资料可检索、回看、关联和组织成子库
+
+关联需求：00 §2、§6。
+
+用户可以按正文、来源、时间、类型、状态、人物、人工分类、关系及处理情况查找
+资料，并从结果继续回到原件、来源、版本、派生物和相关资料。
+
+用户可以为了一个主题、项目、阶段或传播目标，把权威资料组织为分类子库。子库
+应保存选择和组织逻辑，必要时可重建；它不是复制出一套需要手工同步的新权威库。
+
+检索和回看不仅覆盖清洗后的文本，也应允许用户发现只有原始媒体、附件、来源
+上下文或受限状态的资料，避免“没有可搜索文本”等同于“资料不存在”。
+
+### PRD-08：输出服务于真实使用，不预设唯一形态
+
+关联需求：00 §6。
+
+用户可以把选定资料和沉淀结果输出为报告、卡片、文章、网页、阅读视图、可分享
+内容或供其他应用调用的结果。输出既支持单项使用，也支持明确范围的大规模生成，
+并保留必要的来源和版本信息。
+
+输出形态由真实用途逐步确定，不在当前预设为某一个最终应用。Obsidian 可以是
+可重建的阅读和展示形式之一，但不是唯一存储，也不要求用户手工维护生成内容。
+
+输出和视图默认只读消费权威资料。删除、重建或更换一个子库、网页、Obsidian 库
+或导出物，不应删除原件、第一方内容、派生结果、人工关系或历史版本。
+
+### PRD-09：Skill、脚本和 Agent 是受控入口
+
+关联需求：00 §8、§9。
+
+Skill 可以接收链接、文件和指令，提交给已经存在的收集或处理能力；脚本、浏览器
+插件和模型服务也可以生产候选或读取结果。所有入口都应返回真实状态和失败原因，
+不能在底层能力尚未实现或验证时声称支持。
+
+这些入口不拥有最终资料，也不能绕过核心直接形成另一条持久化路径。日常动作默认
+由用户触发或确认；资料积累后的批处理也应由用户选择明确范围。Agent 不因技术上
+可以自动运行，就擅自大规模收集、自动改写资料或自动作出知识判断。
+
+### PRD-10：本地优先、唯一权威和可恢复
+
+关联需求：00 §7、§9。
+
+Babata 在当前阶段作为一个本地系统工作。真实资料只有一条最终持久化路径；无论
+资料来自浏览器、Skill、脚本、模型工具还是第一方创作，都经过同一套版本、溯源
+和权威规则。
+
+用户的真实原件、第一方资料、派生结果、视图和运行状态应具有清楚的数据级别：
+
+| 级别 | 内容 | 产品行为 |
+| --- | --- | --- |
+| C0 | 原始资料、原始媒体、第一方资料及其版本 | 最高优先保护，追加新版本而不原地覆盖 |
+| C1 | OCR、转写、摘要、标签、结构化结果和模型输出 | 与输入可追溯，可比较、重做和重建 |
+| C2 | Obsidian、网页、子库物化结果和其他生成视图 | 可删除重建，不拥有 C0/C1 |
+| C3 | 队列、缓存、日志和其他运行状态 | 可清理，不伪装成业务资料 |
+
+代码、文档、测试和配置模板可以进入 Git；真实资料、数据库、模型输出、日志、凭据
+和运行状态必须留在配置的数据根。备份与恢复应保护一致的资料状态，并能验证原件、
+版本、关系和索引在恢复后仍然可用。
+
+## 5. 来源范围
+
+以下是产品期望逐步覆盖的来源范围，不代表已经启用，也不代表必须自建采集器：
+
+| 来源组 | 代表来源 | 期望收集结果 |
+| --- | --- | --- |
+| 文档与知识库 | 飞书文档/Wiki/知识库、语雀、OneNote、印象笔记 | 正文、层级、附件、作者/时间和来源位置 |
+| 聊天与模型对话 | 微信聊天、豆包、Kimi、GPT | 对话顺序、角色、时间、附件和上下文 |
+| 内容与收藏平台 | 微信收藏/公众号/视频号、知乎、Bilibili、小红书、抖音 | 原始媒体或可得原件、标题、作者、链接、收藏上下文和限制 |
+| 浏览器 | 当前页面、选区、书签和网页收藏 | 页面或选区内容、URL、标题、时间和书签层级 |
+| 本地资料 | 文档、PDF、图片、音频、视频和平台导出件 | 原文件、路径/导出上下文、哈希和媒体信息 |
+| 第一方创作 | 笔记、草稿、反思、批注和人工判断 | 原始措辞、版本、关系和创作上下文 |
+
+一个来源只有在真实授权路径、内容覆盖、附件、元数据、失败状态和重收集行为经过
+验证后，才能显示为“已支持”。无法访问、只能部分收集或依赖手工恢复路径时，产品
+必须如实显示能力和限制。
+
+只有网页搜索到工具名或仓库、预留了 provider 文件、写出了导入格式，都不算完成
+来源规划。必须同时说明最小授权、Agent 如何调用、实际验证证据和最后回退。
+
+## 6. 当前产品范围与开放问题
+
+当前优先建立完整系统边界，并跑通一个本地的“真实原件进入 -> 可回看”闭环；
+飞书和浏览器是首批真实收集路径。阶段顺序、代码骨架、文件清单、接口、命令、
+迁移和测试安排由架构与开发流程文档管理，不在本 PRD 中把它们当作产品行为。
+
+当前明确不做：
+
+- 不把产品收窄成收藏器、导入工具、原始资料库或 SQL 查询界面；
+- 不为了来源数量静默全量复制，也不先造覆盖所有平台的重型爬虫；
+- 不让模型输出覆盖原件、替代人工判断或自动成为知识真相；
+- 不要求用户手工维护清洗产物、Obsidian 或其他生成视图；
+- 不让命令行、手填路径和手填元数据成为日常收集的主要体验；
+- 不先做通用仪表盘、营销式前端或尚无真实用途的外部接口；
+- 不因为四段逻辑边界而提前把它们变成多套互相复杂依赖的独立系统。
+
+以下问题保持开放，由真实使用继续决定：
+
+- 核心区最适合的审阅、关联、建模和长期管理交互形态；
+- 输出能力最终留在核心中，还是在出现独立使用需求后形成单独应用；
+- 飞书和浏览器之后各来源的实际优先级；
+- 哪些自动化在资料与规则积累后可以从人工触发升级为人工确认或受控定时运行。

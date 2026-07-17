@@ -1,235 +1,216 @@
-# Babata P3 原始资料入库底座实现蓝图
+# Babata P3 C0 原始资料底座蓝图
 
-> P2 creates the complete Babata skeleton defined by
-> `04_SYSTEM_SKELETON_BLUEPRINT.md`. This document activates only the 29
-> raw-foundation files that receive real business and persistence behaviour in
-> P3; it is not the inventory of the whole workspace. SQL ownership, transaction
-> order, implementation sequence and command verification are preserved in
-> `06_RAW_FOUNDATION_EXECUTION_PLAN.md`.
+## 1. 文档定位
 
-## 1. P3 原始资料入库底座范围、文件数量与依赖规则
+P2 先建立 `04_SYSTEM_SKELETON_BLUEPRINT.md` 定义的 137 文件全系统骨架。P3 只激活
+其中与 C0 原件、第一方版本和统一写入底座直接相关的 29 个既有 Rust 文件。
 
-P3 covers only data-root resolution, raw SQLite opening/migration, text/file/
-export capture, first-party create/revise/annotate, raw asset staging/finalising,
-read-back detail, and CLI output.
+这 29 个文件是实现子集，不是全系统清单。它们可以作为提前工作存在，但只有 P2
+门槛通过、接口与新架构一致、P3 自身功能门通过后，才能宣告 P3 完成。
 
-```text
-Package                         Rust files   Responsibility
-01_babata_domain                         6   Pure model and validation
-02_babata_application                    9   Use cases, DTOs, ports
-03_babata_infrastructure                 9   Config, SQLite, assets, logging
-04_babata_cli                            5   CLI parsing, wiring, rendering
-Total                                    29
-```
+P3 的目的，是证明“明确给到 Babata 的资料可以可靠、不可覆盖、可回读地进入 C0”。
+它不证明飞书/浏览器的正常上下文收集体验、C1 清洗、核心知识沉淀、搜索、输出、
+正式 Skill 或备份恢复已经可用。
 
-The count excludes `Cargo.toml`, SQL migrations, generated files, fixture files,
-and test modules. `05_babata_local_api`, `06_babata_worker` and all later
-capability modules already have P2 skeletons, but P3 does not activate their
-functional behaviour.
+## 2. P3 范围
+
+P3 激活：
+
+- 外部 text、local file 和 authorised export 的显式提交；
+- first-party `create`、`revise`、`annotate`；
+- `BABATA_DATA_HOME` 解析与编号数据根；
+- C0 SQLite migration、repository 和 read-back；
+- 原件 stage、hash、finalise、open 与完整性校验；
+- immutable revision、attachment、relation、duplicate signal；
+- 失败回滚、orphan journal、quarantine 和可见诊断；
+- CLI human/JSON 结果，作为工程、恢复和自动化入口。
+
+P3 不激活：
+
+- 飞书、浏览器或其他平台的候选发现与用户选择；
+- `queued/running/...` 集合会话和重收集状态机；
+- 百炼、C1 derived/job、模型建议；
+- Knowledge、Sublibrary、Output 的业务行为；
+- 搜索产品、生成视图、loopback listener、worker、正式 Skill 和备份。
+
+显式文件/导出 CLI 是底座验收与恢复路径，不得被描述为日常收集的正常产品体验。
+
+## 3. 激活文件：29 个 Rust 文件
+
+| Crate | 激活文件数 | P3 责任 |
+| --- | ---: | --- |
+| `01_babata_domain` | 6 | C0 标识、类型、值对象和不变量 |
+| `02_babata_application` | 9 | capture/workspace DTO、port 和 use case |
+| `03_babata_infrastructure` | 9 | 配置、路径、raw SQLite、资产和日志 |
+| `04_babata_cli` | 5 | 命令映射、composition 和结果渲染 |
+| **合计** | **29** | 不含 Cargo、SQL、测试和夹具 |
+
+`05_babata_local_api`、`06_babata_worker` 和其他 P2 模块继续保持可编译的 unavailable
+骨架，P3 不激活其真实行为。
+
+依赖方向继续为：
 
 ```text
 domain <- application <- infrastructure
        ^                ^
-       +--- cli (P3) / local_api / worker composition roots ---+
+       +--- cli / local_api / worker composition roots ---+
 ```
 
-`domain` depends on no Babata crate. `application` depends only on `domain`.
-`infrastructure` implements application port traits. CLI/API/worker may depend
-on all three and only compose dependencies/map I/O. No reverse dependency is
-permitted.
+## 4. Domain 激活子集：6 个文件
 
-## 2. Cargo workspace and permitted dependencies
-
-```text
-01_app/
-├── Cargo.toml
-├── 01_babata_domain/Cargo.toml
-├── 02_babata_application/Cargo.toml
-├── 03_babata_infrastructure/Cargo.toml
-├── 04_babata_cli/Cargo.toml
-├── 05_babata_local_api/Cargo.toml
-└── 06_babata_worker/Cargo.toml
-```
-
-```text
-domain:          serde, uuid/ulid, time, thiserror, validation helpers
-application:     domain, async-trait, serde, thiserror
-infrastructure:  domain, application, SQLite, filesystem/hash/config/process crates
-cli:             domain, application, infrastructure, clap, serde_json
-```
-
-Outside Infrastructure, forbid SQLite drivers, filesystem mutation, provider
-SDKs, process execution, HTTP client/server, secret loading, and direct data-root
-paths. Domain also excludes system clock reads; time comes from input or a port.
-
-## 3. Exact P3 file inventory
-
-### 3.1 `01_babata_domain` (6 files)
-
-| File | Public types/functions | Owns / forbids |
+| 文件 | P3 公开责任 | 禁止 |
 | --- | --- | --- |
-| `src/lib.rs` | module exports | Re-exports only; no orchestration |
-| `src/ids.rs` | `ItemId`, `RevisionId`, `AssetId`, `SourceId`, `CollectionId`; `new`, `parse`, `Display` | Stable opaque IDs; no DB integers |
-| `src/kinds.rs` | `SourceKind`, `RevisionKind`, `ContentType`, `AssetRole`, `RelationKind`, `DerivativeKind`, `ProcessingState` | Closed enums/string representation; no provider logic |
-| `src/entities.rs` | `SourceRef`, `CollectionContext`, `RawItem`, `RawRevision`, `AssetRef`, `Relation` | Immutable state/constructors; no I/O |
-| `src/value.rs` | `LogicalPath`, `Sha256`, `UtcTimestamp`, `Metadata`, `TextPayload`, `AssetInput` | Relative paths, hashes, bounded metadata; no file reads |
-| `src/error.rs` | `DomainError` | Validation/conflict/not-found vocabulary; no SQL/provider errors |
+| `src/lib.rs` | 模块导出 | 编排与 I/O |
+| `src/ids.rs` | Item/Revision/Asset/Source/Collection opaque ID | 暴露数据库整数 ID |
+| `src/kinds.rs` | Source/Revision/Content/Asset/Relation 状态 | provider 逻辑 |
+| `src/entities.rs` | SourceRef、CollectionContext、RawItem、RawRevision、AssetRef、Relation | 文件/数据库操作 |
+| `src/value.rs` | LogicalPath、Sha256、UtcTimestamp、Metadata、TextPayload、AssetInput | 读取文件或系统时钟 |
+| `src/error.rs` | validation/conflict/not-found/integrity 领域错误 | SQL/provider 错误细节 |
 
-Target public surface: roughly 25 constructors/parsers/validators. Reading a
-file, hashing bytes, starting a transaction, or invoking a provider is forbidden.
-Tests live inline beside each owner; minimum six domain tests.
+Domain 测试与类型 owner 同文件维护。路径必须是逻辑相对路径，metadata 必须有边界，
+原始文本和资产引用一旦 ready 就不原地修改。
 
-### 3.2 `02_babata_application` (9 files)
+## 5. Application 激活子集：9 个文件
 
-| File | Public types/functions/traits | Owns / forbids |
+| 文件 | P3 公开责任 | 禁止 |
 | --- | --- | --- |
-| `src/lib.rs` | module exports | Use-case/port export only |
-| `src/dto.rs` | `CaptureTextCommand`, `CaptureFileCommand`, `CaptureExportCommand`, `CreateNoteCommand`, `ReviseCommand`, `AnnotateCommand`, `CaptureOutcome`, `RecordDetail` | Command/result shapes; no transport types |
-| `src/error.rs` | `ApplicationError` | Maps domain/port failures; no HTTP status |
-| `src/ports/mod.rs` | port exports | Single import point |
-| `src/ports/raw_repository.rs` | `RawRepositoryPort` | `find_source`, `find_item`, `find_revision`, `find_by_source_identity`, `insert_capture_graph`, `insert_relation`, `load_detail` |
-| `src/ports/asset_store.rs` | `AssetStorePort` | `stage`, `hash_staged`, `finalize`, `discard_stage`, `open` |
-| `src/usecases/mod.rs` | service exports | Module exposure only |
-| `src/usecases/capture.rs` | `CaptureService::{capture_text,capture_file,capture_export}` | Shared private capture flow, duplicate signal, compensation; no SQLite/filesystem imports |
-| `src/usecases/workspace.rs` | `WorkspaceService::{create,revise,annotate}` | First-party revisions/relations only; no SQLite/filesystem imports |
+| `src/lib.rs` | use case 与 port 导出 | composition |
+| `src/dto.rs` | text/file/export/create/revise/annotate 请求与结果 | transport/SQL 类型 |
+| `src/error.rs` | domain/port 错误映射 | HTTP status |
+| `src/ports/mod.rs` | P3 port 导出 | 具体实现 |
+| `src/ports/raw_repository.rs` | source/item/revision/asset/relation 写入与详情读取 | SQLite 类型泄漏 |
+| `src/ports/asset_store.rs` | stage/hash/finalise/discard/open/verify | SQL |
+| `src/usecases/mod.rs` | service 导出 | 业务逻辑 |
+| `src/usecases/capture.rs` | 显式 text/file/export 的共享 C0 提交流程 | 来源候选发现、SQLite、文件系统 |
+| `src/usecases/workspace.rs` | first-party create/revise/annotate | 人工知识建模、SQLite、文件系统 |
 
-Target public surface: 13 service methods, seven raw-repository methods, five
-asset-store methods. Capture/workspace use mocks in this package; minimum six
-use-case tests. A `ClockPort` may be declared in `ports/mod.rs` only if needed
-for deterministic tests; do not add a separate one-method file.
+P2 已扩展的 `RawRepositoryPort` 最终还会承载人工知识记录和子库定义；P3 只实现其中
+原件、第一方和基础关系所需的子集，不用临时旁路为未来能力建立第二 repository。
 
-### 3.3 `03_babata_infrastructure` (9 files)
+## 6. Infrastructure 激活子集：9 个文件
 
-| File | Public types/functions | Owns / forbids |
+| 文件 | P3 公开责任 | 禁止 |
 | --- | --- | --- |
-| `src/lib.rs` | infrastructure exports | Builders only; never expose mutable DB handles |
-| `src/config.rs` | `AppConfig`, `DataRoot`, `SqliteOptions`, `load_config` | Env/config/default resolution; no business rules |
-| `src/paths.rs` | `DataPaths`, `ensure_layout`, `staging_path` | All numbered partition mapping; prevent path escape |
-| `src/sqlite/mod.rs` | `SqliteRawRepository`, `open_raw_database` | WAL/foreign keys/busy timeout; no use-case decisions |
-| `src/sqlite/migrate.rs` | `migrate_raw` | Migration ledger/version validation |
-| `src/sqlite/raw_repository.rs` | `RawRepositoryPort for SqliteRawRepository` | SQL mapping and transactions only |
-| `src/assets/mod.rs` | `FileAssetStore` export | Asset-store builder only |
-| `src/assets/file_store.rs` | `AssetStorePort for FileAssetStore` | Stage/hash/finalise/discard; no SQL |
-| `src/observability.rs` | `init_tracing`, `OperationLog` | Redacted structured logs; no raw private payloads |
+| `src/lib.rs` | infrastructure builder 导出 | 暴露可写 DB handle |
+| `src/config.rs` | AppConfig、DataRoot、SqliteOptions | 业务规则 |
+| `src/paths.rs` | 编号分区、暂存路径和防逃逸 | 来源判断 |
+| `src/sqlite/mod.rs` | 打开 raw database、WAL/foreign keys/timeout | use case 决策 |
+| `src/sqlite/migrate.rs` | migration ledger、版本与 checksum | 修改已应用迁移 |
+| `src/sqlite/raw_repository.rs` | RawRepositoryPort SQL 与事务 | 资产文件最终落盘 |
+| `src/assets/mod.rs` | FileAssetStore builder | SQL |
+| `src/assets/file_store.rs` | stage/hash/finalise/discard/open/verify | 业务 ID/版本判断 |
+| `src/observability.rs` | 脱敏 tracing、operation/journal 诊断 | 原始私密 payload 日志 |
 
-Only `sqlite/mod.rs`, `sqlite/migrate.rs`, and `sqlite/raw_repository.rs` open
-SQLite. Only `FileAssetStore` finalises assets. Tests include at least six
-SQLite/file integration cases.
+只有 SQLite infrastructure 文件可以打开数据库；只有 FileAssetStore 可以最终落盘
+C0 资产；两者都必须由 application 用例调用。
 
-Required raw SQL migration inventory:
+## 7. C0 migration 范围
 
 ```text
 03_migrations/01_raw/
-├── 0001_raw_schema.sql       # sources, collections, items, revisions, assets, relations
-├── 0002_raw_indexes.sql      # source identity, root/revision, time/hash indexes
-└── 0003_raw_fts.sql          # raw faithful-text FTS and triggers, if enabled in P3
+├── 0001_raw_schema.sql
+├── 0002_raw_indexes.sql
+└── 0003_raw_fts.sql
 ```
 
-### 3.4 `04_babata_cli` (5 files)
+`0001` 拥有 source、collection、item、revision、asset、relation 与 migration ledger；
+`0002` 拥有 identity、version、time、hash 和 relation 索引；`0003` 若保留 FTS，只能是
+可重建的早期读投影，不代表 P3 已激活搜索产品，也不能成为 C0 权威。
 
-| File | Public types/functions | Owns / forbids |
-| --- | --- | --- |
-| `src/main.rs` | `main` | Exit code/tracing/bootstrap only |
-| `src/app.rs` | `run`, `Dependencies::build` | Composition root: config, adapters, services |
-| `src/commands/mod.rs` | `Command` export | Clap tree registration only |
-| `src/commands/capture.rs` | `CaptureCommand`, `WorkspaceCommand`, `execute_capture`, `execute_workspace` | Parse/map command flags to DTOs; no business decisions |
-| `src/render.rs` | `render_human`, `render_json`, `CliError` | Result/error rendering only |
+P4 的 route evidence、collector session 或来源授权记录不得塞进 P3 migration 以伪装
+P4 已经开始；它们由对应阶段和 C0/C3 责任单独设计。
 
-Target surface: one entry, one dependency builder, four command executors, two
-renderers. Minimum two parser/render command tests. Do not add process/explore/
-view/API command variants before the matching application use case exists.
+关键不变量：
 
-## 4. P3 commands and result envelopes
+- opaque text ID；
+- RFC 3339 UTC 时间；
+- SHA-256 统一表示；
+- metadata 是 JSON object 且有大小边界；
+- revision/asset 有 pending、ready、quarantined 等明确状态；
+- 同一 item 的版本顺序唯一；
+- first-party 新建没有伪造 external identity；
+- 原始 wording、原件 asset 和历史版本不覆盖。
+
+## 8. CLI 激活子集：5 个文件
+
+| 文件 | P3 责任 |
+| --- | --- |
+| `src/main.rs` | bootstrap、tracing 和 exit code |
+| `src/app.rs` | config、repository、asset store、service 的 composition |
+| `src/commands/mod.rs` | P3 命令注册与其他命令 unavailable |
+| `src/commands/capture.rs` | capture/workspace 参数到 DTO 的映射 |
+| `src/render.rs` | human/JSON 结果、错误与脱敏 |
+
+P3 可以提供：
 
 ```text
 babata data status
-babata capture text --provider <name> --text <text> [--context <id>]
-babata capture file --provider <name> --path <file> [--context <id>]
-babata capture export --provider <name> --path <file> [--context <id>]
-babata create --text <text>|--path <file>
-babata revise --parent <revision-id> --text <text>|--path <file>
-babata annotate --target <id> --text <text>|--path <file>
+babata capture text
+babata capture file
+babata capture export
+babata create
+babata revise
+babata annotate
 ```
 
-Success `--json` envelope:
+这些命令不构成对外分布式协议，也不替代 P4 的上下文候选与用户选择。
+
+## 9. 统一 C0 写入序列
 
 ```text
-operation_id, item_id, revision_id, asset_ids[], status, duplicate_of?, warnings[]
+校验请求、来源/创作上下文和允许输入
+  -> 分配 operation ID
+  -> 在 04_runtime 建立 journal 与 staging
+  -> 读取并计算哈希，生成逻辑最终路径
+  -> 开启短事务
+  -> 写入 pending source/item/revision/asset/relation graph
+  -> 原子 finalise 或按哈希复用不可变资产
+  -> 标记 ready 并提交
+  -> 删除 journal
+  -> 通过 repository read-back 返回 RecordDetail
 ```
 
-Error `--json` envelope:
+跨文件系统与数据库无法真正原子时，使用经过测试的补偿事务。任何失败都不能报告
+缺少原件的 ready revision；已 finalise 但未 commit 的原件进入可诊断 orphan/
+quarantine，不自动销毁。
 
-```text
-code, message, operation_id?, retryable, details?
-```
+duplicate 只产生信号或关系，不删除新的收集/导入事件。
 
-`details` never includes raw content, credentials, or secret absolute paths.
-This is a local CLI result format, not an external distributed contract.
+## 10. P3 交付门槛
 
-## 5. Required write sequence
+| Gate | 完成证据 |
+| --- | --- |
+| P3-G1 数据根 | 新临时数据根产生正确编号分区，Git 无真实运行数据 |
+| P3-G2 C0 写入 | text、file、export 各形成可回读版本、原件、哈希和上下文 |
+| P3-G3 First-party | create/revise/annotate 保留版本和独立批注关系 |
+| P3-G4 故障完整性 | stage、transaction、finalise 的失败不会留下伪 ready；journal/orphan 可诊断 |
+| P3-G5 单一写入 | CLI 只 composition；DB 和资产写入只有 infrastructure owner |
+| P3-G6 回归 | P2 架构门继续通过，新增 P3 行为没有激活其他阶段能力 |
 
-Capture and first-party writes follow one shared sequence:
+P3 为 AC-03、AC-06 和 AC-10 提供底座证据；AC-03 还需要 P5 的真实派生物，AC-10
+还需要 P8 的一致备份恢复，不能在 P3 提前宣布这些产品验收全部完成。
 
-```text
-1. Validate command/metadata and resolve source or first-party context.
-2. Stage assets in 04_runtime; reject paths outside allowed input/staging roots.
-3. Hash staged bytes and derive logical final paths.
-4. Begin one raw SQLite write transaction.
-5. Insert source/context/item/revision/asset/relation rows in pending state.
-6. Atomically finalise staged files into 01_raw.
-7. Mark ready and commit.
-8. On failure: roll back; discard staging or write recoverable orphan journal.
-```
+## 11. 后续能力激活条件
 
-If host filesystem/SQLite cannot be atomically combined, use a tested
-compensating transaction. Never report ready content without assets or silently
-delete an already-finalised original.
-
-## 6. Required test inventory
-
-P3 starts with at least 20 Rust tests:
-
-```text
-domain unit tests            >= 6
-application mock-port tests  >= 6
-infrastructure integration   >= 6
-CLI parser/render smoke      >= 2
-```
-
-Required cases: invalid ID/value, logical-path traversal rejection, enum
-serialization, duplicate signal without deletion, create/revise/annotate
-lineage, staged-file failure, SQLite rollback, asset hash match, migration
-idempotence/foreign keys, CLI DTO mapping/JSON envelope, and no-second-writer
-dependency checks. Runtime test data is created outside Git.
-
-## 7. Later-capability activation gates
-
-| Capability | P2 skeleton location | Replace unavailable shell only when |
+| 能力 | P2 位置 | 激活条件 |
 | --- | --- | --- |
-| Derived/task queue | application `ports/{derived_repository,job_repository,process_provider}.rs`, `usecases/process.rs`; infrastructure SQLite repositories | Raw loop works and a real Bailian run is approved |
-| Bailian CLI/API | infrastructure `processing/{bailian_cli,bailian_api}.rs` | Pipeline, privacy, cost/retry tests are approved |
-| Source importers | infrastructure `sources/providers/<provider>.rs` | One permitted source has a real fixture/export and declared coverage |
-| Python/browser candidates | infrastructure `sources/candidate.rs` and `08_adapters/` | A proven Python-only tool or browser handoff exists |
-| Search/views | application `usecases/{explore,views}.rs`; infrastructure `views/{datasette,obsidian}.rs` | Real query/view requirement exists |
-| Loopback API | `05_babata_local_api` | Browser/local UI needs more than CLI |
-| Worker | `06_babata_worker` | Work must outlive one CLI invocation |
-| Backup | application `usecases/ops.rs`; infrastructure `backup/{sqlite_snapshot,restic,manifest}.rs` | Real data needs protected backup beyond fixtures |
+| CollectorSession / 真实来源 | `collector.rs`、SourceAdapter、browser/local API | P3 C0 提交稳定，真实来源获得授权 |
+| Derived / Process | C1 ports、process use case、processing providers | 一个真实清洗样本和隐私范围获批准 |
+| Knowledge | knowledge domain/use case | 原件与 C1 聚合读取稳定，核心工作例明确 |
+| Explore / Sublibrary / Output | read projection、sublibrary/output use case 和 builders | 核心人工资料存在并有真实检索/输出用途 |
+| Skill / Agent | specs、Capability registry | 对应底层能力通过自己的 AC/TC |
+| Backup | Ops/BackupDriver | 真实 C0 需要受保护恢复 |
 
-Each activation must add acceptance/test mapping, package/file count, public
-functions, and dependency assertions before its P2 unavailable shell receives a
-real implementation.
+每次激活先更新对应架构补充、开发流程和测试映射，再把 unavailable 壳替换为真实实现。
 
-## 8. Forbidden file patterns
+## 12. 禁止模式
 
 ```text
-src/db.rs outside infrastructure
-src/models.rs containing SQL/HTTP/filesystem code
-src/utils.rs as an unbounded cross-layer dumping ground
-src/service.rs combining CLI parsing, business rules, and SQL
-JS/Python with SQLite write credentials or data-root final paths
-provider directly returning data to a view without ProcessService
+infrastructure 之外打开 SQLite 或 finalise 资产
+CLI 参数解析、业务规则与 SQL 混在一个文件
+first-party 修改原地覆盖旧版本
+导出/文件命令被描述成所有来源的正常日常体验
+FTS 或视图成为第二权威
+JS/Python 获得数据根最终路径或数据库写权限
+为了已存在代码提前宣告 P3、P4 或产品 AC 完成
 ```
-
-Every new file must name one owner, inbound dependencies, outbound dependencies,
-and its mapped test home. Shared code moves only to the lowest layer that can
-own it without introducing a reverse dependency.
