@@ -25,9 +25,11 @@ P8  备份、恢复、运维与长期加固                      未开始
 - P2 已在旧 117 文件基础上补齐 20 个 Rust 责任文件和 3 份 Skill 规格，达到 6 个
   crate、137 个 Rust 源文件；CollectorSession、Knowledge、Sublibrary、Output、
   ReadProjection 和 OutputBuilder 均有明确位置与 unavailable 壳。
-- P2 的工程骨架 gate 已通过，但逐来源现有工具调研尚未完成。飞书、语雀、微信、内容
-  平台、浏览器和对话平台还缺真实 CLI/API/插件/SDK/Agent 工具证据、最小授权和路线
-  决策，因此 P2 不得标记完成。
+- P2 的工程骨架 gate 已通过；逐来源现有工具调查和路线决策已经写入
+  `03_architecture/08_SOURCE_TOOL_RESEARCH.md`。飞书官方 `lark-cli` 已达到真实授权
+  调用证据；OpenCLI、语雀、OneNote、Evernote、微信、内容平台、浏览器和对话平台
+  已明确首选工具与最低授权，但多数还没有真实账号下的候选、选择、附件和重收集证据，
+  因此 P2 不得标记完成。
 - 已有 29 个 P3 活跃文件、raw migrations、命令与测试属于提前工作。它们应保留并
   在 P2 修正后重新审阅，不代表 P3 已开始或完成。
 - 已有飞书导出、书签 HTML、CandidateEnvelope、route evidence 和 fixture 属于 P4
@@ -154,12 +156,20 @@ AC 已完成。
   OutputBuilder 只提供边界与 unavailable 壳，没有业务算法；
 - 离线 route evidence 可以记录覆盖，但不能单独把飞书/浏览器标记 enabled；来源仍
   等待 P4 真实上下文候选与选择证据；
+- 来源工具调查已覆盖 00 点名的全部来源。已实际核验本机 `lark-cli 1.0.68` 的用户
+  OAuth 和 Wiki/Docs 只读调用；已实际运行 OpenCLI 1.8.6 的命令发现、站点 help 和
+  doctor，确认其覆盖 Bilibili、知乎、小红书、豆包、Kimi、ChatGPT 和公众号文章，
+  同时确认本机 Browser Bridge 尚未连接；
+- 已淘汰飞书手动 Markdown 主路线、已归档的 BBDown/bilibili-api-python 和已被 DMCA
+  屏蔽的 `wx-cli`；语雀、OneNote、Evernote、微信和浏览器均已有明确直接使用、组合
+  工具或窄适配决策；
 - 29 文件 P3 提前实现及 34 个 raw 功能测试继续可运行，但不作为 P2 产品验收，也不
   代表 P3 已开始。
 
-上述只证明 P2-G1 至 P2-G6。P2-G7 尚未完成。下一步必须先完成
-`03_architecture/08_SOURCE_TOOL_RESEARCH.md`，逐来源真实调查并尽可能调用现有工具；
-在此之前不继续增加来源 adapter、协议或手工导出主路径。
+上述证明 P2-G1 至 P2-G6，并完成了 P2-G7 的调查与路线决策部分。P2-G7 仍部分通过：
+除飞书外，多数来源还只有工具/命令证据，没有真实授权的候选 -> 用户选择 -> 正文/
+附件 -> 重收集探针。下一步按 `03_architecture/08_SOURCE_TOOL_RESEARCH.md` 第 13 节做
+小范围只读实证；在此之前不继续增加来源 adapter、协议或手工导出主路径。
 
 ## 6. P3：C0 原始资料与第一方版本底座
 
