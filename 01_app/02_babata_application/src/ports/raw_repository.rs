@@ -1,6 +1,7 @@
 use babata_domain::{
-    AssetId, AssetRole, CollectionId, ContentType, ItemId, Metadata, RelationKind, RevisionId,
-    RevisionKind, RouteCoverage, RouteEvidence, Sha256, SourceId, SourceKind, UtcTimestamp,
+    AssetId, AssetRole, CollectionId, ContentType, ItemId, Metadata, RawState, RelationKind,
+    RevisionId, RevisionKind, RouteCoverage, RouteEvidence, Sha256, SourceId, SourceKind,
+    UtcTimestamp,
 };
 
 use crate::{ApplicationError, RecordDetail};
@@ -108,6 +109,10 @@ pub trait RawRepositoryPort {
         &self,
         revision_id: &RevisionId,
     ) -> Result<Option<NewRevision>, ApplicationError>;
+    fn find_revision_state(
+        &self,
+        revision_id: &RevisionId,
+    ) -> Result<Option<RawState>, ApplicationError>;
     fn find_by_source_identity(
         &self,
         source_id: &SourceId,

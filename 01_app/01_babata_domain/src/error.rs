@@ -10,4 +10,6 @@ pub enum DomainError {
     UnsafeLogicalPath,
     #[error("metadata must be a JSON object")]
     MetadataMustBeObject,
+    #[error("metadata exceeds the {max_bytes}-byte storage boundary")]
+    MetadataTooLarge { max_bytes: usize },
 }

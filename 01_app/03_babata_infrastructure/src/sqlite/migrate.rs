@@ -17,10 +17,6 @@ const MIGRATIONS: &[(&str, &str)] = &[
         "0003_raw_fts.sql",
         include_str!("../../../../03_migrations/01_raw/0003_raw_fts.sql"),
     ),
-    (
-        "0004_route_evidence.sql",
-        include_str!("../../../../03_migrations/01_raw/0004_route_evidence.sql"),
-    ),
 ];
 
 pub fn migrate_raw(connection: &Connection) -> Result<(), ApplicationError> {
@@ -83,7 +79,16 @@ mod tests {
                 .query_row("SELECT COUNT(*) FROM schema_migrations", [], |row| row
                     .get::<_, i64>(0))
                 .unwrap(),
-            4
+            3
+        );
+        assert!(
+            connection
+                .query_row(
+                    "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'route_evidence'",
+                    [],
+                    |_| Ok(()),
+                )
+                .is_err()
         );
     }
 
@@ -99,7 +104,7 @@ mod tests {
                     0
                 ))
                 .unwrap(),
-            4
+            3
         );
     }
 

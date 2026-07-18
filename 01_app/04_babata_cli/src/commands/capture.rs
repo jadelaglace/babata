@@ -15,8 +15,12 @@ use babata_infrastructure::{
 use super::{RootCommand, workspace::NoteInput};
 
 pub enum CaptureExecution {
-    Single(CaptureOutcome),
+    Single(Box<CaptureOutcome>),
     Batch(Vec<CaptureOutcome>),
+}
+
+fn single(outcome: CaptureOutcome) -> CaptureExecution {
+    CaptureExecution::Single(Box::new(outcome))
 }
 
 #[allow(clippy::too_many_lines)]
@@ -26,20 +30,20 @@ pub fn execute(
     workspace: WorkspaceService<SqliteRawRepository, FileAssetStore, SystemClock>,
 ) -> Result<CaptureExecution, babata_application::ApplicationError> {
     match command {
-        RootCommand::Capture(CaptureCommand::Text(input)) => capture
-            .capture_text(text_command(input)?)
-            .map(CaptureExecution::Single),
-        RootCommand::Capture(CaptureCommand::File(input)) => capture
-            .capture_file(file_command(input)?)
-            .map(CaptureExecution::Single),
-        RootCommand::Capture(CaptureCommand::Export(input)) => capture
-            .capture_export(file_command(input)?)
-            .map(CaptureExecution::Single),
+        RootCommand::Capture(CaptureCommand::Text(input)) => {
+            capture.capture_text(text_command(input)?).map(single)
+        }
+        RootCommand::Capture(CaptureCommand::File(input)) => {
+            capture.capture_file(file_command(input)?).map(single)
+        }
+        RootCommand::Capture(CaptureCommand::Export(input)) => {
+            capture.capture_export(file_command(input)?).map(single)
+        }
         RootCommand::Capture(CaptureCommand::Candidate(input)) => capture
             .capture_candidate(CandidateCaptureCommand {
                 candidate: read_candidate(&input.path)?,
             })
-            .map(CaptureExecution::Single),
+            .map(single),
         RootCommand::Capture(CaptureCommand::FeishuExport(input)) => {
             let export = feishu::read_markdown_export(&input.path)?;
             capture
@@ -92,7 +96,7 @@ pub fn execute(
                         },
                     )?,
                 })
-                .map(CaptureExecution::Single)
+                .map(single)
         }
         RootCommand::Capture(CaptureCommand::Bookmarks(input)) => {
             let bookmarks = browser::read_netscape_bookmarks(&input.path)?;
@@ -159,7 +163,7 @@ pub fn execute(
                     context,
                     metadata,
                 })
-                .map(CaptureExecution::Single)
+                .map(single)
         }
         RootCommand::Workspace(super::WorkspaceCommand::Revise(input))
         | RootCommand::Revise(input) => {
@@ -172,7 +176,7 @@ pub fn execute(
                     note: input.note_text,
                     metadata,
                 })
-                .map(CaptureExecution::Single)
+                .map(single)
         }
         RootCommand::Workspace(super::WorkspaceCommand::Annotate(input))
         | RootCommand::Annotate(input) => {
@@ -188,7 +192,7 @@ pub fn execute(
                     metadata,
                 }),
             }
-            .map(CaptureExecution::Single)
+            .map(single)
         }
         _ => unreachable!("non-capture commands are handled before service setup"),
     }

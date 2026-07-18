@@ -25,7 +25,8 @@ pub use ids::{
     RelationId, RevisionId, RunId, SnapshotId, SourceId, SublibraryId, ViewId,
 };
 pub use kinds::{
-    AssetRole, ContentType, DerivativeKind, ProcessingState, RelationKind, RevisionKind, SourceKind,
+    AssetRole, ContentType, DerivativeKind, ProcessingState, RawState, RelationKind, RevisionKind,
+    SourceKind,
 };
 pub use knowledge::{
     KnowledgeKind, KnowledgeRecord, ModelSuggestion, SuggestionDecision, SuggestionDecisionKind,

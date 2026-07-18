@@ -1,7 +1,8 @@
 use babata_domain::{
-    AssetId, AssetRole, BuildTarget, CandidateEnvelope, ContentType, HealthState, ItemId, JobId,
-    Metadata, PageCursor, PipelineId, QueryFilter, RecordSummary, RelationKind, RevisionId,
-    RouteCoverage, SnapshotRef, SourceKind, SourceRouteId, UtcTimestamp, ViewDescriptor, ViewId,
+    AssetId, AssetRole, BuildTarget, CandidateEnvelope, CollectionId, ContentType, HealthState,
+    ItemId, JobId, Metadata, PageCursor, PipelineId, QueryFilter, RawState, RecordSummary,
+    RelationKind, RevisionId, RouteCoverage, SnapshotRef, SourceId, SourceKind, SourceRouteId,
+    UtcTimestamp, ViewDescriptor, ViewId,
 };
 use serde::{Deserialize, Serialize};
 
@@ -98,17 +99,33 @@ pub struct CaptureOutcome {
     pub duplicate_of: Option<RevisionId>,
     pub reimported: bool,
     pub warnings: Vec<String>,
+    pub record: RecordDetail,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RecordDetail {
     pub item_id: ItemId,
+    pub source_id: SourceId,
     pub source_kind: SourceKind,
     pub provider: String,
     pub content_type: ContentType,
+    pub source_native_id: Option<String>,
+    pub source_locator: Option<String>,
+    pub source_identity_key: Option<String>,
+    pub metadata: Metadata,
+    pub collections: Vec<CollectionDetail>,
     pub revisions: Vec<RevisionDetail>,
     pub assets: Vec<AssetDetail>,
     pub relations: Vec<RelationDetail>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CollectionDetail {
+    pub collection_id: CollectionId,
+    pub native_id: Option<String>,
+    pub kind: String,
+    pub title: Option<String>,
+    pub observed_at: UtcTimestamp,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -117,9 +134,13 @@ pub struct RevisionDetail {
     pub parent_revision_id: Option<RevisionId>,
     pub kind: String,
     pub ordinal: u32,
+    pub captured_at: UtcTimestamp,
+    pub authored_at: Option<UtcTimestamp>,
+    pub revision_note: Option<String>,
     pub raw_text: Option<String>,
     pub text_sha256: Option<String>,
-    pub state: String,
+    pub metadata: Metadata,
+    pub state: RawState,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -129,6 +150,9 @@ pub struct AssetDetail {
     pub logical_path: String,
     pub sha256: String,
     pub byte_size: u64,
+    pub media_type: Option<String>,
+    pub original_filename: Option<String>,
+    pub state: RawState,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

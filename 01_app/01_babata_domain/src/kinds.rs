@@ -43,6 +43,14 @@ pub enum AssetRole {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+pub enum RawState {
+    Pending,
+    Ready,
+    Quarantined,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum RelationKind {
     Revises,
     Annotates,

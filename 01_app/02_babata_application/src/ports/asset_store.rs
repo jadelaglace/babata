@@ -14,6 +14,12 @@ pub struct StagedAsset {
     pub original_filename: Option<String>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FinalizeAssetOutcome {
+    Created,
+    Reused,
+}
+
 pub trait AssetStorePort {
     fn stage(
         &self,
@@ -22,7 +28,7 @@ pub trait AssetStorePort {
         operation_id: &str,
     ) -> Result<StagedAsset, ApplicationError>;
     fn hash(&self, source: &str) -> Result<Sha256, ApplicationError>;
-    fn finalize(&self, asset: &StagedAsset) -> Result<(), ApplicationError>;
+    fn finalize(&self, asset: &StagedAsset) -> Result<FinalizeAssetOutcome, ApplicationError>;
     fn discard_stage(&self, asset: &StagedAsset) -> Result<(), ApplicationError>;
     fn open(&self, logical_path: &LogicalPath) -> Result<Vec<u8>, ApplicationError>;
     fn verify(&self, asset: &StagedAsset) -> Result<bool, ApplicationError>;
@@ -30,5 +36,6 @@ pub trait AssetStorePort {
         &self,
         asset: &StagedAsset,
         operation_id: &str,
+        outcome: FinalizeAssetOutcome,
     ) -> Result<(), ApplicationError>;
 }

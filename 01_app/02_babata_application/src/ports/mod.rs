@@ -12,7 +12,7 @@ pub mod read_projection;
 pub mod source_adapter;
 pub mod view_builder;
 
-pub use asset_store::{AssetStorePort, StagedAsset};
+pub use asset_store::{AssetStorePort, FinalizeAssetOutcome, StagedAsset};
 pub use backup_driver::BackupDriverPort;
 pub use candidate_runner::CandidateRunnerPort;
 pub use capability_registry::CapabilityRegistryPort;

@@ -22,6 +22,7 @@ pub struct RawStatus {
     pub schema_version: u32,
     pub pending_journals: usize,
     pub orphans: usize,
+    pub quarantined_revisions: usize,
 }
 
 pub(crate) fn open_connection(
@@ -68,6 +69,7 @@ pub fn raw_status(
             schema_version: 0,
             pending_journals,
             orphans,
+            quarantined_revisions: 0,
         });
     }
     let connection = open_connection(&database, busy_timeout_ms)?;
@@ -78,11 +80,19 @@ pub fn raw_status(
             |row| row.get::<_, i64>(0),
         )
         .map_err(|error| ApplicationError::Storage(error.to_string()))?;
+    let quarantined_revisions = connection
+        .query_row(
+            "SELECT COUNT(*) FROM revisions WHERE state = 'quarantined'",
+            [],
+            |row| row.get::<_, i64>(0),
+        )
+        .map_err(|error| ApplicationError::Storage(error.to_string()))?;
     Ok(RawStatus {
         reachable: true,
         schema_version: version as u32,
         pending_journals,
         orphans,
+        quarantined_revisions: quarantined_revisions as usize,
     })
 }
 
@@ -104,8 +114,9 @@ mod tests {
         super::open_raw_database(&paths, 100).unwrap();
         let after = super::raw_status(&paths, 100).unwrap();
         assert!(after.reachable);
-        assert_eq!(after.schema_version, 4);
+        assert_eq!(after.schema_version, 3);
         assert_eq!(after.pending_journals, 1);
         assert_eq!(after.orphans, 1);
+        assert_eq!(after.quarantined_revisions, 0);
     }
 }
