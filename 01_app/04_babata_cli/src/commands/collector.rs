@@ -11,7 +11,8 @@ use babata_infrastructure::{
     AppConfig, FileAssetStore, SystemClock, open_collection_database,
     sources::providers::{
         bilibili_collection::BilibiliOpenCliAdapter, browser::BrowserCandidateAdapter,
-        doubao::DoubaoOpenCliAdapter, feishu::FeishuCliAdapter, kimi::KimiOpenCliAdapter,
+        chatgpt::ChatGptOpenCliAdapter, doubao::DoubaoOpenCliAdapter, feishu::FeishuCliAdapter,
+        kimi::KimiOpenCliAdapter, zhihu::ZhihuOpenCliAdapter,
     },
 };
 use serde::Serialize;
@@ -176,6 +177,13 @@ fn source_adapters(
         )),
         Box::new(KimiOpenCliAdapter),
         Box::new(DoubaoOpenCliAdapter),
+        Box::new(ChatGptOpenCliAdapter),
+        Box::new(ZhihuOpenCliAdapter::new(
+            config
+                .paths()
+                .root()
+                .join("04_runtime/provider-downloads/zhihu"),
+        )),
         Box::new(BilibiliOpenCliAdapter::new(
             config
                 .paths()
@@ -184,10 +192,8 @@ fn source_adapters(
         )),
     ];
     for route in [
-        "source.zhihu",
         "source.xiaohongshu",
         "source.douyin",
-        "source.chatgpt",
         "source.yuque",
         "source.browser_pages",
         "source.browser_bookmarks",

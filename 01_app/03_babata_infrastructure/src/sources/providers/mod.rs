@@ -1,6 +1,7 @@
 pub mod bilibili;
 pub mod bilibili_collection;
 pub mod browser;
+pub mod chatgpt;
 pub mod conversations;
 pub mod doubao;
 pub mod douyin;

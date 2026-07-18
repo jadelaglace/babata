@@ -22,7 +22,7 @@ P8  备份、恢复、运维与长期加固                      未开始
 
 <!-- P2: completed; P2-G1..P2-G7: passed -->
 <!-- P3: completed; P3-G1..P3-G6: passed -->
-<!-- P4: in-progress; Kimi/Doubao/Bilibili single-item real loops proven; routes disabled -->
+<!-- P4: in-progress; Kimi/Doubao/Bilibili/Feishu/ChatGPT/Zhihu small real loops proven; routes disabled -->
 
 当前真实情况：
 
@@ -34,10 +34,10 @@ P8  备份、恢复、运维与长期加固                      未开始
   00 点名的来源都有证据等级、最小授权、正常路线、回退和诚实缺口。飞书 `lark-cli`、
   Browser Use、Agent Browser、Playwright CLI、OpenCLI 和 Codex Chrome 均有实际调用或
   连接证据。具体来源 E3 仍属于 P4/P7，不再错误作为 P2 前置。
-- Kimi、豆包、Bilibili 和飞书 Docx 已分别完成一个真实小范围的候选、明确选择、C0、逐条状态和
+- Kimi、豆包、Bilibili、飞书 Docx、ChatGPT 和知乎回答已分别完成一个真实小范围的候选、明确选择、C0、逐条状态和
   重收集闭环；Bilibili 另把 44,773,539 字节原视频作为 C0 资产保存并复核 SHA-256。
-  飞书样本另保存 3,391 字符 XML 正文和 8 张真实 PNG。来源仍保持 disabled：Kimi 当前
-  样本无附件，豆包二进制媒体未闭合，Bilibili 按用户要求只证明一条，飞书嵌入
+  飞书样本另保存 3,391 字符 XML 正文和 8 张真实 PNG；ChatGPT 样本保存 2 条角色消息和
+  10 个引用。来源仍保持 disabled：Kimi/ChatGPT 当前样本无附件，豆包二进制媒体未闭合，Bilibili 按用户要求只证明一条，飞书嵌入
   Sheet/Base/Slides/画板内部数据仍未覆盖。P4 正在进行中，不把局部闭环扩大成来源 available。
 - P3 已按蓝图重新审阅 29 个活跃文件：显式 text/file/export 和 first-party
   create/revise/annotate 通过同一 Rust application/infrastructure 链路进入 C0，返回包含
@@ -68,10 +68,18 @@ P8  备份、恢复、运维与长期加固                      未开始
              -> 3,391 字符正文 + 8 张 PNG
              -> 首次媒体结构不兼容而 failed -> 原任务 retry 成功
              -> 1 条资料/1 个版本/8 个附件 -> 重采没变化
+  ChatGPT   正式 Chrome 展开最近聊天，看到至少 28 个真实入口
+             -> Babata 按 recent:20 列出 20 个候选，只选“开源部署方案对比”
+             -> 2 条角色消息 + 10 个引用；页面 favicon 不冒充附件，真实附件为 0
+             -> 1 条资料/1 个版本/0 个附件 -> 重采没变化
+  知乎      正式 Chrome 登录后列出 16 个自建收藏夹
+             -> 最新“我的收藏”页面标称 28 条，分页命令返回 27 个去重候选
+             -> 只选最新回答；完整正文 + 原始 HTML + 17 张正文原图（8.41 MB）
+             -> 1 条资料/1 个版本/17 个附件 -> 重采没变化
 
 正在往下闭合
-  知乎      正式 Chrome 已到“我的收藏”，当前等待用户完成知乎登录
-  登录后继续 -> 小红书 -> ChatGPT -> 语雀
+  小红书    正式 Chrome 已到官方登录弹窗，等待用户完成登录后读取收藏/赞过
+  语雀      正式 Chrome 已到官方未登录首页，等待用户完成登录后读取知识库
 
 后续队列
   微信 -> OneNote -> 印象笔记
@@ -323,8 +331,20 @@ P4 按 `07_P4_FIRST_COLLECTION_PATHS.md` 实现：
   `failed`，兼容后对原 item retry 成功。最终保存 3,391 字符 XML 正文、8 张 PNG，
   1 item/1 revision/8 assets；下载件与 C0 资产逐个 SHA-256 一致，重采 `unchanged`，
   版本/资产数量不增加。
+- ChatGPT：验证根 `p4-chatgpt-20260718-190000`。正式 Chrome 已登录，展开最近聊天后
+  可见至少 28 个真实入口；Babata 以 `recent:20` 发现 20 个候选，只选择“开源部署方案
+  对比”，保存 2 条角色消息、10 个引用，当前样本真实附件为 0。最终 1 item/1 revision/
+  0 assets，重采 `unchanged` 且版本数不增加；二进制附件下载仍无非零样本，route 保持
+  disabled。首次 OpenCLI 瞬时返回非 JSON 时 C0 保持 0，现已将此类响应归为可读的来源
+  I/O 失败，不再误报 C0 integrity 损坏。
+- 知乎：验证根 `p4-zhihu-final-20260718-203000`。正式 Chrome 登录后读取 16 个自建
+  收藏夹；最新“我的收藏”页面标称 28 条，官方分页命令实际返回 27 个去重候选（12 个
+  回答、15 篇文章）。只选最新回答，保存完整正文、原始 HTML 和 17 张正文原图；最终
+  1 item/1 revision/17 assets，17 个 SHA-256 均不同，总计 8,413,376 字节。首次验证发现
+  图片 CDN 域切换会制造伪版本，改用稳定 `data-original-token` 后，干净验证根重采
+  `unchanged`。文章、想法、视频和评论线程尚未覆盖，route 保持 disabled。
 
-浏览器仍是当前存量回收首选。Kimi/豆包的 OpenCLI 薄命令是为了把浏览器已经证明的
+浏览器仍是当前存量回收首选。Kimi/豆包/ChatGPT/知乎的 OpenCLI 薄命令是为了把浏览器已经证明的
 读取动作变成任务结束后可调用的重试/重收集；Bilibili 是因为 Codex Chrome 历史页连续
 两次超时后才回退 OpenCLI。两类理由均已记录，不把 OpenCLI 当默认绕路。
 

@@ -38,6 +38,12 @@ Git。所有 destructive 测试使用临时或隔离数据根。
 7. 对飞书从一个真实 Wiki 空间下钻到明确父节点，选择一篇含图片的 Docx；验证真实
    `src/href` XML、正文和用户要求的媒体都经同一 CaptureService 写入，不把目录页或
    手工导出件冒充正常路径。
+8. 对 ChatGPT 先用正式 Chrome 展开真实最近聊天并读取所选会话，再让 Babata 在
+   `recent:20` 的 20 个候选中只收集“开源部署方案对比”；验证 2 条角色消息、10 个引用、
+   0 个真实附件进入同一 C0，页面引用 favicon 不计作附件。
+9. 对知乎先用正式 Chrome 读取 16 个自建收藏夹和最新收藏夹第一页；记录页面标称 28 条、
+   官方分页实际返回 27 个去重候选，只选择最新回答。验证完整正文、原始 HTML 和 17 张
+   正文原图进入同一 C0，作者头像排除，未选择的 26 条不写入。
 
 预期：
 
@@ -67,6 +73,10 @@ Git。所有 destructive 测试使用临时或隔离数据根。
 7. 让飞书媒体结构首次解析失败，确认 item 为 retryable failed 且 C0 为 0；兼容真实
    `src/href` 后对原 item 定向 retry，确认 8 个下载件与 C0 资产逐个哈希一致；刷新临时
    href 后重采为 unchanged，版本和资产均不增加。
+8. 让 ChatGPT OpenCLI 瞬时返回非 JSON，确认错误保留可读来源信息并按可重试 I/O 失败
+   处理，不误报 C0 integrity 损坏；成功收集后重采为 unchanged，仍为 1 revision/0 assets。
+9. 让同一张知乎原图在 `picx/pic1/pica` CDN 域间切换，确认稳定图片 token 不变时重采为
+   unchanged，仍为 1 revision/17 assets；正文、更新时间或图片 token 改变时才追加版本。
 
 预期：逐条状态与原因可见；重试只影响目标项；changed 追加版本；unchanged 保留检查
 事件；inaccessible/removed 不删除旧 C0；局部成功始终保留；动态统计保留在原始响应中，
