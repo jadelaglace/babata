@@ -1,0 +1,48 @@
+name: Work item
+description: Plan a scoped Babata change, investigation, or documentation correction.
+title: ""
+labels: []
+body:
+  - type: textarea
+    id: background
+    attributes:
+      label: Background
+      description: What problem or evidence requires this work?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: State the concrete work included in this issue.
+    validations:
+      required: true
+  - type: textarea
+    id: non_goals
+    attributes:
+      label: Non-goals
+      description: State what this issue deliberately does not change.
+    validations:
+      required: true
+  - type: input
+    id: traceability
+    attributes:
+      label: Traceability
+      description: Relevant phase gate, requirement, PRD, AC, or TC identifiers.
+      placeholder: "P2-G7, PRD-01, AC-01, TC-01"
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Observable results required before the issue can close.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Verification evidence
+      description: Commands, real-route evidence, or review artifacts expected.
+    validations:
+      required: true

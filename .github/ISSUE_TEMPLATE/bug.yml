@@ -1,0 +1,41 @@
+name: Bug report
+description: Report incorrect Babata behavior or a regression.
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed behavior
+      description: What happened, including the visible status or error?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should have happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Minimal steps and environment details. Do not include secrets or real private source data.
+    validations:
+      required: true
+  - type: input
+    id: traceability
+    attributes:
+      label: Traceability
+      description: Relevant phase gate, AC, or TC identifiers.
+      placeholder: "P4-G4, AC-02, TC-02"
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Fix acceptance
+      description: Checks that prove the regression is fixed without losing existing behavior.
+    validations:
+      required: true
