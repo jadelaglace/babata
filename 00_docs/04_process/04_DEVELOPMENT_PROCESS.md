@@ -6,7 +6,7 @@
 
 ## 1. 当前状态
 
-**更新时间：2026-07-17**
+**更新时间：2026-07-18**
 
 ```text
 P0  冻结旧版本                                    已完成
@@ -37,6 +37,10 @@ P8  备份、恢复、运维与长期加固                      未开始
 - 已有飞书导出、书签 HTML、CandidateEnvelope、route evidence 和 fixture 属于 P4
   提前工作/回退路径证据。正常的飞书上下文候选、浏览器扩展候选与选择尚未通过，
   所以 P4 不得标记进行中或 enabled。
+- 当前最高执行优先级是用 Codex 已有官方连接器/Skill、正式版 Chrome 登录态和必要的
+  Computer Use 抢救仍留在各平台服务器上的存量资料。长期 Browser Use/Agent Browser
+  自动化转为后续 Skill 能力，不阻塞本轮回收。回收文件只能进入外部数据根的 recovery
+  staging，不能进入 Git，也不能在 P3 核心提交前冒充 C0 或 P4 available。
 
 项目阶段只使用 P0–P8；C0–C3 是数据权威级别，不是项目阶段。
 
@@ -180,13 +184,33 @@ AC 已完成。
   抖音明确保持 E0/disabled，不要求用户手抄 Cookie 来冒充落实；
 - 29 文件 P3 提前实现及 34 个 raw 功能测试继续可运行，但不作为 P2 产品验收，也不
   代表 P3 已开始。
+- 2026-07-18 已安装 Browser Use 0.13.6 / Browser Harness 0.1.6，并与 Agent Browser
+  0.32.1 分别连接正式版 Chrome 150.0.7871.129：两者均能列出真实 tab 并只读取得当前页；
+  Agent Browser 使用默认拒绝的只读 action policy。Chrome for Testing 仅用于空白页
+  doctor，不读取正式版 profile。该证据证明工具可用，不证明任何具体平台来源 E3 完成。
 
 上述证明 P2-G1 至 P2-G6，并完成了 P2-G7 的逐来源调查和通用 Agent 浏览器补调研；
-网页登录来源的主次路线仍需 Browser Use/Agent Browser 同场实证，抖音已形成诚实的
-缺口和下一验证顺序。P2-G7 仍部分通过：除飞书外，多数来源还只有工具/命令证据，没有
+通用 Browser Use/Agent Browser 已完成同一正式版 Chrome 的连接实证，抖音等具体来源
+仍有诚实缺口。P2-G7 仍部分通过：除飞书外，多数来源还只有工具/命令/连接证据，没有
 真实授权的“用户给出一次范围 -> Agent 自主候选/翻页/下载 -> 正文/
-附件 -> 重收集探针。下一步按 `03_architecture/08_SOURCE_TOOL_RESEARCH.md` 第 13 节做
-小范围只读实证；在此之前不继续增加来源 adapter、协议或手工导出主路径。
+附件 -> 重收集探针。长期自动化不再阻塞紧急存量回收；下一步按
+`03_architecture/08_SOURCE_TOOL_RESEARCH.md` 第 13 节直接盘点和回收存量，同时不继续堆
+来源 adapter、协议或把手工导出包装成长期主路径。
+
+### 5.7 当前并行优先事项：存量回收
+
+P2/P3 状态不变，但允许并优先执行一次性存量回收：
+
+1. Codex 先用官方连接器/Skill；没有直接能力时使用正式版 Chrome 已登录会话；只有桌面
+   UI 无结构化能力时使用 Computer Use。
+2. 只读盘点不改变平台状态；点击导出、下载、上传、编辑、删除或其他外部副作用在动作前
+   按用户授权边界确认，可将同一来源的一批明确动作一次确认后连续执行。
+3. 回收结果写入 `${BABATA_DATA_HOME}/recovery-staging/<source>/<batch-id>/`，至少包含原始
+   导出件/媒体、`manifest`、来源范围、取得时间、工具版本、文件 hash、缺失和限制。
+4. recovery staging 不是第二条最终持久化权威。P3 核心可用后，经唯一 Capture/C0 链路
+   校验提交；提交和备份验证完成后才能清理 staging 副本。
+5. 存量回收成功只证明该批资料已拿回，不把来源标记为 P4 available，也不替代重收集、
+   逐条状态和长期自动化验收。
 
 ## 6. P3：C0 原始资料与第一方版本底座
 
