@@ -1,6 +1,128 @@
+param(
+    [string]$DocsRoot
+)
+
 $ErrorActionPreference = 'Stop'
 
-$docs = (Resolve-Path (Join-Path $PSScriptRoot '..\00_docs')).Path
+function Split-MarkdownTableRow {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Line
+    )
+
+    $trimmed = $Line.Trim()
+    if (-not ($trimmed.StartsWith('|') -and $trimmed.EndsWith('|'))) {
+        throw "Invalid Markdown table row: $Line"
+    }
+
+    $inner = $trimmed.Substring(1, $trimmed.Length - 2)
+    $cells = @([regex]::Split($inner, '(?<!\\)\|') | ForEach-Object {
+        $_.Trim().Replace('\|', '|')
+    })
+    return $cells
+}
+
+function Get-MarkdownTableRows {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Markdown,
+        [Parameter(Mandatory)]
+        [string]$Heading,
+        [Parameter(Mandatory)]
+        [string[]]$RequiredColumns
+    )
+
+    $lines = @($Markdown -split "`r?`n")
+    $headingIndexes = @()
+    for ($index = 0; $index -lt $lines.Count; $index++) {
+        if ($lines[$index].Trim() -eq $Heading) {
+            $headingIndexes += $index
+        }
+    }
+    if ($headingIndexes.Count -ne 1) {
+        throw "Expected exactly one '$Heading' heading, found $($headingIndexes.Count)"
+    }
+
+    $headerIndex = $headingIndexes[0] + 1
+    while ($headerIndex -lt $lines.Count -and [string]::IsNullOrWhiteSpace($lines[$headerIndex])) {
+        $headerIndex++
+    }
+    while ($headerIndex -lt $lines.Count -and -not $lines[$headerIndex].Trim().StartsWith('|')) {
+        $headerIndex++
+    }
+    if ($headerIndex + 1 -ge $lines.Count) {
+        throw "Missing Markdown table after '$Heading'"
+    }
+
+    $headers = @(Split-MarkdownTableRow -Line $lines[$headerIndex])
+    $duplicateHeaders = @($headers | Group-Object | Where-Object Count -gt 1)
+    if ($duplicateHeaders.Count -gt 0) {
+        throw "Duplicate columns in '$Heading': $($duplicateHeaders.Name -join ', ')"
+    }
+    foreach ($column in $RequiredColumns) {
+        if ($headers -notcontains $column) {
+            throw "Table '$Heading' is missing required column: $column"
+        }
+    }
+
+    $separator = @(Split-MarkdownTableRow -Line $lines[$headerIndex + 1])
+    if ($separator.Count -ne $headers.Count) {
+        throw "Table '$Heading' separator has $($separator.Count) cells; expected $($headers.Count)"
+    }
+    foreach ($cell in $separator) {
+        if ($cell -notmatch '^:?-{3,}:?$') {
+            throw "Invalid Markdown separator in '$Heading': $cell"
+        }
+    }
+
+    $rows = @()
+    for ($index = $headerIndex + 2; $index -lt $lines.Count; $index++) {
+        if (-not $lines[$index].Trim().StartsWith('|')) {
+            break
+        }
+        $cells = @(Split-MarkdownTableRow -Line $lines[$index])
+        if ($cells.Count -ne $headers.Count) {
+            throw "Table '$Heading' row $($index + 1) has $($cells.Count) cells; expected $($headers.Count)"
+        }
+        $row = [ordered]@{}
+        for ($columnIndex = 0; $columnIndex -lt $headers.Count; $columnIndex++) {
+            $row[$headers[$columnIndex]] = $cells[$columnIndex]
+        }
+        $rows += [pscustomobject]$row
+    }
+    if ($rows.Count -eq 0) {
+        throw "Table '$Heading' has no data rows"
+    }
+    return $rows
+}
+
+function Assert-LegalEvidence {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Id,
+        [Parameter(Mandatory)]
+        [string]$Evidence
+    )
+
+    $tokens = @([regex]::Matches($Evidence, '(?<![A-Za-z0-9])E([0-9]+)(?![A-Za-z0-9])'))
+    if ($tokens.Count -eq 0) {
+        throw "$Id has no evidence level E0-E3"
+    }
+    if ($tokens.Count -ne 1) {
+        throw "$Id must have exactly one current evidence level, found $($tokens.Count)"
+    }
+    foreach ($token in $tokens) {
+        if ([int]$token.Groups[1].Value -notin 0..3) {
+            throw "$Id has invalid evidence level: $($token.Value)"
+        }
+    }
+    return [int]$tokens[0].Groups[1].Value
+}
+
+if ([string]::IsNullOrWhiteSpace($DocsRoot)) {
+    $DocsRoot = Join-Path $PSScriptRoot '..\00_docs'
+}
+$docs = (Resolve-Path -LiteralPath $DocsRoot).Path
 
 $requiredMarkers = @(
     @('00_requirements/00_REQUIREMENTS.md', '## -1.'),
@@ -53,16 +175,43 @@ $collection = Get-Content -Raw -Encoding utf8 (Join-Path $docs '03_architecture/
 $sourceResearch = Get-Content -Raw -Encoding utf8 (Join-Path $docs '03_architecture/08_SOURCE_TOOL_RESEARCH.md')
 $process = Get-Content -Raw -Encoding utf8 (Join-Path $docs '04_process/04_DEVELOPMENT_PROCESS.md')
 
-$p2Sources = @(
+$requiredP2Sources = @(
     'source.feishu', 'source.yuque', 'source.onenote', 'source.evernote',
     'source.wechat_favorites', 'source.wechat_articles', 'source.wechat_channels',
     'source.wechat_chats', 'source.zhihu', 'source.bilibili', 'source.xiaohongshu',
     'source.douyin', 'source.browser_bookmarks', 'source.browser_pages', 'source.doubao',
     'source.kimi', 'source.chatgpt', 'source.local_files', 'source.first_party'
 )
-foreach ($source in $p2Sources) {
-    if (-not $sourceResearch.Contains($source)) {
-        throw "Source research is missing P2-G7 coverage marker: $source"
+
+$sourceColumns = @(
+    'source_id', 'source', 'normal_route', 'minimum_authorization',
+    'current_evidence', 'current_gap', 'current_status'
+)
+$sourceRows = @(Get-MarkdownTableRows -Markdown $sourceResearch -Heading '<!-- P2-G7-SOURCE-TABLE -->' -RequiredColumns $sourceColumns)
+foreach ($row in $sourceRows) {
+    foreach ($column in $sourceColumns) {
+        if ([string]::IsNullOrWhiteSpace($row.$column)) {
+            throw "Source row '$($row.source_id)' has empty required field: $column"
+        }
+    }
+    if ($row.source_id -notmatch '^source\.[a-z0-9_]+$') {
+        throw "Invalid source_id: $($row.source_id)"
+    }
+    $evidenceLevel = Assert-LegalEvidence -Id $row.source_id -Evidence $row.current_evidence
+    if ($row.current_status -notin @('disabled', 'available')) {
+        throw "Source '$($row.source_id)' has invalid current status: $($row.current_status)"
+    }
+    if ($evidenceLevel -lt 3 -and $row.current_status -ne 'disabled') {
+        throw "Source '$($row.source_id)' is below E3 and must remain disabled"
+    }
+}
+$duplicateSources = @($sourceRows | Group-Object source_id | Where-Object Count -gt 1)
+if ($duplicateSources.Count -gt 0) {
+    throw "Duplicate source_id entries: $($duplicateSources.Name -join ', ')"
+}
+foreach ($source in $requiredP2Sources) {
+    if (@($sourceRows | Where-Object source_id -eq $source).Count -ne 1) {
+        throw "Source research must contain exactly one required source_id: $source"
     }
 }
 
@@ -70,9 +219,26 @@ $representativeTools = @(
     'tool.lark_cli', 'tool.agent_browser', 'tool.browser_use', 'tool.codex_chrome',
     'tool.opencli'
 )
+$toolColumns = @('tool_id', 'tool', 'current_evidence', 'next_user_action')
+$toolRows = @(Get-MarkdownTableRows -Markdown $sourceResearch -Heading '<!-- P2-G7-TOOL-TABLE -->' -RequiredColumns $toolColumns)
+foreach ($row in $toolRows) {
+    foreach ($column in $toolColumns) {
+        if ([string]::IsNullOrWhiteSpace($row.$column)) {
+            throw "Tool row '$($row.tool_id)' has empty required field: $column"
+        }
+    }
+    if ($row.tool_id -notmatch '^tool\.[a-z0-9_]+$') {
+        throw "Invalid tool_id: $($row.tool_id)"
+    }
+    $null = Assert-LegalEvidence -Id $row.tool_id -Evidence $row.current_evidence
+}
+$duplicateTools = @($toolRows | Group-Object tool_id | Where-Object Count -gt 1)
+if ($duplicateTools.Count -gt 0) {
+    throw "Duplicate tool_id entries: $($duplicateTools.Name -join ', ')"
+}
 foreach ($tool in $representativeTools) {
-    if (-not $sourceResearch.Contains($tool)) {
-        throw "Source research is missing P2-G7 tool evidence marker: $tool"
+    if (@($toolRows | Where-Object tool_id -eq $tool).Count -ne 1) {
+        throw "Source research must contain exactly one representative tool_id: $tool"
     }
 }
 
@@ -94,4 +260,4 @@ foreach ($id in 1..7) {
     }
 }
 
-Write-Output 'Document traceability passed: 00 -> PRD-01..10 -> AC-01..11 -> architecture/process -> TC-01..11, with P2-G1..G7 mapped to GT-P2-01..07.'
+Write-Output "Document traceability passed: 00 -> PRD-01..10 -> AC-01..11 -> architecture/process -> TC-01..11; $($requiredP2Sources.Count) required source routes and $($representativeTools.Count) representative tools have structured P2-G7 evidence."

@@ -235,7 +235,11 @@ Chrome；长期扩展路径另作同范围对照。
 | GT-P2-04 | P2-G4 | 未激活能力统一 unavailable，不启动真实来源/provider/worker |
 | GT-P2-05 | P2-G5 | JS/Python/Skill/provider/view/output 无 C0/C1 直接写入路径 |
 | GT-P2-06 | P2-G6 | 00–05、蓝图、脚本、配置和测试标识追溯一致 |
-| GT-P2-07 | P2-G7 | 全部已列来源有证据等级、最小授权、直接用/薄包装/窄适配/回退决策和诚实缺口；当前可调用的代表性官方/通用工具有实际调用或连接结果；未到 E3 的来源保持 disabled |
+| GT-P2-07 | P2-G7 | 19 个必需 `source_id` 在路线总表中存在且唯一，路线、最小授权、E0-E3 证据、诚实缺口和状态非空；代表性 `tool_id` 有真实状态；未到 E3 的来源保持 disabled；允许未来追加来源 |
+
+`check-doc-traceability.ps1` 解析上述真实表格，不再依赖文末来源或工具 token。
+`test-doc-traceability.ps1` 必须证明删除一个必需来源、清空 Kimi 证据、清空 Kimi 最小授权
+都会失败。
 
 ## 4. 阶段测试映射
 
