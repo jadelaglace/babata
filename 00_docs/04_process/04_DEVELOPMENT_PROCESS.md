@@ -317,8 +317,7 @@ P3 为 AC-03、AC-06、AC-10 提供部分底座，不满足 AC-01、AC-02 或完
 P4 按 `07_P4_FIRST_COLLECTION_PATHS.md` 实现：
 
 1. 飞书官方授权连接、文档/Wiki/知识库候选、层级和附件限制；
-2. Browser Use/Agent Browser 复用已登录 Chrome 的自主导航探针，以及长期浏览器扩展
-   配对、页面/选区/链接/书签候选；
+2. Browser Use/Agent Browser 复用已登录 Chrome，自主导航点名平台并取得真实内容；
 3. 用户给出单条、可见集合、收藏夹、会话或明确范围一次后，Agent 自主完成范围内收集；
    未给范围或范围有歧义时不写 C0；
 4. queued/running/saved/skipped/failed、局部成功和重试；
@@ -367,12 +366,17 @@ P4 按 `07_P4_FIRST_COLLECTION_PATHS.md` 实现：
 读取动作变成任务结束后可调用的重试/重收集；Bilibili 是因为 Codex Chrome 历史页连续
 两次超时后才回退 OpenCLI。两类理由均已记录，不把 OpenCLI 当默认绕路。
 
+实验性 `Babata Collector 0.2.0` 只完成手动当前页/选区剪藏和 locator-only 书签提交，
+正式 Chrome 实测仍要求用户逐项点击，不能自动遍历书签正文。按用户最新纠偏，该入口
+冻结、保持 disabled、排到最后优先级，不作为 P4 gate 或当前存量回收完成证据。浏览器
+书签后续正常路线必须由 Agent 在一次明确范围后自动遍历网址并取得正文和可得附件。
+
 已有导出、书签 HTML 和 CandidateEnvelope 只作为回退/提前证据。P4 gate：
 
 | Gate | 本阶段判定 |
 | --- | --- |
 | P4-G1 | 飞书真实上下文候选成立 |
-| P4-G2 | 正式 Chrome 中 Kimi 真实会话候选与所选正文成立；通用 Agent 浏览器自主导航及长期扩展配对另行成立，不能用任意页面替代具体平台 |
+| P4-G2 | 正式 Chrome 中 Kimi 真实会话候选与所选正文成立；冻结的手动剪藏器不计入 gate，不能用任意页面替代具体平台 |
 | P4-G3 | 一次明确范围内可连续收集；未授权范围不写入 |
 | P4-G4 | 逐条状态、局部成功和重试成立 |
 | P4-G5 | 四种重收集结果不覆盖旧 C0 |

@@ -539,14 +539,18 @@ fn validate_candidate(candidate: &CandidateEnvelope) -> Result<(), ApplicationEr
             "candidate route is not enabled for capture".to_owned(),
         ));
     }
-    if matches!(
-        candidate.route_id.0.as_str(),
-        "source.browser_pages" | "source.browser_bookmarks"
-    ) && candidate.content_type != ContentType::WebPage
-    {
-        return Err(ApplicationError::Conflict(
-            "browser candidates must declare web_page content".to_owned(),
-        ));
+    match candidate.route_id.0.as_str() {
+        "source.browser_pages" if candidate.content_type != ContentType::WebPage => {
+            return Err(ApplicationError::Conflict(
+                "browser page candidates must declare web_page content".to_owned(),
+            ));
+        }
+        "source.browser_bookmarks" if candidate.content_type != ContentType::Document => {
+            return Err(ApplicationError::Conflict(
+                "browser bookmark candidates must declare document content".to_owned(),
+            ));
+        }
+        _ => {}
     }
     if candidate.route_id.0 == "source.feishu" && candidate.content_type != ContentType::Document {
         return Err(ApplicationError::Conflict(
@@ -1273,6 +1277,58 @@ pub(crate) mod tests {
                 },
                 context: None,
                 native_id: Some("chat-a".to_owned()),
+            },
+            assets: Vec::new(),
+        });
+        assert!(result.is_err());
+        assert!(repository.state.lock().unwrap().revisions.is_empty());
+    }
+
+    #[test]
+    fn browser_bookmark_document_candidate_is_accepted() {
+        let repository = MockRepository::default();
+        let service = CaptureService::new(repository.clone(), MockAssets::default(), FixedClock);
+        let payload = "Example bookmark\nhttps://example.test/bookmark";
+        let result = service.capture_candidate(CandidateCaptureCommand {
+            route_evidence: None,
+            candidate: CandidateEnvelope {
+                protocol_version: "1".to_owned(),
+                route_id: SourceRouteId("source.browser_bookmarks".to_owned()),
+                source_reference: "https://example.test/bookmark".to_owned(),
+                content_type: ContentType::Document,
+                payload_sha256: Sha256::of_bytes(payload.as_bytes()),
+                metadata: Metadata::empty(),
+                payload: CandidatePayload::Text {
+                    text: payload.to_owned(),
+                },
+                context: Some("Bookmarks / Test".to_owned()),
+                native_id: Some("bookmark-1".to_owned()),
+            },
+            assets: Vec::new(),
+        });
+        assert!(result.is_ok());
+        assert_eq!(repository.state.lock().unwrap().revisions.len(), 1);
+    }
+
+    #[test]
+    fn browser_page_document_candidate_is_rejected_before_write() {
+        let repository = MockRepository::default();
+        let service = CaptureService::new(repository.clone(), MockAssets::default(), FixedClock);
+        let payload = "Example page";
+        let result = service.capture_candidate(CandidateCaptureCommand {
+            route_evidence: None,
+            candidate: CandidateEnvelope {
+                protocol_version: "1".to_owned(),
+                route_id: SourceRouteId("source.browser_pages".to_owned()),
+                source_reference: "https://example.test/page".to_owned(),
+                content_type: ContentType::Document,
+                payload_sha256: Sha256::of_bytes(payload.as_bytes()),
+                metadata: Metadata::empty(),
+                payload: CandidatePayload::Text {
+                    text: payload.to_owned(),
+                },
+                context: Some("visible page text".to_owned()),
+                native_id: None,
             },
             assets: Vec::new(),
         });

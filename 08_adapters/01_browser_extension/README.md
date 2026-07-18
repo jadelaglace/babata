@@ -1,5 +1,9 @@
 # Babata Browser Collector
 
+> Status: frozen experimental entry point. It is not a P4 gate or the current collection route.
+> It requires manual clicks and bookmark captures are locator-only; automatic Agent traversal of
+> bookmark URLs and page-body collection is a separate future requirement.
+
 This unpacked Chrome extension submits explicitly prepared page, selection, and bookmark
 candidates to the Babata loopback API. It never opens the data root, SQLite, or final asset
 paths.

@@ -177,12 +177,14 @@ fn validate_browser_candidate(
     candidate: &CandidateEnvelope,
     route_id: &SourceRouteId,
 ) -> Result<(), ApplicationError> {
+    let content_type_matches_route = match route_id.0.as_str() {
+        "source.browser_pages" => candidate.content_type == ContentType::WebPage,
+        "source.browser_bookmarks" => candidate.content_type == ContentType::Document,
+        _ => false,
+    };
     if candidate.protocol_version != "1"
         || candidate.route_id != *route_id
-        || !matches!(
-            candidate.content_type,
-            ContentType::WebPage | ContentType::Document
-        )
+        || !content_type_matches_route
         || candidate.source_reference.trim().is_empty()
     {
         return Err(ApplicationError::Conflict(
