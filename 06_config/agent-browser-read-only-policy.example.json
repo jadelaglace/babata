@@ -1,0 +1,13 @@
+{
+  "default": "deny",
+  "allow": [
+    "launch",
+    "tab",
+    "tab_list",
+    "session_info",
+    "snapshot",
+    "read",
+    "get",
+    "wait"
+  ]
+}
