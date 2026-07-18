@@ -12,8 +12,8 @@
 P0  冻结旧版本                                    已完成
 P1  真实需求、PRD、产品验收、全局技术架构           已完成
 P2  全系统模块、目录、代码与工具骨架                 已完成
-P3  C0 原始资料与第一方版本底座                     未开始（下一阶段；存在提前工作）
-P4  飞书与浏览器首批真实收集路径                     未开始（存在提前工作）
+P3  C0 原始资料与第一方版本底座                     已完成
+P4  飞书与浏览器首批真实收集路径                     未开始（下一阶段；存在提前工作）
 P5  C1 多模态清洗与百炼处理                         未开始
 P6  核心沉淀、检索、子库与输出                      未开始
 P7  扩展来源、正式 Skill 与受控 Agent               未开始
@@ -21,6 +21,7 @@ P8  备份、恢复、运维与长期加固                      未开始
 ```
 
 <!-- P2: completed; P2-G1..P2-G7: passed -->
+<!-- P3: completed; P3-G1..P3-G6: passed -->
 
 当前真实情况：
 
@@ -35,11 +36,16 @@ P8  备份、恢复、运维与长期加固                      未开始
 - Kimi 真实练手已完成：Codex Chrome 读取正式版登录态下的真实历史分页和长会话正文，
   两条明确范围样本已带 manifest/hash 写入外部 recovery staging；第二条正文响应为
   104,476 字节。该证据只证明当前 Codex 路线能用于具体平台，不把 Kimi/P4 标为 available。
-- 已有 29 个 P3 活跃文件、raw migrations、命令与测试属于提前工作。它们应保留并
-  在下一阶段按 P3 蓝图重新审阅，不代表 P3 已开始或完成。
-- 已有飞书导出、书签 HTML、CandidateEnvelope、route evidence 和 fixture 属于 P4
-  提前工作/回退路径证据。正常的飞书上下文候选、浏览器扩展候选与选择尚未通过，
-  所以 P4 不得标记进行中或 enabled。
+- P3 已按蓝图重新审阅 29 个活跃文件：显式 text/file/export 和 first-party
+  create/revise/annotate 通过同一 Rust application/infrastructure 链路进入 C0，返回包含
+  来源、上下文、版本、关系、资产状态和哈希的 repository read-back。P3-G1 至 P3-G6
+  已全部通过，P3 已完成。
+- stage、graph transaction、finalise、hash verify 和 ready transition 故障均有负向测试；
+  失败不会伪报 ready，跨 SQLite/文件系统故障保留 quarantine、journal/orphan 诊断，
+  已被 ready 记录引用的 content-addressed bytes 不会被移动。
+- 飞书导出、书签 HTML、CandidateEnvelope、route evidence 和 fixture 仍只是 P4 提前工作/
+  回退路径证据。P4 migration 已与 P3 raw migration 分开；相关 CLI、route 和 capability
+  保持 unavailable/disabled，不能因 P3 完成标记来源 available。
 
 项目阶段只使用 P0–P8；C0–C3 是数据权威级别，不是项目阶段。
 
@@ -193,11 +199,10 @@ AC 已完成。
 工具实证已经齐全，不证明任何来源已经 available。抖音等具体来源的 E3 缺口、Kimi 的
 全历史/附件/重收集缺口继续留在 P4/P7，不能倒灌为 P2 或 P3 的前置条件。
 
-### 5.7 P2 收尾后的下一步
+### 5.7 P2 收尾时的阶段交接（历史）
 
-按用户最新顺序，Kimi 具体平台练手已经证明 Codex 当前手段可用，P2 随本次 gate 复核
-收尾。下一步进入 P3，重新审阅已有提前实现，完成 recovery staging 到唯一 C0 路径的
-原始资料底座。后续存量回收仍可在用户给出来源/范围时并行执行，但不再阻塞阶段推进：
+P2 收尾时，Kimi 具体平台练手已证明 Codex 当前手段可用，当时的下一步是进入 P3，
+重新审阅提前实现并完成唯一 C0 路径。P3 现已完成；以下存量回收边界继续有效：
 
 1. Codex 先用官方连接器/Skill；没有直接能力时使用正式版 Chrome 已登录会话；只有桌面
    UI 无结构化入口时使用 Computer Use。
@@ -229,6 +234,22 @@ P3 gate：
 | P3-G4 | 失败不产生伪 ready，journal/orphan 可诊断 |
 | P3-G5 | DB/资产写入 owner 唯一 |
 | P3-G6 | P2 gate 继续成立且未提前激活其他能力 |
+
+### 6.1 P3 完成证据（2026-07-18）
+
+- 全新临时数据根先报告 schema 0/unreachable，显式 text/file/export 后建立 schema 3；
+  最终有 2 个哈希寻址原件，pending journal、orphan 和 quarantined revision 均为 0；
+- text 的上下文 `manual-smoke`、file/export 的 role、logical path、SHA-256 和 ready 状态
+  均从 `RecordDetail` 回读；输出中的 `operation_id` 与该次提交共用同一 operation；
+- first-party create/revise 保留 v1/v2、parent 和 `revises` 关系；annotate 形成独立 item，
+  并指向被批注的具体 ready revision；外部 revision 不能被 revise 成 first-party；
+- 注入 ready transition 失败后，revision/asset 为 quarantined，最终原件仍在哈希路径，
+  journal 和 orphan marker 各 1；共享 content-addressed bytes 不被移走；
+- P3 raw migration 只有 `0001..0003`；P4 route evidence 保存在独立 migration 目录且未应用。
+  Candidate/provider route 命令返回 `capability_unavailable`，来源保持 disabled；
+- `check-p3-raw-inventory.ps1` 报告 29 个活跃文件和 42 个 raw 功能测试；workspace
+  共 49 个测试通过。P2 inventory、interface ownership、document traceability、Rust
+  boundary 和 no-secondary-writer gate 持续通过；fmt、check、clippy `-D warnings` 通过。
 
 P3 为 AC-03、AC-06、AC-10 提供部分底座，不满足 AC-01、AC-02 或完整 AC-11。
 
