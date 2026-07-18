@@ -38,11 +38,12 @@ P8  备份、恢复、运维与长期加固                      未开始
   104,476 字节。该证据只证明当前 Codex 路线能用于具体平台，不把 Kimi/P4 标为 available。
 - P3 已按蓝图重新审阅 29 个活跃文件：显式 text/file/export 和 first-party
   create/revise/annotate 通过同一 Rust application/infrastructure 链路进入 C0，返回包含
-  来源、上下文、版本、关系、资产状态和哈希的 repository read-back。P3-G1 至 P3-G6
-  已全部通过，P3 已完成。
-- stage、graph transaction、finalise、hash verify 和 ready transition 故障均有负向测试；
+  来源、上下文、版本、关系、资产状态、哈希和 operation provenance 的 repository read-back。
+  P3-G1 至 P3-G6 已全部通过，P3 已完成。
+- stage、graph transaction、finalise、hash verify、ready transition、post-ready read-back
+  和 cleanup 故障均有负向测试；
   失败不会伪报 ready，跨 SQLite/文件系统故障保留 quarantine、journal/orphan 诊断，
-  已被 ready 记录引用的 content-addressed bytes 不会被移动。
+  CLI 错误携带可关联 operation ID，已被 ready 记录引用的 content-addressed bytes 不会被移动。
 - 飞书导出、书签 HTML、CandidateEnvelope、route evidence 和 fixture 仍只是 P4 提前工作/
   回退路径证据。P4 migration 已与 P3 raw migration 分开；相关 CLI、route 和 capability
   保持 unavailable/disabled，不能因 P3 完成标记来源 available。
@@ -237,7 +238,7 @@ P3 gate：
 
 ### 6.1 P3 完成证据（2026-07-18）
 
-- 全新临时数据根先报告 schema 0/unreachable，显式 text/file/export 后建立 schema 3；
+- 全新临时数据根先报告 schema 0/unreachable，显式 text/file/export 后建立 schema 4；
   最终有 2 个哈希寻址原件，pending journal、orphan 和 quarantined revision 均为 0；
 - text 的上下文 `manual-smoke`、file/export 的 role、logical path、SHA-256 和 ready 状态
   均从 `RecordDetail` 回读；输出中的 `operation_id` 与该次提交共用同一 operation；
@@ -245,10 +246,14 @@ P3 gate：
   并指向被批注的具体 ready revision；外部 revision 不能被 revise 成 first-party；
 - 注入 ready transition 失败后，revision/asset 为 quarantined，最终原件仍在哈希路径，
   journal 和 orphan marker 各 1；共享 content-addressed bytes 不被移走；
-- P3 raw migration 只有 `0001..0003`；P4 route evidence 保存在独立 migration 目录且未应用。
+- Issue #14 closeout 证明 text/create/revise/annotate 无资产失败仍有 operation journal、
+  quarantined operation 和相同 CLI operation ID；post-ready read-back 失败返回 durable ready
+  outcome 与 warning，不生成 `finalized_uncommitted`；重导入的两次 locator/native/timestamp/
+  metadata 可分别从 revision provenance 回读且旧 wording/asset 不覆盖；
+- P3 raw migration 只有 `0001..0004`；P4 route evidence 保存在独立 migration 目录且未应用。
   Candidate/provider route 命令返回 `capability_unavailable`，来源保持 disabled；
-- `check-p3-raw-inventory.ps1` 报告 29 个活跃文件和 42 个 raw 功能测试；workspace
-  共 49 个测试通过。P2 inventory、interface ownership、document traceability、Rust
+- `check-p3-raw-inventory.ps1` 报告 29 个活跃文件和 55 个 raw 功能测试；workspace
+  共 63 个测试通过。P2 inventory、interface ownership、document traceability、Rust
   boundary 和 no-secondary-writer gate 持续通过；fmt、check、clippy `-D warnings` 通过。
 
 P3 为 AC-03、AC-06、AC-10 提供部分底座，不满足 AC-01、AC-02 或完整 AC-11。

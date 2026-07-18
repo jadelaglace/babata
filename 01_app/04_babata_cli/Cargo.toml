@@ -23,4 +23,5 @@ thiserror = "2.0"
 
 [dev-dependencies]
 assert_cmd = "2.0"
+babata-infrastructure = { path = "../03_babata_infrastructure", features = ["test-support"] }
 tempfile = "3.16"

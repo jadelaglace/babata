@@ -7,8 +7,9 @@ use crate::{
     ApplicationError, CandidateCaptureCommand, CaptureFileCommand, CaptureImportCommand,
     CaptureOutcome, CaptureTextCommand,
     ports::{
-        AssetStorePort, ClockPort, FinalizeAssetOutcome, NewAsset, NewCollection, NewItem,
-        NewRevision, NewSource, PersistGraph, RawRepositoryPort, StagedAsset,
+        AssetStorePort, ClockPort, FinalizeAssetOutcome, NewAsset, NewCaptureOperation,
+        NewCollection, NewItem, NewRevision, NewSource, PersistGraph, RawRepositoryPort,
+        StagedAsset,
     },
 };
 
@@ -37,15 +38,15 @@ where
         command: CaptureTextCommand,
     ) -> Result<CaptureOutcome, ApplicationError> {
         validate_provider(&command.provider)?;
-        let operation_id = new_operation_id();
         let text = TextPayload::new(command.text)?;
         let hash = text.hash();
         let identity = command
             .identity
             .or_else(|| command.native_id.as_ref().map(|id| format!("native:{id}")))
             .unwrap_or_else(|| format!("text:{}", hash.as_str()));
+        let operation_id = new_operation_id();
         self.capture_external(
-            operation_id,
+            operation_id.clone(),
             command.provider,
             command.context,
             command.locator,
@@ -59,6 +60,7 @@ where
             Vec::new(),
             RevisionKind::Capture,
         )
+        .map_err(|error| error.with_operation(operation_id))
     }
 
     pub fn capture_file(
@@ -91,7 +93,8 @@ where
                     for staged in &staged_assets {
                         let _ = self.assets.discard_stage(staged);
                     }
-                    return Err(error);
+                    let _ = self.assets.complete_operation(&operation_id);
+                    return Err(error.with_operation(operation_id));
                 }
             }
         }
@@ -100,7 +103,7 @@ where
             .or_else(|| command.native_id.as_ref().map(|id| format!("native:{id}")))
             .unwrap_or_else(|| format!("text:{}", text.hash().as_str()));
         let result = self.capture_external(
-            operation_id,
+            operation_id.clone(),
             command.provider,
             command.context,
             command.locator,
@@ -118,9 +121,12 @@ where
             for asset in &staged_assets {
                 let _ = self.assets.discard_stage(asset);
             }
+            let _ = self.assets.complete_operation(&operation_id);
         }
-        if let (Ok(outcome), Some(evidence)) = (&result, route_evidence) {
-            self.repository
+        let mut outcome = result.map_err(|error| error.with_operation(operation_id.clone()))?;
+        if let Some(evidence) = route_evidence {
+            if self
+                .repository
                 .record_route_evidence(&crate::ports::NewRouteEvidence {
                     route_id: evidence.route_id.0,
                     authorization_id: evidence.authorization_id,
@@ -130,9 +136,15 @@ where
                     coverage: evidence.coverage,
                     reimported: outcome.reimported,
                     recorded_at: self.clock.now(),
-                })?;
+                })
+                .is_err()
+            {
+                outcome
+                    .warnings
+                    .push("route evidence persistence is pending".to_owned());
+            }
         }
-        result
+        Ok(outcome)
     }
 
     pub fn capture_candidate(
@@ -169,8 +181,9 @@ where
                 "candidate payload hash does not match its text".to_owned(),
             ));
         }
+        let operation_id = new_operation_id();
         self.capture_external(
-            new_operation_id(),
+            operation_id.clone(),
             "browser".to_owned(),
             candidate.context,
             Some(candidate.source_reference.clone()),
@@ -184,6 +197,7 @@ where
             Vec::new(),
             RevisionKind::Capture,
         )
+        .map_err(|error| error.with_operation(operation_id))
     }
 
     fn capture_file_like(
@@ -194,14 +208,20 @@ where
     ) -> Result<CaptureOutcome, ApplicationError> {
         validate_provider(&command.provider)?;
         let operation_id = new_operation_id();
-        let staged = self.assets.stage(&command.path, role, &operation_id)?;
+        let staged = match self.assets.stage(&command.path, role, &operation_id) {
+            Ok(staged) => staged,
+            Err(error) => {
+                let _ = self.assets.complete_operation(&operation_id);
+                return Err(error.with_operation(operation_id));
+            }
+        };
         let identity = command
             .identity
             .or_else(|| command.native_id.as_ref().map(|id| format!("native:{id}")))
             .unwrap_or_else(|| format!("file:{}", staged.sha256.as_str()));
         let content_type = content_type_for(&command.path);
         let result = self.capture_external(
-            operation_id,
+            operation_id.clone(),
             command.provider,
             command.context,
             command.locator,
@@ -217,8 +237,9 @@ where
         );
         if result.is_err() {
             let _ = self.assets.discard_stage(&staged);
+            let _ = self.assets.complete_operation(&operation_id);
         }
-        result
+        result.map_err(|error| error.with_operation(operation_id))
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -239,6 +260,9 @@ where
         new_kind: RevisionKind,
     ) -> Result<CaptureOutcome, ApplicationError> {
         let now = self.clock.now();
+        let operation_native_id = native_id.clone();
+        let operation_locator = locator.clone();
+        let operation_published_at = source_published_at.clone();
         let source = match self
             .repository
             .find_source(SourceKind::External, &provider, None)?
@@ -270,7 +294,7 @@ where
                     content_type,
                     source_published_at,
                     first_captured_at: now.clone(),
-                    metadata,
+                    metadata: metadata.clone(),
                 },
                 None,
                 new_kind,
@@ -294,7 +318,17 @@ where
             revision_note: None,
             raw_text,
             text_sha256,
-            metadata: Metadata::empty(),
+            metadata: metadata.clone(),
+        };
+        let operation = NewCaptureOperation {
+            operation_id: operation_id.clone(),
+            item_id: item.id.clone(),
+            revision_id: revision.id.clone(),
+            source_native_id: operation_native_id,
+            source_locator: operation_locator,
+            source_published_at: operation_published_at,
+            metadata,
+            started_at: now,
         };
         let assets = staged_assets
             .iter()
@@ -311,6 +345,7 @@ where
             .collect();
         self.persist_and_finalize(
             operation_id,
+            operation,
             source,
             collection,
             item,
@@ -327,6 +362,7 @@ where
     pub(crate) fn persist_and_finalize(
         &self,
         operation_id: String,
+        operation: NewCaptureOperation,
         source: NewSource,
         collection: Option<NewCollection>,
         item: NewItem,
@@ -337,7 +373,9 @@ where
         duplicate_of: Option<RevisionId>,
         reimported: bool,
     ) -> Result<CaptureOutcome, ApplicationError> {
+        self.assets.begin_operation(&operation_id)?;
         let graph = PersistGraph {
+            operation,
             source,
             collection,
             item: item.clone(),
@@ -345,13 +383,19 @@ where
             assets,
             relations,
         };
-        self.repository.insert_capture_graph(&graph)?;
+        if let Err(error) = self.repository.insert_capture_graph(&graph) {
+            for asset in &staged_assets {
+                let _ = self.assets.discard_stage(asset);
+            }
+            let _ = self.assets.complete_operation(&operation_id);
+            return Err(error);
+        }
         let mut finalized = Vec::with_capacity(staged_assets.len());
         for asset in &staged_assets {
             match self.assets.finalize(asset) {
                 Ok(outcome) => finalized.push((asset.clone(), outcome)),
                 Err(error) => {
-                    self.preserve_failed_capture(&operation_id, &revision.id, &finalized);
+                    self.preserve_failed_capture(&operation_id, &revision.id, &finalized, &error);
                     return Err(error);
                 }
             }
@@ -360,38 +404,45 @@ where
             match self.assets.verify(asset) {
                 Ok(true) => {}
                 Ok(false) => {
-                    self.preserve_failed_capture(&operation_id, &revision.id, &finalized);
-                    return Err(ApplicationError::Integrity(
+                    let error = ApplicationError::Integrity(
                         "finalized asset failed hash verification".to_owned(),
-                    ));
+                    );
+                    self.preserve_failed_capture(&operation_id, &revision.id, &finalized, &error);
+                    return Err(error);
                 }
                 Err(error) => {
-                    self.preserve_failed_capture(&operation_id, &revision.id, &finalized);
+                    self.preserve_failed_capture(&operation_id, &revision.id, &finalized, &error);
                     return Err(error);
                 }
             }
         }
         if let Err(error) = self.repository.mark_ready(&revision.id) {
-            self.preserve_failed_capture(&operation_id, &revision.id, &finalized);
-            return Err(error);
-        }
-        let detail = match self.repository.load_detail(&item.id) {
-            Ok(detail) => detail,
-            Err(error) => {
-                self.preserve_failed_capture(&operation_id, &revision.id, &finalized);
-                return Err(error);
-            }
-        };
-        if let Err(error) = validate_ready_readback(&detail, &revision.id, &staged_assets) {
-            self.preserve_failed_capture(&operation_id, &revision.id, &finalized);
+            self.preserve_failed_capture(&operation_id, &revision.id, &finalized, &error);
             return Err(error);
         }
         let mut warnings = Vec::new();
         for asset in &staged_assets {
             if self.assets.discard_stage(asset).is_err() {
-                warnings.push("recovery journal cleanup is pending".to_owned());
+                warnings.push("recovery staging cleanup is pending".to_owned());
                 break;
             }
+        }
+        if self.assets.complete_operation(&operation_id).is_err() {
+            warnings.push("recovery journal cleanup is pending".to_owned());
+        }
+        let detail = self
+            .repository
+            .load_detail(&item.id)
+            .ok()
+            .and_then(|detail| {
+                if validate_ready_readback(&detail, &revision.id, &staged_assets).is_ok() {
+                    Some(detail)
+                } else {
+                    None
+                }
+            });
+        if detail.is_none() {
+            warnings.push("ready capture committed but repository read-back failed".to_owned());
         }
         Ok(CaptureOutcome {
             operation_id,
@@ -414,13 +465,17 @@ where
         operation_id: &str,
         revision_id: &RevisionId,
         finalized: &[(StagedAsset, FinalizeAssetOutcome)],
+        error: &ApplicationError,
     ) {
+        let _ =
+            self.assets
+                .preserve_operation(operation_id, &revision_id.to_string(), error.code());
         for (asset, outcome) in finalized {
             let _ = self
                 .assets
                 .quarantine_finalized(asset, operation_id, *outcome);
         }
-        let _ = self.repository.quarantine(revision_id);
+        let _ = self.repository.quarantine(revision_id, error.code());
     }
 }
 
@@ -543,6 +598,7 @@ pub(crate) mod tests {
         pub(crate) sources: Vec<NewSource>,
         pub(crate) items: Vec<NewItem>,
         pub(crate) revisions: Vec<NewRevision>,
+        pub(crate) operations: Vec<NewCaptureOperation>,
         pub(crate) assets: Vec<NewAsset>,
         pub(crate) relations: Vec<NewRelation>,
         pub(crate) quarantined: Vec<RevisionId>,
@@ -668,6 +724,7 @@ pub(crate) mod tests {
                 state.items.push(graph.item.clone());
             }
             state.revisions.push(graph.revision.clone());
+            state.operations.push(graph.operation.clone());
             state.assets.extend(graph.assets.clone());
             state.relations.extend(graph.relations.clone());
             state
@@ -693,7 +750,7 @@ pub(crate) mod tests {
             }
             Ok(())
         }
-        fn quarantine(&self, revision_id: &RevisionId) -> Result<(), ApplicationError> {
+        fn quarantine(&self, revision_id: &RevisionId, _: &str) -> Result<(), ApplicationError> {
             self.state
                 .lock()
                 .unwrap()
@@ -754,6 +811,23 @@ pub(crate) mod tests {
                             .iter()
                             .find(|(id, _)| id == &revision.id)
                             .map_or(RawState::Pending, |(_, state)| *state),
+                        provenance: state
+                            .operations
+                            .iter()
+                            .find(|operation| operation.revision_id == revision.id)
+                            .map(|operation| crate::CaptureProvenanceDetail {
+                                operation_id: operation.operation_id.clone(),
+                                source_native_id: operation.source_native_id.clone(),
+                                source_locator: operation.source_locator.clone(),
+                                source_published_at: operation.source_published_at.clone(),
+                                metadata: operation.metadata.clone(),
+                                state: state
+                                    .states
+                                    .iter()
+                                    .find(|(id, _)| id == &revision.id)
+                                    .map_or(RawState::Pending, |(_, state)| *state),
+                                failure_code: None,
+                            }),
                     })
                     .collect(),
                 assets: state
@@ -845,6 +919,15 @@ pub(crate) mod tests {
         recovery_markers: Arc<Mutex<u32>>,
     }
     impl AssetStorePort for MockAssets {
+        fn begin_operation(&self, _: &str) -> Result<(), ApplicationError> {
+            Ok(())
+        }
+        fn preserve_operation(&self, _: &str, _: &str, _: &str) -> Result<(), ApplicationError> {
+            Ok(())
+        }
+        fn complete_operation(&self, _: &str) -> Result<(), ApplicationError> {
+            Ok(())
+        }
         fn stage(
             &self,
             _: &str,

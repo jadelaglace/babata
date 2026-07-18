@@ -247,17 +247,17 @@ Chrome；长期扩展路径另作同范围对照。
 
 | ID | Gate | 验证 |
 | --- | --- | --- |
-| GT-P3-01 | P3-G1 | 全新临时数据根产生编号分区；首次 status 为 schema 0，提交后为 schema 3；Git 无运行数据 |
-| GT-P3-02 | P3-G2 | text/file/export 的 JSON outcome 包含 repository read-back；上下文、版本、asset role/state/path/hash 与最终 bytes 一致 |
+| GT-P3-01 | P3-G1 | 全新临时数据根产生编号分区；首次 status 为 schema 0，提交后为 schema 4；Git 无运行数据 |
+| GT-P3-02 | P3-G2 | text/file/export 的 JSON outcome 包含 repository read-back；上下文、版本、asset role/state/path/hash 与最终 bytes 一致；重导入各次 locator/native/timestamp/metadata provenance 独立可读 |
 | GT-P3-03 | P3-G3 | create/revise 保留旧 wording、ordinal、parent、revision metadata 和 revises；annotate 是独立 item 并指向具体 ready revision；外部 revision 拒绝 revise |
-| GT-P3-04 | P3-G4 | stage/graph/finalise/verify/ready 故障不伪报 ready；quarantine、journal、orphan 可诊断；共享哈希原件不被移动 |
+| GT-P3-04 | P3-G4 | stage/graph/finalise/verify/ready/post-ready read-back/cleanup 故障的 CLI、operation、revision/asset、journal/orphan 与 bytes 状态一致；无资产失败可按 operation ID 诊断；共享哈希原件不被移动 |
 | GT-P3-05 | P3-G5 | `check-rust-boundaries.ps1` 与 `check-no-secondary-writer.ps1` 证明 DB/最终资产仍只有 infrastructure owner |
-| GT-P3-06 | P3-G6 | 全部 P2 gate 继续通过；P3 raw migration 仅 0001–0003；P4 migration 分离，provider/route/candidate 保持 unavailable/disabled |
+| GT-P3-06 | P3-G6 | 全部 P2 gate 继续通过；P3 raw migration 仅 0001–0004；P4 migration 分离，provider/route/candidate 保持 unavailable/disabled |
 
-`check-p3-raw-inventory.ps1` 验证 29 个 P3 活跃文件、42 个 raw 功能测试和 P4 未提前
+`check-p3-raw-inventory.ps1` 验证 29 个 P3 活跃文件、55 个 raw 功能测试和 P4 未提前
 激活边界。`p3_raw.rs` 使用全新临时根贯通显式提交与 first-party 版本；application 和
-infrastructure 负向测试分别注入 stage、finalise、verify、ready transition 与 graph
-transaction 故障。
+infrastructure 负向测试分别注入 stage、graph、finalise、verify、ready transition、
+post-ready read-back 与 cleanup 故障，并联合检查 operation/journal/orphan 和 durable C0。
 
 ## 5. 阶段测试映射
 

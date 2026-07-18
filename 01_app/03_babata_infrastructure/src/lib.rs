@@ -15,4 +15,6 @@ pub use assets::FileAssetStore;
 pub use capabilities::StaticCapabilityRegistry;
 pub use config::{AppConfig, DataRoot, SqliteOptions, load_config};
 pub use observability::SystemClock;
+#[cfg(feature = "test-support")]
+pub use sqlite::test_support;
 pub use sqlite::{RawStatus, SqliteRawRepository, open_raw_database, raw_status};

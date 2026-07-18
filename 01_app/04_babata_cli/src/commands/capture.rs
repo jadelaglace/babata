@@ -5,7 +5,7 @@ use babata_application::{
 };
 use babata_domain::{
     AssetRole, CandidateEnvelope, ContentType, ItemId, Metadata, RevisionId, RouteCoverage,
-    SourceRouteId,
+    SourceRouteId, UtcTimestamp,
 };
 use babata_infrastructure::{
     FileAssetStore, SqliteRawRepository, SystemClock,
@@ -224,6 +224,8 @@ pub struct ExternalTextInput {
     pub identity: Option<String>,
     #[arg(long, default_value = "{}")]
     pub metadata_json: String,
+    #[arg(long)]
+    pub source_published_at: Option<String>,
 }
 
 #[derive(Debug, clap::Args)]
@@ -242,6 +244,8 @@ pub struct ExternalFileInput {
     pub identity: Option<String>,
     #[arg(long, default_value = "{}")]
     pub metadata_json: String,
+    #[arg(long)]
+    pub source_published_at: Option<String>,
 }
 
 #[derive(Debug, clap::Args)]
@@ -289,7 +293,10 @@ fn text_command(
         native_id: input.native_id,
         identity: input.identity,
         metadata: Metadata::parse(&input.metadata_json)?,
-        source_published_at: None,
+        source_published_at: input
+            .source_published_at
+            .map(UtcTimestamp::parse)
+            .transpose()?,
     })
 }
 fn file_command(
@@ -303,7 +310,10 @@ fn file_command(
         native_id: input.native_id,
         identity: input.identity,
         metadata: Metadata::parse(&input.metadata_json)?,
-        source_published_at: None,
+        source_published_at: input
+            .source_published_at
+            .map(UtcTimestamp::parse)
+            .transpose()?,
     })
 }
 fn note(

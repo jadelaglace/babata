@@ -37,7 +37,15 @@ impl FileAssetStore {
     fn io(error: io::Error) -> ApplicationError {
         ApplicationError::Asset(format!("filesystem {:?} failure", error.kind()))
     }
-    fn cleanup_operation_if_empty(&self, operation_id: &str) -> Result<(), ApplicationError> {
+    #[cfg(feature = "test-support")]
+    fn fault(point: &str) -> bool {
+        std::env::var("BABATA_TEST_ASSET_FAULT").is_ok_and(|value| value == point)
+    }
+    #[cfg(not(feature = "test-support"))]
+    fn fault(_: &str) -> bool {
+        false
+    }
+    fn remove_empty_staging(&self, operation_id: &str) -> Result<(), ApplicationError> {
         let staging_dir = self.paths.staging(operation_id);
         if staging_dir.exists()
             && fs::read_dir(&staging_dir)
@@ -47,19 +55,28 @@ impl FileAssetStore {
         {
             fs::remove_dir(&staging_dir).map_err(Self::io)?;
         }
-        let journal = self.paths.journal().join(format!("{operation_id}.json"));
+        Ok(())
+    }
+    fn has_orphan(&self, operation_id: &str) -> Result<bool, ApplicationError> {
         let prefix = format!("{operation_id}-");
-        let has_orphan = fs::read_dir(self.paths.orphan())
+        Ok(fs::read_dir(self.paths.orphan())
             .map_err(Self::io)?
             .any(|entry| {
                 entry
                     .ok()
                     .is_some_and(|entry| entry.file_name().to_string_lossy().starts_with(&prefix))
-            });
-        if journal.exists() && !has_orphan && !staging_dir.exists() {
-            fs::remove_file(journal).map_err(Self::io)?;
-        }
-        Ok(())
+            }))
+    }
+    fn write_journal(
+        &self,
+        operation_id: &str,
+        body: &serde_json::Value,
+    ) -> Result<(), ApplicationError> {
+        fs::write(
+            self.paths.journal().join(format!("{operation_id}.json")),
+            body.to_string(),
+        )
+        .map_err(Self::io)
     }
 
     pub fn open(&self, logical_path: &LogicalPath) -> Result<fs::File, ApplicationError> {
@@ -69,6 +86,74 @@ impl FileAssetStore {
 }
 
 impl AssetStorePort for FileAssetStore {
+    fn begin_operation(&self, operation_id: &str) -> Result<(), ApplicationError> {
+        if self
+            .paths
+            .journal()
+            .join(format!("{operation_id}.json"))
+            .exists()
+        {
+            return Ok(());
+        }
+        self.write_journal(
+            operation_id,
+            &serde_json::json!({
+                "operation_id": operation_id,
+                "state": "allocated",
+            }),
+        )
+    }
+
+    fn preserve_operation(
+        &self,
+        operation_id: &str,
+        revision_id: &str,
+        failure_code: &str,
+    ) -> Result<(), ApplicationError> {
+        self.write_journal(
+            operation_id,
+            &serde_json::json!({
+                "operation_id": operation_id,
+                "revision_id": revision_id,
+                "state": "recovery_required",
+                "failure_code": failure_code,
+            }),
+        )
+    }
+
+    fn complete_operation(&self, operation_id: &str) -> Result<(), ApplicationError> {
+        if Self::fault("cleanup") {
+            return Err(ApplicationError::Asset(
+                "injected cleanup failure".to_owned(),
+            ));
+        }
+        self.remove_empty_staging(operation_id)?;
+        if self.paths.staging(operation_id).exists() {
+            return Err(ApplicationError::Asset(
+                "operation staging is not empty".to_owned(),
+            ));
+        }
+        if self.has_orphan(operation_id)? {
+            return Err(ApplicationError::Asset(
+                "operation has unresolved recovery markers".to_owned(),
+            ));
+        }
+        let journal = self.paths.journal().join(format!("{operation_id}.json"));
+        if journal.exists() {
+            let body: serde_json::Value =
+                serde_json::from_slice(&fs::read(&journal).map_err(Self::io)?).map_err(|_| {
+                    ApplicationError::Asset("operation journal is invalid".to_owned())
+                })?;
+            if body.get("state").and_then(serde_json::Value::as_str) == Some("recovery_required") {
+                return Err(ApplicationError::Asset(
+                    "operation requires recovery".to_owned(),
+                ));
+            }
+            fs::remove_file(journal).map_err(Self::io)?;
+        }
+        Ok(())
+    }
+
     fn stage(
         &self,
         source: &str,
@@ -86,13 +171,16 @@ impl AssetStorePort for FileAssetStore {
             .file_name()
             .and_then(|name| name.to_str())
             .ok_or_else(|| ApplicationError::Asset("input filename is invalid".to_owned()))?;
+        self.begin_operation(operation_id)?;
         let staging_dir = self.paths.staging(operation_id);
         fs::create_dir_all(&staging_dir).map_err(Self::io)?;
-        fs::write(
-            self.paths.journal().join(format!("{operation_id}.json")),
-            format!("{{\"operation_id\":\"{operation_id}\",\"state\":\"staged\"}}"),
-        )
-        .map_err(Self::io)?;
+        self.write_journal(
+            operation_id,
+            &serde_json::json!({
+                "operation_id": operation_id,
+                "state": "staged",
+            }),
+        )?;
         let asset_id = AssetId::new();
         let destination = staging_dir.join(format!("{asset_id}-{file_name}"));
         let staged = (|| {
@@ -108,7 +196,8 @@ impl AssetStorePort for FileAssetStore {
                 if destination.exists() {
                     let _ = fs::remove_file(&destination);
                 }
-                let _ = self.cleanup_operation_if_empty(operation_id);
+                let _ = self.remove_empty_staging(operation_id);
+                let _ = self.complete_operation(operation_id);
                 return Err(error);
             }
         };
@@ -139,6 +228,11 @@ impl AssetStorePort for FileAssetStore {
     }
 
     fn finalize(&self, asset: &StagedAsset) -> Result<FinalizeAssetOutcome, ApplicationError> {
+        if Self::fault("finalize") {
+            return Err(ApplicationError::Asset(
+                "injected finalization failure".to_owned(),
+            ));
+        }
         let staged = self.staged_path(&asset.staging_key);
         let final_path = self
             .paths
@@ -169,6 +263,9 @@ impl AssetStorePort for FileAssetStore {
     }
 
     fn verify(&self, asset: &StagedAsset) -> Result<bool, ApplicationError> {
+        if Self::fault("verify") {
+            return Ok(false);
+        }
         let path = self
             .paths
             .resolve_logical(&asset.logical_path)
@@ -186,7 +283,7 @@ impl AssetStorePort for FileAssetStore {
             fs::remove_file(path).map_err(Self::io)?;
         }
         let operation_id = self.operation_id(asset)?;
-        self.cleanup_operation_if_empty(&operation_id)
+        self.remove_empty_staging(&operation_id)
     }
 
     fn quarantine_finalized(
@@ -217,11 +314,6 @@ impl AssetStorePort for FileAssetStore {
             },
         });
         fs::write(marker, body.to_string()).map_err(Self::io)?;
-        let journal = self
-            .paths
-            .journal()
-            .join(format!("{captured_operation}.json"));
-        fs::write(journal, body.to_string()).map_err(Self::io)?;
         Ok(())
     }
 }

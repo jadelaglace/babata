@@ -22,8 +22,8 @@ pub use job_repository::JobRepositoryPort;
 pub use output_builder::OutputBuilderPort;
 pub use process_provider::ProcessProviderPort;
 pub use raw_repository::{
-    NewAsset, NewCollection, NewItem, NewRelation, NewRevision, NewRouteEvidence, NewSource,
-    PersistGraph, RawRepositoryPort,
+    NewAsset, NewCaptureOperation, NewCollection, NewItem, NewRelation, NewRevision,
+    NewRouteEvidence, NewSource, PersistGraph, RawRepositoryPort,
 };
 pub use read_projection::ReadProjectionPort;
 pub use source_adapter::SourceAdapterPort;

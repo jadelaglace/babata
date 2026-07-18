@@ -20,6 +20,12 @@ pub enum ApplicationError {
         capability: CapabilityId,
         activation_phase: String,
     },
+    #[error("{source}")]
+    Operation {
+        operation_id: String,
+        #[source]
+        source: Box<ApplicationError>,
+    },
 }
 
 impl ApplicationError {
@@ -41,6 +47,26 @@ impl ApplicationError {
             Self::Conflict(_) => "conflict",
             Self::Storage(_) | Self::Asset(_) => "io_failed",
             Self::Integrity(_) => "integrity_failed",
+            Self::Operation { source, .. } => source.code(),
+        }
+    }
+
+    pub fn operation_id(&self) -> Option<&str> {
+        match self {
+            Self::Operation { operation_id, .. } => Some(operation_id),
+            _ => None,
+        }
+    }
+
+    #[must_use]
+    pub fn with_operation(self, operation_id: impl Into<String>) -> Self {
+        if self.operation_id().is_some() {
+            self
+        } else {
+            Self::Operation {
+                operation_id: operation_id.into(),
+                source: Box::new(self),
+            }
         }
     }
 }

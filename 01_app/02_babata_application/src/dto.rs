@@ -99,7 +99,7 @@ pub struct CaptureOutcome {
     pub duplicate_of: Option<RevisionId>,
     pub reimported: bool,
     pub warnings: Vec<String>,
-    pub record: RecordDetail,
+    pub record: Option<RecordDetail>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -141,6 +141,18 @@ pub struct RevisionDetail {
     pub text_sha256: Option<String>,
     pub metadata: Metadata,
     pub state: RawState,
+    pub provenance: Option<CaptureProvenanceDetail>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CaptureProvenanceDetail {
+    pub operation_id: String,
+    pub source_native_id: Option<String>,
+    pub source_locator: Option<String>,
+    pub source_published_at: Option<UtcTimestamp>,
+    pub metadata: Metadata,
+    pub state: RawState,
+    pub failure_code: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
