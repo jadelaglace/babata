@@ -13,7 +13,7 @@ P0  冻结旧版本                                    已完成
 P1  真实需求、PRD、产品验收、全局技术架构           已完成
 P2  全系统模块、目录、代码与工具骨架                 已完成
 P3  C0 原始资料与第一方版本底座                     已完成
-P4  飞书与浏览器首批真实收集路径                     未开始（下一阶段；存在提前工作）
+P4  飞书与浏览器首批真实收集路径                     进行中
 P5  C1 多模态清洗与百炼处理                         未开始
 P6  核心沉淀、检索、子库与输出                      未开始
 P7  扩展来源、正式 Skill 与受控 Agent               未开始
@@ -22,6 +22,7 @@ P8  备份、恢复、运维与长期加固                      未开始
 
 <!-- P2: completed; P2-G1..P2-G7: passed -->
 <!-- P3: completed; P3-G1..P3-G6: passed -->
+<!-- P4: in-progress; Kimi/Doubao/Bilibili single-item real loops proven; routes disabled -->
 
 当前真实情况：
 
@@ -33,9 +34,11 @@ P8  备份、恢复、运维与长期加固                      未开始
   00 点名的来源都有证据等级、最小授权、正常路线、回退和诚实缺口。飞书 `lark-cli`、
   Browser Use、Agent Browser、Playwright CLI、OpenCLI 和 Codex Chrome 均有实际调用或
   连接证据。具体来源 E3 仍属于 P4/P7，不再错误作为 P2 前置。
-- Kimi 真实练手已完成：Codex Chrome 读取正式版登录态下的真实历史分页和长会话正文，
-  两条明确范围样本已带 manifest/hash 写入外部 recovery staging；第二条正文响应为
-  104,476 字节。该证据只证明当前 Codex 路线能用于具体平台，不把 Kimi/P4 标为 available。
+- Kimi、豆包、Bilibili 和飞书 Docx 已分别完成一个真实小范围的候选、明确选择、C0、逐条状态和
+  重收集闭环；Bilibili 另把 44,773,539 字节原视频作为 C0 资产保存并复核 SHA-256。
+  飞书样本另保存 3,391 字符 XML 正文和 8 张真实 PNG。来源仍保持 disabled：Kimi 当前
+  样本无附件，豆包二进制媒体未闭合，Bilibili 按用户要求只证明一条，飞书嵌入
+  Sheet/Base/Slides/画板内部数据仍未覆盖。P4 正在进行中，不把局部闭环扩大成来源 available。
 - P3 已按蓝图重新审阅 29 个活跃文件：显式 text/file/export 和 first-party
   create/revise/annotate 通过同一 Rust application/infrastructure 链路进入 C0，返回包含
   来源、上下文、版本、关系、资产状态、哈希和 operation provenance 的 repository read-back。
@@ -44,11 +47,41 @@ P8  备份、恢复、运维与长期加固                      未开始
   和 cleanup 故障均有负向测试；
   失败不会伪报 ready，跨 SQLite/文件系统故障保留 quarantine、journal/orphan 诊断，
   CLI 错误携带可关联 operation ID，已被 ready 记录引用的 content-addressed bytes 不会被移动。
-- 飞书导出、书签 HTML、CandidateEnvelope、route evidence 和 fixture 仍只是 P4 提前工作/
-  回退路径证据。P4 migration 已与 P3 raw migration 分开；相关 CLI、route 和 capability
-  保持 unavailable/disabled，不能因 P3 完成标记来源 available。
+- 飞书手动导出、书签 HTML、CandidateEnvelope、route evidence fixture 仍只是回退/机制
+  证据；飞书官方 `lark-cli` 的 Wiki -> Docx -> 媒体 -> C0 路径已有独立真实证据。
+  P4 migration 已与 P3 raw migration 分开；未完整覆盖的 route/capability 继续 disabled。
 
 项目阶段只使用 P0–P8；C0–C3 是数据权威级别，不是项目阶段。
+
+### 1.1 人话进度地图
+
+```text
+已经真的收进 Babata，而且重采过
+  Kimi      15 个真实候选 -> 选 1 条 -> 1 条资料/1 个版本 -> 重采没变化
+  豆包      20 个真实候选 -> 选 1 条 -> 1 条资料/1 个版本 -> 重采没变化
+  Bilibili  20 个真实历史 -> 选 BV1ogzsBFE1T
+             -> 正文 + 官方字幕 + 官方摘要 + 44.8 MB 视频
+             -> 1 条资料/1 个版本/1 个附件 -> 重采没变化
+             -> 按用户要求到此闭合，后续按用户选择再收
+  飞书      “一堂”10 个根候选 -> “AI分享”6 个子候选
+             -> 选 240612AI落地Live21-AMA特别篇
+             -> 3,391 字符正文 + 8 张 PNG
+             -> 首次媒体结构不兼容而 failed -> 原任务 retry 成功
+             -> 1 条资料/1 个版本/8 个附件 -> 重采没变化
+
+正在往下闭合
+  知乎      正式 Chrome 已到“我的收藏”，当前等待用户完成知乎登录
+  登录后继续 -> 小红书 -> ChatGPT -> 语雀
+
+后续队列
+  微信 -> OneNote -> 印象笔记
+
+最后再说
+  抖音（用户明确暂缓到最后）
+```
+
+这里的“真的收进”只表示上述明确小范围已经进入 C0 并有重采证据，不表示账号全量、
+附件全覆盖或来源已 `available`。真实资料和 SQLite 均在 `BABATA_DATA_HOME`，不进入 Git。
 
 ## 2. 状态维护规则
 
@@ -273,12 +306,34 @@ P4 按 `07_P4_FIRST_COLLECTION_PATHS.md` 实现：
 5. changed/unchanged/inaccessible/removed 重收集；
 6. 真实授权证据与 fixture 机制证据分开。
 
+当前已完成的局部真实证据：
+
+- Kimi：验证根 `p4-kimi-20260718-172641`，15 个候选中选 1 条，C0 为 1 item/1
+  revision，重采 `unchanged`；
+- 豆包：验证根 `p4-doubao-fingerprint-20260718-174826`，20 个候选中选 1 条，选择前
+  0/0、选择后 1 item/1 revision，重采 `unchanged`；
+- Bilibili：验证根 `p4-bilibili-final-20260718-181500`，20 个观看历史候选中选
+  `BV1ogzsBFE1T`，保存元数据、官方字幕、官方 AI 摘要和 44,773,539 字节 MP4；最终
+  1 item/1 revision/1 asset，资产 SHA-256 为
+  `35551288f33a21c9ea5b75f69dd578521f9f76a2b79b9a2448d4f33bf2f26d22`，重采
+  `unchanged` 且版本/资产数量不增加。
+- 飞书：验证根 `p4-feishu-20260718-184000`，官方 user OAuth 下发现私有知识空间
+  `一堂` 的 10 个根候选和 `AI分享` 的 6 个直接子候选；选择
+  `240612AI落地Live21-AMA特别篇` 后，首次因真实 XML 使用 `src/href` 而进入可重试
+  `failed`，兼容后对原 item retry 成功。最终保存 3,391 字符 XML 正文、8 张 PNG，
+  1 item/1 revision/8 assets；下载件与 C0 资产逐个 SHA-256 一致，重采 `unchanged`，
+  版本/资产数量不增加。
+
+浏览器仍是当前存量回收首选。Kimi/豆包的 OpenCLI 薄命令是为了把浏览器已经证明的
+读取动作变成任务结束后可调用的重试/重收集；Bilibili 是因为 Codex Chrome 历史页连续
+两次超时后才回退 OpenCLI。两类理由均已记录，不把 OpenCLI 当默认绕路。
+
 已有导出、书签 HTML 和 CandidateEnvelope 只作为回退/提前证据。P4 gate：
 
 | Gate | 本阶段判定 |
 | --- | --- |
 | P4-G1 | 飞书真实上下文候选成立 |
-| P4-G2 | 通用 Agent 浏览器自主导航成立；长期扩展候选与配对成立 |
+| P4-G2 | 正式 Chrome 中 Kimi 真实会话候选与所选正文成立；通用 Agent 浏览器自主导航及长期扩展配对另行成立，不能用任意页面替代具体平台 |
 | P4-G3 | 一次明确范围内可连续收集；未授权范围不写入 |
 | P4-G4 | 逐条状态、局部成功和重试成立 |
 | P4-G5 | 四种重收集结果不覆盖旧 C0 |
@@ -337,9 +392,9 @@ P6 必须按核心价值顺序进行，不能直接跳到 Datasette/Obsidian：
 
 ## 10. P7：扩展来源、正式 Skill 与受控 Agent
 
-按真实价值扩展语雀、OneNote、印象笔记、微信、知乎、Bilibili、小红书、抖音、
-豆包/Kimi/GPT、本地文件等来源。每条来源继续优先官方能力和现有工具，不先造重型
-爬虫。
+按真实价值扩展语雀、OneNote、印象笔记、微信、知乎、Bilibili、小红书、豆包/Kimi/GPT、
+本地文件等来源；抖音按用户最新顺序最后处理。每条来源继续优先 Codex 浏览器、官方能力
+和现有工具，不先造重型爬虫。
 
 对应底层能力通过自己的 AC/TC 后，P2 Skill 规格才转成真实 `SKILL.md`。Agent 默认
 人工触发或确认，批处理携带明确范围，不自动扩张授权或把模型判断升级为事实。
