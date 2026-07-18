@@ -1,6 +1,6 @@
 use super::Endpoint;
 
-pub const ENDPOINTS: [Endpoint; 5] = [
+pub const ENDPOINTS: [Endpoint; 8] = [
     Endpoint {
         method: "POST",
         path: "/v1/collector/sessions",
@@ -29,6 +29,24 @@ pub const ENDPOINTS: [Endpoint; 5] = [
         method: "POST",
         path: "/v1/collector/recollect",
         capability: "collector.recollect",
+        activation_phase: "P4",
+    },
+    Endpoint {
+        method: "POST",
+        path: "/v1/collector/retry",
+        capability: "collector.retry",
+        activation_phase: "P4",
+    },
+    Endpoint {
+        method: "POST",
+        path: "/v1/collector/cancel",
+        capability: "collector.cancel",
+        activation_phase: "P4",
+    },
+    Endpoint {
+        method: "OPTIONS",
+        path: "/v1/collector/*",
+        capability: "collector.preflight",
         activation_phase: "P4",
     },
 ];

@@ -16,7 +16,8 @@ pub mod view;
 
 pub use capability::{CapabilityDescriptor, CapabilityId, CapabilityStatus};
 pub use collection::{
-    CandidateSummary, CollectionItemState, CollectionSelection, RecollectionState,
+    CandidateSummary, CollectionItemState, CollectionItemStatus, CollectionSelection,
+    CollectionSession, CollectionSessionState, RecollectionOutcome, RecollectionState,
 };
 pub use entities::{AssetRef, RawItem, RawRevision, Relation, SourceRef};
 pub use error::DomainError;

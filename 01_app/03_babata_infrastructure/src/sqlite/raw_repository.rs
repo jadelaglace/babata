@@ -17,14 +17,14 @@ use rusqlite::{Connection, OptionalExtension, Transaction, params};
 
 #[derive(Clone)]
 pub struct SqliteRawRepository {
-    connection: Arc<Mutex<Connection>>,
+    pub(crate) connection: Arc<Mutex<Connection>>,
 }
 
 impl SqliteRawRepository {
     pub(crate) fn new(connection: Arc<Mutex<Connection>>) -> Self {
         Self { connection }
     }
-    fn lock(&self) -> Result<std::sync::MutexGuard<'_, Connection>, ApplicationError> {
+    pub(crate) fn lock(&self) -> Result<std::sync::MutexGuard<'_, Connection>, ApplicationError> {
         self.connection
             .lock()
             .map_err(|_| ApplicationError::Storage("SQLite connection lock poisoned".to_owned()))

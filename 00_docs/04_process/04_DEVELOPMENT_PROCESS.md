@@ -13,7 +13,7 @@ P0  冻结旧版本                                    已完成
 P1  真实需求、PRD、产品验收、全局技术架构           已完成
 P2  全系统模块、目录、代码与工具骨架                 已完成
 P3  C0 原始资料与第一方版本底座                     已完成
-P4  飞书与浏览器首批真实收集路径                     未开始（下一阶段；存在提前工作）
+P4  飞书与浏览器首批真实收集路径                     进行中
 P5  C1 多模态清洗与百炼处理                         未开始
 P6  核心沉淀、检索、子库与输出                      未开始
 P7  扩展来源、正式 Skill 与受控 Agent               未开始
@@ -22,6 +22,7 @@ P8  备份、恢复、运维与长期加固                      未开始
 
 <!-- P2: completed; P2-G1..P2-G7: passed -->
 <!-- P3: completed; P3-G1..P3-G6: passed -->
+<!-- P4: in-progress; Kimi/Doubao/Bilibili/Feishu/ChatGPT/Zhihu/Xiaohongshu/Yuque small real loops proven; routes disabled -->
 
 当前真实情况：
 
@@ -33,9 +34,11 @@ P8  备份、恢复、运维与长期加固                      未开始
   00 点名的来源都有证据等级、最小授权、正常路线、回退和诚实缺口。飞书 `lark-cli`、
   Browser Use、Agent Browser、Playwright CLI、OpenCLI 和 Codex Chrome 均有实际调用或
   连接证据。具体来源 E3 仍属于 P4/P7，不再错误作为 P2 前置。
-- Kimi 真实练手已完成：Codex Chrome 读取正式版登录态下的真实历史分页和长会话正文，
-  两条明确范围样本已带 manifest/hash 写入外部 recovery staging；第二条正文响应为
-  104,476 字节。该证据只证明当前 Codex 路线能用于具体平台，不把 Kimi/P4 标为 available。
+- Kimi、豆包、Bilibili、飞书 Docx、ChatGPT、知乎回答、小红书收藏和语雀文档已分别完成一个真实小范围的候选、明确选择、C0、逐条状态和
+  重收集闭环；Bilibili 另把 44,773,539 字节原视频作为 C0 资产保存并复核 SHA-256。
+  飞书样本另保存 3,391 字符 XML 正文和 8 张真实 PNG；ChatGPT 样本保存 2 条角色消息和
+  10 个引用。来源仍保持 disabled：Kimi/ChatGPT 当前样本无附件，豆包二进制媒体未闭合，Bilibili 按用户要求只证明一条，飞书嵌入
+  Sheet/Base/Slides/画板内部数据仍未覆盖。P4 正在进行中，不把局部闭环扩大成来源 available。
 - P3 已按蓝图重新审阅 29 个活跃文件：显式 text/file/export 和 first-party
   create/revise/annotate 通过同一 Rust application/infrastructure 链路进入 C0，返回包含
   来源、上下文、版本、关系、资产状态、哈希和 operation provenance 的 repository read-back。
@@ -44,11 +47,60 @@ P8  备份、恢复、运维与长期加固                      未开始
   和 cleanup 故障均有负向测试；
   失败不会伪报 ready，跨 SQLite/文件系统故障保留 quarantine、journal/orphan 诊断，
   CLI 错误携带可关联 operation ID，已被 ready 记录引用的 content-addressed bytes 不会被移动。
-- 飞书导出、书签 HTML、CandidateEnvelope、route evidence 和 fixture 仍只是 P4 提前工作/
-  回退路径证据。P4 migration 已与 P3 raw migration 分开；相关 CLI、route 和 capability
-  保持 unavailable/disabled，不能因 P3 完成标记来源 available。
+- 飞书手动导出、书签 HTML、CandidateEnvelope、route evidence fixture 仍只是回退/机制
+  证据；飞书官方 `lark-cli` 的 Wiki -> Docx -> 媒体 -> C0 路径已有独立真实证据。
+  P4 migration 已与 P3 raw migration 分开；未完整覆盖的 route/capability 继续 disabled。
 
 项目阶段只使用 P0–P8；C0–C3 是数据权威级别，不是项目阶段。
+
+### 1.1 人话进度地图
+
+```text
+已经真的收进 Babata，而且重采过
+  Kimi      15 个真实候选 -> 选 1 条 -> 1 条资料/1 个版本 -> 重采没变化
+  豆包      20 个真实候选 -> 选 1 条 -> 1 条资料/1 个版本 -> 重采没变化
+  Bilibili  20 个真实历史 -> 选 BV1ogzsBFE1T
+             -> 正文 + 官方字幕 + 官方摘要 + 44.8 MB 视频
+             -> 1 条资料/1 个版本/1 个附件 -> 重采没变化
+             -> 按用户要求到此闭合，后续按用户选择再收
+  飞书      “一堂”10 个根候选 -> “AI分享”6 个子候选
+             -> 选 240612AI落地Live21-AMA特别篇
+             -> 3,391 字符正文 + 8 张 PNG
+             -> 首次媒体结构不兼容而 failed -> 原任务 retry 成功
+             -> 1 条资料/1 个版本/8 个附件 -> 重采没变化
+  ChatGPT   正式 Chrome 展开最近聊天，看到至少 28 个真实入口
+             -> Babata 按 recent:20 列出 20 个候选，只选“开源部署方案对比”
+             -> 2 条角色消息 + 10 个引用；页面 favicon 不冒充附件，真实附件为 0
+             -> 1 条资料/1 个版本/0 个附件 -> 重采没变化
+  知乎      正式 Chrome 登录后列出 16 个自建收藏夹
+             -> 最新“我的收藏”页面标称 28 条，分页命令返回 27 个去重候选
+             -> 只选最新回答；完整正文 + 原始 HTML + 17 张正文原图（8.41 MB）
+             -> 1 条资料/1 个版本/17 个附件 -> 重采没变化
+  小红书    正式 Chrome 登录后读取 20 个真实收藏候选
+             -> 选“捉住一只小仙兔” -> 正文/标签/互动 + 2 个媒体（10.16 MB）
+             -> 1 条资料/1 个版本/2 个附件 -> 重采没变化
+  语雀      正式 Chrome 登录后看到 2 个知识库、8 个最近文档
+             -> 选“粒界引擎-车辆材质质感提高方式”
+             -> 免费官方 Markdown + 渲染正文/HTML + 22 张图片（3.10 MB）
+             -> 1 条资料/1 个版本/22 个附件 -> 重采没变化
+             -> 会员 OpenAPI/MCP 只登记，全部来源闭环后统一决策
+
+正在往下闭合
+  微信收藏/公众号/聊天
+             先复核新出现的专用本地 CLI，再决定官方 PC 微信窄适配
+
+后续队列
+  OneNote -> 印象笔记
+
+靠后处理
+  抖音
+
+最低优先级
+  视频号（用户最新明确降到最低）
+```
+
+这里的“真的收进”只表示上述明确小范围已经进入 C0 并有重采证据，不表示账号全量、
+附件全覆盖或来源已 `available`。真实资料和 SQLite 均在 `BABATA_DATA_HOME`，不进入 Git。
 
 ## 2. 状态维护规则
 
@@ -265,20 +317,66 @@ P3 为 AC-03、AC-06、AC-10 提供部分底座，不满足 AC-01、AC-02 或完
 P4 按 `07_P4_FIRST_COLLECTION_PATHS.md` 实现：
 
 1. 飞书官方授权连接、文档/Wiki/知识库候选、层级和附件限制；
-2. Browser Use/Agent Browser 复用已登录 Chrome 的自主导航探针，以及长期浏览器扩展
-   配对、页面/选区/链接/书签候选；
+2. Browser Use/Agent Browser 复用已登录 Chrome，自主导航点名平台并取得真实内容；
 3. 用户给出单条、可见集合、收藏夹、会话或明确范围一次后，Agent 自主完成范围内收集；
    未给范围或范围有歧义时不写 C0；
 4. queued/running/saved/skipped/failed、局部成功和重试；
 5. changed/unchanged/inaccessible/removed 重收集；
 6. 真实授权证据与 fixture 机制证据分开。
 
+当前已完成的局部真实证据：
+
+- Kimi：验证根 `p4-kimi-20260718-172641`，15 个候选中选 1 条，C0 为 1 item/1
+  revision，重采 `unchanged`；
+- 豆包：验证根 `p4-doubao-fingerprint-20260718-174826`，20 个候选中选 1 条，选择前
+  0/0、选择后 1 item/1 revision，重采 `unchanged`；
+- Bilibili：验证根 `p4-bilibili-final-20260718-181500`，20 个观看历史候选中选
+  `BV1ogzsBFE1T`，保存元数据、官方字幕、官方 AI 摘要和 44,773,539 字节 MP4；最终
+  1 item/1 revision/1 asset，资产 SHA-256 为
+  `35551288f33a21c9ea5b75f69dd578521f9f76a2b79b9a2448d4f33bf2f26d22`，重采
+  `unchanged` 且版本/资产数量不增加。
+- 飞书：验证根 `p4-feishu-20260718-184000`，官方 user OAuth 下发现私有知识空间
+  `一堂` 的 10 个根候选和 `AI分享` 的 6 个直接子候选；选择
+  `240612AI落地Live21-AMA特别篇` 后，首次因真实 XML 使用 `src/href` 而进入可重试
+  `failed`，兼容后对原 item retry 成功。最终保存 3,391 字符 XML 正文、8 张 PNG，
+  1 item/1 revision/8 assets；下载件与 C0 资产逐个 SHA-256 一致，重采 `unchanged`，
+  版本/资产数量不增加。
+- ChatGPT：验证根 `p4-chatgpt-20260718-190000`。正式 Chrome 已登录，展开最近聊天后
+  可见至少 28 个真实入口；Babata 以 `recent:20` 发现 20 个候选，只选择“开源部署方案
+  对比”，保存 2 条角色消息、10 个引用，当前样本真实附件为 0。最终 1 item/1 revision/
+  0 assets，重采 `unchanged` 且版本数不增加；二进制附件下载仍无非零样本，route 保持
+  disabled。首次 OpenCLI 瞬时返回非 JSON 时 C0 保持 0，现已将此类响应归为可读的来源
+  I/O 失败，不再误报 C0 integrity 损坏。
+- 知乎：验证根 `p4-zhihu-final-20260718-203000`。正式 Chrome 登录后读取 16 个自建
+  收藏夹；最新“我的收藏”页面标称 28 条，官方分页命令实际返回 27 个去重候选（12 个
+  回答、15 篇文章）。只选最新回答，保存完整正文、原始 HTML 和 17 张正文原图；最终
+  1 item/1 revision/17 assets，17 个 SHA-256 均不同，总计 8,413,376 字节。首次验证发现
+  图片 CDN 域切换会制造伪版本，改用稳定 `data-original-token` 后，干净验证根重采
+  `unchanged`。文章、想法、视频和评论线程尚未覆盖，route 保持 disabled。
+- 小红书：验证根 `p4-xiaohongshu-final-20260718-210000`。正式 Chrome 读取 20 个真实
+  收藏候选，只选“捉住一只小仙兔”；保存正文、标签、互动数据和 2 个不同哈希的媒体，
+  共 10,163,846 字节，最终 1 item/1 revision/2 assets，重采 `unchanged`。
+- 语雀：验证根 `p4-yuque-official-20260718-225000`。正式 Chrome 看到 2 个知识库和 8 个
+  最近文档，实测整库官方导出为 PDF/LakeBook，单篇免费提供官方 Markdown。只选“粒界
+  引擎-车辆材质质感提高方式”，保存官方 Markdown、渲染正文/HTML和 22 张不同哈希图片，
+  共 3,101,329 字节；最终 1 item/1 revision/22 assets，重采 `unchanged`。个人 OpenAPI
+  和官方 MCP 需要超级会员，只登记并等待全部来源闭环后的统一决策。
+
+浏览器仍是当前存量回收首选。Kimi/豆包/ChatGPT/知乎/小红书/语雀的 OpenCLI 薄命令是为了把浏览器已经证明的
+读取动作变成任务结束后可调用的重试/重收集；Bilibili 是因为 Codex Chrome 历史页连续
+两次超时后才回退 OpenCLI。两类理由均已记录，不把 OpenCLI 当默认绕路。
+
+实验性 `Babata Collector 0.2.0` 只完成手动当前页/选区剪藏和 locator-only 书签提交，
+正式 Chrome 实测仍要求用户逐项点击，不能自动遍历书签正文。按用户最新纠偏，该入口
+冻结、保持 disabled、排到最后优先级，不作为 P4 gate 或当前存量回收完成证据。浏览器
+书签后续正常路线必须由 Agent 在一次明确范围后自动遍历网址并取得正文和可得附件。
+
 已有导出、书签 HTML 和 CandidateEnvelope 只作为回退/提前证据。P4 gate：
 
 | Gate | 本阶段判定 |
 | --- | --- |
 | P4-G1 | 飞书真实上下文候选成立 |
-| P4-G2 | 通用 Agent 浏览器自主导航成立；长期扩展候选与配对成立 |
+| P4-G2 | 正式 Chrome 中 Kimi 真实会话候选与所选正文成立；冻结的手动剪藏器不计入 gate，不能用任意页面替代具体平台 |
 | P4-G3 | 一次明确范围内可连续收集；未授权范围不写入 |
 | P4-G4 | 逐条状态、局部成功和重试成立 |
 | P4-G5 | 四种重收集结果不覆盖旧 C0 |
@@ -337,9 +435,10 @@ P6 必须按核心价值顺序进行，不能直接跳到 Datasette/Obsidian：
 
 ## 10. P7：扩展来源、正式 Skill 与受控 Agent
 
-按真实价值扩展语雀、OneNote、印象笔记、微信、知乎、Bilibili、小红书、抖音、
-豆包/Kimi/GPT、本地文件等来源。每条来源继续优先官方能力和现有工具，不先造重型
-爬虫。
+按真实价值扩展语雀、OneNote、印象笔记、微信、知乎、Bilibili、小红书、豆包/Kimi/GPT、
+本地文件等来源；当前未闭合队列先处理微信收藏/公众号/聊天、OneNote 和印象笔记，
+抖音靠后，视频号最低优先级。每条来源继续优先 Codex 浏览器、官方能力和现有工具，
+不先造重型爬虫。
 
 对应底层能力通过自己的 AC/TC 后，P2 Skill 规格才转成真实 `SKILL.md`。Agent 默认
 人工触发或确认，批处理携带明确范围，不自动扩张授权或把模型判断升级为事实。

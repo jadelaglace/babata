@@ -3,10 +3,14 @@
   "allow": [
     "launch",
     "tab",
+    "tab_switch",
     "tab_list",
     "session_info",
     "snapshot",
     "read",
+    "reload",
+    "requests",
+    "request",
     "get",
     "wait"
   ]

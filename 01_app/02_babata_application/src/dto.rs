@@ -1,8 +1,8 @@
 use babata_domain::{
-    AssetId, AssetRole, BuildTarget, CandidateEnvelope, CollectionId, ContentType, HealthState,
-    ItemId, JobId, Metadata, PageCursor, PipelineId, QueryFilter, RawState, RecordSummary,
-    RelationKind, RevisionId, RouteCoverage, SnapshotRef, SourceId, SourceKind, SourceRouteId,
-    UtcTimestamp, ViewDescriptor, ViewId,
+    AssetId, AssetRole, BuildTarget, CandidateEnvelope, CandidateSummary, CollectionId,
+    CollectionSessionId, ContentType, HealthState, ItemId, JobId, Metadata, PageCursor, PipelineId,
+    QueryFilter, RawState, RecordSummary, RelationKind, RevisionId, RouteCoverage, SnapshotRef,
+    SourceId, SourceKind, SourceRouteId, UtcTimestamp, ViewDescriptor, ViewId,
 };
 use serde::{Deserialize, Serialize};
 
@@ -30,7 +30,7 @@ pub struct CaptureFileCommand {
     pub source_published_at: Option<UtcTimestamp>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CaptureImportAsset {
     pub path: String,
     pub role: AssetRole,
@@ -51,7 +51,7 @@ pub struct CaptureImportCommand {
     pub route_evidence: Option<RouteEvidenceCommand>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RouteEvidenceCommand {
     pub route_id: SourceRouteId,
     pub authorization_id: String,
@@ -215,6 +215,51 @@ pub struct OperationStatus {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CandidateCaptureCommand {
     pub candidate: CandidateEnvelope,
+    pub assets: Vec<CaptureImportAsset>,
+    pub route_evidence: Option<RouteEvidenceCommand>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StartCollectionCommand {
+    pub route_id: SourceRouteId,
+    pub source_reference: String,
+    pub scope_description: String,
+    pub authorisation_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RetryCollectionItemCommand {
+    pub session_id: CollectionSessionId,
+    pub candidate_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CancelCollectionCommand {
+    pub session_id: CollectionSessionId,
+    pub reason: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct DiscoveredCandidate {
+    pub summary: CandidateSummary,
+    pub prefetched: Option<CandidateEnvelope>,
+}
+
+#[derive(Debug, Clone)]
+pub enum AcquisitionOutcome {
+    Found {
+        candidate: CandidateEnvelope,
+        assets: Vec<CaptureImportAsset>,
+    },
+    Skipped {
+        reason: String,
+    },
+    Inaccessible {
+        reason: String,
+    },
+    Removed {
+        reason: String,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

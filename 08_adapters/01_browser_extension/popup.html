@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Babata Collector</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>Babata</h1>
+        <p id="connection-status" data-state="idle">Not paired</p>
+      </div>
+      <button id="settings-toggle" class="icon-button" type="button" title="Connection settings" aria-label="Connection settings">&#9881;</button>
+    </header>
+
+    <section id="settings" hidden>
+      <label for="api-url">Local API</label>
+      <input id="api-url" type="url" value="http://127.0.0.1:43873" spellcheck="false" />
+      <label for="api-token">Pairing token</label>
+      <input id="api-token" type="password" autocomplete="off" />
+      <button id="pair" type="button">Pair</button>
+    </section>
+
+    <nav aria-label="Source">
+      <button id="page-mode" class="mode active" type="button" aria-pressed="true">Page</button>
+      <button id="bookmark-mode" class="mode" type="button" aria-pressed="false">Bookmarks</button>
+    </nav>
+
+    <main>
+      <section id="page-panel">
+        <div class="command-row">
+          <button id="prepare-page" type="button">Current page</button>
+          <button id="prepare-selection" type="button">Selection</button>
+        </div>
+      </section>
+
+      <section id="bookmark-panel" hidden>
+        <label for="bookmark-folder">Folder</label>
+        <select id="bookmark-folder"></select>
+        <button id="prepare-bookmarks" type="button">Show bookmarks</button>
+      </section>
+
+      <section id="candidate-panel" hidden>
+        <div class="section-heading">
+          <h2>Candidates</h2>
+          <span id="candidate-count">0</span>
+        </div>
+        <div id="candidate-list"></div>
+        <button id="collect" class="primary" type="button" disabled>Collect selected</button>
+      </section>
+
+      <p id="result" role="status" aria-live="polite"></p>
+    </main>
+
+    <script type="module" src="dist/popup.js"></script>
+  </body>
+</html>

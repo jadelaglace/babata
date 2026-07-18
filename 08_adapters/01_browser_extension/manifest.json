@@ -1,7 +1,13 @@
 {
   "manifest_version": 3,
-  "name": "Babata Browser Adapter (Inactive)",
-  "version": "0.1.0",
-  "description": "P4 candidate-envelope boundary; no direct local-data or SQLite access.",
-  "permissions": []
+  "name": "Babata Collector",
+  "version": "0.2.0",
+  "description": "Submit explicitly selected pages, text, and bookmarks to the local Babata collector.",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "optional_permissions": ["bookmarks"],
+  "host_permissions": ["http://127.0.0.1/*"],
+  "action": {
+    "default_title": "Babata Collector",
+    "default_popup": "popup.html"
+  }
 }

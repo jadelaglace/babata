@@ -1,20 +1,203 @@
 use std::{fs, path::Path};
 
 use babata_application::ApplicationError;
-use babata_domain::{CapabilityStatus, SourceRouteDescriptor, SourceRouteId};
+use babata_application::{AcquisitionOutcome, DiscoveredCandidate, ports::SourceAdapterPort};
+use babata_domain::{
+    CandidateEnvelope, CandidatePayload, CandidateSummary, CapabilityStatus, CollectionSessionId,
+    ContentType, RouteCoverage, Sha256, SourceRouteDescriptor, SourceRouteId,
+};
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct BrowserConfig {
     pub enabled: bool,
 }
 
 pub fn descriptor() -> SourceRouteDescriptor {
     SourceRouteDescriptor {
-        id: SourceRouteId("source.browser".to_owned()),
+        id: SourceRouteId("source.browser_pages".to_owned()),
         provider: "browser".to_owned(),
         status: CapabilityStatus::Disabled,
         activation_phase: "P4".to_owned(),
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct BrowserCandidateAdapter {
+    route_id: SourceRouteId,
+    candidates: Vec<CandidateEnvelope>,
+}
+
+impl BrowserCandidateAdapter {
+    pub fn for_route(route_id: SourceRouteId, candidates: Vec<CandidateEnvelope>) -> Self {
+        Self {
+            route_id,
+            candidates,
+        }
+    }
+}
+
+impl Default for BrowserCandidateAdapter {
+    fn default() -> Self {
+        Self::for_route(SourceRouteId("source.browser_pages".to_owned()), Vec::new())
+    }
+}
+
+impl SourceAdapterPort for BrowserCandidateAdapter {
+    fn describe(&self) -> SourceRouteDescriptor {
+        SourceRouteDescriptor {
+            id: self.route_id.clone(),
+            provider: self
+                .route_id
+                .0
+                .strip_prefix("source.")
+                .unwrap_or(&self.route_id.0)
+                .to_owned(),
+            status: CapabilityStatus::Disabled,
+            activation_phase: "P4".to_owned(),
+        }
+    }
+
+    fn discover(
+        &self,
+        session_id: &CollectionSessionId,
+        source_reference: &str,
+    ) -> Result<Vec<DiscoveredCandidate>, ApplicationError> {
+        if !source_reference.starts_with("submitted:") {
+            return Err(ApplicationError::Conflict(
+                "browser scope must come from a paired submitted batch".to_owned(),
+            ));
+        }
+        self.candidates
+            .iter()
+            .map(|candidate| {
+                validate_browser_candidate(candidate, &self.route_id)?;
+                let metadata: serde_json::Value =
+                    serde_json::from_str(&candidate.metadata.to_json())
+                        .map_err(|error| ApplicationError::Integrity(error.to_string()))?;
+                let title = metadata
+                    .get("title")
+                    .and_then(serde_json::Value::as_str)
+                    .filter(|value| !value.trim().is_empty())
+                    .map(str::to_owned);
+                let folder = metadata
+                    .get("bookmarkFolder")
+                    .or_else(|| metadata.get("bookmark_folder"))
+                    .and_then(serde_json::Value::as_str)
+                    .filter(|value| !value.trim().is_empty())
+                    .map(str::to_owned);
+                let capture_kind = metadata
+                    .get("captureKind")
+                    .or_else(|| metadata.get("capture_kind"))
+                    .and_then(serde_json::Value::as_str)
+                    .unwrap_or("page")
+                    .to_owned();
+                let mut hierarchy = vec![format!("Chrome {capture_kind}")];
+                if let Some(folder) = &folder {
+                    hierarchy.push(folder.clone());
+                }
+                if let Some(title) = &title {
+                    hierarchy.push(title.clone());
+                }
+                Ok(DiscoveredCandidate {
+                    summary: CandidateSummary {
+                        candidate_id: format!(
+                            "browser_{}",
+                            &Sha256::of_bytes(
+                                format!(
+                                    "{}:{}",
+                                    candidate.source_reference,
+                                    candidate.payload_sha256.as_str()
+                                )
+                                .as_bytes()
+                            )
+                            .as_str()[..24]
+                        ),
+                        session_id: session_id.clone(),
+                        route_id: self.route_id.clone(),
+                        source_native_id: candidate.native_id.clone(),
+                        title,
+                        source_location: Some(candidate.source_reference.clone()),
+                        hierarchy,
+                        content_type: candidate.content_type,
+                        source_updated_at: None,
+                        attachment_available: Some(false),
+                        limitations: vec![
+                            "submitted browser snapshots do not include page attachments"
+                                .to_owned(),
+                            "a fresh paired browser read is required for recollection".to_owned(),
+                        ],
+                        selection_capabilities: vec![
+                            "single".to_owned(),
+                            "visible_set".to_owned(),
+                            "explicit_browser_scope".to_owned(),
+                        ],
+                    },
+                    prefetched: Some(candidate.clone()),
+                })
+            })
+            .collect()
+    }
+
+    fn collect(
+        &self,
+        candidate: &CandidateSummary,
+        prefetched: Option<&CandidateEnvelope>,
+        _requested_attachments: bool,
+    ) -> Result<AcquisitionOutcome, ApplicationError> {
+        let envelope = prefetched
+            .or_else(|| {
+                self.candidates.iter().find(|envelope| {
+                    envelope.source_reference == candidate.source_location.as_deref().unwrap_or("")
+                })
+            })
+            .ok_or_else(|| {
+                ApplicationError::NotFound("submitted browser candidate payload".to_owned())
+            })?;
+        validate_browser_candidate(envelope, &self.route_id)?;
+        Ok(AcquisitionOutcome::Found {
+            candidate: envelope.clone(),
+            assets: Vec::new(),
+        })
+    }
+
+    fn coverage(&self) -> RouteCoverage {
+        RouteCoverage {
+            metadata: true,
+            attachments: false,
+            revisions: false,
+            limitations: vec![
+                "visible page/selection text and bookmark locator metadata only".to_owned(),
+                "attachments and automatic fresh-page recollection are not yet covered".to_owned(),
+            ],
+        }
+    }
+}
+
+fn validate_browser_candidate(
+    candidate: &CandidateEnvelope,
+    route_id: &SourceRouteId,
+) -> Result<(), ApplicationError> {
+    let content_type_matches_route = match route_id.0.as_str() {
+        "source.browser_pages" => candidate.content_type == ContentType::WebPage,
+        "source.browser_bookmarks" => candidate.content_type == ContentType::Document,
+        _ => false,
+    };
+    if candidate.protocol_version != "1"
+        || candidate.route_id != *route_id
+        || !content_type_matches_route
+        || candidate.source_reference.trim().is_empty()
+    {
+        return Err(ApplicationError::Conflict(
+            "invalid browser candidate envelope".to_owned(),
+        ));
+    }
+    let CandidatePayload::Text { text } = &candidate.payload;
+    if Sha256::of_bytes(text.as_bytes()) != candidate.payload_sha256 {
+        return Err(ApplicationError::Integrity(
+            "browser candidate payload hash does not match its text".to_owned(),
+        ));
+    }
+    Ok(())
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
