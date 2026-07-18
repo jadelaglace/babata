@@ -141,6 +141,7 @@ check-p2-skeleton-inventory.ps1
 check-rust-boundaries.ps1
 check-interface-ownership.ps1
 check-doc-traceability.ps1
+test-doc-traceability.ps1
 check-no-secondary-writer.ps1
 cargo metadata / check / fmt / clippy / architecture tests
 ```
@@ -155,8 +156,8 @@ AC 已完成。
 - `cargo check --workspace`、`cargo fmt --all --check`、`cargo clippy --workspace
   --all-targets -- -D warnings` 通过；
 - `cargo test --workspace` 通过 41 个测试；
-- P2 inventory、interface ownership、document traceability、Rust boundary 和
-  no-secondary-writer 检查全部通过；
+- P2 inventory、interface ownership、document traceability、document traceability mutation、
+  Rust boundary 和 no-secondary-writer 检查全部通过；
 - 新增 CollectorSession、Knowledge、Sublibrary、Output、ReadProjection 和
   OutputBuilder 只提供边界与 unavailable 壳，没有业务算法；
 - 离线 route evidence 可以记录覆盖，但不能单独把飞书/浏览器标记 enabled；来源仍
