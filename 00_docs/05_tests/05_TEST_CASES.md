@@ -44,6 +44,9 @@ Git。所有 destructive 测试使用临时或隔离数据根。
 9. 对知乎先用正式 Chrome 读取 16 个自建收藏夹和最新收藏夹第一页；记录页面标称 28 条、
    官方分页实际返回 27 个去重候选，只选择最新回答。验证完整正文、原始 HTML 和 17 张
    正文原图进入同一 C0，作者头像排除，未选择的 26 条不写入。
+10. 对语雀先在正式 Chrome 核对官方整库与单篇导出，再从 8 个最近文档中只选择一篇；
+    验证免费官方 Markdown、渲染正文/HTML 和 22 张图片进入同一 C0。OpenAPI/MCP 的会员
+    Token 不作为当前前置，也不要求用户手抄会话 Token。
 
 预期：
 
@@ -77,6 +80,8 @@ Git。所有 destructive 测试使用临时或隔离数据根。
    处理，不误报 C0 integrity 损坏；成功收集后重采为 unchanged，仍为 1 revision/0 assets。
 9. 让同一张知乎原图在 `picx/pic1/pica` CDN 域间切换，确认稳定图片 token 不变时重采为
    unchanged，仍为 1 revision/17 assets；正文、更新时间或图片 token 改变时才追加版本。
+10. 对语雀重复访问同一官方 Markdown 端点，确认 Markdown 和 22 个稳定媒体 token 未变时
+    重采为 unchanged，仍为 1 revision/22 assets；临时下载目录重复产生不重复写入 C0。
 
 预期：逐条状态与原因可见；重试只影响目标项；changed 追加版本；unchanged 保留检查
 事件；inaccessible/removed 不删除旧 C0；局部成功始终保留；动态统计保留在原始响应中，

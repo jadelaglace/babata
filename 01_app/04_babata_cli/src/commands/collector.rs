@@ -12,7 +12,8 @@ use babata_infrastructure::{
     sources::providers::{
         bilibili_collection::BilibiliOpenCliAdapter, browser::BrowserCandidateAdapter,
         chatgpt::ChatGptOpenCliAdapter, doubao::DoubaoOpenCliAdapter, feishu::FeishuCliAdapter,
-        kimi::KimiOpenCliAdapter, zhihu::ZhihuOpenCliAdapter,
+        kimi::KimiOpenCliAdapter, xiaohongshu::XiaohongshuOpenCliAdapter,
+        yuque::YuqueOpenCliAdapter, zhihu::ZhihuOpenCliAdapter,
     },
 };
 use serde::Serialize;
@@ -184,6 +185,18 @@ fn source_adapters(
                 .root()
                 .join("04_runtime/provider-downloads/zhihu"),
         )),
+        Box::new(XiaohongshuOpenCliAdapter::new(
+            config
+                .paths()
+                .root()
+                .join("04_runtime/provider-downloads/xiaohongshu"),
+        )),
+        Box::new(YuqueOpenCliAdapter::new(
+            config
+                .paths()
+                .root()
+                .join("04_runtime/provider-downloads/yuque"),
+        )),
         Box::new(BilibiliOpenCliAdapter::new(
             config
                 .paths()
@@ -192,9 +205,7 @@ fn source_adapters(
         )),
     ];
     for route in [
-        "source.xiaohongshu",
         "source.douyin",
-        "source.yuque",
         "source.browser_pages",
         "source.browser_bookmarks",
     ] {

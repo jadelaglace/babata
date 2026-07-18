@@ -22,7 +22,7 @@ P8  备份、恢复、运维与长期加固                      未开始
 
 <!-- P2: completed; P2-G1..P2-G7: passed -->
 <!-- P3: completed; P3-G1..P3-G6: passed -->
-<!-- P4: in-progress; Kimi/Doubao/Bilibili/Feishu/ChatGPT/Zhihu small real loops proven; routes disabled -->
+<!-- P4: in-progress; Kimi/Doubao/Bilibili/Feishu/ChatGPT/Zhihu/Xiaohongshu/Yuque small real loops proven; routes disabled -->
 
 当前真实情况：
 
@@ -34,7 +34,7 @@ P8  备份、恢复、运维与长期加固                      未开始
   00 点名的来源都有证据等级、最小授权、正常路线、回退和诚实缺口。飞书 `lark-cli`、
   Browser Use、Agent Browser、Playwright CLI、OpenCLI 和 Codex Chrome 均有实际调用或
   连接证据。具体来源 E3 仍属于 P4/P7，不再错误作为 P2 前置。
-- Kimi、豆包、Bilibili、飞书 Docx、ChatGPT 和知乎回答已分别完成一个真实小范围的候选、明确选择、C0、逐条状态和
+- Kimi、豆包、Bilibili、飞书 Docx、ChatGPT、知乎回答、小红书收藏和语雀文档已分别完成一个真实小范围的候选、明确选择、C0、逐条状态和
   重收集闭环；Bilibili 另把 44,773,539 字节原视频作为 C0 资产保存并复核 SHA-256。
   飞书样本另保存 3,391 字符 XML 正文和 8 张真实 PNG；ChatGPT 样本保存 2 条角色消息和
   10 个引用。来源仍保持 disabled：Kimi/ChatGPT 当前样本无附件，豆包二进制媒体未闭合，Bilibili 按用户要求只证明一条，飞书嵌入
@@ -76,13 +76,20 @@ P8  备份、恢复、运维与长期加固                      未开始
              -> 最新“我的收藏”页面标称 28 条，分页命令返回 27 个去重候选
              -> 只选最新回答；完整正文 + 原始 HTML + 17 张正文原图（8.41 MB）
              -> 1 条资料/1 个版本/17 个附件 -> 重采没变化
+  小红书    正式 Chrome 登录后读取 20 个真实收藏候选
+             -> 选“捉住一只小仙兔” -> 正文/标签/互动 + 2 个媒体（10.16 MB）
+             -> 1 条资料/1 个版本/2 个附件 -> 重采没变化
+  语雀      正式 Chrome 登录后看到 2 个知识库、8 个最近文档
+             -> 选“粒界引擎-车辆材质质感提高方式”
+             -> 免费官方 Markdown + 渲染正文/HTML + 22 张图片（3.10 MB）
+             -> 1 条资料/1 个版本/22 个附件 -> 重采没变化
+             -> 会员 OpenAPI/MCP 只登记，全部来源闭环后统一决策
 
 正在往下闭合
-  小红书    正式 Chrome 已到官方登录弹窗，等待用户完成登录后读取收藏/赞过
-  语雀      正式 Chrome 已到官方未登录首页，等待用户完成登录后读取知识库
+  微信      先复核新出现的专用本地 CLI，再决定官方 PC 微信窄适配
 
 后续队列
-  微信 -> OneNote -> 印象笔记
+  OneNote -> 印象笔记
 
 最后再说
   抖音（用户明确暂缓到最后）
@@ -343,8 +350,16 @@ P4 按 `07_P4_FIRST_COLLECTION_PATHS.md` 实现：
   1 item/1 revision/17 assets，17 个 SHA-256 均不同，总计 8,413,376 字节。首次验证发现
   图片 CDN 域切换会制造伪版本，改用稳定 `data-original-token` 后，干净验证根重采
   `unchanged`。文章、想法、视频和评论线程尚未覆盖，route 保持 disabled。
+- 小红书：验证根 `p4-xiaohongshu-final-20260718-210000`。正式 Chrome 读取 20 个真实
+  收藏候选，只选“捉住一只小仙兔”；保存正文、标签、互动数据和 2 个不同哈希的媒体，
+  共 10,163,846 字节，最终 1 item/1 revision/2 assets，重采 `unchanged`。
+- 语雀：验证根 `p4-yuque-official-20260718-225000`。正式 Chrome 看到 2 个知识库和 8 个
+  最近文档，实测整库官方导出为 PDF/LakeBook，单篇免费提供官方 Markdown。只选“粒界
+  引擎-车辆材质质感提高方式”，保存官方 Markdown、渲染正文/HTML和 22 张不同哈希图片，
+  共 3,101,329 字节；最终 1 item/1 revision/22 assets，重采 `unchanged`。个人 OpenAPI
+  和官方 MCP 需要超级会员，只登记并等待全部来源闭环后的统一决策。
 
-浏览器仍是当前存量回收首选。Kimi/豆包/ChatGPT/知乎的 OpenCLI 薄命令是为了把浏览器已经证明的
+浏览器仍是当前存量回收首选。Kimi/豆包/ChatGPT/知乎/小红书/语雀的 OpenCLI 薄命令是为了把浏览器已经证明的
 读取动作变成任务结束后可调用的重试/重收集；Bilibili 是因为 Codex Chrome 历史页连续
 两次超时后才回退 OpenCLI。两类理由均已记录，不把 OpenCLI 当默认绕路。
 
