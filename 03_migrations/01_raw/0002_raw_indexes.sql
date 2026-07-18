@@ -1,3 +1,5 @@
+CREATE UNIQUE INDEX ux_sources_identity
+    ON sources(source_kind, provider, COALESCE(account_or_workspace, ''));
 CREATE UNIQUE INDEX ux_items_external_identity
     ON items(source_id, source_identity_key)
     WHERE source_identity_key IS NOT NULL;

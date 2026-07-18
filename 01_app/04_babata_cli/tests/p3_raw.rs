@@ -62,6 +62,11 @@ fn raw_cli_flow_keeps_assets_and_first_party_lineage() {
             "p3",
         ],
     );
+    assert!(first["operation_id"].as_str().unwrap().starts_with("op_"));
+    assert_eq!(first["record"]["provider"], "fixture");
+    assert_eq!(first["record"]["collections"][0]["native_id"], "p3");
+    assert_eq!(first["record"]["revisions"][0]["state"], "ready");
+    assert_eq!(first["record"]["revisions"][0]["raw_text"], "raw wording");
     let second = json_success(
         &temp,
         &[
@@ -107,6 +112,19 @@ fn raw_cli_flow_keeps_assets_and_first_party_lineage() {
     );
     assert_eq!(file["asset_ids"].as_array().unwrap().len(), 1);
     assert_eq!(export["asset_ids"].as_array().unwrap().len(), 1);
+    assert_eq!(file["record"]["assets"][0]["role"], "original");
+    assert_eq!(file["record"]["assets"][0]["state"], "ready");
+    assert_eq!(export["record"]["assets"][0]["role"], "export");
+    assert_eq!(export["record"]["assets"][0]["state"], "ready");
+    for outcome in [&file, &export] {
+        let asset = &outcome["record"]["assets"][0];
+        assert!(
+            asset["logical_path"]
+                .as_str()
+                .unwrap()
+                .ends_with(asset["sha256"].as_str().unwrap())
+        );
+    }
 
     let authored = json_success(&temp, &["--json", "create", "--text", "first version"]);
     let authored_revision = authored["revision_id"].as_str().unwrap();
@@ -119,6 +137,8 @@ fn raw_cli_flow_keeps_assets_and_first_party_lineage() {
             authored_revision,
             "--text",
             "second version",
+            "--metadata-json",
+            r#"{"stage":"revision"}"#,
         ],
     );
     let annotation = json_success(
@@ -134,6 +154,26 @@ fn raw_cli_flow_keeps_assets_and_first_party_lineage() {
     );
     assert_eq!(authored["item_id"], revised["item_id"]);
     assert_ne!(authored["item_id"], annotation["item_id"]);
+    assert_eq!(revised["record"]["source_kind"], "first_party");
+    assert_eq!(revised["record"]["revisions"].as_array().unwrap().len(), 2);
+    assert_eq!(
+        revised["record"]["revisions"][0]["raw_text"],
+        "first version"
+    );
+    assert_eq!(
+        revised["record"]["revisions"][1]["raw_text"],
+        "second version"
+    );
+    assert_eq!(
+        revised["record"]["revisions"][1]["metadata"]["stage"],
+        "revision"
+    );
+    assert_eq!(annotation["record"]["source_kind"], "first_party");
+    assert_eq!(annotation["record"]["relations"][0]["kind"], "annotates");
+    assert_eq!(
+        annotation["record"]["relations"][0]["to_revision_id"],
+        authored["revision_id"]
+    );
 
     assert!(temp.path().join("01_raw/index/raw.sqlite").exists());
     let assets = files_under(&temp.path().join("01_raw/assets"));
@@ -157,6 +197,12 @@ fn raw_cli_flow_keeps_assets_and_first_party_lineage() {
             .count(),
         0
     );
+
+    let status = json_success(&temp, &["--json", "data", "status"]);
+    assert_eq!(status["raw_schema_version"], 3);
+    assert_eq!(status["pending_journals"], 0);
+    assert_eq!(status["orphans"], 0);
+    assert_eq!(status["quarantined_revisions"], 0);
 }
 
 #[test]

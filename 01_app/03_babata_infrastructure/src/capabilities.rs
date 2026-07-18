@@ -30,12 +30,7 @@ impl CapabilityRegistryPort for StaticCapabilityRegistry {
 
 pub fn all_descriptors() -> Vec<CapabilityDescriptor> {
     vec![
-        CapabilityDescriptor {
-            id: CapabilityId::new("capture.candidate"),
-            status: CapabilityStatus::Enabled,
-            activation_phase: "P4".to_owned(),
-            reason: None,
-        },
+        CapabilityDescriptor::unavailable("capture.candidate", "P4"),
         disabled_pending_evidence("source.feishu"),
         disabled_pending_evidence("source.browser"),
         CapabilityDescriptor::unavailable("collector", "P4"),

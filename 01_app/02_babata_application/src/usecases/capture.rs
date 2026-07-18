@@ -1,5 +1,5 @@
 use babata_domain::{
-    AssetRole, CandidatePayload, CollectionId, ContentType, ItemId, Metadata, RevisionId,
+    AssetRole, CandidatePayload, CollectionId, ContentType, ItemId, Metadata, RawState, RevisionId,
     RevisionKind, Sha256, SourceId, SourceKind, SourceRouteId, TextPayload, UtcTimestamp,
 };
 
@@ -7,8 +7,8 @@ use crate::{
     ApplicationError, CandidateCaptureCommand, CaptureFileCommand, CaptureImportCommand,
     CaptureOutcome, CaptureTextCommand,
     ports::{
-        AssetStorePort, ClockPort, NewAsset, NewCollection, NewItem, NewRevision, NewSource,
-        PersistGraph, RawRepositoryPort, StagedAsset,
+        AssetStorePort, ClockPort, FinalizeAssetOutcome, NewAsset, NewCollection, NewItem,
+        NewRevision, NewSource, PersistGraph, RawRepositoryPort, StagedAsset,
     },
 };
 
@@ -36,6 +36,8 @@ where
         &self,
         command: CaptureTextCommand,
     ) -> Result<CaptureOutcome, ApplicationError> {
+        validate_provider(&command.provider)?;
+        let operation_id = new_operation_id();
         let text = TextPayload::new(command.text)?;
         let hash = text.hash();
         let identity = command
@@ -43,6 +45,7 @@ where
             .or_else(|| command.native_id.as_ref().map(|id| format!("native:{id}")))
             .unwrap_or_else(|| format!("text:{}", hash.as_str()));
         self.capture_external(
+            operation_id,
             command.provider,
             command.context,
             command.locator,
@@ -76,9 +79,10 @@ where
         &self,
         command: CaptureImportCommand,
     ) -> Result<CaptureOutcome, ApplicationError> {
+        validate_provider(&command.provider)?;
         let text = TextPayload::new(command.text)?;
         let route_evidence = command.route_evidence.clone();
-        let operation_id = format!("op_{}", ulid::Ulid::new());
+        let operation_id = new_operation_id();
         let mut staged_assets = Vec::with_capacity(command.assets.len());
         for asset in &command.assets {
             match self.assets.stage(&asset.path, asset.role, &operation_id) {
@@ -96,6 +100,7 @@ where
             .or_else(|| command.native_id.as_ref().map(|id| format!("native:{id}")))
             .unwrap_or_else(|| format!("text:{}", text.hash().as_str()));
         let result = self.capture_external(
+            operation_id,
             command.provider,
             command.context,
             command.locator,
@@ -165,6 +170,7 @@ where
             ));
         }
         self.capture_external(
+            new_operation_id(),
             "browser".to_owned(),
             candidate.context,
             Some(candidate.source_reference.clone()),
@@ -186,7 +192,8 @@ where
         role: AssetRole,
         kind: RevisionKind,
     ) -> Result<CaptureOutcome, ApplicationError> {
-        let operation_id = format!("op_{}", ulid::Ulid::new());
+        validate_provider(&command.provider)?;
+        let operation_id = new_operation_id();
         let staged = self.assets.stage(&command.path, role, &operation_id)?;
         let identity = command
             .identity
@@ -194,6 +201,7 @@ where
             .unwrap_or_else(|| format!("file:{}", staged.sha256.as_str()));
         let content_type = content_type_for(&command.path);
         let result = self.capture_external(
+            operation_id,
             command.provider,
             command.context,
             command.locator,
@@ -216,6 +224,7 @@ where
     #[allow(clippy::too_many_arguments)]
     fn capture_external(
         &self,
+        operation_id: String,
         provider: String,
         context: Option<String>,
         locator: Option<String>,
@@ -301,6 +310,7 @@ where
             })
             .collect();
         self.persist_and_finalize(
+            operation_id,
             source,
             collection,
             item,
@@ -316,6 +326,7 @@ where
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn persist_and_finalize(
         &self,
+        operation_id: String,
         source: NewSource,
         collection: Option<NewCollection>,
         item: NewItem,
@@ -335,24 +346,55 @@ where
             relations,
         };
         self.repository.insert_capture_graph(&graph)?;
+        let mut finalized = Vec::with_capacity(staged_assets.len());
         for asset in &staged_assets {
-            if let Err(error) = self.assets.finalize(asset) {
-                self.repository.quarantine(&revision.id)?;
-                for finalized in &staged_assets {
-                    let _ = self
-                        .assets
-                        .quarantine_finalized(finalized, &format!("op_{}", ulid::Ulid::new()));
+            match self.assets.finalize(asset) {
+                Ok(outcome) => finalized.push((asset.clone(), outcome)),
+                Err(error) => {
+                    self.preserve_failed_capture(&operation_id, &revision.id, &finalized);
+                    return Err(error);
                 }
-                return Err(error);
             }
         }
-        self.repository.mark_ready(&revision.id)?;
         for asset in &staged_assets {
-            self.assets.discard_stage(asset)?;
+            match self.assets.verify(asset) {
+                Ok(true) => {}
+                Ok(false) => {
+                    self.preserve_failed_capture(&operation_id, &revision.id, &finalized);
+                    return Err(ApplicationError::Integrity(
+                        "finalized asset failed hash verification".to_owned(),
+                    ));
+                }
+                Err(error) => {
+                    self.preserve_failed_capture(&operation_id, &revision.id, &finalized);
+                    return Err(error);
+                }
+            }
         }
-        let _detail = self.repository.load_detail(&item.id)?;
+        if let Err(error) = self.repository.mark_ready(&revision.id) {
+            self.preserve_failed_capture(&operation_id, &revision.id, &finalized);
+            return Err(error);
+        }
+        let detail = match self.repository.load_detail(&item.id) {
+            Ok(detail) => detail,
+            Err(error) => {
+                self.preserve_failed_capture(&operation_id, &revision.id, &finalized);
+                return Err(error);
+            }
+        };
+        if let Err(error) = validate_ready_readback(&detail, &revision.id, &staged_assets) {
+            self.preserve_failed_capture(&operation_id, &revision.id, &finalized);
+            return Err(error);
+        }
+        let mut warnings = Vec::new();
+        for asset in &staged_assets {
+            if self.assets.discard_stage(asset).is_err() {
+                warnings.push("recovery journal cleanup is pending".to_owned());
+                break;
+            }
+        }
         Ok(CaptureOutcome {
-            operation_id: format!("op_{}", ulid::Ulid::new()),
+            operation_id,
             item_id: item.id,
             revision_id: revision.id,
             asset_ids: staged_assets
@@ -362,9 +404,69 @@ where
             status: "ready".to_owned(),
             duplicate_of,
             reimported,
-            warnings: Vec::new(),
+            warnings,
+            record: detail,
         })
     }
+
+    fn preserve_failed_capture(
+        &self,
+        operation_id: &str,
+        revision_id: &RevisionId,
+        finalized: &[(StagedAsset, FinalizeAssetOutcome)],
+    ) {
+        for (asset, outcome) in finalized {
+            let _ = self
+                .assets
+                .quarantine_finalized(asset, operation_id, *outcome);
+        }
+        let _ = self.repository.quarantine(revision_id);
+    }
+}
+
+fn new_operation_id() -> String {
+    format!("op_{}", ulid::Ulid::new())
+}
+
+fn validate_provider(provider: &str) -> Result<(), ApplicationError> {
+    if provider.trim().is_empty() {
+        return Err(babata_domain::DomainError::Empty { field: "provider" }.into());
+    }
+    Ok(())
+}
+
+fn validate_ready_readback(
+    detail: &crate::RecordDetail,
+    revision_id: &RevisionId,
+    staged_assets: &[StagedAsset],
+) -> Result<(), ApplicationError> {
+    let revision = detail
+        .revisions
+        .iter()
+        .find(|revision| &revision.revision_id == revision_id)
+        .ok_or_else(|| {
+            ApplicationError::Integrity("ready revision did not read back".to_owned())
+        })?;
+    if revision.state != RawState::Ready {
+        return Err(ApplicationError::Integrity(
+            "revision read back without ready state".to_owned(),
+        ));
+    }
+    for staged in staged_assets {
+        let asset = detail
+            .assets
+            .iter()
+            .find(|asset| asset.asset_id == staged.asset_id)
+            .ok_or_else(|| {
+                ApplicationError::Integrity("ready asset did not read back".to_owned())
+            })?;
+        if asset.state != RawState::Ready || asset.sha256 != staged.sha256.as_str() {
+            return Err(ApplicationError::Integrity(
+                "asset read back with wrong state or hash".to_owned(),
+            ));
+        }
+    }
+    Ok(())
 }
 
 pub(crate) fn collection_from_context(
@@ -434,14 +536,17 @@ pub(crate) mod tests {
     #[derive(Clone, Default)]
     pub(crate) struct MockRepository {
         pub(crate) state: Arc<Mutex<State>>,
+        pub(crate) fail_mark_ready: bool,
     }
     #[derive(Default)]
     pub(crate) struct State {
         pub(crate) sources: Vec<NewSource>,
         pub(crate) items: Vec<NewItem>,
         pub(crate) revisions: Vec<NewRevision>,
+        pub(crate) assets: Vec<NewAsset>,
         pub(crate) relations: Vec<NewRelation>,
         pub(crate) quarantined: Vec<RevisionId>,
+        pub(crate) states: Vec<(RevisionId, RawState)>,
         pub(crate) route_evidence: Vec<babata_domain::RouteEvidence>,
     }
     impl RawRepositoryPort for MockRepository {
@@ -483,6 +588,19 @@ pub(crate) mod tests {
                 .iter()
                 .find(|revision| &revision.id == id)
                 .cloned())
+        }
+        fn find_revision_state(
+            &self,
+            id: &RevisionId,
+        ) -> Result<Option<RawState>, ApplicationError> {
+            Ok(self
+                .state
+                .lock()
+                .unwrap()
+                .states
+                .iter()
+                .find(|(revision_id, _)| revision_id == id)
+                .map(|(_, state)| *state))
         }
         fn find_by_source_identity(
             &self,
@@ -550,10 +668,29 @@ pub(crate) mod tests {
                 state.items.push(graph.item.clone());
             }
             state.revisions.push(graph.revision.clone());
+            state.assets.extend(graph.assets.clone());
             state.relations.extend(graph.relations.clone());
+            state
+                .states
+                .push((graph.revision.id.clone(), RawState::Pending));
             Ok(())
         }
-        fn mark_ready(&self, _: &RevisionId) -> Result<(), ApplicationError> {
+        fn mark_ready(&self, revision_id: &RevisionId) -> Result<(), ApplicationError> {
+            if self.fail_mark_ready {
+                return Err(ApplicationError::Storage(
+                    "ready transition failed".to_owned(),
+                ));
+            }
+            if let Some((_, state)) = self
+                .state
+                .lock()
+                .unwrap()
+                .states
+                .iter_mut()
+                .find(|(id, _)| id == revision_id)
+            {
+                *state = RawState::Ready;
+            }
             Ok(())
         }
         fn quarantine(&self, revision_id: &RevisionId) -> Result<(), ApplicationError> {
@@ -562,17 +699,100 @@ pub(crate) mod tests {
                 .unwrap()
                 .quarantined
                 .push(revision_id.clone());
+            if let Some((_, state)) = self
+                .state
+                .lock()
+                .unwrap()
+                .states
+                .iter_mut()
+                .find(|(id, _)| id == revision_id)
+            {
+                *state = RawState::Quarantined;
+            }
             Ok(())
         }
         fn load_detail(&self, item_id: &ItemId) -> Result<crate::RecordDetail, ApplicationError> {
+            let state = self.state.lock().unwrap();
+            let item = state
+                .items
+                .iter()
+                .find(|item| &item.id == item_id)
+                .ok_or_else(|| ApplicationError::NotFound(item_id.to_string()))?;
+            let source = state
+                .sources
+                .iter()
+                .find(|source| source.id == item.source_id)
+                .ok_or_else(|| ApplicationError::Integrity("mock source is missing".to_owned()))?;
             Ok(crate::RecordDetail {
                 item_id: item_id.clone(),
-                source_kind: SourceKind::External,
-                provider: "mock".to_owned(),
-                content_type: ContentType::Text,
-                revisions: Vec::new(),
-                assets: Vec::new(),
-                relations: Vec::new(),
+                source_id: source.id.clone(),
+                source_kind: source.kind,
+                provider: source.provider.clone(),
+                content_type: item.content_type,
+                source_native_id: item.source_native_id.clone(),
+                source_locator: item.source_locator.clone(),
+                source_identity_key: item.source_identity_key.clone(),
+                metadata: item.metadata.clone(),
+                collections: Vec::new(),
+                revisions: state
+                    .revisions
+                    .iter()
+                    .filter(|revision| &revision.item_id == item_id)
+                    .map(|revision| crate::RevisionDetail {
+                        revision_id: revision.id.clone(),
+                        parent_revision_id: revision.parent_revision_id.clone(),
+                        kind: format!("{:?}", revision.kind).to_ascii_lowercase(),
+                        ordinal: revision.ordinal,
+                        captured_at: revision.captured_at.clone(),
+                        authored_at: revision.authored_at.clone(),
+                        revision_note: revision.revision_note.clone(),
+                        raw_text: revision.raw_text.clone(),
+                        text_sha256: revision.text_sha256.as_ref().map(ToString::to_string),
+                        metadata: revision.metadata.clone(),
+                        state: state
+                            .states
+                            .iter()
+                            .find(|(id, _)| id == &revision.id)
+                            .map_or(RawState::Pending, |(_, state)| *state),
+                    })
+                    .collect(),
+                assets: state
+                    .assets
+                    .iter()
+                    .filter(|asset| {
+                        state.revisions.iter().any(|revision| {
+                            revision.item_id == *item_id && revision.id == asset.revision_id
+                        })
+                    })
+                    .map(|asset| crate::AssetDetail {
+                        asset_id: asset.id.clone(),
+                        role: asset.role,
+                        logical_path: asset.logical_path.clone(),
+                        sha256: asset.sha256.to_string(),
+                        byte_size: asset.byte_size,
+                        media_type: asset.media_type.clone(),
+                        original_filename: asset.original_filename.clone(),
+                        state: state
+                            .states
+                            .iter()
+                            .find(|(id, _)| id == &asset.revision_id)
+                            .map_or(RawState::Pending, |(_, state)| *state),
+                    })
+                    .collect(),
+                relations: state
+                    .relations
+                    .iter()
+                    .filter(|relation| {
+                        &relation.from_item_id == item_id || &relation.to_item_id == item_id
+                    })
+                    .map(|relation| crate::RelationDetail {
+                        kind: relation.kind,
+                        from_item_id: relation.from_item_id.clone(),
+                        from_revision_id: relation.from_revision_id.clone(),
+                        to_item_id: relation.to_item_id.clone(),
+                        to_revision_id: relation.to_revision_id.clone(),
+                    })
+                    .collect(),
             })
         }
         fn record_route_evidence(
@@ -619,8 +839,10 @@ pub(crate) mod tests {
     pub(crate) struct MockAssets {
         pub(crate) fail_stage: bool,
         pub(crate) fail_finalize: bool,
+        pub(crate) fail_verify: bool,
         finalized: Arc<Mutex<u32>>,
         discarded: Arc<Mutex<u32>>,
+        recovery_markers: Arc<Mutex<u32>>,
     }
     impl AssetStorePort for MockAssets {
         fn stage(
@@ -643,12 +865,12 @@ pub(crate) mod tests {
                 original_filename: None,
             })
         }
-        fn finalize(&self, _: &StagedAsset) -> Result<(), ApplicationError> {
+        fn finalize(&self, _: &StagedAsset) -> Result<FinalizeAssetOutcome, ApplicationError> {
             if self.fail_finalize {
                 return Err(ApplicationError::Asset("finalization failed".to_owned()));
             }
             *self.finalized.lock().unwrap() += 1;
-            Ok(())
+            Ok(FinalizeAssetOutcome::Created)
         }
         fn hash(&self, _: &str) -> Result<Sha256, ApplicationError> {
             Ok(Sha256::of_bytes(b"test"))
@@ -657,13 +879,19 @@ pub(crate) mod tests {
             Ok(b"test".to_vec())
         }
         fn verify(&self, _: &StagedAsset) -> Result<bool, ApplicationError> {
-            Ok(true)
+            Ok(!self.fail_verify)
         }
         fn discard_stage(&self, _: &StagedAsset) -> Result<(), ApplicationError> {
             *self.discarded.lock().unwrap() += 1;
             Ok(())
         }
-        fn quarantine_finalized(&self, _: &StagedAsset, _: &str) -> Result<(), ApplicationError> {
+        fn quarantine_finalized(
+            &self,
+            _: &StagedAsset,
+            _: &str,
+            _: FinalizeAssetOutcome,
+        ) -> Result<(), ApplicationError> {
+            *self.recovery_markers.lock().unwrap() += 1;
             Ok(())
         }
     }
@@ -766,5 +994,67 @@ pub(crate) mod tests {
         let state = repository.state.lock().unwrap();
         assert_eq!(state.revisions.len(), 1);
         assert_eq!(state.quarantined, vec![state.revisions[0].id.clone()]);
+    }
+
+    #[test]
+    fn failed_asset_verification_never_marks_the_revision_ready() {
+        let repository = MockRepository::default();
+        let assets = MockAssets {
+            fail_verify: true,
+            ..Default::default()
+        };
+        let service = CaptureService::new(repository.clone(), assets.clone(), FixedClock);
+        assert!(
+            service
+                .capture_file(CaptureFileCommand {
+                    provider: "fixture".to_owned(),
+                    path: "fixture.txt".to_owned(),
+                    context: None,
+                    locator: None,
+                    native_id: None,
+                    identity: None,
+                    metadata: Metadata::empty(),
+                    source_published_at: None,
+                })
+                .is_err()
+        );
+        let state = repository.state.lock().unwrap();
+        assert_eq!(state.states[0].1, RawState::Quarantined);
+        assert_eq!(*assets.recovery_markers.lock().unwrap(), 1);
+    }
+
+    #[test]
+    fn failed_ready_transition_preserves_finalized_asset_for_recovery() {
+        let repository = MockRepository {
+            fail_mark_ready: true,
+            ..Default::default()
+        };
+        let assets = MockAssets::default();
+        let service = CaptureService::new(repository.clone(), assets.clone(), FixedClock);
+        assert!(
+            service
+                .capture_file(CaptureFileCommand {
+                    provider: "fixture".to_owned(),
+                    path: "fixture.txt".to_owned(),
+                    context: None,
+                    locator: None,
+                    native_id: None,
+                    identity: None,
+                    metadata: Metadata::empty(),
+                    source_published_at: None,
+                })
+                .is_err()
+        );
+        let state = repository.state.lock().unwrap();
+        assert_eq!(state.states[0].1, RawState::Quarantined);
+        assert_eq!(*assets.recovery_markers.lock().unwrap(), 1);
+    }
+
+    #[test]
+    fn empty_provider_is_rejected_before_any_write() {
+        let repository = MockRepository::default();
+        let service = CaptureService::new(repository.clone(), MockAssets::default(), FixedClock);
+        assert!(service.capture_text(text(" ", "payload")).is_err());
+        assert!(repository.state.lock().unwrap().revisions.is_empty());
     }
 }

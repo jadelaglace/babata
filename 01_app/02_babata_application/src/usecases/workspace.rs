@@ -1,6 +1,6 @@
 use babata_domain::{
-    AssetRole, ContentType, ItemId, Metadata, RelationKind, RevisionId, RevisionKind, SourceId,
-    SourceKind, TextPayload, UtcTimestamp,
+    AssetRole, ContentType, ItemId, Metadata, RawState, RelationKind, RevisionId, RevisionKind,
+    SourceId, SourceKind, TextPayload, UtcTimestamp,
 };
 
 use crate::{
@@ -95,6 +95,35 @@ mod tests {
                     && relation.to_revision_id.as_ref() == Some(&original.revision_id))
         );
     }
+
+    #[test]
+    fn external_revision_cannot_be_revised_as_first_party() {
+        let repository = MockRepository::default();
+        let capture = CaptureService::new(repository.clone(), MockAssets::default(), FixedClock);
+        let external = capture
+            .capture_text(crate::CaptureTextCommand {
+                provider: "fixture".to_owned(),
+                text: "external".to_owned(),
+                context: None,
+                locator: None,
+                native_id: None,
+                identity: None,
+                metadata: Metadata::empty(),
+                source_published_at: None,
+            })
+            .unwrap();
+        let workspace = WorkspaceService::new(repository, MockAssets::default(), FixedClock);
+        assert!(matches!(
+            workspace.revise(ReviseCommand {
+                parent: external.revision_id,
+                text: "not an edit".to_owned(),
+                path: None,
+                note: None,
+                metadata: Metadata::empty(),
+            }),
+            Err(ApplicationError::Conflict(_))
+        ));
+    }
 }
 
 impl<R, A, C> WorkspaceService<R, A, C>
@@ -137,6 +166,7 @@ where
             command.text,
             command.path,
             None,
+            Metadata::empty(),
             Vec::new(),
             now,
         )
@@ -153,11 +183,22 @@ where
             .repository
             .find_item(&parent.item_id)?
             .ok_or_else(|| ApplicationError::Integrity("parent item is missing".to_owned()))?;
-        let source = self
+        let state = self
             .capture
             .repository
-            .find_source(SourceKind::FirstParty, "babata", None)?
-            .unwrap_or_else(|| first_party_source(self.capture.clock.now()));
+            .find_revision_state(&command.parent)?
+            .ok_or_else(|| ApplicationError::NotFound(command.parent.to_string()))?;
+        if state != RawState::Ready {
+            return Err(ApplicationError::Conflict(
+                "only a ready first-party revision can be revised".to_owned(),
+            ));
+        }
+        let source = first_party_source(self.capture.clock.now());
+        if item.source_id != source.id {
+            return Err(ApplicationError::Conflict(
+                "external material must be annotated, not revised as first-party".to_owned(),
+            ));
+        }
         self.write_note(
             source,
             None,
@@ -167,6 +208,7 @@ where
             command.text,
             command.path,
             command.note,
+            command.metadata,
             Vec::new(),
             self.capture.clock.now(),
         )
@@ -174,6 +216,33 @@ where
 
     pub fn annotate(&self, command: AnnotateCommand) -> Result<CaptureOutcome, ApplicationError> {
         let now = self.capture.clock.now();
+        self.capture
+            .repository
+            .find_item(&command.target_item)?
+            .ok_or_else(|| ApplicationError::NotFound(command.target_item.to_string()))?;
+        let target_detail = self.capture.repository.load_detail(&command.target_item)?;
+        let target_revision = match command.target_revision {
+            Some(revision_id) => target_detail
+                .revisions
+                .iter()
+                .find(|revision| {
+                    revision.revision_id == revision_id && revision.state == RawState::Ready
+                })
+                .map(|revision| revision.revision_id.clone())
+                .ok_or_else(|| {
+                    ApplicationError::Conflict(
+                        "annotation target revision is not a ready version of the target item"
+                            .to_owned(),
+                    )
+                })?,
+            None => target_detail
+                .revisions
+                .iter()
+                .rev()
+                .find(|revision| revision.state == RawState::Ready)
+                .map(|revision| revision.revision_id.clone())
+                .ok_or_else(|| ApplicationError::NotFound(command.target_item.to_string()))?,
+        };
         let source = self
             .capture
             .repository
@@ -195,7 +264,7 @@ where
             from_item_id: item.id.clone(),
             from_revision_id: None,
             to_item_id: command.target_item,
-            to_revision_id: command.target_revision,
+            to_revision_id: Some(target_revision),
         };
         let collection = collection_from_context(&source, command.context, now.clone())?;
         self.write_note(
@@ -207,6 +276,7 @@ where
             command.text,
             command.path,
             None,
+            Metadata::empty(),
             vec![relation],
             now,
         )
@@ -224,6 +294,11 @@ where
             .repository
             .find_revision(&revision_id)?
             .ok_or_else(|| ApplicationError::NotFound(revision_id.to_string()))?;
+        if self.capture.repository.find_revision_state(&revision_id)? != Some(RawState::Ready) {
+            return Err(ApplicationError::Conflict(
+                "only a ready revision can be annotated".to_owned(),
+            ));
+        }
         self.annotate(AnnotateCommand {
             target_item: target.item_id,
             target_revision: Some(revision_id),
@@ -245,17 +320,17 @@ where
         text: String,
         path: Option<String>,
         note: Option<String>,
+        revision_metadata: Metadata,
         relations: Vec<NewRelation>,
         now: UtcTimestamp,
     ) -> Result<CaptureOutcome, ApplicationError> {
         let payload = TextPayload::new(text)?;
+        let operation_id = format!("op_{}", ulid::Ulid::new());
         let staged = path
             .map(|path| {
-                self.capture.assets.stage(
-                    &path,
-                    AssetRole::Original,
-                    &format!("op_{}", ulid::Ulid::new()),
-                )
+                self.capture
+                    .assets
+                    .stage(&path, AssetRole::Original, &operation_id)
             })
             .transpose()?;
         let ordinal = if parent.is_some() {
@@ -274,7 +349,7 @@ where
             revision_note: note,
             raw_text: Some(payload.as_str().to_owned()),
             text_sha256: Some(payload.hash()),
-            metadata: Metadata::empty(),
+            metadata: revision_metadata,
         };
         let mut all_relations = relations;
         for relation in &mut all_relations {
@@ -309,6 +384,7 @@ where
             revision.text_sha256.as_ref().expect("text has hash"),
         )?;
         self.capture.persist_and_finalize(
+            operation_id,
             source,
             collection,
             item,

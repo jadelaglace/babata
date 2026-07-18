@@ -45,6 +45,28 @@ foreach ($migration in @('0001_raw_schema.sql', '0002_raw_indexes.sql', '0003_ra
         throw "Missing P3 raw migration: $migration"
     }
 }
+$rawMigrations = @(Get-ChildItem -File -LiteralPath (Join-Path $repo '03_migrations/01_raw') -Filter '*.sql')
+if ($rawMigrations.Count -ne 3) {
+    throw "P3 raw migration set must contain exactly 3 migrations, found $($rawMigrations.Count)"
+}
+$collectionMigration = Join-Path $repo '03_migrations/02_collection/0001_route_evidence.sql'
+if (-not (Test-Path -LiteralPath $collectionMigration)) {
+    throw 'P4 route evidence migration must remain preserved outside the P3 raw migration set'
+}
+
+$capabilities = Get-Content -Raw -Encoding utf8 (Join-Path $app '03_babata_infrastructure/src/capabilities.rs')
+if (-not $capabilities.Contains('CapabilityDescriptor::unavailable("capture.candidate", "P4")')) {
+    throw 'P4 candidate capture must remain unavailable during P3'
+}
+$cliApp = Get-Content -Raw -Encoding utf8 (Join-Path $app '04_babata_cli/src/app.rs')
+foreach ($marker in @(
+    'RootCommand::Capture(_) => return Err(unavailable("capture.provider", "P4"))',
+    'RootCommand::Routes(_) => return Err(unavailable("routes", "P4"))'
+)) {
+    if (-not $cliApp.Contains($marker)) {
+        throw "P3 CLI is missing an inactive later-phase boundary: $marker"
+    }
+}
 
 $commandOwner = Join-Path $app '04_babata_cli/src/commands'
 foreach ($symbol in @('CaptureCommand', 'WorkspaceCommand', 'Create(NoteInput)', 'Revise(ReviseInput)', 'Annotate(AnnotateInput)')) {

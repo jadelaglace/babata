@@ -1,16 +1,16 @@
 use std::sync::{Arc, Mutex};
 
 use babata_application::{
-    ApplicationError, AssetDetail, RecordDetail, RelationDetail, RevisionDetail,
+    ApplicationError, AssetDetail, CollectionDetail, RecordDetail, RelationDetail, RevisionDetail,
     ports::{
         NewAsset, NewCollection, NewItem, NewRelation, NewRevision, NewRouteEvidence, NewSource,
         PersistGraph, RawRepositoryPort,
     },
 };
 use babata_domain::{
-    AssetId, AssetRole, ContentType, ItemId, Metadata, RelationId, RelationKind, RevisionId,
-    RevisionKind, RouteCoverage, RouteEvidence, Sha256, SourceId, SourceKind, SourceRouteId,
-    UtcTimestamp,
+    AssetId, AssetRole, CollectionId, ContentType, ItemId, Metadata, RawState, RelationId,
+    RelationKind, RevisionId, RevisionKind, RouteCoverage, RouteEvidence, Sha256, SourceId,
+    SourceKind, SourceRouteId, UtcTimestamp,
 };
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
 
@@ -54,6 +54,23 @@ impl RawRepositoryPort for SqliteRawRepository {
         connection.query_row("SELECT revision_id, item_id, parent_revision_id, revision_kind, ordinal, captured_at, authored_at, revision_note, raw_text, text_sha256, metadata_json FROM revisions WHERE revision_id = ?1", params![revision_id.to_string()], revision_from_row).optional().map_err(storage)
     }
 
+    fn find_revision_state(
+        &self,
+        revision_id: &RevisionId,
+    ) -> Result<Option<RawState>, ApplicationError> {
+        let connection = self.lock()?;
+        connection
+            .query_row(
+                "SELECT state FROM revisions WHERE revision_id = ?1",
+                params![revision_id.to_string()],
+                |row| row.get::<_, String>(0),
+            )
+            .optional()
+            .map_err(storage)?
+            .map(|state| parse_raw_state(&state))
+            .transpose()
+    }
+
     fn find_by_source_identity(
         &self,
         source_id: &SourceId,
@@ -86,7 +103,7 @@ impl RawRepositoryPort for SqliteRawRepository {
         hash: &Sha256,
     ) -> Result<Option<RevisionId>, ApplicationError> {
         let connection = self.lock()?;
-        connection.query_row("SELECT revision_id FROM revisions WHERE item_id = ?1 AND text_sha256 = ?2 ORDER BY ordinal DESC LIMIT 1", params![item_id.to_string(), hash.as_str()], |row| row.get::<_, String>(0)).optional().map_err(storage)?.map(parse_revision).transpose()
+        connection.query_row("SELECT revision_id FROM revisions WHERE item_id = ?1 AND text_sha256 = ?2 AND state = 'ready' ORDER BY ordinal DESC LIMIT 1", params![item_id.to_string(), hash.as_str()], |row| row.get::<_, String>(0)).optional().map_err(storage)?.map(parse_revision).transpose()
     }
 
     fn insert_capture_graph(&self, graph: &PersistGraph) -> Result<(), ApplicationError> {
@@ -115,15 +132,32 @@ impl RawRepositoryPort for SqliteRawRepository {
         let transaction = connection
             .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)
             .map_err(storage)?;
-        transaction
+        let invalid_assets: i64 = transaction
+            .query_row(
+                "SELECT COUNT(*) FROM assets WHERE revision_id = ?1 AND state <> 'pending'",
+                params![revision_id.to_string()],
+                |row| row.get(0),
+            )
+            .map_err(storage)?;
+        if invalid_assets != 0 {
+            return Err(ApplicationError::Integrity(
+                "capture assets are not all pending before ready transition".to_owned(),
+            ));
+        }
+        let changed = transaction
             .execute(
-                "UPDATE revisions SET state = 'ready' WHERE revision_id = ?1",
+                "UPDATE revisions SET state = 'ready' WHERE revision_id = ?1 AND state = 'pending'",
                 params![revision_id.to_string()],
             )
             .map_err(storage)?;
+        if changed != 1 {
+            return Err(ApplicationError::Integrity(
+                "capture revision is missing or is not pending".to_owned(),
+            ));
+        }
         transaction
             .execute(
-                "UPDATE assets SET state = 'ready' WHERE revision_id = ?1",
+                "UPDATE assets SET state = 'ready' WHERE revision_id = ?1 AND state = 'pending'",
                 params![revision_id.to_string()],
             )
             .map_err(storage)?;
@@ -131,95 +165,47 @@ impl RawRepositoryPort for SqliteRawRepository {
     }
 
     fn quarantine(&self, revision_id: &RevisionId) -> Result<(), ApplicationError> {
-        let connection = self.lock()?;
-        connection
+        let mut connection = self.lock()?;
+        let transaction = connection
+            .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)
+            .map_err(storage)?;
+        let changed = transaction
             .execute(
-                "UPDATE revisions SET state = 'quarantined' WHERE revision_id = ?1",
+                "UPDATE revisions SET state = 'quarantined' WHERE revision_id = ?1 AND state <> 'ready'",
                 params![revision_id.to_string()],
             )
             .map_err(storage)?;
-        connection
+        if changed != 1 {
+            return Err(ApplicationError::Integrity(
+                "capture revision cannot be quarantined".to_owned(),
+            ));
+        }
+        transaction
             .execute(
-                "UPDATE assets SET state = 'quarantined' WHERE revision_id = ?1",
+                "UPDATE assets SET state = 'quarantined' WHERE revision_id = ?1 AND state <> 'ready'",
                 params![revision_id.to_string()],
             )
             .map_err(storage)?;
-        Ok(())
+        transaction.commit().map_err(storage)
     }
 
     fn load_detail(&self, item_id: &ItemId) -> Result<RecordDetail, ApplicationError> {
         let connection = self.lock()?;
-        let (kind, provider, content_type): (String, String, String) = connection.query_row("SELECT s.source_kind, s.provider, i.content_type FROM items i JOIN sources s ON s.source_id = i.source_id WHERE i.item_id = ?1", params![item_id.to_string()], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?))).map_err(storage)?;
-        let mut revisions = Vec::new();
-        let mut statement = connection.prepare("SELECT revision_id, parent_revision_id, revision_kind, ordinal, raw_text, text_sha256, state FROM revisions WHERE item_id = ?1 ORDER BY ordinal").map_err(storage)?;
-        let rows = statement
-            .query_map(params![item_id.to_string()], |row| {
-                Ok(RevisionDetail {
-                    revision_id: parse_revision(row.get::<_, String>(0)?).map_err(to_sql)?,
-                    parent_revision_id: row
-                        .get::<_, Option<String>>(1)?
-                        .map(parse_revision)
-                        .transpose()
-                        .map_err(to_sql)?,
-                    kind: row.get(2)?,
-                    ordinal: row.get::<_, i64>(3)? as u32,
-                    raw_text: row.get(4)?,
-                    text_sha256: row.get(5)?,
-                    state: row.get(6)?,
-                })
-            })
-            .map_err(storage)?;
-        for row in rows {
-            revisions.push(row.map_err(storage)?);
-        }
-        let mut assets = Vec::new();
-        let mut statement = connection.prepare("SELECT a.asset_id, a.asset_role, a.logical_path, a.sha256, a.byte_size FROM assets a JOIN revisions r ON r.revision_id = a.revision_id WHERE r.item_id = ?1 ORDER BY a.created_at").map_err(storage)?;
-        let rows = statement
-            .query_map(params![item_id.to_string()], |row| {
-                Ok(AssetDetail {
-                    asset_id: AssetId::parse(row.get::<_, String>(0)?).map_err(to_sql)?,
-                    role: parse_asset_role(&row.get::<_, String>(1)?).map_err(to_sql)?,
-                    logical_path: row.get(2)?,
-                    sha256: row.get(3)?,
-                    byte_size: row.get::<_, i64>(4)? as u64,
-                })
-            })
-            .map_err(storage)?;
-        for row in rows {
-            assets.push(row.map_err(storage)?);
-        }
-        let mut relations = Vec::new();
-        let mut statement = connection.prepare("SELECT relation_kind, from_item_id, from_revision_id, to_item_id, to_revision_id FROM relations WHERE from_item_id = ?1 OR to_item_id = ?1 ORDER BY created_at").map_err(storage)?;
-        let rows = statement
-            .query_map(params![item_id.to_string()], |row| {
-                Ok(RelationDetail {
-                    kind: parse_relation_kind(&row.get::<_, String>(0)?).map_err(to_sql)?,
-                    from_item_id: ItemId::parse(row.get::<_, String>(1)?).map_err(to_sql)?,
-                    from_revision_id: row
-                        .get::<_, Option<String>>(2)?
-                        .map(parse_revision)
-                        .transpose()
-                        .map_err(to_sql)?,
-                    to_item_id: ItemId::parse(row.get::<_, String>(3)?).map_err(to_sql)?,
-                    to_revision_id: row
-                        .get::<_, Option<String>>(4)?
-                        .map(parse_revision)
-                        .transpose()
-                        .map_err(to_sql)?,
-                })
-            })
-            .map_err(storage)?;
-        for row in rows {
-            relations.push(row.map_err(storage)?);
-        }
+        let header = load_item_header(&connection, item_id)?;
         Ok(RecordDetail {
             item_id: item_id.clone(),
-            source_kind: parse_source_kind(&kind)?,
-            provider,
-            content_type: parse_content_type(&content_type)?,
-            revisions,
-            assets,
-            relations,
+            source_id: header.source_id,
+            source_kind: header.source_kind,
+            provider: header.provider,
+            content_type: header.content_type,
+            source_native_id: header.source_native_id,
+            source_locator: header.source_locator,
+            source_identity_key: header.source_identity_key,
+            metadata: header.metadata,
+            collections: load_collections(&connection, item_id)?,
+            revisions: load_revisions(&connection, item_id)?,
+            assets: load_assets(&connection, item_id)?,
+            relations: load_relations(&connection, item_id)?,
         })
     }
 
@@ -281,6 +267,145 @@ impl RawRepositoryPort for SqliteRawRepository {
             .map_err(storage)?;
         rows.map(|row| row.map_err(storage)).collect()
     }
+}
+
+struct ItemHeader {
+    source_id: SourceId,
+    source_kind: SourceKind,
+    provider: String,
+    content_type: ContentType,
+    source_native_id: Option<String>,
+    source_locator: Option<String>,
+    source_identity_key: Option<String>,
+    metadata: Metadata,
+}
+
+fn load_item_header(
+    connection: &Connection,
+    item_id: &ItemId,
+) -> Result<ItemHeader, ApplicationError> {
+    connection
+        .query_row(
+            "SELECT s.source_id, s.source_kind, s.provider, i.content_type,
+                    i.source_native_id, i.source_locator, i.source_identity_key, i.metadata_json
+             FROM items i JOIN sources s ON s.source_id = i.source_id
+             WHERE i.item_id = ?1",
+            params![item_id.to_string()],
+            |row| {
+                Ok(ItemHeader {
+                    source_id: SourceId::parse(row.get::<_, String>(0)?).map_err(to_sql)?,
+                    source_kind: parse_source_kind(&row.get::<_, String>(1)?).map_err(to_sql)?,
+                    provider: row.get(2)?,
+                    content_type: parse_content_type(&row.get::<_, String>(3)?).map_err(to_sql)?,
+                    source_native_id: row.get(4)?,
+                    source_locator: row.get(5)?,
+                    source_identity_key: row.get(6)?,
+                    metadata: Metadata::parse(&row.get::<_, String>(7)?).map_err(to_sql)?,
+                })
+            },
+        )
+        .map_err(storage)
+}
+
+fn load_collections(
+    connection: &Connection,
+    item_id: &ItemId,
+) -> Result<Vec<CollectionDetail>, ApplicationError> {
+    let mut statement = connection.prepare("SELECT c.collection_id, c.native_id, c.collection_kind, c.title, c.observed_at FROM collections c JOIN item_collections ic ON ic.collection_id = c.collection_id WHERE ic.item_id = ?1 ORDER BY c.created_at").map_err(storage)?;
+    let rows = statement
+        .query_map(params![item_id.to_string()], |row| {
+            Ok(CollectionDetail {
+                collection_id: CollectionId::parse(row.get::<_, String>(0)?).map_err(to_sql)?,
+                native_id: row.get(1)?,
+                kind: row.get(2)?,
+                title: row.get(3)?,
+                observed_at: UtcTimestamp::parse(row.get::<_, String>(4)?).map_err(to_sql)?,
+            })
+        })
+        .map_err(storage)?;
+    rows.map(|row| row.map_err(storage)).collect()
+}
+
+fn load_revisions(
+    connection: &Connection,
+    item_id: &ItemId,
+) -> Result<Vec<RevisionDetail>, ApplicationError> {
+    let mut statement = connection.prepare("SELECT revision_id, parent_revision_id, revision_kind, ordinal, captured_at, authored_at, revision_note, raw_text, text_sha256, metadata_json, state FROM revisions WHERE item_id = ?1 ORDER BY ordinal").map_err(storage)?;
+    let rows = statement
+        .query_map(params![item_id.to_string()], |row| {
+            Ok(RevisionDetail {
+                revision_id: parse_revision(row.get::<_, String>(0)?).map_err(to_sql)?,
+                parent_revision_id: row
+                    .get::<_, Option<String>>(1)?
+                    .map(parse_revision)
+                    .transpose()
+                    .map_err(to_sql)?,
+                kind: row.get(2)?,
+                ordinal: row.get::<_, i64>(3)? as u32,
+                captured_at: UtcTimestamp::parse(row.get::<_, String>(4)?).map_err(to_sql)?,
+                authored_at: row
+                    .get::<_, Option<String>>(5)?
+                    .map(UtcTimestamp::parse)
+                    .transpose()
+                    .map_err(to_sql)?,
+                revision_note: row.get(6)?,
+                raw_text: row.get(7)?,
+                text_sha256: row.get(8)?,
+                metadata: Metadata::parse(&row.get::<_, String>(9)?).map_err(to_sql)?,
+                state: parse_raw_state(&row.get::<_, String>(10)?).map_err(to_sql)?,
+            })
+        })
+        .map_err(storage)?;
+    rows.map(|row| row.map_err(storage)).collect()
+}
+
+fn load_assets(
+    connection: &Connection,
+    item_id: &ItemId,
+) -> Result<Vec<AssetDetail>, ApplicationError> {
+    let mut statement = connection.prepare("SELECT a.asset_id, a.asset_role, a.logical_path, a.sha256, a.byte_size, a.media_type, a.original_filename, a.state FROM assets a JOIN revisions r ON r.revision_id = a.revision_id WHERE r.item_id = ?1 ORDER BY a.created_at").map_err(storage)?;
+    let rows = statement
+        .query_map(params![item_id.to_string()], |row| {
+            Ok(AssetDetail {
+                asset_id: AssetId::parse(row.get::<_, String>(0)?).map_err(to_sql)?,
+                role: parse_asset_role(&row.get::<_, String>(1)?).map_err(to_sql)?,
+                logical_path: row.get(2)?,
+                sha256: row.get(3)?,
+                byte_size: row.get::<_, i64>(4)? as u64,
+                media_type: row.get(5)?,
+                original_filename: row.get(6)?,
+                state: parse_raw_state(&row.get::<_, String>(7)?).map_err(to_sql)?,
+            })
+        })
+        .map_err(storage)?;
+    rows.map(|row| row.map_err(storage)).collect()
+}
+
+fn load_relations(
+    connection: &Connection,
+    item_id: &ItemId,
+) -> Result<Vec<RelationDetail>, ApplicationError> {
+    let mut statement = connection.prepare("SELECT relation_kind, from_item_id, from_revision_id, to_item_id, to_revision_id FROM relations WHERE from_item_id = ?1 OR to_item_id = ?1 ORDER BY created_at").map_err(storage)?;
+    let rows = statement
+        .query_map(params![item_id.to_string()], |row| {
+            Ok(RelationDetail {
+                kind: parse_relation_kind(&row.get::<_, String>(0)?).map_err(to_sql)?,
+                from_item_id: ItemId::parse(row.get::<_, String>(1)?).map_err(to_sql)?,
+                from_revision_id: row
+                    .get::<_, Option<String>>(2)?
+                    .map(parse_revision)
+                    .transpose()
+                    .map_err(to_sql)?,
+                to_item_id: ItemId::parse(row.get::<_, String>(3)?).map_err(to_sql)?,
+                to_revision_id: row
+                    .get::<_, Option<String>>(4)?
+                    .map(parse_revision)
+                    .transpose()
+                    .map_err(to_sql)?,
+            })
+        })
+        .map_err(storage)?;
+    rows.map(|row| row.map_err(storage)).collect()
 }
 
 fn insert_source(
@@ -512,6 +637,16 @@ fn parse_content_type(value: &str) -> Result<ContentType, ApplicationError> {
         ))),
     }
 }
+fn parse_raw_state(value: &str) -> Result<RawState, ApplicationError> {
+    match value {
+        "pending" => Ok(RawState::Pending),
+        "ready" => Ok(RawState::Ready),
+        "quarantined" => Ok(RawState::Quarantined),
+        _ => Err(ApplicationError::Integrity(format!(
+            "unknown raw state: {value}"
+        ))),
+    }
+}
 fn parse_asset_role(value: &str) -> Result<AssetRole, ApplicationError> {
     match value {
         "original" => Ok(AssetRole::Original),
@@ -541,7 +676,7 @@ fn parse_relation_kind(value: &str) -> Result<RelationKind, ApplicationError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use babata_application::ports::RawRepositoryPort;
+    use babata_application::{CaptureFileCommand, CaptureService, ports::RawRepositoryPort};
     use babata_domain::{ContentType, Metadata};
     use tempfile::tempdir;
 
@@ -596,7 +731,7 @@ mod tests {
         repository.mark_ready(&revision.id).unwrap();
         let detail = repository.load_detail(&item.id).unwrap();
         assert_eq!(detail.revisions.len(), 1);
-        assert_eq!(detail.revisions[0].state, "ready");
+        assert_eq!(detail.revisions[0].state, RawState::Ready);
     }
 
     #[test]
@@ -726,5 +861,63 @@ mod tests {
             )
             .unwrap();
         assert_eq!(memberships, 1);
+    }
+
+    #[test]
+    fn ready_transition_failure_keeps_recovery_evidence_and_no_false_ready() {
+        let temporary = tempdir().unwrap();
+        let paths = crate::paths::DataPaths::new(temporary.path().join("data"));
+        crate::paths::ensure_layout(&paths).unwrap();
+        let input = temporary.path().join("fixture.txt");
+        std::fs::write(&input, "recover after ready failure").unwrap();
+        let repository = super::super::open_raw_database(&paths, 100).unwrap();
+        repository
+            .connection
+            .lock()
+            .unwrap()
+            .execute_batch(
+                "CREATE TRIGGER fail_ready BEFORE UPDATE OF state ON revisions
+                 WHEN NEW.state = 'ready'
+                 BEGIN SELECT RAISE(ABORT, 'injected ready failure'); END;",
+            )
+            .unwrap();
+        let service = CaptureService::new(
+            repository.clone(),
+            crate::FileAssetStore::new(paths.clone()),
+            crate::SystemClock,
+        );
+        assert!(
+            service
+                .capture_file(CaptureFileCommand {
+                    provider: "fixture".to_owned(),
+                    path: input.to_string_lossy().into_owned(),
+                    context: None,
+                    locator: None,
+                    native_id: None,
+                    identity: None,
+                    metadata: Metadata::empty(),
+                    source_published_at: None,
+                })
+                .is_err()
+        );
+        let connection = repository.connection.lock().unwrap();
+        assert_eq!(
+            connection
+                .query_row("SELECT state FROM revisions LIMIT 1", [], |row| row
+                    .get::<_, String>(0),)
+                .unwrap(),
+            "quarantined"
+        );
+        let logical_path: String = connection
+            .query_row("SELECT logical_path FROM assets LIMIT 1", [], |row| {
+                row.get(0)
+            })
+            .unwrap();
+        drop(connection);
+        assert!(paths.root().join(logical_path).exists());
+        let status = super::super::raw_status(&paths, 100).unwrap();
+        assert_eq!(status.quarantined_revisions, 1);
+        assert_eq!(status.pending_journals, 1);
+        assert_eq!(status.orphans, 1);
     }
 }

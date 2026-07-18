@@ -1,10 +1,7 @@
-use babata_application::{
-    ApplicationError, CapabilityService, CaptureService, RouteService, WorkspaceService,
-};
-use babata_domain::SourceRouteId;
+use babata_application::{ApplicationError, CapabilityService, CaptureService, WorkspaceService};
 use babata_infrastructure::{
     FileAssetStore, StaticCapabilityRegistry, SystemClock, load_config, open_raw_database,
-    raw_status, sources::registry,
+    raw_status,
 };
 use clap::Parser;
 
@@ -25,24 +22,14 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             cli.json || json,
         ),
         RootCommand::Capabilities(crate::commands::CapabilitiesCommand::List) => {
-            let mut descriptors =
-                CapabilityService::new(StaticCapabilityRegistry::default()).list()?;
-            if raw_status(&config.paths(), config.sqlite.busy_timeout_ms)?.reachable {
-                let repository = open_raw_database(&config.paths(), config.sqlite.busy_timeout_ms)?;
-                let routes = RouteService::new(repository, registry::descriptors()).list()?;
-                for descriptor in &mut descriptors {
-                    if let Some(route) = routes.iter().find(|route| route.id.0 == descriptor.id.0) {
-                        descriptor.status = route.status;
-                        descriptor.reason =
-                            (route.status == babata_domain::CapabilityStatus::Disabled).then(
-                                || "awaiting authorised contextual collection evidence".to_owned(),
-                            );
-                    }
-                }
-            }
+            let descriptors = CapabilityService::new(StaticCapabilityRegistry::default()).list()?;
             render_value(&descriptors, cli.json)?;
         }
-        command @ (RootCommand::Capture(_)
+        command @ (RootCommand::Capture(
+            crate::commands::CaptureCommand::Text(_)
+            | crate::commands::CaptureCommand::File(_)
+            | crate::commands::CaptureCommand::Export(_),
+        )
         | RootCommand::Workspace(_)
         | RootCommand::Create(_)
         | RootCommand::Revise(_)
@@ -67,6 +54,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
         }
+        RootCommand::Capture(_) => return Err(unavailable("capture.provider", "P4")),
         RootCommand::Collector(_) => return Err(unavailable("collector", "P4")),
         RootCommand::Knowledge(_) => return Err(unavailable("knowledge", "P6")),
         RootCommand::Process(_) => return Err(unavailable("processing", "P5")),
@@ -74,22 +62,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         RootCommand::Sublibraries(_) => return Err(unavailable("sublibraries", "P6")),
         RootCommand::Views(_) => return Err(unavailable("views", "P6")),
         RootCommand::Outputs(_) => return Err(unavailable("outputs", "P6")),
-        RootCommand::Routes(command) => {
-            let repository = open_raw_database(&config.paths(), config.sqlite.busy_timeout_ms)?;
-            let routes = RouteService::new(repository, registry::descriptors());
-            match command {
-                crate::commands::RoutesCommand::List => render_value(&routes.list()?, cli.json)?,
-                crate::commands::RoutesCommand::Show { route } => {
-                    render_value(&routes.show(&SourceRouteId(route))?, cli.json)?;
-                }
-                crate::commands::RoutesCommand::Evaluate { route } => {
-                    render_value(&routes.evaluate(&SourceRouteId(route))?, cli.json)?;
-                }
-                crate::commands::RoutesCommand::Collect { .. } => {
-                    return Err(unavailable("routes.collect", "P4"));
-                }
-            }
-        }
+        RootCommand::Routes(_) => return Err(unavailable("routes", "P4")),
         RootCommand::Ops(_) => return Err(unavailable("ops.backup", "P8")),
     }
     Ok(())
