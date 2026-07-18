@@ -8,3 +8,8 @@ Start with the [documentation chain](00_docs/README.md). Read
 intent and [development process](00_docs/04_process/04_DEVELOPMENT_PROCESS.md)
 for the only current phase status. The former Babata 2.0 design is frozen intact at
 `C:\Users\Aiano\Babata-2.0-frozen` for reference only.
+
+Development work is tracked through GitHub Issues and reviewed through Pull
+Requests, including single-developer changes. See the
+[commit and acceptance discipline](00_docs/04_process/04_DEVELOPMENT_PROCESS.md#13-提交与验收纪律)
+before starting work.
