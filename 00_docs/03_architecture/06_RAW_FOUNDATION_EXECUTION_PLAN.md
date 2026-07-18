@@ -44,7 +44,9 @@ relations
 
 `0002` 建立 source identity、item/revision 时间、parent、text/asset hash 和 relation
 双向索引。`0003` 只允许对 ready raw text 建立可重建 FTS；它不开放 P6 search，
-不进入 C0 权威判断。
+不进入 C0 权威判断。`0004` 建立 `capture_operations`，把 operation、revision、每次
+来源 locator/native reference/timestamp/metadata 及 pending/ready/quarantined 状态关联起来；
+这是 P3 recovery/provenance，不是 P4 route evidence 或 collector session。
 
 每个 migration 在事务中登记 version、filename、applied time、checksum。已应用文件
 checksum 改变必须失败。P4 route evidence 和 collector session 不属于本 migration 范围。

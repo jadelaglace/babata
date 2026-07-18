@@ -55,6 +55,18 @@ pub struct NewRevision {
 }
 
 #[derive(Debug, Clone)]
+pub struct NewCaptureOperation {
+    pub operation_id: String,
+    pub item_id: ItemId,
+    pub revision_id: RevisionId,
+    pub source_native_id: Option<String>,
+    pub source_locator: Option<String>,
+    pub source_published_at: Option<UtcTimestamp>,
+    pub metadata: Metadata,
+    pub started_at: UtcTimestamp,
+}
+
+#[derive(Debug, Clone)]
 pub struct NewAsset {
     pub id: AssetId,
     pub revision_id: RevisionId,
@@ -77,6 +89,7 @@ pub struct NewRelation {
 
 #[derive(Debug, Clone)]
 pub struct PersistGraph {
+    pub operation: NewCaptureOperation,
     pub source: NewSource,
     pub collection: Option<NewCollection>,
     pub item: NewItem,
@@ -126,7 +139,11 @@ pub trait RawRepositoryPort {
     ) -> Result<Option<RevisionId>, ApplicationError>;
     fn insert_capture_graph(&self, graph: &PersistGraph) -> Result<(), ApplicationError>;
     fn mark_ready(&self, revision_id: &RevisionId) -> Result<(), ApplicationError>;
-    fn quarantine(&self, revision_id: &RevisionId) -> Result<(), ApplicationError>;
+    fn quarantine(
+        &self,
+        revision_id: &RevisionId,
+        failure_code: &str,
+    ) -> Result<(), ApplicationError>;
     fn load_detail(&self, item_id: &ItemId) -> Result<RecordDetail, ApplicationError>;
     fn record_route_evidence(&self, evidence: &NewRouteEvidence) -> Result<(), ApplicationError>;
     fn route_evidence(&self, route_id: &str) -> Result<Vec<RouteEvidence>, ApplicationError>;

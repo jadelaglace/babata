@@ -40,14 +40,14 @@ foreach ($relative in $required) {
         throw "Missing P3 raw file: $relative"
     }
 }
-foreach ($migration in @('0001_raw_schema.sql', '0002_raw_indexes.sql', '0003_raw_fts.sql')) {
+foreach ($migration in @('0001_raw_schema.sql', '0002_raw_indexes.sql', '0003_raw_fts.sql', '0004_capture_operations.sql')) {
     if (-not (Test-Path -LiteralPath (Join-Path $repo "03_migrations/01_raw/$migration"))) {
         throw "Missing P3 raw migration: $migration"
     }
 }
 $rawMigrations = @(Get-ChildItem -File -LiteralPath (Join-Path $repo '03_migrations/01_raw') -Filter '*.sql')
-if ($rawMigrations.Count -ne 3) {
-    throw "P3 raw migration set must contain exactly 3 migrations, found $($rawMigrations.Count)"
+if ($rawMigrations.Count -ne 4) {
+    throw "P3 raw migration set must contain exactly 4 migrations, found $($rawMigrations.Count)"
 }
 $collectionMigration = Join-Path $repo '03_migrations/02_collection/0001_route_evidence.sql'
 if (-not (Test-Path -LiteralPath $collectionMigration)) {

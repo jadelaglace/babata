@@ -21,6 +21,14 @@ pub enum FinalizeAssetOutcome {
 }
 
 pub trait AssetStorePort {
+    fn begin_operation(&self, operation_id: &str) -> Result<(), ApplicationError>;
+    fn preserve_operation(
+        &self,
+        operation_id: &str,
+        revision_id: &str,
+        failure_code: &str,
+    ) -> Result<(), ApplicationError>;
+    fn complete_operation(&self, operation_id: &str) -> Result<(), ApplicationError>;
     fn stage(
         &self,
         source: &str,

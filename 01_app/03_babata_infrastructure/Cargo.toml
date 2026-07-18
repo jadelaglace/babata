@@ -8,6 +8,9 @@ license.workspace = true
 [lints]
 workspace = true
 
+[features]
+test-support = []
+
 [dependencies]
 babata-domain = { path = "../01_babata_domain" }
 babata-application = { path = "../02_babata_application" }

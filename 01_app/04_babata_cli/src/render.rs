@@ -20,17 +20,19 @@ pub fn render_status(config: &AppConfig, status: RawStatus, json: bool) {
     if json {
         println!(
             "{}",
-            serde_json::json!({"data_root":config.data_root.0,"reachable":status.reachable,"raw_schema_version":status.schema_version,"pending_journals":status.pending_journals,"orphans":status.orphans,"quarantined_revisions":status.quarantined_revisions})
+            serde_json::json!({"data_root":config.data_root.0,"reachable":status.reachable,"raw_schema_version":status.schema_version,"pending_journals":status.pending_journals,"orphans":status.orphans,"quarantined_revisions":status.quarantined_revisions,"pending_operations":status.pending_operations,"quarantined_operations":status.quarantined_operations})
         );
     } else {
         println!("data root: {}", config.data_root.0.display());
         println!(
-            "raw: reachable={} schema={} journals={} orphans={} quarantined={}",
+            "raw: reachable={} schema={} journals={} orphans={} quarantined={} pending_operations={} quarantined_operations={}",
             status.reachable,
             status.schema_version,
             status.pending_journals,
             status.orphans,
-            status.quarantined_revisions
+            status.quarantined_revisions,
+            status.pending_operations,
+            status.quarantined_operations
         );
     }
 }

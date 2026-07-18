@@ -1,10 +1,11 @@
 use std::sync::{Arc, Mutex};
 
 use babata_application::{
-    ApplicationError, AssetDetail, CollectionDetail, RecordDetail, RelationDetail, RevisionDetail,
+    ApplicationError, AssetDetail, CaptureProvenanceDetail, CollectionDetail, RecordDetail,
+    RelationDetail, RevisionDetail,
     ports::{
-        NewAsset, NewCollection, NewItem, NewRelation, NewRevision, NewRouteEvidence, NewSource,
-        PersistGraph, RawRepositoryPort,
+        NewAsset, NewCaptureOperation, NewCollection, NewItem, NewRelation, NewRevision,
+        NewRouteEvidence, NewSource, PersistGraph, RawRepositoryPort,
     },
 };
 use babata_domain::{
@@ -124,6 +125,7 @@ impl RawRepositoryPort for SqliteRawRepository {
         for relation in &graph.relations {
             insert_relation(&transaction, relation)?;
         }
+        insert_capture_operation(&transaction, &graph.operation)?;
         transaction.commit().map_err(storage)
     }
 
@@ -161,10 +163,25 @@ impl RawRepositoryPort for SqliteRawRepository {
                 params![revision_id.to_string()],
             )
             .map_err(storage)?;
+        let operation_changed = transaction
+            .execute(
+                "UPDATE capture_operations SET state = 'ready', completed_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE revision_id = ?1 AND state = 'pending'",
+                params![revision_id.to_string()],
+            )
+            .map_err(storage)?;
+        if operation_changed != 1 {
+            return Err(ApplicationError::Integrity(
+                "capture operation is missing or is not pending".to_owned(),
+            ));
+        }
         transaction.commit().map_err(storage)
     }
 
-    fn quarantine(&self, revision_id: &RevisionId) -> Result<(), ApplicationError> {
+    fn quarantine(
+        &self,
+        revision_id: &RevisionId,
+        failure_code: &str,
+    ) -> Result<(), ApplicationError> {
         let mut connection = self.lock()?;
         let transaction = connection
             .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)
@@ -186,6 +203,17 @@ impl RawRepositoryPort for SqliteRawRepository {
                 params![revision_id.to_string()],
             )
             .map_err(storage)?;
+        let operation_changed = transaction
+            .execute(
+                "UPDATE capture_operations SET state = 'quarantined', failure_code = ?2, completed_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE revision_id = ?1 AND state = 'pending'",
+                params![revision_id.to_string(), failure_code],
+            )
+            .map_err(storage)?;
+        if operation_changed != 1 {
+            return Err(ApplicationError::Integrity(
+                "capture operation cannot be quarantined".to_owned(),
+            ));
+        }
         transaction.commit().map_err(storage)
     }
 
@@ -330,7 +358,7 @@ fn load_revisions(
     connection: &Connection,
     item_id: &ItemId,
 ) -> Result<Vec<RevisionDetail>, ApplicationError> {
-    let mut statement = connection.prepare("SELECT revision_id, parent_revision_id, revision_kind, ordinal, captured_at, authored_at, revision_note, raw_text, text_sha256, metadata_json, state FROM revisions WHERE item_id = ?1 ORDER BY ordinal").map_err(storage)?;
+    let mut statement = connection.prepare("SELECT r.revision_id, r.parent_revision_id, r.revision_kind, r.ordinal, r.captured_at, r.authored_at, r.revision_note, r.raw_text, r.text_sha256, r.metadata_json, r.state, o.operation_id, o.source_native_id, o.source_locator, o.source_published_at, o.metadata_json, o.state, o.failure_code FROM revisions r LEFT JOIN capture_operations o ON o.revision_id = r.revision_id WHERE r.item_id = ?1 ORDER BY r.ordinal").map_err(storage)?;
     let rows = statement
         .query_map(params![item_id.to_string()], |row| {
             Ok(RevisionDetail {
@@ -353,6 +381,25 @@ fn load_revisions(
                 text_sha256: row.get(8)?,
                 metadata: Metadata::parse(&row.get::<_, String>(9)?).map_err(to_sql)?,
                 state: parse_raw_state(&row.get::<_, String>(10)?).map_err(to_sql)?,
+                provenance: row
+                    .get::<_, Option<String>>(11)?
+                    .map(|operation_id| {
+                        Ok::<CaptureProvenanceDetail, rusqlite::Error>(CaptureProvenanceDetail {
+                            operation_id,
+                            source_native_id: row.get(12)?,
+                            source_locator: row.get(13)?,
+                            source_published_at: row
+                                .get::<_, Option<String>>(14)?
+                                .map(UtcTimestamp::parse)
+                                .transpose()
+                                .map_err(to_sql)?,
+                            metadata: Metadata::parse(&row.get::<_, String>(15)?)
+                                .map_err(to_sql)?,
+                            state: parse_raw_state(&row.get::<_, String>(16)?).map_err(to_sql)?,
+                            failure_code: row.get(17)?,
+                        })
+                    })
+                    .transpose()?,
             })
         })
         .map_err(storage)?;
@@ -486,6 +533,29 @@ fn insert_relation(
     relation: &NewRelation,
 ) -> Result<(), ApplicationError> {
     transaction.execute("INSERT INTO relations (relation_id, from_item_id, from_revision_id, relation_kind, to_item_id, to_revision_id, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))", params![RelationId::new().to_string(), relation.from_item_id.to_string(), relation.from_revision_id.as_ref().map(ToString::to_string), relation_kind(relation.kind), relation.to_item_id.to_string(), relation.to_revision_id.as_ref().map(ToString::to_string)]).map_err(storage)?;
+    Ok(())
+}
+
+fn insert_capture_operation(
+    transaction: &Transaction<'_>,
+    operation: &NewCaptureOperation,
+) -> Result<(), ApplicationError> {
+    transaction.execute(
+        "INSERT INTO capture_operations (operation_id, item_id, revision_id, source_native_id, source_locator, source_published_at, metadata_json, state, started_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 'pending', ?8)",
+        params![
+            operation.operation_id,
+            operation.item_id.to_string(),
+            operation.revision_id.to_string(),
+            operation.source_native_id,
+            operation.source_locator,
+            operation
+                .source_published_at
+                .as_ref()
+                .map(UtcTimestamp::as_str),
+            operation.metadata.to_json(),
+            operation.started_at.as_str(),
+        ],
+    ).map_err(storage)?;
     Ok(())
 }
 
@@ -676,9 +746,110 @@ fn parse_relation_kind(value: &str) -> Result<RelationKind, ApplicationError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use babata_application::{CaptureFileCommand, CaptureService, ports::RawRepositoryPort};
-    use babata_domain::{ContentType, Metadata};
+    use babata_application::{
+        CaptureFileCommand, CaptureService,
+        ports::{AssetStorePort, FinalizeAssetOutcome, RawRepositoryPort, StagedAsset},
+    };
+    use babata_domain::{ContentType, LogicalPath, Metadata};
     use tempfile::tempdir;
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    enum AssetFault {
+        Finalize,
+        Verify,
+        Cleanup,
+    }
+
+    #[derive(Clone)]
+    struct FaultingAssetStore {
+        inner: crate::FileAssetStore,
+        fault: AssetFault,
+    }
+
+    impl AssetStorePort for FaultingAssetStore {
+        fn begin_operation(&self, operation_id: &str) -> Result<(), ApplicationError> {
+            self.inner.begin_operation(operation_id)
+        }
+
+        fn preserve_operation(
+            &self,
+            operation_id: &str,
+            revision_id: &str,
+            failure_code: &str,
+        ) -> Result<(), ApplicationError> {
+            self.inner
+                .preserve_operation(operation_id, revision_id, failure_code)
+        }
+
+        fn complete_operation(&self, operation_id: &str) -> Result<(), ApplicationError> {
+            if self.fault == AssetFault::Cleanup {
+                return Err(ApplicationError::Asset(
+                    "injected cleanup failure".to_owned(),
+                ));
+            }
+            self.inner.complete_operation(operation_id)
+        }
+
+        fn stage(
+            &self,
+            source: &str,
+            role: AssetRole,
+            operation_id: &str,
+        ) -> Result<StagedAsset, ApplicationError> {
+            self.inner.stage(source, role, operation_id)
+        }
+
+        fn hash(&self, source: &str) -> Result<Sha256, ApplicationError> {
+            self.inner.hash(source)
+        }
+
+        fn finalize(&self, asset: &StagedAsset) -> Result<FinalizeAssetOutcome, ApplicationError> {
+            if self.fault == AssetFault::Finalize {
+                return Err(ApplicationError::Asset(
+                    "injected finalization failure".to_owned(),
+                ));
+            }
+            self.inner.finalize(asset)
+        }
+
+        fn discard_stage(&self, asset: &StagedAsset) -> Result<(), ApplicationError> {
+            self.inner.discard_stage(asset)
+        }
+
+        fn open(&self, logical_path: &LogicalPath) -> Result<Vec<u8>, ApplicationError> {
+            AssetStorePort::open(&self.inner, logical_path)
+        }
+
+        fn verify(&self, asset: &StagedAsset) -> Result<bool, ApplicationError> {
+            if self.fault == AssetFault::Verify {
+                return Ok(false);
+            }
+            self.inner.verify(asset)
+        }
+
+        fn quarantine_finalized(
+            &self,
+            asset: &StagedAsset,
+            operation_id: &str,
+            outcome: FinalizeAssetOutcome,
+        ) -> Result<(), ApplicationError> {
+            self.inner
+                .quarantine_finalized(asset, operation_id, outcome)
+        }
+    }
+
+    fn file_command(path: &std::path::Path) -> CaptureFileCommand {
+        CaptureFileCommand {
+            provider: "fixture".to_owned(),
+            path: path.to_string_lossy().into_owned(),
+            context: None,
+            locator: None,
+            native_id: None,
+            identity: None,
+            metadata: Metadata::empty(),
+            source_published_at: None,
+        }
+    }
 
     #[test]
     fn persists_and_reads_a_ready_text_record() {
@@ -720,6 +891,16 @@ mod tests {
         };
         repository
             .insert_capture_graph(&PersistGraph {
+                operation: NewCaptureOperation {
+                    operation_id: "op_ready_text".to_owned(),
+                    item_id: item.id.clone(),
+                    revision_id: revision.id.clone(),
+                    source_native_id: None,
+                    source_locator: None,
+                    source_published_at: None,
+                    metadata: Metadata::empty(),
+                    started_at: revision.captured_at.clone(),
+                },
                 source,
                 collection: None,
                 item: item.clone(),
@@ -773,6 +954,16 @@ mod tests {
             metadata: Metadata::empty(),
         };
         let graph = PersistGraph {
+            operation: NewCaptureOperation {
+                operation_id: "op_rollback".to_owned(),
+                item_id: item.id.clone(),
+                revision_id: revision.id.clone(),
+                source_native_id: None,
+                source_locator: None,
+                source_published_at: None,
+                metadata: Metadata::empty(),
+                started_at: revision.captured_at.clone(),
+            },
             source: source.clone(),
             collection: None,
             item: item.clone(),
@@ -844,6 +1035,16 @@ mod tests {
         };
         repository
             .insert_capture_graph(&PersistGraph {
+                operation: NewCaptureOperation {
+                    operation_id: "op_collection".to_owned(),
+                    item_id: item.id.clone(),
+                    revision_id: revision.id.clone(),
+                    source_native_id: None,
+                    source_locator: None,
+                    source_published_at: None,
+                    metadata: Metadata::empty(),
+                    started_at: revision.captured_at.clone(),
+                },
                 source,
                 collection: Some(collection),
                 item,
@@ -861,6 +1062,195 @@ mod tests {
             )
             .unwrap();
         assert_eq!(memberships, 1);
+    }
+
+    #[test]
+    fn graph_failure_rolls_back_c0_and_cleans_staging_journal() {
+        let temporary = tempdir().unwrap();
+        let paths = crate::paths::DataPaths::new(temporary.path().join("data"));
+        crate::paths::ensure_layout(&paths).unwrap();
+        let input = temporary.path().join("fixture.txt");
+        std::fs::write(&input, "graph rollback bytes").unwrap();
+        let repository = super::super::open_raw_database(&paths, 100).unwrap();
+        repository
+            .connection
+            .lock()
+            .unwrap()
+            .execute_batch(
+                "CREATE TRIGGER fail_graph BEFORE INSERT ON revisions
+                 BEGIN SELECT RAISE(ABORT, 'injected graph failure'); END;",
+            )
+            .unwrap();
+        let error = CaptureService::new(
+            repository.clone(),
+            crate::FileAssetStore::new(paths.clone()),
+            crate::SystemClock,
+        )
+        .capture_file(file_command(&input))
+        .unwrap_err();
+        let operation_id = error.operation_id().unwrap();
+        let connection = repository.connection.lock().unwrap();
+        for table in ["revisions", "assets", "capture_operations"] {
+            let count: i64 = connection
+                .query_row(&format!("SELECT COUNT(*) FROM {table}"), [], |row| {
+                    row.get(0)
+                })
+                .unwrap();
+            assert_eq!(count, 0, "{table}");
+        }
+        drop(connection);
+        assert!(!paths.staging(operation_id).exists());
+        assert_eq!(std::fs::read_dir(paths.journal()).unwrap().count(), 0);
+        assert_eq!(std::fs::read_dir(paths.orphan()).unwrap().count(), 0);
+    }
+
+    #[test]
+    fn finalization_failure_quarantines_operation_without_false_orphan() {
+        let temporary = tempdir().unwrap();
+        let paths = crate::paths::DataPaths::new(temporary.path().join("data"));
+        crate::paths::ensure_layout(&paths).unwrap();
+        let input = temporary.path().join("fixture.txt");
+        std::fs::write(&input, "finalization failure bytes").unwrap();
+        let repository = super::super::open_raw_database(&paths, 100).unwrap();
+        let error = CaptureService::new(
+            repository.clone(),
+            FaultingAssetStore {
+                inner: crate::FileAssetStore::new(paths.clone()),
+                fault: AssetFault::Finalize,
+            },
+            crate::SystemClock,
+        )
+        .capture_file(file_command(&input))
+        .unwrap_err();
+        let operation_id = error.operation_id().unwrap();
+        let connection = repository.connection.lock().unwrap();
+        let (operation_state, revision_state, asset_state, logical_path): (
+            String,
+            String,
+            String,
+            String,
+        ) = connection
+            .query_row(
+                "SELECT o.state, r.state, a.state, a.logical_path
+                 FROM capture_operations o
+                 JOIN revisions r ON r.revision_id = o.revision_id
+                 JOIN assets a ON a.revision_id = r.revision_id
+                 WHERE o.operation_id = ?1",
+                params![operation_id],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
+            )
+            .unwrap();
+        assert_eq!(operation_state, "quarantined");
+        assert_eq!(revision_state, "quarantined");
+        assert_eq!(asset_state, "quarantined");
+        drop(connection);
+        assert!(!paths.root().join(logical_path).exists());
+        assert!(!paths.staging(operation_id).exists());
+        assert_eq!(std::fs::read_dir(paths.journal()).unwrap().count(), 1);
+        assert_eq!(std::fs::read_dir(paths.orphan()).unwrap().count(), 0);
+    }
+
+    #[test]
+    fn verification_failure_preserves_final_bytes_and_recovery_evidence() {
+        let temporary = tempdir().unwrap();
+        let paths = crate::paths::DataPaths::new(temporary.path().join("data"));
+        crate::paths::ensure_layout(&paths).unwrap();
+        let input = temporary.path().join("fixture.txt");
+        std::fs::write(&input, "verification failure bytes").unwrap();
+        let repository = super::super::open_raw_database(&paths, 100).unwrap();
+        let error = CaptureService::new(
+            repository.clone(),
+            FaultingAssetStore {
+                inner: crate::FileAssetStore::new(paths.clone()),
+                fault: AssetFault::Verify,
+            },
+            crate::SystemClock,
+        )
+        .capture_file(file_command(&input))
+        .unwrap_err();
+        let operation_id = error.operation_id().unwrap();
+        let connection = repository.connection.lock().unwrap();
+        let (operation_state, revision_state, asset_state, logical_path): (
+            String,
+            String,
+            String,
+            String,
+        ) = connection
+            .query_row(
+                "SELECT o.state, r.state, a.state, a.logical_path
+                 FROM capture_operations o
+                 JOIN revisions r ON r.revision_id = o.revision_id
+                 JOIN assets a ON a.revision_id = r.revision_id
+                 WHERE o.operation_id = ?1",
+                params![operation_id],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
+            )
+            .unwrap();
+        assert_eq!(operation_state, "quarantined");
+        assert_eq!(revision_state, "quarantined");
+        assert_eq!(asset_state, "quarantined");
+        drop(connection);
+        assert_eq!(
+            std::fs::read(paths.root().join(logical_path)).unwrap(),
+            b"verification failure bytes"
+        );
+        assert_eq!(std::fs::read_dir(paths.journal()).unwrap().count(), 1);
+        assert_eq!(std::fs::read_dir(paths.orphan()).unwrap().count(), 1);
+    }
+
+    #[test]
+    fn cleanup_failure_returns_ready_with_pending_journal_warning() {
+        let temporary = tempdir().unwrap();
+        let paths = crate::paths::DataPaths::new(temporary.path().join("data"));
+        crate::paths::ensure_layout(&paths).unwrap();
+        let input = temporary.path().join("fixture.txt");
+        std::fs::write(&input, "cleanup failure bytes").unwrap();
+        let repository = super::super::open_raw_database(&paths, 100).unwrap();
+        let outcome = CaptureService::new(
+            repository.clone(),
+            FaultingAssetStore {
+                inner: crate::FileAssetStore::new(paths.clone()),
+                fault: AssetFault::Cleanup,
+            },
+            crate::SystemClock,
+        )
+        .capture_file(file_command(&input))
+        .unwrap();
+        assert_eq!(outcome.status, "ready");
+        assert!(outcome.record.is_some());
+        assert!(
+            outcome
+                .warnings
+                .iter()
+                .any(|warning| warning.contains("journal cleanup"))
+        );
+        let connection = repository.connection.lock().unwrap();
+        let (operation_state, revision_state, asset_state, logical_path): (
+            String,
+            String,
+            String,
+            String,
+        ) = connection
+            .query_row(
+                "SELECT o.state, r.state, a.state, a.logical_path
+                 FROM capture_operations o
+                 JOIN revisions r ON r.revision_id = o.revision_id
+                 JOIN assets a ON a.revision_id = r.revision_id
+                 WHERE o.operation_id = ?1",
+                params![outcome.operation_id],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
+            )
+            .unwrap();
+        assert_eq!(operation_state, "ready");
+        assert_eq!(revision_state, "ready");
+        assert_eq!(asset_state, "ready");
+        drop(connection);
+        assert_eq!(
+            std::fs::read(paths.root().join(logical_path)).unwrap(),
+            b"cleanup failure bytes"
+        );
+        assert_eq!(std::fs::read_dir(paths.journal()).unwrap().count(), 1);
+        assert_eq!(std::fs::read_dir(paths.orphan()).unwrap().count(), 0);
     }
 
     #[test]
@@ -886,37 +1276,33 @@ mod tests {
             crate::FileAssetStore::new(paths.clone()),
             crate::SystemClock,
         );
-        assert!(
-            service
-                .capture_file(CaptureFileCommand {
-                    provider: "fixture".to_owned(),
-                    path: input.to_string_lossy().into_owned(),
-                    context: None,
-                    locator: None,
-                    native_id: None,
-                    identity: None,
-                    metadata: Metadata::empty(),
-                    source_published_at: None,
-                })
-                .is_err()
-        );
+        let error = service.capture_file(file_command(&input)).unwrap_err();
+        let operation_id = error.operation_id().unwrap();
         let connection = repository.connection.lock().unwrap();
-        assert_eq!(
-            connection
-                .query_row("SELECT state FROM revisions LIMIT 1", [], |row| row
-                    .get::<_, String>(0),)
-                .unwrap(),
-            "quarantined"
-        );
-        let logical_path: String = connection
-            .query_row("SELECT logical_path FROM assets LIMIT 1", [], |row| {
-                row.get(0)
-            })
+        let (operation_state, revision_state, asset_state, logical_path): (
+            String,
+            String,
+            String,
+            String,
+        ) = connection
+            .query_row(
+                "SELECT o.state, r.state, a.state, a.logical_path
+                 FROM capture_operations o
+                 JOIN revisions r ON r.revision_id = o.revision_id
+                 JOIN assets a ON a.revision_id = r.revision_id
+                 WHERE o.operation_id = ?1",
+                params![operation_id],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
+            )
             .unwrap();
+        assert_eq!(operation_state, "quarantined");
+        assert_eq!(revision_state, "quarantined");
+        assert_eq!(asset_state, "quarantined");
         drop(connection);
         assert!(paths.root().join(logical_path).exists());
         let status = super::super::raw_status(&paths, 100).unwrap();
         assert_eq!(status.quarantined_revisions, 1);
+        assert_eq!(status.quarantined_operations, 1);
         assert_eq!(status.pending_journals, 1);
         assert_eq!(status.orphans, 1);
     }

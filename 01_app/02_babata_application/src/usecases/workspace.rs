@@ -6,8 +6,8 @@ use babata_domain::{
 use crate::{
     AnnotateCommand, ApplicationError, CaptureOutcome, CreateNoteCommand, ReviseCommand,
     ports::{
-        AssetStorePort, ClockPort, NewAsset, NewItem, NewRelation, NewRevision, NewSource,
-        RawRepositoryPort,
+        AssetStorePort, ClockPort, NewAsset, NewCaptureOperation, NewItem, NewRelation,
+        NewRevision, NewSource, RawRepositoryPort,
     },
 };
 
@@ -326,74 +326,101 @@ where
     ) -> Result<CaptureOutcome, ApplicationError> {
         let payload = TextPayload::new(text)?;
         let operation_id = format!("op_{}", ulid::Ulid::new());
-        let staged = path
+        let staged = match path
             .map(|path| {
                 self.capture
                     .assets
                     .stage(&path, AssetRole::Original, &operation_id)
             })
-            .transpose()?;
-        let ordinal = if parent.is_some() {
-            self.capture.repository.next_ordinal(&item.id)?
-        } else {
-            1
-        };
-        let revision = NewRevision {
-            id: RevisionId::new(),
-            item_id: item.id.clone(),
-            parent_revision_id: parent.clone(),
-            kind,
-            ordinal,
-            captured_at: now.clone(),
-            authored_at: Some(now),
-            revision_note: note,
-            raw_text: Some(payload.as_str().to_owned()),
-            text_sha256: Some(payload.hash()),
-            metadata: revision_metadata,
-        };
-        let mut all_relations = relations;
-        for relation in &mut all_relations {
-            if relation.from_item_id == item.id && relation.from_revision_id.is_none() {
-                relation.from_revision_id = Some(revision.id.clone());
+            .transpose()
+        {
+            Ok(staged) => staged,
+            Err(error) => {
+                let _ = self.capture.assets.complete_operation(&operation_id);
+                return Err(error.with_operation(operation_id));
             }
-        }
-        if let Some(parent_id) = parent {
-            all_relations.push(NewRelation {
-                kind: RelationKind::Revises,
-                from_item_id: item.id.clone(),
-                from_revision_id: Some(revision.id.clone()),
-                to_item_id: item.id.clone(),
-                to_revision_id: Some(parent_id),
-            });
-        }
-        let assets = staged
-            .iter()
-            .map(|asset| NewAsset {
-                id: asset.asset_id.clone(),
+        };
+        let result = (|| {
+            let ordinal = if parent.is_some() {
+                self.capture.repository.next_ordinal(&item.id)?
+            } else {
+                1
+            };
+            let revision = NewRevision {
+                id: RevisionId::new(),
+                item_id: item.id.clone(),
+                parent_revision_id: parent.clone(),
+                kind,
+                ordinal,
+                captured_at: now.clone(),
+                authored_at: Some(now.clone()),
+                revision_note: note,
+                raw_text: Some(payload.as_str().to_owned()),
+                text_sha256: Some(payload.hash()),
+                metadata: revision_metadata.clone(),
+            };
+            let operation = NewCaptureOperation {
+                operation_id: operation_id.clone(),
+                item_id: item.id.clone(),
                 revision_id: revision.id.clone(),
-                role: asset.role,
-                logical_path: asset.logical_path.as_str().to_owned(),
-                sha256: asset.sha256.clone(),
-                byte_size: asset.byte_size,
-                media_type: asset.media_type.clone(),
-                original_filename: asset.original_filename.clone(),
-            })
-            .collect();
-        let duplicate = self.capture.repository.find_duplicate_text(
-            &item.id,
-            revision.text_sha256.as_ref().expect("text has hash"),
-        )?;
-        self.capture.persist_and_finalize(
-            operation_id,
-            source,
-            collection,
-            item,
-            revision,
-            assets,
-            all_relations,
-            staged.into_iter().collect(),
-            duplicate,
-            false,
-        )
+                source_native_id: None,
+                source_locator: None,
+                source_published_at: None,
+                metadata: revision_metadata,
+                started_at: now,
+            };
+            let mut all_relations = relations;
+            for relation in &mut all_relations {
+                if relation.from_item_id == item.id && relation.from_revision_id.is_none() {
+                    relation.from_revision_id = Some(revision.id.clone());
+                }
+            }
+            if let Some(parent_id) = parent {
+                all_relations.push(NewRelation {
+                    kind: RelationKind::Revises,
+                    from_item_id: item.id.clone(),
+                    from_revision_id: Some(revision.id.clone()),
+                    to_item_id: item.id.clone(),
+                    to_revision_id: Some(parent_id),
+                });
+            }
+            let assets = staged
+                .iter()
+                .map(|asset| NewAsset {
+                    id: asset.asset_id.clone(),
+                    revision_id: revision.id.clone(),
+                    role: asset.role,
+                    logical_path: asset.logical_path.as_str().to_owned(),
+                    sha256: asset.sha256.clone(),
+                    byte_size: asset.byte_size,
+                    media_type: asset.media_type.clone(),
+                    original_filename: asset.original_filename.clone(),
+                })
+                .collect();
+            let duplicate = self.capture.repository.find_duplicate_text(
+                &item.id,
+                revision.text_sha256.as_ref().expect("text has hash"),
+            )?;
+            self.capture.persist_and_finalize(
+                operation_id.clone(),
+                operation,
+                source,
+                collection,
+                item,
+                revision,
+                assets,
+                all_relations,
+                staged.iter().cloned().collect(),
+                duplicate,
+                false,
+            )
+        })();
+        if result.is_err() {
+            if let Some(asset) = &staged {
+                let _ = self.capture.assets.discard_stage(asset);
+            }
+            let _ = self.capture.assets.complete_operation(&operation_id);
+        }
+        result.map_err(|error| error.with_operation(operation_id))
     }
 }

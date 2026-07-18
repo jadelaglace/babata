@@ -110,12 +110,14 @@ C0 资产；两者都必须由 application 用例调用。
 03_migrations/01_raw/
 ├── 0001_raw_schema.sql
 ├── 0002_raw_indexes.sql
-└── 0003_raw_fts.sql
+├── 0003_raw_fts.sql
+└── 0004_capture_operations.sql
 ```
 
 `0001` 拥有 source、collection、item、revision、asset、relation 与 migration ledger；
 `0002` 拥有 identity、version、time、hash 和 relation 索引；`0003` 若保留 FTS，只能是
-可重建的早期读投影，不代表 P3 已激活搜索产品，也不能成为 C0 权威。
+可重建的早期读投影，不代表 P3 已激活搜索产品，也不能成为 C0 权威；`0004` 保存每次
+进入 pending C0 的 operation 状态及 revision 级来源观测，使无资产失败和重导入仍可溯源。
 
 P4 的 route evidence、collector session 或来源授权记录不得塞进 P3 migration 以伪装
 P4 已经开始；它们由对应阶段和 C0/C3 责任单独设计。
@@ -127,6 +129,7 @@ P4 已经开始；它们由对应阶段和 C0/C3 责任单独设计。
 - SHA-256 统一表示；
 - metadata 是 JSON object 且有大小边界；
 - revision/asset 有 pending、ready、quarantined 等明确状态；
+- operation 与 revision 一一关联，ready/quarantined 状态同步提交；
 - 同一 item 的版本顺序唯一；
 - first-party 新建没有伪造 external identity；
 - 原始 wording、原件 asset 和历史版本不覆盖。
