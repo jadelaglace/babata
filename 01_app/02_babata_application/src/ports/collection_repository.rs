@@ -40,6 +40,18 @@ pub trait CollectionRepositoryPort {
         &self,
         session_id: &CollectionSessionId,
     ) -> Result<Vec<CollectionItemStatus>, ApplicationError>;
+    fn claim_item(
+        &self,
+        session_id: &CollectionSessionId,
+        candidate_id: &str,
+        now: &UtcTimestamp,
+    ) -> Result<Option<CollectionItemStatus>, ApplicationError>;
+    fn cancel_session(
+        &self,
+        session_id: &CollectionSessionId,
+        reason: &str,
+        now: &UtcTimestamp,
+    ) -> Result<Vec<CollectionItemStatus>, ApplicationError>;
     #[allow(clippy::too_many_arguments)]
     fn transition_item(
         &self,

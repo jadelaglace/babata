@@ -2,7 +2,7 @@ use babata_domain::{CandidateSummary, CollectionSessionId, RouteCoverage, Source
 
 use crate::{AcquisitionOutcome, ApplicationError, DiscoveredCandidate};
 
-pub trait SourceAdapterPort {
+pub trait SourceAdapterPort: Send + Sync {
     fn describe(&self) -> SourceRouteDescriptor;
     fn discover(
         &self,

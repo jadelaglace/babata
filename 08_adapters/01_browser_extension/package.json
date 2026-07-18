@@ -1,12 +1,18 @@
 {
-  "name": "babata-browser-adapter",
-  "version": "0.1.0",
+  "name": "babata-browser-collector",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "tsc --noEmit"
+    "build": "esbuild src/popup.ts --bundle --format=esm --target=chrome120 --outfile=dist/popup.js",
+    "check": "tsc --noEmit",
+    "test": "node --import tsx --test src/*.test.ts"
   },
   "devDependencies": {
+    "@types/chrome": "^0.0.326",
+    "@types/node": "^24.0.10",
+    "esbuild": "^0.25.6",
+    "tsx": "^4.20.3",
     "typescript": "^5.8.0"
   }
 }

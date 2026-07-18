@@ -132,9 +132,9 @@ AC-01 的正常飞书上下文体验已经通过。
 
 P4 先把已经有真实 Chrome E2 证据的 Kimi 做到 E3：真实历史/会话范围候选、所选消息
 正文与附件限制、逐条状态、定向重试和重收集。之后逐项闭合豆包、Bilibili、知乎、
-小红书、ChatGPT、语雀和飞书正文/附件；微信、OneNote、印象笔记随后处理，抖音按用户
-最新顺序最后处理。通用浏览器机制可以复用，但每个平台仍须分别取得真实证据，未验证
-的平台保持 disabled。
+小红书、ChatGPT、语雀和飞书正文/附件；微信收藏、公众号与聊天记录、OneNote、印象笔记
+随后处理，抖音靠后，视频号按用户最新顺序降为最低优先级。通用浏览器机制可以复用，
+但每个平台仍须分别取得真实证据，未验证的平台保持 disabled。
 
 ### 5.1 正常路径
 
@@ -162,6 +162,15 @@ SingleFile。具体证据见 `08_SOURCE_TOOL_RESEARCH.md` 第 5、9 节：
 
 loopback API 只绑定本机，使用安装级凭据、来源限制和请求大小限制。配对失败、核心
 不可用或 payload 超限必须在扩展中显示明确失败，不转存成隐藏权威副本。
+
+2026-07-18 已实现 `Babata Collector 0.2.0`：页面/选区只申请 `activeTab + scripting`，
+书签使用按需 `bookmarks` 权限，不申请 `<all_urls>`；扩展只保存本机 API 地址、安装标识和
+配对 token。Rust API 只接受 `127.0.0.1`、Chrome extension origin、最多 1 MiB/200 个候选，
+并只开放 `source.browser_pages` 与 `source.browser_bookmarks`。隔离验证根
+`p4-browser-extension-20260718` 的真实监听端口测试已证明：health 成功、发现 1 个候选、
+未确认返回 409 且 item 为 0、确认后仅该项 `saved`、重采 `unchanged`。这仍是本机网络和
+机制证据；因 Codex Chrome 安全策略禁止 Agent 打开 `chrome://extensions`，正式 Chrome
+页面/选区/书签样本必须等用户完成不可替代的“加载已解压扩展”动作后再记为真实配对。
 
 ### 5.2 书签与页面的差异
 
@@ -249,6 +258,10 @@ CollectorSession 的实时队列和进度属于 C3；终态收集结果、来源
 
 重试只针对失败或用户明确选择的项，不重新执行整个来源范围。取消集合后，尚未开始
 的项转为 skipped/cancelled 运行状态，已经保存的 C0 不回滚。
+
+并发取消测试会在第一项进入 `running` 后从另一调用取消批次：第一项允许完成为 `saved`，
+其余 `queued` 项全部变为 `skipped`，session 保持 `cancelled`，不会被批次收尾覆盖为
+`completed`。无范围、重复候选、授权上下文不匹配和未确认都在入队前失败，C0 保持 0。
 
 ## 7. 能力状态与真实证据
 

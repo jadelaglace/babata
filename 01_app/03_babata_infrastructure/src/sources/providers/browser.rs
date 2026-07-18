@@ -118,7 +118,7 @@ impl SourceAdapterPort for BrowserCandidateAdapter {
                         title,
                         source_location: Some(candidate.source_reference.clone()),
                         hierarchy,
-                        content_type: ContentType::WebPage,
+                        content_type: candidate.content_type,
                         source_updated_at: None,
                         attachment_available: Some(false),
                         limitations: vec![
@@ -166,7 +166,7 @@ impl SourceAdapterPort for BrowserCandidateAdapter {
             attachments: false,
             revisions: false,
             limitations: vec![
-                "current page, selection and bookmark metadata only".to_owned(),
+                "visible page/selection text and bookmark locator metadata only".to_owned(),
                 "attachments and automatic fresh-page recollection are not yet covered".to_owned(),
             ],
         }

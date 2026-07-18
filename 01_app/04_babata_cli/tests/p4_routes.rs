@@ -58,11 +58,14 @@ fn p4_capture_commands_remain_unavailable_before_activation() {
 }
 
 #[test]
-fn p4_capabilities_are_not_promoted_by_scaffold_or_fixtures() {
+fn collector_is_enabled_without_promoting_partially_proven_source_routes() {
     let temp = tempdir().unwrap();
     let capabilities = output_json(&temp, &["--json", "capabilities", "list"], true);
     assert!(capabilities.as_array().unwrap().iter().any(|capability| {
         capability["id"] == "capture.candidate" && capability["status"] == "unavailable"
+    }));
+    assert!(capabilities.as_array().unwrap().iter().any(|capability| {
+        capability["id"] == "collector" && capability["status"] == "enabled"
     }));
     for source in [
         "source.feishu",

@@ -35,7 +35,7 @@ pub fn all_descriptors() -> Vec<CapabilityDescriptor> {
         disabled_pending_evidence("source.kimi"),
         disabled_pending_evidence("source.browser_pages"),
         disabled_pending_evidence("source.browser_bookmarks"),
-        CapabilityDescriptor::unavailable("collector", "P4"),
+        CapabilityDescriptor::enabled("collector", "P4"),
         CapabilityDescriptor::unavailable("processing", "P5"),
         CapabilityDescriptor::unavailable("knowledge", "P6"),
         CapabilityDescriptor::unavailable("explore", "P6"),

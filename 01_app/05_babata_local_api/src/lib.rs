@@ -6,5 +6,5 @@ pub mod responses;
 pub mod routes;
 pub mod state;
 
-pub use app::{ApiDescriptor, build};
+pub use app::{ApiDescriptor, ServerConfig, build, serve};
 pub use error::ApiError;

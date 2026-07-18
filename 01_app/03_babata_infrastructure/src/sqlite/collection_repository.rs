@@ -223,6 +223,90 @@ impl CollectionRepositoryPort for SqliteRawRepository {
             .collect()
     }
 
+    fn claim_item(
+        &self,
+        session_id: &CollectionSessionId,
+        candidate_id: &str,
+        now: &UtcTimestamp,
+    ) -> Result<Option<CollectionItemStatus>, ApplicationError> {
+        let connection = self.lock()?;
+        let changed = connection
+            .execute(
+                "UPDATE collection_items
+                 SET state = 'running', reason = NULL, retryable = 0,
+                     attempt_count = attempt_count + 1, updated_at = ?3
+                 WHERE session_id = ?1 AND candidate_id = ?2
+                   AND state IN ('queued', 'failed')
+                   AND EXISTS (
+                       SELECT 1 FROM collection_sessions
+                       WHERE session_id = ?1 AND state != 'cancelled'
+                   )",
+                params![session_id.to_string(), candidate_id, now.as_str()],
+            )
+            .map_err(storage)?;
+        if changed == 0 {
+            let exists = connection
+                .query_row(
+                    "SELECT 1 FROM collection_items WHERE session_id = ?1 AND candidate_id = ?2",
+                    params![session_id.to_string(), candidate_id],
+                    |_| Ok(()),
+                )
+                .optional()
+                .map_err(storage)?
+                .is_some();
+            if !exists {
+                return Err(ApplicationError::NotFound(format!(
+                    "collection item: {session_id}/{candidate_id}"
+                )));
+            }
+            return Ok(None);
+        }
+        connection
+            .query_row(
+                "SELECT session_id, candidate_id, state, attempt_count, reason, retryable,
+                        requested_attachments, item_id, revision_id, updated_at
+                 FROM collection_items WHERE session_id = ?1 AND candidate_id = ?2",
+                params![session_id.to_string(), candidate_id],
+                item_status_from_row,
+            )
+            .optional()
+            .map_err(storage)
+    }
+
+    fn cancel_session(
+        &self,
+        session_id: &CollectionSessionId,
+        reason: &str,
+        now: &UtcTimestamp,
+    ) -> Result<Vec<CollectionItemStatus>, ApplicationError> {
+        let mut connection = self.lock()?;
+        let transaction = connection.transaction().map_err(storage)?;
+        let changed = transaction
+            .execute(
+                "UPDATE collection_sessions
+                 SET state = 'cancelled', updated_at = ?2
+                 WHERE session_id = ?1",
+                params![session_id.to_string(), now.as_str()],
+            )
+            .map_err(storage)?;
+        if changed == 0 {
+            return Err(ApplicationError::NotFound(format!(
+                "collection session: {session_id}"
+            )));
+        }
+        transaction
+            .execute(
+                "UPDATE collection_items
+                 SET state = 'skipped', reason = ?2, retryable = 0, updated_at = ?3
+                 WHERE session_id = ?1 AND state = 'queued'",
+                params![session_id.to_string(), reason, now.as_str()],
+            )
+            .map_err(storage)?;
+        transaction.commit().map_err(storage)?;
+        drop(connection);
+        self.collection_items(session_id)
+    }
+
     fn transition_item(
         &self,
         session_id: &CollectionSessionId,
@@ -480,18 +564,20 @@ fn to_sql_error(error: impl std::fmt::Display) -> rusqlite::Error {
 mod tests {
     use std::{
         collections::HashMap,
-        sync::{Arc, Mutex},
+        sync::{Arc, Barrier, Mutex},
     };
 
     use babata_application::{
-        AcquisitionOutcome, ApplicationError, CaptureImportAsset, CollectorSessionService,
-        DiscoveredCandidate, RetryCollectionItemCommand, StartCollectionCommand,
-        ports::SourceAdapterPort,
+        AcquisitionOutcome, ApplicationError, CancelCollectionCommand, CaptureImportAsset,
+        CollectorSessionService, DiscoveredCandidate, RetryCollectionItemCommand,
+        StartCollectionCommand,
+        ports::{CollectionRepositoryPort, SourceAdapterPort},
     };
     use babata_domain::{
         AssetRole, CandidateEnvelope, CandidatePayload, CandidateSummary, CapabilityStatus,
-        CollectionItemState, CollectionSelection, CollectionSessionId, ContentType, ItemId,
-        Metadata, RecollectionState, RouteCoverage, Sha256, SourceRouteDescriptor, SourceRouteId,
+        CollectionItemState, CollectionSelection, CollectionSessionId, CollectionSessionState,
+        ContentType, ItemId, Metadata, RecollectionState, RouteCoverage, Sha256,
+        SourceRouteDescriptor, SourceRouteId, UtcTimestamp,
     };
     use tempfile::tempdir;
 
@@ -586,6 +672,44 @@ mod tests {
         }
     }
 
+    struct BlockingAdapter {
+        inner: FixtureAdapter,
+        entered: Arc<Barrier>,
+        release: Arc<Barrier>,
+    }
+
+    impl SourceAdapterPort for BlockingAdapter {
+        fn describe(&self) -> SourceRouteDescriptor {
+            self.inner.describe()
+        }
+
+        fn discover(
+            &self,
+            session_id: &CollectionSessionId,
+            source_reference: &str,
+        ) -> Result<Vec<DiscoveredCandidate>, ApplicationError> {
+            self.inner.discover(session_id, source_reference)
+        }
+
+        fn collect(
+            &self,
+            candidate: &CandidateSummary,
+            prefetched: Option<&CandidateEnvelope>,
+            requested_attachments: bool,
+        ) -> Result<AcquisitionOutcome, ApplicationError> {
+            if candidate.candidate_id == "a" {
+                self.entered.wait();
+                self.release.wait();
+            }
+            self.inner
+                .collect(candidate, prefetched, requested_attachments)
+        }
+
+        fn coverage(&self) -> RouteCoverage {
+            self.inner.coverage()
+        }
+    }
+
     #[test]
     fn selection_partial_retry_and_recollection_preserve_c0() {
         let temporary = tempdir().unwrap();
@@ -635,6 +759,17 @@ mod tests {
         );
         assert_eq!(table_count(&repository, "items"), 0);
 
+        let mut empty_scope = selection(&session.session_id, true);
+        empty_scope.scope_description.clear();
+        assert!(service.select(empty_scope).is_err());
+        let mut duplicate_scope = selection(&session.session_id, true);
+        duplicate_scope.candidate_ids = vec!["a".to_owned(), "a".to_owned()];
+        assert!(service.select(duplicate_scope).is_err());
+        let mut mismatched_authorisation = selection(&session.session_id, true);
+        mismatched_authorisation.authorised_context = "different-authorisation".to_owned();
+        assert!(service.select(mismatched_authorisation).is_err());
+        assert_eq!(table_count(&repository, "items"), 0);
+
         let items = service
             .select(selection(&session.session_id, true))
             .unwrap();
@@ -663,6 +798,102 @@ mod tests {
             .and_then(|item| item.item_id.clone())
             .unwrap();
         assert_recollection_transitions(&service, &repository, &outcomes, &item_id);
+    }
+
+    #[test]
+    fn cancellation_keeps_started_success_and_skips_every_queued_item() {
+        let temporary = tempdir().unwrap();
+        let paths = DataPaths::new(temporary.path().to_path_buf());
+        ensure_layout(&paths).unwrap();
+        let repository = crate::sqlite::open_collection_database(&paths, 100).unwrap();
+        let outcomes = Arc::new(Mutex::new(HashMap::from([
+            ("a".to_owned(), found("a", "already running")),
+            ("b".to_owned(), found("b", "still queued")),
+            ("c".to_owned(), found("c", "still queued")),
+        ])));
+        let entered = Arc::new(Barrier::new(2));
+        let release = Arc::new(Barrier::new(2));
+        let selecting = CollectorSessionService::new(
+            repository.clone(),
+            FileAssetStore::new(paths.clone()),
+            SystemClock,
+            vec![Box::new(BlockingAdapter {
+                inner: FixtureAdapter {
+                    outcomes: outcomes.clone(),
+                    attachment_path: None,
+                },
+                entered: entered.clone(),
+                release: release.clone(),
+            })],
+        );
+        let session = selecting
+            .start(StartCollectionCommand {
+                route_id: SourceRouteId("source.kimi".to_owned()),
+                source_reference: "submitted:cancellation".to_owned(),
+                scope_description: "three cancellable candidates".to_owned(),
+                authorisation_id: "fixture-authorisation".to_owned(),
+            })
+            .unwrap();
+        let session_id = session.session_id.clone();
+        let selection = selection(&session_id, true);
+        let handle = std::thread::spawn(move || selecting.select(selection));
+
+        entered.wait();
+        let cancelling = CollectorSessionService::new(
+            repository.clone(),
+            FileAssetStore::new(paths),
+            SystemClock,
+            vec![Box::new(FixtureAdapter {
+                outcomes,
+                attachment_path: None,
+            })],
+        );
+        let during_cancel = cancelling
+            .cancel(CancelCollectionCommand {
+                session_id: session_id.clone(),
+                reason: "user cancelled remaining scope".to_owned(),
+            })
+            .unwrap();
+        assert_eq!(state(&during_cancel, "a"), CollectionItemState::Running);
+        assert_eq!(state(&during_cancel, "b"), CollectionItemState::Skipped);
+        assert_eq!(state(&during_cancel, "c"), CollectionItemState::Skipped);
+        assert!(
+            repository
+                .claim_item(
+                    &session_id,
+                    "b",
+                    &UtcTimestamp::parse("2026-07-18T00:00:00Z").unwrap()
+                )
+                .unwrap()
+                .is_none()
+        );
+
+        release.wait();
+        let after_cancel = handle.join().unwrap().unwrap();
+        assert_eq!(state(&after_cancel, "a"), CollectionItemState::Saved);
+        assert_eq!(state(&after_cancel, "b"), CollectionItemState::Skipped);
+        assert_eq!(state(&after_cancel, "c"), CollectionItemState::Skipped);
+        assert_eq!(
+            cancelling.session(&session_id).unwrap().state,
+            CollectionSessionState::Cancelled
+        );
+        assert_eq!(table_count(&repository, "items"), 1);
+
+        drop(cancelling);
+        drop(repository);
+        let reopened = crate::sqlite::open_collection_database(
+            &DataPaths::new(temporary.path().to_path_buf()),
+            100,
+        )
+        .unwrap();
+        assert_eq!(
+            reopened.session(&session_id).unwrap().unwrap().state,
+            CollectionSessionState::Cancelled
+        );
+        let durable_items = reopened.collection_items(&session_id).unwrap();
+        assert_eq!(state(&durable_items, "a"), CollectionItemState::Saved);
+        assert_eq!(state(&durable_items, "b"), CollectionItemState::Skipped);
+        assert_eq!(state(&durable_items, "c"), CollectionItemState::Skipped);
     }
 
     type FixtureCollector =
@@ -713,6 +944,10 @@ mod tests {
         );
         assert_eq!(table_count(repository, "revisions"), 3);
         assert_eq!(table_count(repository, "collection_recollection_checks"), 4);
+        assert_eq!(
+            recollection_states(repository),
+            ["changed", "unchanged", "inaccessible", "removed"]
+        );
     }
 
     #[test]
@@ -850,6 +1085,18 @@ mod tests {
             .query_row(&format!("SELECT COUNT(*) FROM {table}"), [], |row| {
                 row.get(0)
             })
+            .unwrap()
+    }
+
+    fn recollection_states(repository: &SqliteRawRepository) -> Vec<String> {
+        let connection = repository.lock().unwrap();
+        let mut statement = connection
+            .prepare("SELECT state FROM collection_recollection_checks ORDER BY rowid")
+            .unwrap();
+        statement
+            .query_map([], |row| row.get(0))
+            .unwrap()
+            .collect::<Result<Vec<_>, _>>()
             .unwrap()
     }
 }

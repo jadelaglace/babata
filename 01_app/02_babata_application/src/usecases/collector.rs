@@ -149,6 +149,17 @@ where
             &self.clock.now(),
         )?;
         for candidate_id in &selection.candidate_ids {
+            if self.session(&selection.session_id)?.state == CollectionSessionState::Cancelled {
+                break;
+            }
+            if self
+                .status(&selection.session_id)?
+                .into_iter()
+                .find(|item| item.candidate_id == *candidate_id)
+                .is_some_and(|item| item.state != CollectionItemState::Queued)
+            {
+                continue;
+            }
             self.run_item(&selection.session_id, candidate_id)?;
         }
         self.finish_session(&selection.session_id)?;
@@ -192,27 +203,8 @@ where
         command: CancelCollectionCommand,
     ) -> Result<Vec<CollectionItemStatus>, ApplicationError> {
         require_text("reason", &command.reason)?;
-        for item in self.status(&command.session_id)? {
-            if item.state == CollectionItemState::Queued {
-                self.repository.transition_item(
-                    &command.session_id,
-                    &item.candidate_id,
-                    CollectionItemState::Skipped,
-                    Some(&command.reason),
-                    false,
-                    None,
-                    None,
-                    false,
-                    &self.clock.now(),
-                )?;
-            }
-        }
-        self.repository.update_session_state(
-            &command.session_id,
-            CollectionSessionState::Cancelled,
-            &self.clock.now(),
-        )?;
-        self.status(&command.session_id)
+        self.repository
+            .cancel_session(&command.session_id, &command.reason, &self.clock.now())
     }
 
     pub fn recollect(&self, item_id: &ItemId) -> Result<RecollectionOutcome, ApplicationError> {
@@ -314,17 +306,16 @@ where
             .into_iter()
             .find(|item| item.candidate_id == candidate_id)
             .is_some_and(|item| item.requested_attachments);
-        self.repository.transition_item(
-            session_id,
-            candidate_id,
-            CollectionItemState::Running,
-            None,
-            false,
-            None,
-            None,
-            true,
-            &self.clock.now(),
-        )?;
+        let Some(_) = self
+            .repository
+            .claim_item(session_id, candidate_id, &self.clock.now())?
+        else {
+            return self
+                .status(session_id)?
+                .into_iter()
+                .find(|item| item.candidate_id == candidate_id)
+                .ok_or_else(|| ApplicationError::NotFound("collection item".to_owned()));
+        };
         let acquisition =
             match adapter.collect(&candidate, prefetched.as_ref(), requested_attachments) {
                 Ok(outcome) => outcome,
@@ -422,6 +413,9 @@ where
     }
 
     fn finish_session(&self, session_id: &CollectionSessionId) -> Result<(), ApplicationError> {
+        if self.session(session_id)?.state == CollectionSessionState::Cancelled {
+            return Ok(());
+        }
         let items = self.repository.collection_items(session_id)?;
         if items.iter().all(|item| {
             matches!(

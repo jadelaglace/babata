@@ -47,6 +47,10 @@ Git。所有 destructive 测试使用临时或隔离数据根。
 10. 对语雀先在正式 Chrome 核对官方整库与单篇导出，再从 8 个最近文档中只选择一篇；
     验证免费官方 Markdown、渲染正文/HTML 和 22 张图片进入同一 C0。OpenAPI/MCP 的会员
     Token 不作为当前前置，也不要求用户手抄会话 Token。
+11. 对 Babata 浏览器扩展先运行类型检查、候选/hash 测试和构建，再从正式 Chrome 分别
+    准备当前页、可见选区和一个明确书签文件夹；确认候选阶段 C0 为 0，最终勾选后只把
+    所选项经受保护 loopback API 提交。安装前的隔离网络验证只能记机制证据，不能替代
+    正式 Chrome 中的真实配对、按需书签权限和候选 UI。
 
 预期：
 
@@ -82,6 +86,11 @@ Git。所有 destructive 测试使用临时或隔离数据根。
    unchanged，仍为 1 revision/17 assets；正文、更新时间或图片 token 改变时才追加版本。
 10. 对语雀重复访问同一官方 Markdown 端点，确认 Markdown 和 22 个稳定媒体 token 未变时
     重采为 unchanged，仍为 1 revision/22 assets；临时下载目录重复产生不重复写入 C0。
+11. 在第一项已经 running、其余两项仍 queued 时从并发调用取消：第一项允许保存，后两项
+    转为 skipped，session 保持 cancelled；确认取消不会被收尾覆盖成 completed，C0 只有
+    已开始成功项。
+12. 对同一保存项依次制造 changed、unchanged、inaccessible、removed；逐项核对四条
+    `collection_recollection_checks`、旧 revision 数量和新 revision 只在 changed 时增加。
 
 预期：逐条状态与原因可见；重试只影响目标项；changed 追加版本；unchanged 保留检查
 事件；inaccessible/removed 不删除旧 C0；局部成功始终保留；动态统计保留在原始响应中，

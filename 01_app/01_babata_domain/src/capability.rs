@@ -33,6 +33,15 @@ pub struct CapabilityDescriptor {
 }
 
 impl CapabilityDescriptor {
+    pub fn enabled(id: impl Into<String>, activation_phase: impl Into<String>) -> Self {
+        Self {
+            id: CapabilityId::new(id),
+            status: CapabilityStatus::Enabled,
+            activation_phase: activation_phase.into(),
+            reason: None,
+        }
+    }
+
     pub fn unavailable(id: impl Into<String>, activation_phase: impl Into<String>) -> Self {
         Self {
             id: CapabilityId::new(id),
