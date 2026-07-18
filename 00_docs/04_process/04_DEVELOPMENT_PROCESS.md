@@ -11,8 +11,8 @@
 ```text
 P0  冻结旧版本                                    已完成
 P1  真实需求、PRD、产品验收、全局技术架构           已完成
-P2  全系统模块、目录、代码与工具骨架                 进行中
-P3  C0 原始资料与第一方版本底座                     未开始（存在提前工作）
+P2  全系统模块、目录、代码与工具骨架                 已完成
+P3  C0 原始资料与第一方版本底座                     未开始（下一阶段；存在提前工作）
 P4  飞书与浏览器首批真实收集路径                     未开始（存在提前工作）
 P5  C1 多模态清洗与百炼处理                         未开始
 P6  核心沉淀、检索、子库与输出                      未开始
@@ -20,27 +20,26 @@ P7  扩展来源、正式 Skill 与受控 Agent               未开始
 P8  备份、恢复、运维与长期加固                      未开始
 ```
 
+<!-- P2: completed; P2-G1..P2-G7: passed -->
+
 当前真实情况：
 
 - P2 已在旧 117 文件基础上补齐 20 个 Rust 责任文件和 3 份 Skill 规格，达到 6 个
   crate、137 个 Rust 源文件；CollectorSession、Knowledge、Sublibrary、Output、
-  ReadProjection 和 OutputBuilder 均有明确位置与 unavailable 壳。
-- P2 的工程骨架 gate 已通过；逐来源现有工具调查和路线决策已经写入
-  `03_architecture/08_SOURCE_TOOL_RESEARCH.md`。飞书官方 `lark-cli` 已达到真实授权
-  调用证据；第三轮已按用户纠正补查 Browser Use、Agent Browser、Playwright CLI 与
-  OpenCLI，不再把逐站工具或 OpenCLI Bridge 当作唯一浏览器主线。Agent Browser 已有本机
-  E1，Browser Use 本机安装因依赖下载停滞而中止并清理，仍待 Agent 修复；抖音旧路线
-  已被证伪。多数来源还没有真实账号下
-  “给出一次范围后 Agent 自主完成”的候选、附件和重收集证据，因此 P2 不得标记完成。
+  ReadProjection 和 OutputBuilder 均有明确位置与 unavailable 壳。P2-G1 至 P2-G7
+  已全部通过，P2 已完成。
+- 逐来源现有工具调查和路线决策已经写入 `03_architecture/08_SOURCE_TOOL_RESEARCH.md`；
+  00 点名的来源都有证据等级、最小授权、正常路线、回退和诚实缺口。飞书 `lark-cli`、
+  Browser Use、Agent Browser、Playwright CLI、OpenCLI 和 Codex Chrome 均有实际调用或
+  连接证据。具体来源 E3 仍属于 P4/P7，不再错误作为 P2 前置。
+- Kimi 真实练手已完成：Codex Chrome 读取正式版登录态下的真实历史分页和长会话正文，
+  两条明确范围样本已带 manifest/hash 写入外部 recovery staging；第二条正文响应为
+  104,476 字节。该证据只证明当前 Codex 路线能用于具体平台，不把 Kimi/P4 标为 available。
 - 已有 29 个 P3 活跃文件、raw migrations、命令与测试属于提前工作。它们应保留并
-  在 P2 修正后重新审阅，不代表 P3 已开始或完成。
+  在下一阶段按 P3 蓝图重新审阅，不代表 P3 已开始或完成。
 - 已有飞书导出、书签 HTML、CandidateEnvelope、route evidence 和 fixture 属于 P4
   提前工作/回退路径证据。正常的飞书上下文候选、浏览器扩展候选与选择尚未通过，
   所以 P4 不得标记进行中或 enabled。
-- 当前最高执行优先级是用 Codex 已有官方连接器/Skill、正式版 Chrome 登录态和必要的
-  Computer Use 抢救仍留在各平台服务器上的存量资料。长期 Browser Use/Agent Browser
-  自动化转为后续 Skill 能力，不阻塞本轮回收。回收文件只能进入外部数据根的 recovery
-  staging，不能进入 Git，也不能在 P3 核心提交前冒充 C0 或 P4 available。
 
 项目阶段只使用 P0–P8；C0–C3 是数据权威级别，不是项目阶段。
 
@@ -135,7 +134,7 @@ AC-01..11，03 明确四段信息流、C0–C3、唯一 Rust writer 和代码边
 | P2-G4 | 未激活能力诚实 unavailable |
 | P2-G5 | 只有 Rust application/infrastructure 可最终写 C0/C1 |
 | P2-G6 | 文档、蓝图、脚本和测试追溯一致 |
-| P2-G7 | 00 列出的来源完成现有工具调研、实际验证、最小授权和路线决策 |
+| P2-G7 | 00 列出的来源都有证据等级、最小授权、路线决策和诚实缺口；当前可调用的代表性官方/通用工具有实际证据 |
 
 ```text
 check-p2-skeleton-inventory.ps1
@@ -149,7 +148,7 @@ cargo metadata / check / fmt / clippy / architecture tests
 这些 gate 证明骨架完整、依赖正确、能力诚实和写入边界唯一。它们不证明任何产品
 AC 已完成。
 
-### 5.6 P2 当前证据与未完成项（2026-07-17）
+### 5.6 P2 完成证据（2026-07-18）
 
 - 6 个 crate、137 个 Rust 源文件、12 个 application service、13 个 port、13 个 CLI
   命令模块、local API route owner、worker 生命周期和 9 份 Skill 规格位置全部存在；
@@ -163,12 +162,11 @@ AC 已完成。
 - 离线 route evidence 可以记录覆盖，但不能单独把飞书/浏览器标记 enabled；来源仍
   等待 P4 真实上下文候选与选择证据；
 - 来源工具调查已覆盖 00 点名的全部来源。已实际核验本机 `lark-cli 1.0.68` 的用户
-  OAuth 和 Wiki/Docs 只读调用；已实际安装并运行 `agent-browser 0.32.1` 的
-  version/help/doctor，doctor 7 pass、0 warn、0 fail 且 headless launch 通过，并核验其
-  CDP、snapshot、network、download、Skill 与安全策略；Browser Use 0.13.6 的
-  官方 CLI/Skill、真实 Chrome/CDP 路线已核，本机安装因依赖下载停滞中止且 doctor 尚未
-  完成；已实际运行
-  OpenCLI 1.8.6 的命令发现、站点 help 和 doctor，其确定性站点命令降为第二层；
+  OAuth 和 Wiki/Docs 只读调用；已安装并运行 `agent-browser 0.32.1` 的
+  version/help/doctor，doctor 7 pass、0 warn、0 fail；Browser Use 0.13.6 / Browser
+  Harness 0.1.6 已安装并通过正式版 Chrome、daemon 和本地连接 doctor；两者分别连接
+  正式版 Chrome 150.0.7871.129、列出真实 tab 并读取当前页。OpenCLI 1.8.6 已实际运行
+  命令发现、站点 help 和 doctor，其确定性站点命令降为第二层；
 - 已完成无需账号权限的工具准备：全局安装 Agent Browser 0.32.1、Playwright CLI 0.1.17、
   OpenCLI 1.8.6 和 `yuque-dl 1.0.85`，安装
   Microsoft Graph Authentication/Notes 2.38.1、`evernote-backup 1.13.1`、
@@ -184,33 +182,28 @@ AC 已完成。
   抖音明确保持 E0/disabled，不要求用户手抄 Cookie 来冒充落实；
 - 29 文件 P3 提前实现及 34 个 raw 功能测试继续可运行，但不作为 P2 产品验收，也不
   代表 P3 已开始。
-- 2026-07-18 已安装 Browser Use 0.13.6 / Browser Harness 0.1.6，并与 Agent Browser
-  0.32.1 分别连接正式版 Chrome 150.0.7871.129：两者均能列出真实 tab 并只读取得当前页；
-  Agent Browser 使用默认拒绝的只读 action policy。Chrome for Testing 仅用于空白页
-  doctor，不读取正式版 profile。该证据证明工具可用，不证明任何具体平台来源 E3 完成。
+- Codex Chrome 已在 Kimi 真实运行：历史页当前读取 65 个会话入口，确认
+  `FeedService/ListFeeds` 每页 50 条并带 continuation token，确认 `GetChat` 与
+  `ListMessages` 可取得完整会话；两条单会话样本已保存到外部 recovery staging，第二条
+  包含 10 个结构化内容块、11 条引用和 104,476 字节正文响应。真实内容、签名 URL 和凭据
+  均未进入 Git。该证据为 E2，不替代 E3 的附件、逐条状态和重收集。
 
-上述证明 P2-G1 至 P2-G6，并完成了 P2-G7 的逐来源调查和通用 Agent 浏览器补调研；
-通用 Browser Use/Agent Browser 已完成同一正式版 Chrome 的连接实证，抖音等具体来源
-仍有诚实缺口。P2-G7 仍部分通过：除飞书外，多数来源还只有工具/命令/连接证据，没有
-真实授权的“用户给出一次范围 -> Agent 自主候选/翻页/下载 -> 正文/
-附件 -> 重收集探针。长期自动化不再阻塞紧急存量回收；下一步按
-`03_architecture/08_SOURCE_TOOL_RESEARCH.md` 第 13 节直接盘点和回收存量，同时不继续堆
-来源 adapter、协议或把手工导出包装成长期主路径。
+上述证明 P2-G1 至 P2-G7 全部通过。P2-G7 证明逐来源调查、路线决策、最小授权和代表性
+工具实证已经齐全，不证明任何来源已经 available。抖音等具体来源的 E3 缺口、Kimi 的
+全历史/附件/重收集缺口继续留在 P4/P7，不能倒灌为 P2 或 P3 的前置条件。
 
-### 5.7 当前并行优先事项：存量回收
+### 5.7 P2 收尾后的下一步
 
-P2/P3 状态不变，但允许并优先执行一次性存量回收：
+按用户最新顺序，Kimi 具体平台练手已经证明 Codex 当前手段可用，P2 随本次 gate 复核
+收尾。下一步进入 P3，重新审阅已有提前实现，完成 recovery staging 到唯一 C0 路径的
+原始资料底座。后续存量回收仍可在用户给出来源/范围时并行执行，但不再阻塞阶段推进：
 
 1. Codex 先用官方连接器/Skill；没有直接能力时使用正式版 Chrome 已登录会话；只有桌面
-   UI 无结构化能力时使用 Computer Use。
-2. 只读盘点不改变平台状态；点击导出、下载、上传、编辑、删除或其他外部副作用在动作前
-   按用户授权边界确认，可将同一来源的一批明确动作一次确认后连续执行。
-3. 回收结果写入 `${BABATA_DATA_HOME}/recovery-staging/<source>/<batch-id>/`，至少包含原始
-   导出件/媒体、`manifest`、来源范围、取得时间、工具版本、文件 hash、缺失和限制。
-4. recovery staging 不是第二条最终持久化权威。P3 核心可用后，经唯一 Capture/C0 链路
-   校验提交；提交和备份验证完成后才能清理 staging 副本。
-5. 存量回收成功只证明该批资料已拿回，不把来源标记为 P4 available，也不替代重收集、
-   逐条状态和长期自动化验收。
+   UI 无结构化入口时使用 Computer Use。
+2. 回收结果写入 `${BABATA_DATA_HOME}/recovery-staging/<source>/<batch-id>/`，保留原始
+   导出件/媒体、manifest、范围、取得时间、工具版本、hash、缺失和限制。
+3. P3 核心可用后，经唯一 Capture/C0 链路校验提交；回收成功不把来源标记为 P4 available，
+   也不替代逐条状态、重收集和长期自动化验收。
 
 ## 6. P3：C0 原始资料与第一方版本底座
 

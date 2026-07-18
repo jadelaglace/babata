@@ -11,9 +11,9 @@ $requiredMarkers = @(
     @('03_architecture/05_RAW_FOUNDATION_BLUEPRINT.md', 'P3-G6'),
     @('03_architecture/06_RAW_FOUNDATION_EXECUTION_PLAN.md', 'P3-G6'),
     @('03_architecture/07_P4_FIRST_COLLECTION_PATHS.md', 'P4-G6'),
-    @('03_architecture/08_SOURCE_TOOL_RESEARCH.md', 'Agent'),
-    @('04_process/04_DEVELOPMENT_PROCESS.md', 'P2-G6'),
-    @('05_tests/05_TEST_CASES.md', 'GT-P2-06')
+    @('03_architecture/08_SOURCE_TOOL_RESEARCH.md', 'P2-G7: passed'),
+    @('04_process/04_DEVELOPMENT_PROCESS.md', 'P2: completed; P2-G1..P2-G7: passed'),
+    @('05_tests/05_TEST_CASES.md', 'GT-P2-07')
 )
 
 foreach ($check in $requiredMarkers) {
@@ -50,7 +50,31 @@ $skeleton = Get-Content -Raw -Encoding utf8 (Join-Path $docs '03_architecture/04
 $rawBlueprint = Get-Content -Raw -Encoding utf8 (Join-Path $docs '03_architecture/05_RAW_FOUNDATION_BLUEPRINT.md')
 $rawPlan = Get-Content -Raw -Encoding utf8 (Join-Path $docs '03_architecture/06_RAW_FOUNDATION_EXECUTION_PLAN.md')
 $collection = Get-Content -Raw -Encoding utf8 (Join-Path $docs '03_architecture/07_P4_FIRST_COLLECTION_PATHS.md')
+$sourceResearch = Get-Content -Raw -Encoding utf8 (Join-Path $docs '03_architecture/08_SOURCE_TOOL_RESEARCH.md')
 $process = Get-Content -Raw -Encoding utf8 (Join-Path $docs '04_process/04_DEVELOPMENT_PROCESS.md')
+
+$p2Sources = @(
+    'source.feishu', 'source.yuque', 'source.onenote', 'source.evernote',
+    'source.wechat_favorites', 'source.wechat_articles', 'source.wechat_channels',
+    'source.wechat_chats', 'source.zhihu', 'source.bilibili', 'source.xiaohongshu',
+    'source.douyin', 'source.browser_bookmarks', 'source.browser_pages', 'source.doubao',
+    'source.kimi', 'source.chatgpt', 'source.local_files', 'source.first_party'
+)
+foreach ($source in $p2Sources) {
+    if (-not $sourceResearch.Contains($source)) {
+        throw "Source research is missing P2-G7 coverage marker: $source"
+    }
+}
+
+$representativeTools = @(
+    'tool.lark_cli', 'tool.agent_browser', 'tool.browser_use', 'tool.codex_chrome',
+    'tool.opencli'
+)
+foreach ($tool in $representativeTools) {
+    if (-not $sourceResearch.Contains($tool)) {
+        throw "Source research is missing P2-G7 tool evidence marker: $tool"
+    }
+}
 
 foreach ($id in 1..7) {
     $p2 = "P2-G$id"
@@ -70,4 +94,4 @@ foreach ($id in 1..7) {
     }
 }
 
-Write-Output 'Document traceability passed: 00 -> PRD-01..10 -> AC-01..11 -> architecture/process -> TC-01..11.'
+Write-Output 'Document traceability passed: 00 -> PRD-01..10 -> AC-01..11 -> architecture/process -> TC-01..11, with P2-G1..G7 mapped to GT-P2-01..07.'
