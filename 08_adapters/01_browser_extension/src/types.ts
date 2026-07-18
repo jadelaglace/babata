@@ -1,6 +1,6 @@
 export type CandidateEnvelope = {
   protocolVersion: "1";
-  routeId: "source.browser";
+  routeId: "source.browser_pages";
   sourceReference: string;
   contentType: "web_page";
   payloadSha256: string;

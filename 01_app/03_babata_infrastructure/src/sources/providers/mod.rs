@@ -1,10 +1,13 @@
 pub mod bilibili;
+pub mod bilibili_collection;
 pub mod browser;
 pub mod conversations;
+pub mod doubao;
 pub mod douyin;
 pub mod evernote;
 pub mod feishu;
 pub mod first_party;
+pub mod kimi;
 pub mod local_files;
 pub mod onenote;
 pub mod wechat;

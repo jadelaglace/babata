@@ -1,6 +1,6 @@
 use babata_domain::{
-    AssetRole, CandidatePayload, CollectionId, ContentType, ItemId, Metadata, RawState, RevisionId,
-    RevisionKind, Sha256, SourceId, SourceKind, SourceRouteId, TextPayload, UtcTimestamp,
+    AssetRole, CandidateEnvelope, CandidatePayload, CollectionId, ContentType, ItemId, Metadata,
+    RawState, RevisionId, RevisionKind, Sha256, SourceId, SourceKind, TextPayload, UtcTimestamp,
 };
 
 use crate::{
@@ -151,27 +151,16 @@ where
         &self,
         command: CandidateCaptureCommand,
     ) -> Result<CaptureOutcome, ApplicationError> {
+        let assets = command.assets;
         let candidate = command.candidate;
-        if candidate.protocol_version != "1" {
+        validate_candidate(&candidate)?;
+        if command
+            .route_evidence
+            .as_ref()
+            .is_some_and(|evidence| evidence.route_id != candidate.route_id)
+        {
             return Err(ApplicationError::Conflict(
-                "unsupported candidate protocol version".to_owned(),
-            ));
-        }
-        if candidate.route_id != SourceRouteId("source.browser".to_owned()) {
-            return Err(ApplicationError::Conflict(
-                "candidate route is not enabled for capture".to_owned(),
-            ));
-        }
-        if candidate.content_type != ContentType::WebPage {
-            return Err(ApplicationError::Conflict(
-                "browser candidates must declare web_page content".to_owned(),
-            ));
-        }
-        if candidate.source_reference.trim().is_empty() {
-            return Err(ApplicationError::Domain(
-                babata_domain::DomainError::Empty {
-                    field: "source_reference",
-                },
+                "route evidence does not match candidate route".to_owned(),
             ));
         }
         let CandidatePayload::Text { text } = candidate.payload;
@@ -181,23 +170,70 @@ where
                 "candidate payload hash does not match its text".to_owned(),
             ));
         }
+        let provider = candidate
+            .route_id
+            .0
+            .strip_prefix("source.")
+            .unwrap_or(&candidate.route_id.0)
+            .to_owned();
+        let route_evidence = command.route_evidence;
         let operation_id = new_operation_id();
-        self.capture_external(
+        let mut staged_assets = Vec::with_capacity(assets.len());
+        for asset in &assets {
+            match self.assets.stage(&asset.path, asset.role, &operation_id) {
+                Ok(staged) => staged_assets.push(staged),
+                Err(error) => {
+                    for staged in &staged_assets {
+                        let _ = self.assets.discard_stage(staged);
+                    }
+                    let _ = self.assets.complete_operation(&operation_id);
+                    return Err(error.with_operation(operation_id));
+                }
+            }
+        }
+        let result = self.capture_external(
             operation_id.clone(),
-            "browser".to_owned(),
+            provider.clone(),
             candidate.context,
             Some(candidate.source_reference.clone()),
             candidate.native_id,
-            format!("browser:{}", candidate.source_reference),
+            format!("{provider}:{}", candidate.source_reference),
             candidate.content_type,
             candidate.metadata,
             None,
             Some(payload.as_str().to_owned()),
             Some(payload.hash()),
-            Vec::new(),
+            staged_assets.clone(),
             RevisionKind::Capture,
-        )
-        .map_err(|error| error.with_operation(operation_id))
+        );
+        if result.is_err() {
+            for staged in &staged_assets {
+                let _ = self.assets.discard_stage(staged);
+            }
+            let _ = self.assets.complete_operation(&operation_id);
+        }
+        let mut outcome = result.map_err(|error| error.with_operation(operation_id))?;
+        if let Some(evidence) = route_evidence {
+            if self
+                .repository
+                .record_route_evidence(&crate::ports::NewRouteEvidence {
+                    route_id: evidence.route_id.0,
+                    authorization_id: evidence.authorization_id,
+                    source_reference: evidence.source_reference,
+                    item_id: outcome.item_id.clone(),
+                    revision_id: outcome.revision_id.clone(),
+                    coverage: evidence.coverage,
+                    reimported: outcome.reimported,
+                    recorded_at: self.clock.now(),
+                })
+                .is_err()
+            {
+                outcome
+                    .warnings
+                    .push("route evidence persistence is pending".to_owned());
+            }
+        }
+        Ok(outcome)
     }
 
     fn capture_file_like(
@@ -479,6 +515,73 @@ where
     }
 }
 
+fn validate_candidate(candidate: &CandidateEnvelope) -> Result<(), ApplicationError> {
+    if candidate.protocol_version != "1" {
+        return Err(ApplicationError::Conflict(
+            "unsupported candidate protocol version".to_owned(),
+        ));
+    }
+    if !matches!(
+        candidate.route_id.0.as_str(),
+        "source.feishu"
+            | "source.kimi"
+            | "source.zhihu"
+            | "source.bilibili"
+            | "source.xiaohongshu"
+            | "source.douyin"
+            | "source.doubao"
+            | "source.chatgpt"
+            | "source.yuque"
+            | "source.browser_pages"
+            | "source.browser_bookmarks"
+    ) {
+        return Err(ApplicationError::Conflict(
+            "candidate route is not enabled for capture".to_owned(),
+        ));
+    }
+    if matches!(
+        candidate.route_id.0.as_str(),
+        "source.browser_pages" | "source.browser_bookmarks"
+    ) && candidate.content_type != ContentType::WebPage
+    {
+        return Err(ApplicationError::Conflict(
+            "browser candidates must declare web_page content".to_owned(),
+        ));
+    }
+    if candidate.route_id.0 == "source.feishu" && candidate.content_type != ContentType::Document {
+        return Err(ApplicationError::Conflict(
+            "Feishu candidates must declare document content".to_owned(),
+        ));
+    }
+    if matches!(
+        candidate.route_id.0.as_str(),
+        "source.kimi"
+            | "source.zhihu"
+            | "source.bilibili"
+            | "source.xiaohongshu"
+            | "source.douyin"
+            | "source.doubao"
+            | "source.chatgpt"
+            | "source.yuque"
+    ) && !matches!(
+        candidate.content_type,
+        ContentType::Document | ContentType::WebPage
+    ) {
+        return Err(ApplicationError::Conflict(
+            "named browser-platform candidates must declare document or web_page content"
+                .to_owned(),
+        ));
+    }
+    if candidate.source_reference.trim().is_empty() {
+        return Err(ApplicationError::Domain(
+            babata_domain::DomainError::Empty {
+                field: "source_reference",
+            },
+        ));
+    }
+    Ok(())
+}
+
 fn new_operation_id() -> String {
     format!("op_{}", ulid::Ulid::new())
 }
@@ -586,7 +689,7 @@ pub(crate) mod tests {
         CaptureFileCommand,
         ports::{AssetStorePort, NewRelation, RawRepositoryPort},
     };
-    use babata_domain::{AssetId, AssetRole, LogicalPath};
+    use babata_domain::{AssetId, AssetRole, LogicalPath, RouteCoverage, SourceRouteId};
 
     #[derive(Clone, Default)]
     pub(crate) struct MockRepository {
@@ -1138,6 +1241,42 @@ pub(crate) mod tests {
         let repository = MockRepository::default();
         let service = CaptureService::new(repository.clone(), MockAssets::default(), FixedClock);
         assert!(service.capture_text(text(" ", "payload")).is_err());
+        assert!(repository.state.lock().unwrap().revisions.is_empty());
+    }
+
+    #[test]
+    fn mismatched_candidate_route_evidence_is_rejected_before_write() {
+        let repository = MockRepository::default();
+        let service = CaptureService::new(repository.clone(), MockAssets::default(), FixedClock);
+        let payload = "candidate body";
+        let result = service.capture_candidate(CandidateCaptureCommand {
+            route_evidence: Some(crate::RouteEvidenceCommand {
+                route_id: SourceRouteId("source.feishu".to_owned()),
+                authorization_id: "fixture-auth".to_owned(),
+                source_reference: "https://example.test/chat".to_owned(),
+                coverage: RouteCoverage {
+                    metadata: true,
+                    attachments: false,
+                    revisions: true,
+                    limitations: Vec::new(),
+                },
+            }),
+            candidate: CandidateEnvelope {
+                protocol_version: "1".to_owned(),
+                route_id: SourceRouteId("source.kimi".to_owned()),
+                source_reference: "https://example.test/chat".to_owned(),
+                content_type: ContentType::Document,
+                payload_sha256: Sha256::of_bytes(payload.as_bytes()),
+                metadata: Metadata::empty(),
+                payload: CandidatePayload::Text {
+                    text: payload.to_owned(),
+                },
+                context: None,
+                native_id: Some("chat-a".to_owned()),
+            },
+            assets: Vec::new(),
+        });
+        assert!(result.is_err());
         assert!(repository.state.lock().unwrap().revisions.is_empty());
     }
 }

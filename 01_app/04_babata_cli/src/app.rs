@@ -25,6 +25,10 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             let descriptors = CapabilityService::new(StaticCapabilityRegistry::default()).list()?;
             render_value(&descriptors, cli.json)?;
         }
+        RootCommand::Collector(command) => {
+            let outcome = crate::commands::collector::execute(command, &config)?;
+            render_value(&outcome, cli.json)?;
+        }
         command @ (RootCommand::Capture(
             crate::commands::CaptureCommand::Text(_)
             | crate::commands::CaptureCommand::File(_)
@@ -55,7 +59,6 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         RootCommand::Capture(_) => return Err(unavailable("capture.provider", "P4")),
-        RootCommand::Collector(_) => return Err(unavailable("collector", "P4")),
         RootCommand::Knowledge(_) => return Err(unavailable("knowledge", "P6")),
         RootCommand::Process(_) => return Err(unavailable("processing", "P5")),
         RootCommand::Explore(_) => return Err(unavailable("explore", "P6")),

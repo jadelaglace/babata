@@ -12,6 +12,7 @@ use std::{
 use babata_application::ApplicationError;
 use rusqlite::Connection;
 
+pub use collection_migrate::migrate_collection;
 pub use migrate::migrate_raw;
 pub use raw_repository::SqliteRawRepository;
 pub use read_projection::SqliteReadProjection;
@@ -52,6 +53,18 @@ pub fn open_raw_database(
     let connection = open_connection(&paths.raw_database(), busy_timeout_ms)?;
     migrate_raw(&connection)?;
     Ok(SqliteRawRepository::new(Arc::new(Mutex::new(connection))))
+}
+
+pub fn open_collection_database(
+    paths: &crate::paths::DataPaths,
+    busy_timeout_ms: u64,
+) -> Result<SqliteRawRepository, ApplicationError> {
+    let repository = open_raw_database(paths, busy_timeout_ms)?;
+    {
+        let connection = repository.lock()?;
+        migrate_collection(&connection)?;
+    }
+    Ok(repository)
 }
 
 pub fn raw_status(
@@ -273,3 +286,5 @@ mod tests {
         assert_eq!(status.quarantined_operations, 0);
     }
 }
+mod collection_migrate;
+mod collection_repository;

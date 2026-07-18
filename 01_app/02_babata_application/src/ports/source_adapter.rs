@@ -1,10 +1,19 @@
-use babata_domain::{CandidateEnvelope, CandidateSummary, RouteCoverage, SourceRouteDescriptor};
+use babata_domain::{CandidateSummary, CollectionSessionId, RouteCoverage, SourceRouteDescriptor};
 
-use crate::ApplicationError;
+use crate::{AcquisitionOutcome, ApplicationError, DiscoveredCandidate};
 
 pub trait SourceAdapterPort {
     fn describe(&self) -> SourceRouteDescriptor;
-    fn discover(&self, source_reference: &str) -> Result<Vec<CandidateSummary>, ApplicationError>;
-    fn collect(&self, source_reference: &str) -> Result<CandidateEnvelope, ApplicationError>;
+    fn discover(
+        &self,
+        session_id: &CollectionSessionId,
+        source_reference: &str,
+    ) -> Result<Vec<DiscoveredCandidate>, ApplicationError>;
+    fn collect(
+        &self,
+        candidate: &CandidateSummary,
+        prefetched: Option<&babata_domain::CandidateEnvelope>,
+        requested_attachments: bool,
+    ) -> Result<AcquisitionOutcome, ApplicationError>;
     fn coverage(&self) -> RouteCoverage;
 }

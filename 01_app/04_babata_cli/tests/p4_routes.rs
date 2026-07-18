@@ -64,7 +64,12 @@ fn p4_capabilities_are_not_promoted_by_scaffold_or_fixtures() {
     assert!(capabilities.as_array().unwrap().iter().any(|capability| {
         capability["id"] == "capture.candidate" && capability["status"] == "unavailable"
     }));
-    for source in ["source.feishu", "source.browser"] {
+    for source in [
+        "source.feishu",
+        "source.kimi",
+        "source.browser_pages",
+        "source.browser_bookmarks",
+    ] {
         assert!(capabilities.as_array().unwrap().iter().any(|capability| {
             capability["id"] == source && capability["status"] == "disabled"
         }));

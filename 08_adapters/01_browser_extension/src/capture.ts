@@ -6,7 +6,7 @@ export async function toCandidate(
   const text = payload.selectedText ?? payload.title;
   return {
     protocolVersion: "1",
-    routeId: "source.browser",
+    routeId: "source.browser_pages",
     sourceReference: payload.url,
     contentType: "web_page",
     payloadSha256: await sha256Hex(text),

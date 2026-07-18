@@ -32,7 +32,9 @@ pub fn all_descriptors() -> Vec<CapabilityDescriptor> {
     vec![
         CapabilityDescriptor::unavailable("capture.candidate", "P4"),
         disabled_pending_evidence("source.feishu"),
-        disabled_pending_evidence("source.browser"),
+        disabled_pending_evidence("source.kimi"),
+        disabled_pending_evidence("source.browser_pages"),
+        disabled_pending_evidence("source.browser_bookmarks"),
         CapabilityDescriptor::unavailable("collector", "P4"),
         CapabilityDescriptor::unavailable("processing", "P5"),
         CapabilityDescriptor::unavailable("knowledge", "P6"),

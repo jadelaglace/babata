@@ -42,6 +42,8 @@ pub fn execute(
         RootCommand::Capture(CaptureCommand::Candidate(input)) => capture
             .capture_candidate(CandidateCaptureCommand {
                 candidate: read_candidate(&input.path)?,
+                assets: Vec::new(),
+                route_evidence: None,
             })
             .map(single),
         RootCommand::Capture(CaptureCommand::FeishuExport(input)) => {
@@ -134,7 +136,7 @@ pub fn execute(
                             role: AssetRole::Export,
                         }],
                         route_evidence: route_evidence(
-                            "source.browser",
+                            "source.browser_bookmarks",
                             input.authorized_test.clone(),
                             &bookmark.url,
                             RouteCoverage {
