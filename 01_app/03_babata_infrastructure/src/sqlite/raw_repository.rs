@@ -42,6 +42,14 @@ impl RawRepositoryPort for SqliteRawRepository {
         connection.query_row("SELECT source_id, source_kind, provider, account_or_workspace, created_at FROM sources WHERE source_kind = ?1 AND provider = ?2 AND account_or_workspace IS ?3", params![source_kind(kind), provider, account], source_from_row).optional().map_err(storage)
     }
 
+    fn find_source_by_id(
+        &self,
+        source_id: &SourceId,
+    ) -> Result<Option<NewSource>, ApplicationError> {
+        let connection = self.lock()?;
+        connection.query_row("SELECT source_id, source_kind, provider, account_or_workspace, created_at FROM sources WHERE source_id = ?1", params![source_id.to_string()], source_from_row).optional().map_err(storage)
+    }
+
     fn find_item(&self, item_id: &ItemId) -> Result<Option<NewItem>, ApplicationError> {
         let connection = self.lock()?;
         connection.query_row("SELECT item_id, source_id, source_native_id, source_locator, source_identity_key, content_type, source_published_at, first_captured_at, metadata_json FROM items WHERE item_id = ?1", params![item_id.to_string()], item_from_row).optional().map_err(storage)

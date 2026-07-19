@@ -29,7 +29,7 @@ impl CapabilityRegistryPort for StaticCapabilityRegistry {
 }
 
 pub fn all_descriptors() -> Vec<CapabilityDescriptor> {
-    vec![
+    let mut descriptors = vec![
         CapabilityDescriptor::unavailable("capture.candidate", "P4"),
         disabled_pending_evidence("source.feishu"),
         disabled_pending_evidence("source.kimi"),
@@ -51,7 +51,9 @@ pub fn all_descriptors() -> Vec<CapabilityDescriptor> {
         CapabilityDescriptor::unavailable("views", "P6"),
         CapabilityDescriptor::unavailable("outputs", "P6"),
         CapabilityDescriptor::unavailable("ops.backup", "P8"),
-    ]
+    ];
+    descriptors.extend(crate::processing::registry::processing_descriptors());
+    descriptors
 }
 
 fn disabled_pending_evidence(id: &str) -> CapabilityDescriptor {

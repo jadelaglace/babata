@@ -35,7 +35,8 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         command @ (RootCommand::Capture(
             crate::commands::CaptureCommand::Text(_)
             | crate::commands::CaptureCommand::File(_)
-            | crate::commands::CaptureCommand::Export(_),
+            | crate::commands::CaptureCommand::Export(_)
+            | crate::commands::CaptureCommand::AttachAssets(_),
         )
         | RootCommand::Workspace(_)
         | RootCommand::Create(_)
@@ -123,6 +124,12 @@ fn execute_process(
                 Box::new(ApplicationError::Domain(error)) as Box<dyn std::error::Error>
             })?;
             render_value(&service.list_runs_for_revision(&revision_id)?, json)?;
+        }
+        ProcessCommand::DeleteResult { run, reason } => {
+            let run_id = RunId::parse(&run).map_err(|error| {
+                Box::new(ApplicationError::Domain(error)) as Box<dyn std::error::Error>
+            })?;
+            render_value(&service.delete_result(&run_id, &reason)?, json)?;
         }
         ProcessCommand::Enqueue { pipeline, revision } => {
             let outcome = service.enqueue(babata_application::EnqueueProcessCommand {

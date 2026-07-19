@@ -109,6 +109,70 @@ fn invalid_text_emits_a_json_error_envelope() {
 }
 
 #[test]
+fn attach_assets_appends_original_and_preview_without_mutating_parent() {
+    let temp = tempdir().unwrap();
+    let capture = capture_text(&temp, "real document body retained from the source");
+    let parent_revision = capture["revision_id"].as_str().unwrap();
+    let item_id = capture["item_id"].as_str().unwrap();
+    let parent_hash = capture["record"]["revisions"][0]["text_sha256"]
+        .as_str()
+        .unwrap();
+    let original = temp.path().join("source.docx");
+    let preview = temp.path().join("platform-preview.pdf");
+    std::fs::write(&original, b"original-docx-bytes").unwrap();
+    std::fs::write(&preview, b"preview-pdf-bytes").unwrap();
+
+    let output = babata(&temp)
+        .args([
+            "--json",
+            "capture",
+            "attach-assets",
+            "--revision",
+            parent_revision,
+            "--original",
+            original.to_str().unwrap(),
+            "--preview",
+            preview.to_str().unwrap(),
+            "--reason",
+            "recover source file and distinguish platform preview",
+            "--metadata-json",
+            r#"{"recovery":"fixture"}"#,
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let output: Value = serde_json::from_slice(&output).unwrap();
+
+    assert_eq!(output["item_id"], item_id);
+    assert_ne!(output["revision_id"], parent_revision);
+    assert_eq!(output["reimported"], true);
+    assert_eq!(output["record"]["revisions"].as_array().unwrap().len(), 2);
+    assert_eq!(
+        output["record"]["revisions"][1]["parent_revision_id"],
+        parent_revision
+    );
+    assert_eq!(output["record"]["revisions"][0]["text_sha256"], parent_hash);
+    assert_eq!(output["record"]["revisions"][1]["text_sha256"], parent_hash);
+    let assets = output["record"]["assets"].as_array().unwrap();
+    assert_eq!(assets.len(), 2);
+    assert!(assets.iter().any(|asset| {
+        asset["role"] == "original" && asset["sha256"] == sha256_hex(b"original-docx-bytes")
+    }));
+    assert!(assets.iter().any(|asset| {
+        asset["role"] == "preview" && asset["sha256"] == sha256_hex(b"preview-pdf-bytes")
+    }));
+    for asset in assets {
+        assert!(
+            temp.path()
+                .join(asset["logical_path"].as_str().unwrap())
+                .exists()
+        );
+    }
+}
+
+#[test]
 fn capability_list_reports_processing_enabled_for_p5_register() {
     let temp = tempdir().unwrap();
     let output = babata(&temp)
@@ -122,6 +186,15 @@ fn capability_list_reports_processing_enabled_for_p5_register() {
     assert!(value.as_array().unwrap().iter().any(|descriptor| {
         descriptor["id"] == "processing" && descriptor["status"] == "enabled"
     }));
+    for provider in [
+        "processing.local_extract",
+        "processing.bailian_cli",
+        "processing.bailian_api",
+    ] {
+        assert!(value.as_array().unwrap().iter().any(|descriptor| {
+            descriptor["id"] == provider && descriptor["status"] == "unavailable"
+        }));
+    }
 }
 
 #[test]
@@ -963,5 +1036,163 @@ fn process_rejects_blank_provider_and_incompatible_pipeline_kind() {
             .as_str()
             .unwrap()
             .contains("cannot produce tags")
+    );
+}
+
+#[test]
+fn process_delete_result_then_rebuild_preserves_c0_and_history() {
+    let temp = tempdir().unwrap();
+    let source = temp.path().join("source.pdf");
+    std::fs::write(&source, b"real-pdf-source-bytes").unwrap();
+    let capture = capture_file(&temp, &source);
+    let revision = capture["revision_id"].as_str().unwrap();
+    let item = capture["item_id"].as_str().unwrap();
+    let asset = &capture["record"]["assets"][0];
+    let asset_id = capture["asset_ids"][0].as_str().unwrap();
+    let input_sha = asset["sha256"].as_str().unwrap();
+    let raw_path = temp.path().join(asset["logical_path"].as_str().unwrap());
+    let c0_before = std::fs::read(&raw_path).unwrap();
+    let output = temp.path().join("generated/summary.md");
+    std::fs::create_dir_all(output.parent().unwrap()).unwrap();
+    std::fs::write(&output, "rebuildable summary").unwrap();
+
+    let register = || {
+        let bytes = babata(&temp)
+            .args([
+                "--json",
+                "process",
+                "register",
+                "--pipeline",
+                "agent_import",
+                "--revision",
+                revision,
+                "--item",
+                item,
+                "--kind",
+                "summary",
+                "--provider",
+                "local_extract",
+                "--model",
+                "fixture",
+                "--tool-version",
+                "1.0.0",
+                "--input-sha256",
+                input_sha,
+                "--input-asset-id",
+                asset_id,
+                "--text-file",
+                output.to_str().unwrap(),
+                "--output-file",
+                output.to_str().unwrap(),
+            ])
+            .assert()
+            .success()
+            .get_output()
+            .stdout
+            .clone();
+        serde_json::from_slice::<Value>(&bytes).unwrap()
+    };
+
+    let first = register();
+    let first_run = first["run_id"].as_str().unwrap();
+    let deleted = babata(&temp)
+        .args([
+            "--json",
+            "process",
+            "delete-result",
+            "--run",
+            first_run,
+            "--reason",
+            "TC-03A deletion and rebuild",
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let deleted: Value = serde_json::from_slice(&deleted).unwrap();
+    assert!(deleted["run"]["invalidated_at"].as_str().is_some());
+    assert_eq!(
+        deleted["run"]["invalidation_reason"],
+        "TC-03A deletion and rebuild"
+    );
+    assert_eq!(deleted["derivatives"].as_array().unwrap().len(), 1);
+    assert_eq!(std::fs::read(&raw_path).unwrap(), c0_before);
+    assert_eq!(sha256_hex(&c0_before), input_sha);
+
+    let second = register();
+    assert_ne!(second["run_id"], first["run_id"]);
+    let runs = babata(&temp)
+        .args(["--json", "process", "list-runs", "--revision", revision])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let runs: Value = serde_json::from_slice(&runs).unwrap();
+    assert_eq!(runs.as_array().unwrap().len(), 2);
+    assert!(runs[0]["invalidated_at"].as_str().is_some());
+    assert!(runs[1]["invalidated_at"].is_null());
+    assert_eq!(std::fs::read(&raw_path).unwrap(), c0_before);
+}
+
+#[test]
+fn process_delete_result_rejects_failed_run() {
+    let temp = tempdir().unwrap();
+    let capture = capture_text(&temp, "failed source");
+    let revision = capture["revision_id"].as_str().unwrap();
+    let input_sha = capture["record"]["revisions"][0]["text_sha256"]
+        .as_str()
+        .unwrap();
+    let failed = babata(&temp)
+        .args([
+            "--json",
+            "process",
+            "register-failure",
+            "--pipeline",
+            "agent_import",
+            "--revision",
+            revision,
+            "--kind",
+            "summary",
+            "--provider",
+            "fixture",
+            "--model",
+            "fixture",
+            "--tool-version",
+            "1.0.0",
+            "--input-sha256",
+            input_sha,
+            "--error-code",
+            "provider_failure",
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let failed: Value = serde_json::from_slice(&failed).unwrap();
+
+    let output = babata(&temp)
+        .args([
+            "--json",
+            "process",
+            "delete-result",
+            "--run",
+            failed["run_id"].as_str().unwrap(),
+            "--reason",
+            "not a successful result",
+        ])
+        .assert()
+        .failure()
+        .get_output()
+        .stdout
+        .clone();
+    let output: Value = serde_json::from_slice(&output).unwrap();
+    assert!(
+        output["message"]
+            .as_str()
+            .unwrap()
+            .contains("only succeeded C1 results can be deleted")
     );
 }

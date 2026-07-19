@@ -31,6 +31,7 @@ description: >
 5. **能本地免费完成的不要先烧 token**：可抽取的文本优先本地抽；图像/手写/扫描/音视频再上百炼。
 6. **最小验证优先**：新目录先每类 1 个样本跑通，再扩大。
 7. **staging ≠ 入库**：只有 `babata process register` 成功后才算正式进入 C1。
+8. **Provider 响应先脱敏**：临时签名 URL、token、鉴权头和账号凭据不得进入普通 C1；只登记脱敏后的 JSON，并在 params 记录清理动作。
 
 ## 何时启用
 
@@ -61,12 +62,12 @@ Windows 上 `subprocess` 找不到 `bl` 时，用：
 
 ```text
 1. 摸清范围     盘点扩展名、体量、代表样本
-2. 绑定 C0      文件必须取得真实 revision_id、asset_id、asset sha256；否则先 capture/collector
+2. 绑定 C0      文件必须取得真实 revision_id、asset_id、asset sha256；否则先 capture/collector；已有 revision 后找回原件/预览则用 capture attach-assets 追加版本
 3. 选定样本     每类先 1 个（优先小文件 / 用户点名）
 4. 本地探针     元数据：页数、分辨率、时长、可否抽文本；核对 C0 原件 sha256
 5. 规范化       仅当会阻碍模型或成本过高
 6. 百炼清洗     按路由表调用
-7. 整理 staging Markdown/JSON + manifest + REPORT
+7. 整理并脱敏 staging Markdown/JSON + manifest + REPORT
 8. 正式 C1 登记 babata process register（agent_import）
 9. 核验         process show-run / list-runs
 10. 扩大或停下  用户确认后再批量
@@ -148,8 +149,10 @@ babata --json process register \
 
 - pipeline 固定优先 **`agent_import`**（Agent 按本 skill 完成清洗）。
 - 文件派生结果必须传 `--input-asset-id`，`--input-sha256` 必须是该 C0 asset 的哈希；不能改用 staging/规范化文件哈希。
+- 同一来源同时取得上传原文件和平台预览时，先用 `capture attach-assets --original ... --preview ...` 追加 C0 revision；后续清洗绑定 `original` asset，预览件不冒充源文件。
 - `--output-file` 把结果复制到受控 `02_derived/files/sha256/`；不得把 `generated/...` 作为 `--logical-path`。
 - 同时传 `--text-file`/`--json-file` 与 `--output-file` 时必须指向完全相同的字节，否则登记失败。
+- Provider JSON 中的临时签名 URL、token、鉴权头和账号凭据必须先删除或替换；在 `--params-json` 的 `sanitization` 记录动作。完整响应如确需保留，只能进入明确受限、不会被普通检索/输出消费的证据区。
 - 只有 failed run 可用 `--retry-of`；revision、item、asset、input hash、pipeline、kind 必须与父 run 一致。
 - 登记后：`process show-run` / `list-runs` 核对。
 - 完整字段与模板见 [references/c1-register.md](references/c1-register.md)。
@@ -199,6 +202,7 @@ babata --json process register \
 | register 缺 revision | 先 capture/collector；禁止伪造 id |
 | provider 失败 | 先 `process register-failure --kind ...`；修复后用同一身份 `--retry-of` |
 | register 校验失败 | 不会创建 run；保留 staging，修正 C0/字段后新 register，不伪称 retry |
+| 删除并重建 C1 | `process delete-result --run ... --reason ...`；重建创建新 run，不使用 `--retry-of` |
 
 ## 汇报口径（对人）
 

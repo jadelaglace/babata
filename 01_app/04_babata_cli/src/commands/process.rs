@@ -94,6 +94,13 @@ pub enum ProcessCommand {
         #[arg(long)]
         revision: String,
     },
+    /// Logically delete a succeeded C1 result while retaining its audit record.
+    DeleteResult {
+        #[arg(long)]
+        run: String,
+        #[arg(long)]
+        reason: String,
+    },
     Enqueue {
         pipeline: String,
         revision: String,

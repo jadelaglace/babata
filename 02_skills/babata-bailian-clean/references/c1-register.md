@@ -13,6 +13,18 @@ asset_id
 asset sha256
 ```
 
+已有 ready revision 后才找回真实原件或平台预览时，追加新 C0 revision，不修改旧版本：
+
+```bash
+babata --json capture attach-assets \
+  --revision rev_... \
+  --original path/to/uploaded-source.docx \
+  --preview path/to/platform-preview.pdf \
+  --reason "recover source file and distinguish platform preview"
+```
+
+新 revision 中 `original` 与 `preview` 必须分别显示；后续文件清洗绑定 `original` asset。
+
 正文 revision 直接产生 summary/tags/structured_result 时可以没有 asset，但 `input-sha256` 必须等于该 revision 的 `text_sha256`。
 
 以下 kind 必须绑定 asset：
@@ -166,6 +178,19 @@ babata --json process register \
 
 参数校验失败发生在 run 创建前，不算 provider failed；修正参数后重新 register，不要伪造 `--retry-of`。
 
+## 删除与重建
+
+删除一个可重建 C1 结果时保留审计记录，但把该 run 明确标为失效：
+
+```bash
+babata --json process delete-result \
+  --run run_... \
+  --reason "why this C1 result is no longer authoritative"
+```
+
+重建是新的独立处理 run，不是 provider 失败重试，不传 `--retry-of`。旧 run 的
+`invalidated_at` / `invalidation_reason` 必须可见；C0 revision、asset 和哈希保持不变。
+
 ## 核验
 
 ```bash
@@ -183,6 +208,20 @@ logical_path 位于 02_derived/files/sha256/
 output_sha256 == 正式文件/内联内容实际哈希
 provider、model、tool_version、params、usage、loss_notes 与真实调用一致
 retry_of 只指向同身份 failed run
+有效结果的 invalidated_at 为空；已删除结果有 invalidation_reason
 ```
 
 API Key、鉴权文件、完整敏感 prompt 不进入 params、content、日志或报告。
+
+Provider 原始 JSON 还必须检查并移除：
+
+```text
+临时上传/下载签名 URL
+URL 查询参数中的 token、Signature、credential
+Authorization/Cookie 等鉴权头
+账号密钥或可复用会话凭据
+```
+
+只把脱敏后的 JSON 作为 `--json-file` / `--output-file` 登记；在 `--params-json` 增加
+`sanitization` 数组说明删除了什么。完整响应确需审计时，只进入明确受限且不会被普通
+检索、视图或输出消费的证据区，不能把普通 C1 当凭据仓库。

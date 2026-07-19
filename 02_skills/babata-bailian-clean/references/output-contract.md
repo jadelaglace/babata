@@ -43,7 +43,8 @@
 
 ## 每个样本至少交付
 
-- 原始模型响应：`results/<id>.json`（便于复查）
+- 脱敏模型响应：`results/<id>.json`（便于复查并可登记 C1）
+- 完整 provider 响应如含临时签名 URL、token 或鉴权头，只能放入明确受限的证据区；普通 `results/`、manifest、REPORT 和 C1 不保留这些字段
 - 可读结果：`results/<id>.md`
 - 预处理文件（若有）：`preprocessed/...`
 - **有 C0 revision 时**：`babata process register` 后的 `run_id` / `derivative_id` 写入 manifest
@@ -75,6 +76,7 @@ babata --json process register \
 ## 禁止
 
 - 把 API Key 写入 REPORT 或 git  
+- 把临时签名 URL、token 或鉴权头写入普通 C1、manifest 或 REPORT
 - 把原件拷进 git 仓库  
 - 无映射地只丢一堆匿名 `image-1.png`  
 - 未 register 却写「已入库 Babata / 已进入 C1」
