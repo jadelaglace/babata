@@ -2,7 +2,6 @@ use std::collections::BTreeMap;
 
 use babata_application::ApplicationError;
 use rusqlite::{Connection, params};
-use sha2::{Digest, Sha256};
 
 const MIGRATIONS: &[(&str, &str)] = &[
     (
@@ -65,10 +64,14 @@ pub fn migrate_derived(connection: &Connection) -> Result<(), ApplicationError> 
     }
     for (index, (name, sql)) in MIGRATIONS.iter().enumerate() {
         let version = (index + 1) as i64;
-        let checksum = format!("{:x}", Sha256::digest(sql.as_bytes()));
+        let checksum = super::migration_checksum(sql);
         if let Some(existing) = recorded.get(&version) {
-            if existing != &checksum && !is_compatible_precommit_v3(connection, version, existing)?
-            {
+            let compatible = if version == 3 && existing == PRECOMMIT_V3_CHECKSUM {
+                is_compatible_precommit_v3(connection, version, existing)?
+            } else {
+                super::migration_checksum_matches(existing, sql)
+            };
+            if !compatible {
                 return Err(ApplicationError::Integrity(format!(
                     "derived migration checksum changed: {name}"
                 )));
@@ -125,6 +128,7 @@ fn storage(error: rusqlite::Error) -> ApplicationError {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::sqlite::migration_checksum;
     use rusqlite::Connection;
 
     #[test]
@@ -154,7 +158,7 @@ mod tests {
         let connection = Connection::open_in_memory().unwrap();
         for (index, (name, sql)) in MIGRATIONS.iter().take(2).enumerate() {
             connection.execute_batch(sql).unwrap();
-            let checksum = format!("{:x}", Sha256::digest(sql.as_bytes()));
+            let checksum = migration_checksum(sql);
             connection
                 .execute(
                     "INSERT INTO schema_migrations
@@ -218,7 +222,7 @@ mod tests {
             let checksum = if index == 2 {
                 PRECOMMIT_V3_CHECKSUM.to_owned()
             } else {
-                format!("{:x}", Sha256::digest(sql.as_bytes()))
+                migration_checksum(sql)
             };
             connection
                 .execute(
@@ -233,7 +237,7 @@ mod tests {
         migrate_derived(&connection).unwrap();
         migrate_derived(&connection).unwrap();
 
-        let canonical_v3 = format!("{:x}", Sha256::digest(MIGRATIONS[2].1.as_bytes()));
+        let canonical_v3 = migration_checksum(MIGRATIONS[2].1);
         assert_eq!(
             connection
                 .query_row(
@@ -259,7 +263,7 @@ mod tests {
         let connection = Connection::open_in_memory().unwrap();
         for (index, (name, sql)) in MIGRATIONS.iter().take(2).enumerate() {
             connection.execute_batch(sql).unwrap();
-            let checksum = format!("{:x}", Sha256::digest(sql.as_bytes()));
+            let checksum = migration_checksum(sql);
             connection
                 .execute(
                     "INSERT INTO schema_migrations
@@ -295,7 +299,7 @@ mod tests {
             let checksum = if index == 2 {
                 "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff".to_owned()
             } else {
-                format!("{:x}", Sha256::digest(sql.as_bytes()))
+                migration_checksum(sql)
             };
             connection
                 .execute(

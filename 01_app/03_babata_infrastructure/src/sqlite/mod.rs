@@ -12,6 +12,7 @@ use std::{
 
 use babata_application::ApplicationError;
 use rusqlite::Connection;
+use sha2::{Digest, Sha256};
 
 pub use collection_migrate::migrate_collection;
 pub use derived_migrate::migrate_derived;
@@ -22,6 +23,23 @@ pub use read_projection::SqliteReadProjection;
 
 mod collection_migrate;
 mod collection_repository;
+
+fn migration_checksum(sql: &str) -> String {
+    // Existing v3 repair history uses the repository's CRLF checksum. Keep
+    // that canonical while accepting LF checkouts in the matcher below.
+    let normalized = sql.replace("\r\n", "\n").replace('\r', "\n");
+    let canonical_crlf = normalized.replace('\n', "\r\n");
+    format!("{:x}", Sha256::digest(canonical_crlf.as_bytes()))
+}
+
+fn migration_checksum_matches(recorded: &str, sql: &str) -> bool {
+    if recorded == migration_checksum(sql) {
+        return true;
+    }
+    let normalized = sql.replace("\r\n", "\n").replace('\r', "\n");
+    recorded == format!("{:x}", Sha256::digest(normalized.as_bytes()))
+        || recorded == format!("{:x}", Sha256::digest(sql.as_bytes()))
+}
 
 #[derive(Debug, Clone, Copy)]
 pub struct RawStatus {
@@ -243,7 +261,21 @@ pub mod test_support {
 #[cfg(test)]
 mod tests {
     use rusqlite::params;
+    use sha2::Digest;
     use tempfile::tempdir;
+
+    #[test]
+    fn migration_checksums_are_stable_across_line_endings() {
+        let lf = "CREATE TABLE example (id INTEGER);\nSELECT 1;\n";
+        let crlf = lf.replace('\n', "\r\n");
+
+        assert_eq!(
+            super::migration_checksum(lf),
+            super::migration_checksum(&crlf)
+        );
+        let legacy_lf = format!("{:x}", sha2::Sha256::digest(lf.as_bytes()));
+        assert!(super::migration_checksum_matches(&legacy_lf, &crlf));
+    }
 
     #[test]
     fn raw_status_reports_schema_and_recovery_artifacts() {
