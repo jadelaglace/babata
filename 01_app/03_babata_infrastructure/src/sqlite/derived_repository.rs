@@ -1,6 +1,9 @@
 ﻿use std::sync::{Arc, Mutex};
 
-use babata_application::{ApplicationError, ports::DerivedRepositoryPort};
+use babata_application::{
+    ApplicationError,
+    ports::{DerivedRepositoryPort, ProcessCommit},
+};
 use babata_domain::{
     AssetId, DerivativeId, DerivativeKind, DerivativeRef, ItemId, LogicalPath, Metadata,
     PipelineId, ProcessRun, ProcessingState, RevisionId, RunId, Sha256, UtcTimestamp,
@@ -27,38 +30,7 @@ impl SqliteDerivedRepository {
 impl DerivedRepositoryPort for SqliteDerivedRepository {
     fn create_run(&self, run: &ProcessRun) -> Result<(), ApplicationError> {
         let connection = self.lock()?;
-        connection
-            .execute(
-                "INSERT INTO process_runs (
-                    run_id, pipeline_id, input_revision_id, input_item_id, input_sha256, state,
-                    provider, tool_or_model, tool_version, attempt, retry_of_run_id,
-                    error_code, error_message, params_json, usage_json, loss_notes,
-                    created_at, started_at, finished_at
-                 ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19)",
-                params![
-                    run.id.to_string(),
-                    run.pipeline_id.as_str(),
-                    run.input_revision_id.to_string(),
-                    run.input_item_id.as_ref().map(|id| id.to_string()),
-                    run.input_sha256.as_str(),
-                    processing_state(run.state),
-                    run.provider,
-                    run.tool_or_model,
-                    run.tool_version,
-                    run.attempt as i64,
-                    run.retry_of_run_id.as_ref().map(|id| id.to_string()),
-                    run.error_code,
-                    run.error_message,
-                    run.params.to_json(),
-                    run.usage.to_json(),
-                    run.loss_notes,
-                    run.created_at.as_str(),
-                    run.started_at.as_ref().map(|t| t.as_str().to_owned()),
-                    run.finished_at.as_ref().map(|t| t.as_str().to_owned()),
-                ],
-            )
-            .map_err(storage)?;
-        Ok(())
+        insert_run(&connection, run)
     }
 
     fn update_run(&self, run: &ProcessRun) -> Result<(), ApplicationError> {
@@ -156,37 +128,7 @@ impl DerivedRepositoryPort for SqliteDerivedRepository {
 
     fn add_derivative(&self, derivative: &DerivativeRef) -> Result<(), ApplicationError> {
         let connection = self.lock()?;
-        connection
-            .execute(
-                "INSERT INTO derivatives (
-                    derivative_id, run_id, kind, output_sha256, content_text, content_json,
-                    logical_path, media_type, language, input_asset_id, loss_notes,
-                    metadata_json, created_at
-                 ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13)",
-                params![
-                    derivative.id.to_string(),
-                    derivative.run_id.to_string(),
-                    derivative_kind(derivative.kind),
-                    derivative
-                        .output_sha256
-                        .as_ref()
-                        .map(|hash| hash.as_str().to_owned()),
-                    derivative.content_text,
-                    derivative.content_json,
-                    derivative
-                        .logical_path
-                        .as_ref()
-                        .map(|path| path.as_str().to_owned()),
-                    derivative.media_type,
-                    derivative.language,
-                    derivative.input_asset_id.as_ref().map(|id| id.to_string()),
-                    derivative.loss_notes,
-                    derivative.metadata.to_json(),
-                    derivative.created_at.as_str(),
-                ],
-            )
-            .map_err(storage)?;
-        Ok(())
+        insert_derivative(&connection, derivative)
     }
 
     fn get_derivative(
@@ -226,6 +168,89 @@ impl DerivedRepositoryPort for SqliteDerivedRepository {
         }
         Ok(out)
     }
+
+    fn commit_run(&self, commit: &ProcessCommit) -> Result<(), ApplicationError> {
+        let mut connection = self.lock()?;
+        let transaction = connection.transaction().map_err(storage)?;
+        insert_run(&transaction, &commit.run)?;
+        for derivative in &commit.derivatives {
+            insert_derivative(&transaction, derivative)?;
+        }
+        transaction.commit().map_err(storage)?;
+        Ok(())
+    }
+}
+
+fn insert_run(connection: &Connection, run: &ProcessRun) -> Result<(), ApplicationError> {
+    connection
+        .execute(
+            "INSERT INTO process_runs (
+                run_id, pipeline_id, input_revision_id, input_item_id, input_sha256, state,
+                provider, tool_or_model, tool_version, attempt, retry_of_run_id,
+                error_code, error_message, params_json, usage_json, loss_notes,
+                created_at, started_at, finished_at
+             ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19)",
+            params![
+                run.id.to_string(),
+                run.pipeline_id.as_str(),
+                run.input_revision_id.to_string(),
+                run.input_item_id.as_ref().map(|id| id.to_string()),
+                run.input_sha256.as_str(),
+                processing_state(run.state),
+                run.provider,
+                run.tool_or_model,
+                run.tool_version,
+                run.attempt as i64,
+                run.retry_of_run_id.as_ref().map(|id| id.to_string()),
+                run.error_code,
+                run.error_message,
+                run.params.to_json(),
+                run.usage.to_json(),
+                run.loss_notes,
+                run.created_at.as_str(),
+                run.started_at.as_ref().map(|t| t.as_str().to_owned()),
+                run.finished_at.as_ref().map(|t| t.as_str().to_owned()),
+            ],
+        )
+        .map_err(storage)?;
+    Ok(())
+}
+
+fn insert_derivative(
+    connection: &Connection,
+    derivative: &DerivativeRef,
+) -> Result<(), ApplicationError> {
+    connection
+        .execute(
+            "INSERT INTO derivatives (
+                derivative_id, run_id, kind, output_sha256, content_text, content_json,
+                logical_path, media_type, language, input_asset_id, loss_notes,
+                metadata_json, created_at
+             ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13)",
+            params![
+                derivative.id.to_string(),
+                derivative.run_id.to_string(),
+                derivative_kind(derivative.kind),
+                derivative
+                    .output_sha256
+                    .as_ref()
+                    .map(|hash| hash.as_str().to_owned()),
+                derivative.content_text,
+                derivative.content_json,
+                derivative
+                    .logical_path
+                    .as_ref()
+                    .map(|path| path.as_str().to_owned()),
+                derivative.media_type,
+                derivative.language,
+                derivative.input_asset_id.as_ref().map(|id| id.to_string()),
+                derivative.loss_notes,
+                derivative.metadata.to_json(),
+                derivative.created_at.as_str(),
+            ],
+        )
+        .map_err(storage)?;
+    Ok(())
 }
 
 fn run_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<ProcessRun> {

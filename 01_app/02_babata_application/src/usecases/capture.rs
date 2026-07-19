@@ -697,7 +697,7 @@ pub(crate) mod tests {
     }
     use crate::{
         CaptureFileCommand,
-        ports::{AssetStorePort, NewRelation, RawRepositoryPort},
+        ports::{AssetStorePort, NewAsset, NewRelation, RawRepositoryPort},
     };
     use babata_domain::{AssetId, AssetRole, LogicalPath, RouteCoverage, SourceRouteId};
 
@@ -770,6 +770,30 @@ pub(crate) mod tests {
                 .iter()
                 .find(|(revision_id, _)| revision_id == id)
                 .map(|(_, state)| *state))
+        }
+        fn find_asset(&self, asset_id: &AssetId) -> Result<Option<NewAsset>, ApplicationError> {
+            Ok(self
+                .state
+                .lock()
+                .unwrap()
+                .assets
+                .iter()
+                .find(|asset| &asset.id == asset_id)
+                .cloned())
+        }
+        fn list_assets_for_revision(
+            &self,
+            revision_id: &RevisionId,
+        ) -> Result<Vec<NewAsset>, ApplicationError> {
+            Ok(self
+                .state
+                .lock()
+                .unwrap()
+                .assets
+                .iter()
+                .filter(|asset| &asset.revision_id == revision_id)
+                .cloned()
+                .collect())
         }
         fn find_by_source_identity(
             &self,
@@ -1089,6 +1113,12 @@ pub(crate) mod tests {
         ) -> Result<(), ApplicationError> {
             *self.recovery_markers.lock().unwrap() += 1;
             Ok(())
+        }
+        fn hash_logical(&self, _: &LogicalPath) -> Result<Sha256, ApplicationError> {
+            Ok(Sha256::of_bytes(b"test"))
+        }
+        fn import_derived_file(&self, _: &str) -> Result<(LogicalPath, Sha256), ApplicationError> {
+            Ok((LogicalPath::parse("02_derived/test").unwrap(), Sha256::of_bytes(b"test")))
         }
     }
     fn text(provider: &str, value: &str) -> CaptureTextCommand {

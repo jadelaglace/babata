@@ -25,3 +25,4 @@ thiserror = "2.0"
 assert_cmd = "2.0"
 babata-infrastructure = { path = "../03_babata_infrastructure", features = ["test-support"] }
 tempfile = "3.16"
+sha2 = "0.10"

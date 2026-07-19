@@ -40,6 +40,10 @@ pub trait AssetStorePort {
     fn discard_stage(&self, asset: &StagedAsset) -> Result<(), ApplicationError>;
     fn open(&self, logical_path: &LogicalPath) -> Result<Vec<u8>, ApplicationError>;
     fn verify(&self, asset: &StagedAsset) -> Result<bool, ApplicationError>;
+    /// Hash the finalized bytes behind a logical path under the data root.
+    fn hash_logical(&self, logical_path: &LogicalPath) -> Result<Sha256, ApplicationError>;
+    /// Copy an external file into managed C1 storage and return its logical path.
+    fn import_derived_file(&self, source: &str) -> Result<(LogicalPath, Sha256), ApplicationError>;
     fn quarantine_finalized(
         &self,
         asset: &StagedAsset,

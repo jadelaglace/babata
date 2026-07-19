@@ -19,7 +19,7 @@ pub use candidate_runner::CandidateRunnerPort;
 pub use capability_registry::CapabilityRegistryPort;
 pub use clock::ClockPort;
 pub use collection_repository::CollectionRepositoryPort;
-pub use derived_repository::DerivedRepositoryPort;
+pub use derived_repository::{DerivedRepositoryPort, ProcessCommit};
 pub use job_repository::JobRepositoryPort;
 pub use output_builder::OutputBuilderPort;
 pub use process_provider::ProcessProviderPort;
