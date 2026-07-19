@@ -12,8 +12,9 @@ use babata_infrastructure::{
     sources::providers::{
         bilibili_collection::BilibiliOpenCliAdapter, browser::BrowserCandidateAdapter,
         chatgpt::ChatGptOpenCliAdapter, doubao::DoubaoOpenCliAdapter, feishu::FeishuCliAdapter,
-        kimi::KimiOpenCliAdapter, xiaohongshu::XiaohongshuOpenCliAdapter,
-        yuque::YuqueOpenCliAdapter, zhihu::ZhihuOpenCliAdapter,
+        kimi::KimiOpenCliAdapter, wechat::WechatArticleOpenCliAdapter,
+        xiaohongshu::XiaohongshuOpenCliAdapter, yuque::YuqueOpenCliAdapter,
+        zhihu::ZhihuOpenCliAdapter,
     },
 };
 use serde::Serialize;
@@ -202,6 +203,12 @@ fn source_adapters(
                 .paths()
                 .root()
                 .join("04_runtime/provider-downloads/bilibili"),
+        )),
+        Box::new(WechatArticleOpenCliAdapter::new(
+            config
+                .paths()
+                .root()
+                .join("04_runtime/provider-downloads/wechat"),
         )),
     ];
     for route in [

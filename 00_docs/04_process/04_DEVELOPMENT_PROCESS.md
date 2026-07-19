@@ -22,7 +22,7 @@ P8  备份、恢复、运维与长期加固                      未开始
 
 <!-- P2: completed; P2-G1..P2-G7: passed -->
 <!-- P3: completed; P3-G1..P3-G6: passed -->
-<!-- P4: in-progress; Kimi/Doubao/Bilibili/Feishu/ChatGPT/Zhihu/Xiaohongshu/Yuque small real loops proven; routes disabled -->
+<!-- P4: in-progress; Kimi/Doubao/Bilibili/Feishu/ChatGPT/Zhihu/Xiaohongshu/Yuque/WeChat article small real loops proven; routes disabled -->
 
 当前真实情况：
 
@@ -34,11 +34,16 @@ P8  备份、恢复、运维与长期加固                      未开始
   00 点名的来源都有证据等级、最小授权、正常路线、回退和诚实缺口。飞书 `lark-cli`、
   Browser Use、Agent Browser、Playwright CLI、OpenCLI 和 Codex Chrome 均有实际调用或
   连接证据。具体来源 E3 仍属于 P4/P7，不再错误作为 P2 前置。
-- Kimi、豆包、Bilibili、飞书 Docx、ChatGPT、知乎回答、小红书收藏和语雀文档已分别完成一个真实小范围的候选、明确选择、C0、逐条状态和
+- Kimi、豆包、Bilibili、飞书 Docx、ChatGPT、知乎回答、小红书收藏、语雀文档和微信收藏中的公众号文章已分别完成一个真实小范围的候选、明确选择、C0、逐条状态和
   重收集闭环；Bilibili 另把 44,773,539 字节原视频作为 C0 资产保存并复核 SHA-256。
   飞书样本另保存 3,391 字符 XML 正文和 8 张真实 PNG；ChatGPT 样本保存 2 条角色消息和
   10 个引用。来源仍保持 disabled：Kimi/ChatGPT 当前样本无附件，豆包二进制媒体未闭合，Bilibili 按用户要求只证明一条，飞书嵌入
   Sheet/Base/Slides/画板内部数据仍未覆盖。P4 正在进行中，不把局部闭环扩大成来源 available。
+- 微信样本使用官方 PC 微信 4.1.11.55 的“全部收藏”窄 UI，读取 8 个最新可见候选并选择
+  “爬虫-这20个仓库教会什么叫降维打击”；保存 2,946 字符结构化正文、2,597 字节
+  Markdown 和 2,331,350 字节原始 HTML。首次因候选白名单缺口进入可重试 `failed`，原
+  item retry 后为 1 item/1 revision/2 exports，重采 `unchanged` 且数量不增加。未扫描
+  微信进程内存、未解密数据库、未安装代理证书；收藏其他类型、聊天和自动遍历仍未完成。
 - 2026-07-19 另完成豆包复杂会话“战略领导力W1”的 Agent 收集：16 条消息、8 轮问答和
   完整脑图已拿回，7 个原始 DOCX 共 111,296,956 字节，逐个大小和 MD5 与豆包消息元数据
   一致，并通过 DOCX 结构检查。对话和脑图已正式归档；7 个 Word 原件仍在临时回收区，
@@ -94,10 +99,16 @@ P8  备份、恢复、运维与长期加固                      未开始
              -> 免费官方 Markdown + 渲染正文/HTML + 22 张图片（3.10 MB）
              -> 1 条资料/1 个版本/22 个附件 -> 重采没变化
              -> 会员 OpenAPI/MCP 只登记，全部来源闭环后统一决策
+  微信      官方 PC 微信 4.1.11.55“全部收藏”读取 8 个最新可见候选
+             -> 选“爬虫-这20个仓库教会什么叫降维打击”，微信内复制官方原链接
+             -> 2,946 字符正文 + 2.6 KB Markdown + 2.33 MB 原始 HTML；正文图片为 0
+             -> 首次白名单缺口 failed -> 原任务 retry 成功
+             -> 1 条资料/1 个版本/2 个导出原件 -> 重采没变化
+             -> 只形成已知公众号 URL 的重复取得；收藏自动遍历和聊天未形成长期能力
 
 正在往下闭合
-  微信收藏/公众号/聊天
-             先复核新出现的专用本地 CLI，再决定官方 PC 微信窄适配
+  微信聊天；微信收藏的其他类型和更大范围
+             继续优先官方 PC 微信窄 UI；任何内存扫描、数据库解密或代理证书都另行确认
 
 后续队列
   OneNote -> 印象笔记
@@ -380,6 +391,18 @@ P4 按 `07_P4_FIRST_COLLECTION_PATHS.md` 实现：
   引擎-车辆材质质感提高方式”，保存官方 Markdown、渲染正文/HTML和 22 张不同哈希图片，
   共 3,101,329 字节；最终 1 item/1 revision/22 assets，重采 `unchanged`。个人 OpenAPI
   和官方 MCP 需要超级会员，只登记并等待全部来源闭环后的统一决策。
+- 微信收藏/公众号文章：官方 PC 微信 4.1.11.55 的“全部收藏”窄 UI 读取 8 个最新可见
+  候选，只选择“爬虫-这20个仓库教会什么叫降维打击”；从微信文章窗口“更多 -> 复制链接”
+  取得 `https://mp.weixin.qq.com/s/Va9tXvh6qWoOkog9SIbOOg`，OpenCLI 下载正文 Markdown，
+  Agent 保存公共原始 HTML。该页没有正文图片或音视频，OpenCLI 作者字段为空，公众号名
+  “智能系统实验室”由微信 UI/HTML 证据保留。首次选择因 `source.wechat_articles` 未在 C0
+  候选白名单而可重试 `failed`，补齐最薄接线后对原 candidate retry 成功。最终为
+  `item_01KXWDRSPMZ8GZMB14SYTQH2H2`、1 ready revision、2 ready exports：Markdown
+  2,597 字节，SHA-256 `fcc3858b92013d97a1f9ef69497dba4c3f1d3db993530f648d8a8237a3fbdd5f`；
+  HTML 2,331,350 字节，SHA-256 `90c46a5ba584ffc879d0f06024846b7a9f02694e3395cf5c0cb3a660b710eff7`。
+  重采为 `unchanged`、无新 revision，资产数仍为 2。资料已拿回并正式登记；已知文章 URL
+  可重复取得，但收藏候选仍依赖 Agent 操作官方 UI，不代表收藏自动遍历、聊天或微信全量
+  已形成长期能力。来源继续 disabled。
 
 2026-07-19 曾建立 Issue #20 尝试把豆包原附件取得开发成持久适配器。复核后确认 Agent
 已经把最复杂样本真实跑通，当前继续开发会偏离“优先现有工具、最少开发”的需求，因此
@@ -387,9 +410,10 @@ Issue #20 已按 `not planned` 关闭，实验代码全部撤销且未进入 Git
 优先把已验证的 Agent/Chrome 流程整理为 Skill；只有真实重复使用证明仍缺稳定能力时，
 才重新评估窄适配器。
 
-浏览器仍是当前存量回收首选。Kimi/豆包/ChatGPT/知乎/小红书/语雀的 OpenCLI 薄命令是为了把浏览器已经证明的
+浏览器和官方客户端仍是当前存量回收首选。Kimi/豆包/ChatGPT/知乎/小红书/语雀的 OpenCLI 薄命令是为了把浏览器已经证明的
 读取动作变成任务结束后可调用的重试/重收集；Bilibili 是因为 Codex Chrome 历史页连续
-两次超时后才回退 OpenCLI。两类理由均已记录，不把 OpenCLI 当默认绕路。
+两次超时后才回退 OpenCLI。微信则由官方 PC 微信窄 UI 发现收藏候选，OpenCLI 只固化已知
+公众号 URL 的下载和重采。三类理由均已记录，不把 OpenCLI 当默认绕路。
 
 实验性 `Babata Collector 0.2.0` 只完成手动当前页/选区剪藏和 locator-only 书签提交，
 正式 Chrome 实测仍要求用户逐项点击，不能自动遍历书签正文。按用户最新纠偏，该入口

@@ -532,6 +532,7 @@ fn validate_candidate(candidate: &CandidateEnvelope) -> Result<(), ApplicationEr
             | "source.doubao"
             | "source.chatgpt"
             | "source.yuque"
+            | "source.wechat_articles"
             | "source.browser_pages"
             | "source.browser_bookmarks"
     ) {
@@ -548,6 +549,11 @@ fn validate_candidate(candidate: &CandidateEnvelope) -> Result<(), ApplicationEr
         "source.browser_bookmarks" if candidate.content_type != ContentType::Document => {
             return Err(ApplicationError::Conflict(
                 "browser bookmark candidates must declare document content".to_owned(),
+            ));
+        }
+        "source.wechat_articles" if candidate.content_type != ContentType::Document => {
+            return Err(ApplicationError::Conflict(
+                "WeChat article candidates must declare document content".to_owned(),
             ));
         }
         _ => {}
@@ -1303,6 +1309,32 @@ pub(crate) mod tests {
                 },
                 context: Some("Bookmarks / Test".to_owned()),
                 native_id: Some("bookmark-1".to_owned()),
+            },
+            assets: Vec::new(),
+        });
+        assert!(result.is_ok());
+        assert_eq!(repository.state.lock().unwrap().revisions.len(), 1);
+    }
+
+    #[test]
+    fn wechat_article_document_candidate_is_accepted() {
+        let repository = MockRepository::default();
+        let service = CaptureService::new(repository.clone(), MockAssets::default(), FixedClock);
+        let payload = "WeChat article body";
+        let result = service.capture_candidate(CandidateCaptureCommand {
+            route_evidence: None,
+            candidate: CandidateEnvelope {
+                protocol_version: "1".to_owned(),
+                route_id: SourceRouteId("source.wechat_articles".to_owned()),
+                source_reference: "https://mp.weixin.qq.com/s/article".to_owned(),
+                content_type: ContentType::Document,
+                payload_sha256: Sha256::of_bytes(payload.as_bytes()),
+                metadata: Metadata::empty(),
+                payload: CandidatePayload::Text {
+                    text: payload.to_owned(),
+                },
+                context: Some("WeChat / Favorites".to_owned()),
+                native_id: Some("article".to_owned()),
             },
             assets: Vec::new(),
         });
