@@ -1,14 +1,14 @@
 use babata_domain::{
-    DerivativeId, DerivativeRef, JobId, Metadata, PipelineId, ProcessRun, ProcessingState,
-    RevisionId, RunId, Sha256,
+    AssetId, DerivativeId, DerivativeKind, DerivativeRef, JobId, Metadata, PipelineId, ProcessRun,
+    ProcessingState, RevisionId, RunId, Sha256,
 };
 
 use crate::{
     ApplicationError, EnqueueProcessCommand, ProcessJobOutcome, RegisterDerivativeCommand,
     RegisterDerivativeOutcome, RegisterFailureCommand, ShowProcessRunOutcome,
     ports::{
-        AssetStorePort, ClockPort, DerivedRepositoryPort, NewAsset, ProcessCommit,
-        RawRepositoryPort,
+        AssetStorePort, ClockPort, DerivedRepositoryPort, FinalizeAssetOutcome, NewAsset,
+        ProcessCommit, RawRepositoryPort, StagedAsset,
     },
 };
 
@@ -20,6 +20,15 @@ const PIPELINES: &[&str] = &[
     "bailian_visual_description",
     "agent_import",
 ];
+
+struct RetryIdentity<'a> {
+    pipeline_id: &'a PipelineId,
+    revision_id: &'a RevisionId,
+    item_id: Option<&'a babata_domain::ItemId>,
+    input_sha256: &'a Sha256,
+    kind: DerivativeKind,
+    input_asset_id: Option<&'a AssetId>,
+}
 
 pub struct ProcessService<D, R, A, C> {
     repository: D,
@@ -61,67 +70,39 @@ where
         mut command: RegisterDerivativeCommand,
     ) -> Result<RegisterDerivativeOutcome, ApplicationError> {
         ensure_known_pipeline(&command.pipeline_id)?;
-        if command.content_text.is_none()
-            && command.content_json.is_none()
-            && command.logical_path.is_none()
-        {
-            return Err(ApplicationError::Integrity(
-                "derivative needs content_text, content_json, or logical_path".to_owned(),
-            ));
-        }
-        if let Some(asset_id) = &command.input_asset_id {
-            let asset = self.asset_for_revision(asset_id, &command.revision_id)?;
-            self.bind_input_to_asset(&mut command, &asset)?;
-        } else {
-            self.validate_revision_binding(
-                &command.revision_id,
-                command.item_id.as_ref(),
-                &command.input_sha256,
-                None,
-            )?;
-        }
-        if let Some(logical_path) = &command.logical_path {
-            let actual = self.assets.hash_logical(logical_path)?;
-            if let Some(declared) = &command.output_sha256 {
-                if declared != &actual {
-                    return Err(ApplicationError::Integrity(format!(
-                        "output_sha256 {declared} does not match stored bytes {actual} at {}",
-                        logical_path.as_str()
-                    )));
-                }
-            } else {
-                command.output_sha256 = Some(actual);
-            }
-        }
-        if command.output_sha256.is_none() {
-            command.output_sha256 = command
-                .content_text
-                .as_ref()
-                .map(|text| Sha256::of_bytes(text.as_bytes()))
-                .or_else(|| {
-                    command
-                        .content_json
-                        .as_ref()
-                        .map(|text| Sha256::of_bytes(text.as_bytes()))
-                });
-        }
-        let output_sha256 = command.output_sha256.clone().ok_or_else(|| {
-            ApplicationError::Integrity("derivative output hash could not be derived".to_owned())
-        })?;
-
-        let now = self.clock.now();
+        ensure_pipeline_kind(&command.pipeline_id, command.kind)?;
+        ensure_run_metadata(
+            &command.provider,
+            command.tool_or_model.as_deref(),
+            command.tool_version.as_deref(),
+        )?;
+        self.validate_input(
+            command.kind,
+            &command.revision_id,
+            command.item_id.as_ref(),
+            &command.input_sha256,
+            command.input_asset_id.as_ref(),
+        )?;
         let attempt = if let Some(retry_of) = &command.retry_of_run_id {
             self.retry_attempt(retry_of, &command)?
         } else {
             1
         };
-
+        let run_id = RunId::new();
+        let operation_id = format!("c1_{run_id}");
+        let staged = self.prepare_output(&mut command, &operation_id)?;
+        let output_sha256 = command.output_sha256.clone().ok_or_else(|| {
+            ApplicationError::Integrity("derivative output hash could not be derived".to_owned())
+        })?;
+        let now = self.clock.now();
         let run = ProcessRun {
-            id: RunId::new(),
+            id: run_id,
             pipeline_id: command.pipeline_id.clone(),
             input_revision_id: command.revision_id.clone(),
             input_item_id: command.item_id.clone(),
             input_sha256: command.input_sha256.clone(),
+            target_kind: Some(command.kind),
+            input_asset_id: command.input_asset_id.clone(),
             state: ProcessingState::Succeeded,
             provider: command.provider.clone(),
             tool_or_model: command.tool_or_model.clone(),
@@ -153,7 +134,7 @@ where
             created_at: now,
         };
         let commit = ProcessCommit::new(run).with_derivative(derivative);
-        self.repository.commit_run(&commit)?;
+        let warnings = self.commit_output(&commit, staged.as_ref(), &operation_id)?;
 
         Ok(RegisterDerivativeOutcome {
             run_id: commit.run.id,
@@ -161,6 +142,7 @@ where
             pipeline_id: commit.run.pipeline_id,
             kind: Some(commit.derivatives[0].kind),
             state: commit.run.state,
+            warnings,
         })
     }
 
@@ -171,15 +153,18 @@ where
         command: RegisterFailureCommand,
     ) -> Result<RegisterDerivativeOutcome, ApplicationError> {
         ensure_known_pipeline(&command.pipeline_id)?;
-        let bound_asset = match &command.input_asset_id {
-            Some(asset_id) => Some(self.asset_for_revision(asset_id, &command.revision_id)?),
-            None => None,
-        };
-        self.validate_revision_binding(
+        ensure_pipeline_kind(&command.pipeline_id, command.kind)?;
+        ensure_run_metadata(
+            &command.provider,
+            command.tool_or_model.as_deref(),
+            command.tool_version.as_deref(),
+        )?;
+        self.validate_input(
+            command.kind,
             &command.revision_id,
             command.item_id.as_ref(),
             &command.input_sha256,
-            bound_asset.as_ref(),
+            command.input_asset_id.as_ref(),
         )?;
         if command.error_code.trim().is_empty() {
             return Err(ApplicationError::Integrity(
@@ -189,27 +174,21 @@ where
 
         let now = self.clock.now();
         let attempt = if let Some(retry_of) = &command.retry_of_run_id {
-            let parent = self.parent_run(retry_of)?;
-            if parent.input_revision_id != command.revision_id {
-                return Err(ApplicationError::Integrity(format!(
-                    "retry parent {retry_of} belongs to revision {}, not {}",
-                    parent.input_revision_id, command.revision_id
-                )));
-            }
-            if parent.input_sha256 != command.input_sha256 {
-                return Err(ApplicationError::Integrity(
-                    "retry parent input hash does not match this attempt".to_owned(),
-                ));
-            }
-            if parent.pipeline_id != command.pipeline_id {
-                return Err(ApplicationError::Integrity(
-                    "retry parent pipeline does not match this attempt".to_owned(),
-                ));
-            }
-            parent.attempt.saturating_add(1)
+            self.retry_identity(
+                retry_of,
+                RetryIdentity {
+                    pipeline_id: &command.pipeline_id,
+                    revision_id: &command.revision_id,
+                    item_id: command.item_id.as_ref(),
+                    input_sha256: &command.input_sha256,
+                    kind: command.kind,
+                    input_asset_id: command.input_asset_id.as_ref(),
+                },
+            )?
         } else {
             1
         };
+        let target_kind = command.kind;
 
         let run = ProcessRun {
             id: RunId::new(),
@@ -217,6 +196,8 @@ where
             input_revision_id: command.revision_id,
             input_item_id: command.item_id,
             input_sha256: command.input_sha256,
+            target_kind: Some(target_kind),
+            input_asset_id: command.input_asset_id,
             state: ProcessingState::Failed,
             provider: command.provider,
             tool_or_model: command.tool_or_model,
@@ -239,8 +220,9 @@ where
             run_id: commit.run.id,
             derivative_id: None,
             pipeline_id: commit.run.pipeline_id,
-            kind: None,
+            kind: Some(target_kind),
             state: commit.run.state,
+            warnings: Vec::new(),
         })
     }
 
@@ -298,6 +280,225 @@ where
         ))
     }
 
+    fn validate_input(
+        &self,
+        kind: DerivativeKind,
+        revision_id: &RevisionId,
+        item_id: Option<&babata_domain::ItemId>,
+        input_sha256: &Sha256,
+        input_asset_id: Option<&AssetId>,
+    ) -> Result<(), ApplicationError> {
+        if kind_requires_asset(kind) && input_asset_id.is_none() {
+            return Err(ApplicationError::Integrity(format!(
+                "{} derivatives require --input-asset-id",
+                derivative_kind_name(kind)
+            )));
+        }
+        let bound_asset = input_asset_id
+            .map(|asset_id| self.asset_for_revision(asset_id, revision_id))
+            .transpose()?;
+        if let Some(asset) = &bound_asset {
+            if asset.sha256 != *input_sha256 {
+                return Err(ApplicationError::Integrity(format!(
+                    "input_sha256 {input_sha256} does not match asset {} hash {}",
+                    asset.id, asset.sha256
+                )));
+            }
+            ensure_asset_kind(kind, asset)?;
+        }
+        self.validate_revision_binding(revision_id, item_id, input_sha256, bound_asset.as_ref())
+    }
+
+    fn prepare_output(
+        &self,
+        command: &mut RegisterDerivativeCommand,
+        operation_id: &str,
+    ) -> Result<Option<StagedAsset>, ApplicationError> {
+        if command.source_file.is_some() && command.logical_path.is_some() {
+            return Err(ApplicationError::Integrity(
+                "use either source_file or logical_path, not both".to_owned(),
+            ));
+        }
+        let staged = command
+            .source_file
+            .take()
+            .map(|source| self.assets.stage_derived_file(&source, operation_id))
+            .transpose()
+            .map_err(|error| error.with_operation(operation_id.to_owned()))?;
+        if let Some(staged) = &staged {
+            command.logical_path = Some(staged.logical_path.clone());
+            if command.media_type.is_none() {
+                command.media_type.clone_from(&staged.media_type);
+            }
+        }
+        if let Err(error) = self.validate_output_representations(command, staged.as_ref()) {
+            if let Some(staged) = &staged {
+                self.discard_invalid_output(staged, operation_id)?;
+            }
+            return Err(error);
+        }
+        Ok(staged)
+    }
+
+    fn validate_output_representations(
+        &self,
+        command: &mut RegisterDerivativeCommand,
+        staged: Option<&StagedAsset>,
+    ) -> Result<(), ApplicationError> {
+        let mut hashes = Vec::new();
+        if let Some(text) = &command.content_text {
+            if text.trim().is_empty() {
+                return Err(ApplicationError::Integrity(
+                    "content_text must not be empty".to_owned(),
+                ));
+            }
+            hashes.push(("content_text", Sha256::of_bytes(text.as_bytes())));
+        }
+        if let Some(json) = &command.content_json {
+            if json.trim().is_empty() {
+                return Err(ApplicationError::Integrity(
+                    "content_json must not be empty".to_owned(),
+                ));
+            }
+            serde_json::from_str::<serde_json::Value>(json).map_err(|error| {
+                ApplicationError::Integrity(format!("content_json is invalid JSON: {error}"))
+            })?;
+            hashes.push(("content_json", Sha256::of_bytes(json.as_bytes())));
+        }
+        if let Some(path) = &command.logical_path {
+            ensure_managed_c1_prefix(path)?;
+            let hash = match staged {
+                Some(staged) => staged.sha256.clone(),
+                None => self.assets.hash_logical(path)?,
+            };
+            ensure_managed_c1_path(path, &hash)?;
+            hashes.push(("logical_path", hash));
+        }
+        let Some((first_name, first_hash)) = hashes.first() else {
+            return Err(ApplicationError::Integrity(
+                "derivative needs content_text, content_json, logical_path, or source_file"
+                    .to_owned(),
+            ));
+        };
+        for (name, hash) in hashes.iter().skip(1) {
+            if hash != first_hash {
+                return Err(ApplicationError::Integrity(format!(
+                    "output representations disagree: {first_name} hashes to {first_hash}, but {name} hashes to {hash}"
+                )));
+            }
+        }
+        if let Some(declared) = &command.output_sha256 {
+            if declared != first_hash {
+                return Err(ApplicationError::Integrity(format!(
+                    "output_sha256 {declared} does not match output bytes {first_hash}"
+                )));
+            }
+        } else {
+            command.output_sha256 = Some(first_hash.clone());
+        }
+        Ok(())
+    }
+
+    fn discard_invalid_output(
+        &self,
+        staged: &StagedAsset,
+        operation_id: &str,
+    ) -> Result<(), ApplicationError> {
+        self.assets
+            .discard_stage(staged)
+            .and_then(|()| self.assets.complete_operation(operation_id))
+            .map_err(|error| error.with_operation(operation_id.to_owned()))
+    }
+
+    fn commit_output(
+        &self,
+        commit: &ProcessCommit,
+        staged: Option<&StagedAsset>,
+        operation_id: &str,
+    ) -> Result<Vec<String>, ApplicationError> {
+        let Some(staged) = staged else {
+            self.repository.commit_run(commit)?;
+            return Ok(Vec::new());
+        };
+        let finalization = match self.assets.finalize(staged) {
+            Ok(outcome) => outcome,
+            Err(error) => {
+                let _ = self.assets.preserve_operation(
+                    operation_id,
+                    &commit.run.input_revision_id.to_string(),
+                    "c1_finalize_failed",
+                );
+                return Err(error.with_operation(operation_id.to_owned()));
+            }
+        };
+        match self.assets.verify(staged) {
+            Ok(true) => {}
+            Ok(false) => {
+                let error = ApplicationError::Integrity(
+                    "finalized C1 bytes failed hash verification".to_owned(),
+                );
+                self.preserve_uncommitted_output(
+                    staged,
+                    operation_id,
+                    finalization,
+                    &commit.run.input_revision_id,
+                    &error,
+                )?;
+                return Err(error.with_operation(operation_id.to_owned()));
+            }
+            Err(error) => {
+                self.preserve_uncommitted_output(
+                    staged,
+                    operation_id,
+                    finalization,
+                    &commit.run.input_revision_id,
+                    &error,
+                )?;
+                return Err(error.with_operation(operation_id.to_owned()));
+            }
+        }
+        if let Err(error) = self.repository.commit_run(commit) {
+            self.preserve_uncommitted_output(
+                staged,
+                operation_id,
+                finalization,
+                &commit.run.input_revision_id,
+                &error,
+            )?;
+            return Err(error.with_operation(operation_id.to_owned()));
+        }
+        let mut warnings = Vec::new();
+        if self.assets.complete_operation(operation_id).is_err() {
+            warnings.push("C1 committed; recovery journal cleanup is pending".to_owned());
+        }
+        Ok(warnings)
+    }
+
+    fn preserve_uncommitted_output(
+        &self,
+        staged: &StagedAsset,
+        operation_id: &str,
+        finalization: FinalizeAssetOutcome,
+        revision_id: &RevisionId,
+        original: &ApplicationError,
+    ) -> Result<(), ApplicationError> {
+        self.assets
+            .quarantine_finalized(staged, operation_id, finalization)
+            .and_then(|()| {
+                self.assets.preserve_operation(
+                    operation_id,
+                    &revision_id.to_string(),
+                    "c1_database_commit_failed",
+                )
+            })
+            .map_err(|recovery| {
+                ApplicationError::Integrity(format!(
+                    "C1 commit failed ({original}); recovery evidence also failed ({recovery})"
+                ))
+                .with_operation(operation_id.to_owned())
+            })
+    }
+
     fn asset_for_revision(
         &self,
         asset_id: &babata_domain::AssetId,
@@ -314,29 +515,6 @@ where
             )));
         }
         Ok(asset)
-    }
-
-    fn bind_input_to_asset(
-        &self,
-        command: &mut RegisterDerivativeCommand,
-        asset: &NewAsset,
-    ) -> Result<(), ApplicationError> {
-        self.validate_revision_binding(
-            &command.revision_id,
-            command.item_id.as_ref(),
-            &command.input_sha256,
-            Some(asset),
-        )?;
-        if asset.sha256 != command.input_sha256 {
-            return Err(ApplicationError::Integrity(format!(
-                "input_sha256 {} does not match asset {} hash {}",
-                command.input_sha256, asset.id, asset.sha256
-            )));
-        }
-        if command.media_type.is_none() {
-            command.media_type.clone_from(&asset.media_type);
-        }
-        Ok(())
     }
 
     fn validate_revision_binding(
@@ -388,21 +566,59 @@ where
         retry_of: &RunId,
         command: &RegisterDerivativeCommand,
     ) -> Result<u32, ApplicationError> {
+        self.retry_identity(
+            retry_of,
+            RetryIdentity {
+                pipeline_id: &command.pipeline_id,
+                revision_id: &command.revision_id,
+                item_id: command.item_id.as_ref(),
+                input_sha256: &command.input_sha256,
+                kind: command.kind,
+                input_asset_id: command.input_asset_id.as_ref(),
+            },
+        )
+    }
+
+    fn retry_identity(
+        &self,
+        retry_of: &RunId,
+        identity: RetryIdentity<'_>,
+    ) -> Result<u32, ApplicationError> {
         let parent = self.parent_run(retry_of)?;
-        if parent.input_revision_id != command.revision_id {
+        if parent.state != ProcessingState::Failed {
             return Err(ApplicationError::Integrity(format!(
-                "retry parent {retry_of} belongs to revision {}, not {}",
-                parent.input_revision_id, command.revision_id
+                "retry parent {retry_of} is not failed"
             )));
         }
-        if parent.input_sha256 != command.input_sha256 {
+        if parent.input_revision_id != *identity.revision_id {
+            return Err(ApplicationError::Integrity(format!(
+                "retry parent {retry_of} belongs to revision {}, not {}",
+                parent.input_revision_id, identity.revision_id
+            )));
+        }
+        if parent.input_item_id.as_ref() != identity.item_id {
+            return Err(ApplicationError::Integrity(
+                "retry parent item identity does not match this attempt".to_owned(),
+            ));
+        }
+        if parent.input_sha256 != *identity.input_sha256 {
             return Err(ApplicationError::Integrity(
                 "retry parent input hash does not match this attempt".to_owned(),
             ));
         }
-        if parent.pipeline_id != command.pipeline_id {
+        if parent.pipeline_id != *identity.pipeline_id {
             return Err(ApplicationError::Integrity(
                 "retry parent pipeline does not match this attempt".to_owned(),
+            ));
+        }
+        if parent.target_kind != Some(identity.kind) {
+            return Err(ApplicationError::Integrity(
+                "retry parent target kind does not match this attempt".to_owned(),
+            ));
+        }
+        if parent.input_asset_id.as_ref() != identity.input_asset_id {
+            return Err(ApplicationError::Integrity(
+                "retry parent input asset does not match this attempt".to_owned(),
             ));
         }
         Ok(parent.attempt.saturating_add(1))
@@ -417,4 +633,144 @@ fn ensure_known_pipeline(pipeline_id: &PipelineId) -> Result<(), ApplicationErro
         )));
     }
     Ok(())
+}
+
+fn ensure_pipeline_kind(
+    pipeline_id: &PipelineId,
+    kind: DerivativeKind,
+) -> Result<(), ApplicationError> {
+    let compatible = match pipeline_id.as_str() {
+        "local_extract_text" => kind == DerivativeKind::ExtractedText,
+        "bailian_ocr" => kind == DerivativeKind::OcrText,
+        "bailian_transcript" => {
+            matches!(kind, DerivativeKind::Transcript | DerivativeKind::Subtitle)
+        }
+        "bailian_summary" => kind == DerivativeKind::Summary,
+        "bailian_visual_description" => {
+            matches!(
+                kind,
+                DerivativeKind::VisualDescription | DerivativeKind::KeyFrame
+            )
+        }
+        "agent_import" => true,
+        _ => false,
+    };
+    if !compatible {
+        return Err(ApplicationError::Integrity(format!(
+            "pipeline {} cannot produce {}",
+            pipeline_id.as_str(),
+            derivative_kind_name(kind)
+        )));
+    }
+    Ok(())
+}
+
+fn ensure_run_metadata(
+    provider: &str,
+    tool_or_model: Option<&str>,
+    tool_version: Option<&str>,
+) -> Result<(), ApplicationError> {
+    if provider.trim().is_empty() {
+        return Err(ApplicationError::Integrity(
+            "provider must not be empty".to_owned(),
+        ));
+    }
+    if tool_or_model.is_none_or(|value| value.trim().is_empty()) {
+        return Err(ApplicationError::Integrity(
+            "tool_or_model must not be empty".to_owned(),
+        ));
+    }
+    if tool_version.is_none_or(|value| value.trim().is_empty()) {
+        return Err(ApplicationError::Integrity(
+            "tool_version must not be empty".to_owned(),
+        ));
+    }
+    Ok(())
+}
+
+fn kind_requires_asset(kind: DerivativeKind) -> bool {
+    matches!(
+        kind,
+        DerivativeKind::ExtractedText
+            | DerivativeKind::OcrText
+            | DerivativeKind::Transcript
+            | DerivativeKind::Subtitle
+            | DerivativeKind::VisualDescription
+            | DerivativeKind::KeyFrame
+            | DerivativeKind::MediaMetadata
+    )
+}
+
+fn ensure_asset_kind(kind: DerivativeKind, asset: &NewAsset) -> Result<(), ApplicationError> {
+    let media_type = asset.media_type.as_deref().ok_or_else(|| {
+        ApplicationError::Integrity(format!(
+            "asset {} has no media_type for {}",
+            asset.id,
+            derivative_kind_name(kind)
+        ))
+    })?;
+    let compatible = match kind {
+        DerivativeKind::ExtractedText => {
+            media_type.starts_with("text/") || media_type.starts_with("application/")
+        }
+        DerivativeKind::OcrText | DerivativeKind::VisualDescription | DerivativeKind::KeyFrame => {
+            media_type.starts_with("image/")
+                || media_type.starts_with("video/")
+                || media_type == "application/pdf"
+        }
+        DerivativeKind::Transcript | DerivativeKind::Subtitle => {
+            media_type.starts_with("audio/") || media_type.starts_with("video/")
+        }
+        DerivativeKind::MediaMetadata
+        | DerivativeKind::Summary
+        | DerivativeKind::Tags
+        | DerivativeKind::StructuredResult => true,
+    };
+    if !compatible {
+        return Err(ApplicationError::Integrity(format!(
+            "asset {} media_type {media_type} is incompatible with {}",
+            asset.id,
+            derivative_kind_name(kind)
+        )));
+    }
+    Ok(())
+}
+
+fn ensure_managed_c1_prefix(path: &babata_domain::LogicalPath) -> Result<(), ApplicationError> {
+    if !path.as_str().starts_with("02_derived/files/sha256/") {
+        return Err(ApplicationError::Integrity(format!(
+            "C1 logical_path must be under 02_derived/files/sha256, got {}",
+            path.as_str()
+        )));
+    }
+    Ok(())
+}
+
+fn ensure_managed_c1_path(
+    path: &babata_domain::LogicalPath,
+    hash: &Sha256,
+) -> Result<(), ApplicationError> {
+    let expected = format!("02_derived/files/sha256/{}/{}", &hash.as_str()[..2], hash);
+    if path.as_str() != expected {
+        return Err(ApplicationError::Integrity(format!(
+            "C1 logical_path {} is not the content-addressed path for {hash}",
+            path.as_str()
+        )));
+    }
+    Ok(())
+}
+
+fn derivative_kind_name(kind: DerivativeKind) -> &'static str {
+    match kind {
+        DerivativeKind::ExtractedText => "extracted_text",
+        DerivativeKind::OcrText => "ocr_text",
+        DerivativeKind::Transcript => "transcript",
+        DerivativeKind::Subtitle => "subtitle",
+        DerivativeKind::Summary => "summary",
+        DerivativeKind::VisualDescription => "visual_description",
+        DerivativeKind::KeyFrame => "key_frame",
+        DerivativeKind::Tags => "tags",
+        DerivativeKind::StructuredResult => "structured_result",
+        DerivativeKind::MediaMetadata => "media_metadata",
+    }
 }

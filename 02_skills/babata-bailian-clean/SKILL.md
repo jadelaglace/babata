@@ -1,4 +1,4 @@
-﻿---
+---
 name: babata-bailian-clean
 description: >
   Guide an agent through Babata multimodal cleaning with Aliyun Bailian CLI (`bl`), then formally
@@ -8,7 +8,7 @@ description: >
   when format/size/resolution must be normalized locally before model calls; or when video should
   become a transcript with timestamps/speakers/paragraphs if the API provides them. Prefer this
   skill over one-off rigid batch scripts. Do not overwrite originals; write staging derivatives,
-  then register into C1 when a revision exists or the user wants入库.
+  then register into C1 only against the real C0 revision and asset when the source is a file.
 ---
 
 # Babata × 百炼多模态清洗（引导型）
@@ -25,7 +25,7 @@ description: >
 ## 不可破的边界
 
 1. **原件 / C0 只读**：不覆盖、不移动用户原资料与 raw assets。
-2. **派生物可追溯**：staging 与 C1 都写清 source、工具/模型、时间、参数、失败/损失。
+2. **派生物可追溯**：文件来源必须绑定真实 C0 revision + asset + 原件哈希；规范化输入另记哈希和步骤。
 3. **本地先规范化，云端再理解**：格式/体积/分辨率不达标时，先用本机 `ffmpeg` / Pillow / 文档库处理。
 4. **按样本智能路由**：先看内容再选模型能力；不要对所有文件套同一命令。
 5. **能本地免费完成的不要先烧 token**：可抽取的文本优先本地抽；图像/手写/扫描/音视频再上百炼。
@@ -61,9 +61,9 @@ Windows 上 `subprocess` 找不到 `bl` 时，用：
 
 ```text
 1. 摸清范围     盘点扩展名、体量、代表样本
-2. 绑定 C0      已有 revision 则记下；否则 capture/collector 先写入 C0
+2. 绑定 C0      文件必须取得真实 revision_id、asset_id、asset sha256；否则先 capture/collector
 3. 选定样本     每类先 1 个（优先小文件 / 用户点名）
-4. 本地探针     元数据：页数、分辨率、时长、可否抽文本；算 input-sha256
+4. 本地探针     元数据：页数、分辨率、时长、可否抽文本；核对 C0 原件 sha256
 5. 规范化       仅当会阻碍模型或成本过高
 6. 百炼清洗     按路由表调用
 7. 整理 staging Markdown/JSON + manifest + REPORT
@@ -119,10 +119,10 @@ REPORT.md       # 人话汇总
 bl speech recognize --url <audio> --language <zh|en|...> --diarization --out result.json --output json
 ```
 
-4. 能拿尽拿：时间戳、说话人、分句；词级 confidence 有则保留。  
+4. 能拿尽拿：时间戳、说话人、分句；词级 confidence 有则保留。
    **没有不强求**：API 缺 diarization/段落时，用 `text chat` 做智能分段与小标题，并在 `loss_notes` 写明“模型后处理，非 ASR 原生”。
 5. 截帧 VL 只补：板书、PPT 页、讲者画面；不替代全文转写。
-6. 全长视频体积大时：本地切片/抽音频，不要一上来传整段原片。
+6. 全长视频体积大时：本地切片/抽音频，不要一上来传整段原片；在 `--params-json` 记录原视频 asset、切片范围、规范化参数和 provider 输入哈希。
 7. 转写结果用 `--kind transcript` register；可读 md 与 raw json 可分两次登记。
 
 ## 正式 C1 登记（强制步骤摘要）
@@ -136,14 +136,21 @@ babata --json process register \
   --kind <ocr_text|transcript|summary|...> \
   --provider bailian_cli \
   --model <model> \
-  --input-sha256 <64hex> \
+  --tool-version <bl-version> \
+  --input-sha256 <C0-text-or-asset-64hex> \
+  --input-asset-id asset_... \
   --text-file path/to/results/....md \
+  --output-file path/to/results/....md \
+  --params-json '{"provider_input_sha256":"...","preprocessing":["..."]}' \
   --language zh \
   --loss-notes "..."
 ```
 
 - pipeline 固定优先 **`agent_import`**（Agent 按本 skill 完成清洗）。
-- 重试用 `--retry-of run_...`，**新建** run，不覆盖旧 C1。
+- 文件派生结果必须传 `--input-asset-id`，`--input-sha256` 必须是该 C0 asset 的哈希；不能改用 staging/规范化文件哈希。
+- `--output-file` 把结果复制到受控 `02_derived/files/sha256/`；不得把 `generated/...` 作为 `--logical-path`。
+- 同时传 `--text-file`/`--json-file` 与 `--output-file` 时必须指向完全相同的字节，否则登记失败。
+- 只有 failed run 可用 `--retry-of`；revision、item、asset、input hash、pipeline、kind 必须与父 run 一致。
 - 登记后：`process show-run` / `list-runs` 核对。
 - 完整字段与模板见 [references/c1-register.md](references/c1-register.md)。
 
@@ -190,7 +197,8 @@ babata --json process register \
 | 路径中文/空格/`\xa0` | Python `pathlib`；少在 shell 里手拼 |
 | 批量中单文件失败 | 记录错误继续，不整批中止 |
 | register 缺 revision | 先 capture/collector；禁止伪造 id |
-| register 失败 | 保留 staging；修参数后 `--retry-of` 或新 register |
+| provider 失败 | 先 `process register-failure --kind ...`；修复后用同一身份 `--retry-of` |
+| register 校验失败 | 不会创建 run；保留 staging，修正 C0/字段后新 register，不伪称 retry |
 
 ## 汇报口径（对人）
 
@@ -202,8 +210,9 @@ babata --json process register \
 3. 百炼实际调用了什么（模型/能力）
 4. staging 派生物路径（generated/...）
 5. 是否已 process register（run_id / derivative_id / kind）；未登记要明说
-6. 哪些能力原生具备 / 哪些是后处理
-7. 未覆盖范围与下一步建议
+6. C0 revision / asset / 原件哈希和正式 `02_derived` 文件是否一致
+7. 哪些能力原生具备 / 哪些是后处理
+8. 未覆盖范围与下一步建议
 ```
 
 ## 与 Babata 阶段关系
@@ -222,3 +231,6 @@ babata --json process register \
 - 把 bailian-cli 手册整页粘贴进对话
 - 未鉴权就连续重试烧时间
 - 伪造 revision_id 去 register
+- 把抽取 WAV、压缩视频、截图或 staging 文本哈希当成 C0 原件哈希
+- 把 `generated/...` 登记成正式 `logical_path`
+- 失败登记不写目标 kind，或把 OCR 失败重试成 summary

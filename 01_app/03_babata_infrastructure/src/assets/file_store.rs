@@ -292,38 +292,32 @@ impl AssetStorePort for FileAssetStore {
         Ok(Sha256::of_bytes(&bytes))
     }
 
-    fn import_derived_file(&self, source: &str) -> Result<(LogicalPath, Sha256), ApplicationError> {
-        let bytes = fs::read(source).map_err(Self::io)?;
-        let sha256 = Sha256::of_bytes(&bytes);
-        let file_name = Path::new(source)
-            .file_name()
-            .and_then(|name| name.to_str())
-            .ok_or_else(|| ApplicationError::Asset("derived file name is invalid".to_owned()))?;
-        let logical = format!(
-            "02_derived/files/sha256/{}/{}-{}",
-            &sha256.as_str()[..2],
-            sha256.as_str(),
-            file_name
-        );
-        let logical_path = LogicalPath::parse(&logical).map_err(ApplicationError::from)?;
-        let destination = self
-            .paths
-            .resolve_logical(&logical_path)
-            .map_err(Self::io)?;
-        if let Some(parent) = destination.parent() {
-            fs::create_dir_all(parent).map_err(Self::io)?;
+    fn stage_derived_file(
+        &self,
+        source: &str,
+        operation_id: &str,
+    ) -> Result<StagedAsset, ApplicationError> {
+        let mut staged = self.stage(source, AssetRole::Derived, operation_id)?;
+        staged.logical_path = LogicalPath::parse(format!(
+            "02_derived/files/sha256/{}/{}",
+            &staged.sha256.as_str()[..2],
+            staged.sha256
+        ))
+        .map_err(ApplicationError::from)?;
+        if let Err(error) = self.write_journal(
+            operation_id,
+            &serde_json::json!({
+                "operation_id": operation_id,
+                "state": "c1_staged",
+                "logical_path": staged.logical_path.as_str(),
+                "sha256": staged.sha256.as_str(),
+            }),
+        ) {
+            let _ = self.discard_stage(&staged);
+            let _ = self.complete_operation(operation_id);
+            return Err(error);
         }
-        if destination.exists() {
-            let existing = fs::read(&destination).map_err(Self::io)?;
-            if Sha256::of_bytes(&existing) != sha256 {
-                return Err(ApplicationError::Integrity(
-                    "derived file hash collision in managed storage".to_owned(),
-                ));
-            }
-        } else {
-            fs::write(&destination, &bytes).map_err(Self::io)?;
-        }
-        Ok((logical_path, sha256))
+        Ok(staged)
     }
 
     fn quarantine_finalized(
@@ -388,6 +382,37 @@ mod tests {
             .unwrap();
         assert_eq!(content, "fixture bytes");
         assert_eq!(asset.sha256, Sha256::of_bytes(content.as_bytes()));
+    }
+
+    #[test]
+    fn staged_derivative_journal_records_final_content_addressed_path() {
+        let temporary = tempdir().unwrap();
+        let paths = DataPaths::new(temporary.path().to_path_buf());
+        crate::paths::ensure_layout(&paths).unwrap();
+        let input = temporary.path().join("result.md");
+        std::fs::write(&input, "derived bytes").unwrap();
+        let store = FileAssetStore::new(paths.clone());
+
+        let staged = store
+            .stage_derived_file(&input.to_string_lossy(), "c1_test")
+            .unwrap();
+        let journal: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(paths.journal().join("c1_test.json")).unwrap())
+                .unwrap();
+        assert_eq!(journal["state"], "c1_staged");
+        assert_eq!(journal["logical_path"], staged.logical_path.as_str());
+        assert_eq!(journal["sha256"], staged.sha256.as_str());
+        assert_eq!(
+            staged.logical_path.as_str(),
+            format!(
+                "02_derived/files/sha256/{}/{}",
+                &staged.sha256.as_str()[..2],
+                staged.sha256
+            )
+        );
+
+        store.discard_stage(&staged).unwrap();
+        store.complete_operation("c1_test").unwrap();
     }
 
     #[test]

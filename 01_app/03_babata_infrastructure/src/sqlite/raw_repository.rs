@@ -880,12 +880,6 @@ mod tests {
         fn hash_logical(&self, logical_path: &LogicalPath) -> Result<Sha256, ApplicationError> {
             self.inner.hash_logical(logical_path)
         }
-        fn import_derived_file(
-            &self,
-            source: &str,
-        ) -> Result<(LogicalPath, Sha256), ApplicationError> {
-            self.inner.import_derived_file(source)
-        }
     }
 
     fn file_command(path: &std::path::Path) -> CaptureFileCommand {

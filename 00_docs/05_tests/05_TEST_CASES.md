@@ -108,22 +108,41 @@ Git。所有 destructive 测试使用临时或隔离数据根。
 
 ### TC-03：C0、C1、C2 与第一方资料可辨别
 
-关联：AC-03，阶段 P3/P5/P6。
+关联：AC-03，分为 P3/P5 的 TC-03A 与 P6 的 TC-03B；两者都通过后 TC-03 才整体通过。
 
-场景：收集文本、文档、图片、音频或视频，创建第一方资料，生成至少一种 C1 和 C2。
+#### TC-03A：C0 与 C1 的真实溯源和隔离（P3/P5）
+
+场景：收集文本、文档、图片、音频或视频，创建第一方资料，并从真实 C0 输入生成至少
+一种 C1；文件派生样本必须绑定对应 asset，不能挂到人为说明文本。
 
 步骤：
 
 1. 记录 C0 原文/原件哈希与来源。
-2. 运行 OCR、转写或其他处理并生成视图/子库物化。
-3. 从 C1/C2 回到输入版本、来源上下文和处理记录。
-4. 删除并重建 C1（允许时）和 C2。
+2. 对真实 PDF/图片/视频 asset 运行抽取、OCR 或转写；核对 revision、item、asset、输入
+   哈希、pipeline、kind、provider、工具/模型版本、规范化链和输出哈希。
+3. 从 C1 回到输入版本、asset、来源上下文和处理记录。
+4. 删除并重建允许重建的 C1，确认 C0 内容、asset 与哈希不变。
 5. 使用缺附件或缺来源字段的受限样本重复检查。
 6. 使用同时提供上传 DOCX 与平台转换 PDF 的真实或等价样本，确认保存并标识 DOCX 为
    源文件，PDF 只作为派生物或回退证据；再模拟源文件不可取得并检查限制说明。
 
-预期：C0 内容与哈希不变；外部原件、first-party、机器派生物和视图可辨别；C1/C2
-删除不会损伤 C0；不完整资料保持明确限制；平台预览/转码件不冒充源文件。
+预期：C0 内容与哈希不变；外部原件、first-party 和机器派生物可辨别；C1 删除不会
+损伤 C0；每个文件派生结果绑定真实 asset；不完整资料保持明确限制；平台预览/转码件
+不冒充源文件。
+
+#### TC-03B：C2 视图与子库边界（P6）
+
+场景：基于已通过 TC-03A 的 C0/C1 生成至少一种搜索投影、视图或子库物化。
+
+步骤：
+
+1. 从 C2 回到所读的 C0/C1、来源上下文和生成记录。
+2. 在用户可见入口辨别外部原件、first-party、机器派生物和可重建视图。
+3. 删除并重建 C2 搜索索引、视图或子库物化。
+4. 核对 C2 builder 没有 C0/C1 反向写入路径。
+
+预期：C2 可删除重建；C0/C1 内容、哈希与关系不变；视图不冒充原件、人工资料或机器
+派生权威。TC-03B 不替代 TC-03A 的真实 asset 溯源证据。
 
 ### TC-04：忠实清洗、失败重试与百炼路径
 
@@ -313,10 +332,10 @@ post-ready read-back 与 cleanup 故障，并联合检查 operation/journal/orph
 | 阶段 | 产品测试 | 工程/阶段证据 |
 | --- | --- | --- |
 | P2 | 无 | GT-P2-01..07 |
-| P3 | TC-03、TC-06、TC-10 的底座部分 | P3-G1..06、raw integration/CLI tests |
+| P3 | TC-03A、TC-06、TC-10 的底座部分 | P3-G1..06、raw integration/CLI tests |
 | P4 | TC-01、TC-02 | P4-G1..06、真实授权证据 |
-| P5 | TC-03、TC-04 | C1/provider/integrity tests |
-| P6 | TC-05、TC-06、TC-07、TC-08 | core/read projection/output tests |
+| P5 | TC-03A、TC-04 | C1/provider/integrity tests 与真实 asset 证据 |
+| P6 | TC-03B、TC-05、TC-06、TC-07、TC-08 | core/read projection/output tests |
 | P7 | TC-09 | Skill/Agent/extra-source tests |
 | P8 | TC-10、TC-11 | backup/restore/end-to-end evidence |
 

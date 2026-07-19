@@ -1117,12 +1117,6 @@ pub(crate) mod tests {
         fn hash_logical(&self, _: &LogicalPath) -> Result<Sha256, ApplicationError> {
             Ok(Sha256::of_bytes(b"test"))
         }
-        fn import_derived_file(&self, _: &str) -> Result<(LogicalPath, Sha256), ApplicationError> {
-            Ok((
-                LogicalPath::parse("02_derived/test").unwrap(),
-                Sha256::of_bytes(b"test"),
-            ))
-        }
     }
     fn text(provider: &str, value: &str) -> CaptureTextCommand {
         CaptureTextCommand {

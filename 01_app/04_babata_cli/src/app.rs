@@ -86,13 +86,10 @@ fn execute_process(
     match command {
         ProcessCommand::ListPipelines => render_value(&service.list_pipelines()?, json)?,
         ProcessCommand::Register { .. } => {
-            let register = crate::commands::process::build_register_command(
-                &command,
-                &FileAssetStore::new(config.paths()),
-            )
-            .map_err(|error| {
-                Box::new(ApplicationError::Integrity(error)) as Box<dyn std::error::Error>
-            })?;
+            let register =
+                crate::commands::process::build_register_command(&command).map_err(|error| {
+                    Box::new(ApplicationError::Integrity(error)) as Box<dyn std::error::Error>
+                })?;
             let outcome = service.register_derivative(register)?;
             if json {
                 render_value(&outcome, true)?;
