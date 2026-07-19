@@ -13,7 +13,7 @@ P0  冻结旧版本                                    已完成
 P1  真实需求、PRD、产品验收、全局技术架构           已完成
 P2  全系统模块、目录、代码与工具骨架                 已完成
 P3  C0 原始资料与第一方版本底座                     已完成
-P4  飞书与浏览器首批真实收集路径                     进行中
+P4  飞书与浏览器首批真实收集路径                     已完成
 P5  C1 多模态清洗与百炼处理                         未开始
 P6  核心沉淀、检索、子库与输出                      未开始
 P7  扩展来源、正式 Skill 与受控 Agent               未开始
@@ -22,7 +22,7 @@ P8  备份、恢复、运维与长期加固                      未开始
 
 <!-- P2: completed; P2-G1..P2-G7: passed -->
 <!-- P3: completed; P3-G1..P3-G6: passed -->
-<!-- P4: in-progress; Kimi/Doubao/Bilibili/Feishu/ChatGPT/Zhihu/Xiaohongshu/Yuque/WeChat article small real loops proven; routes disabled -->
+<!-- P4: completed; P4-G1..P4-G6 and TC-01..TC-02 passed; representative small real loops proven; incomplete routes remain disabled -->
 
 当前真实情况：
 
@@ -38,7 +38,12 @@ P8  备份、恢复、运维与长期加固                      未开始
   重收集闭环；Bilibili 另把 44,773,539 字节原视频作为 C0 资产保存并复核 SHA-256。
   飞书样本另保存 3,391 字符 XML 正文和 8 张真实 PNG；ChatGPT 样本保存 2 条角色消息和
   10 个引用。来源仍保持 disabled：Kimi/ChatGPT 当前样本无附件，豆包二进制媒体未闭合，Bilibili 按用户要求只证明一条，飞书嵌入
-  Sheet/Base/Slides/画板内部数据仍未覆盖。P4 正在进行中，不把局部闭环扩大成来源 available。
+  Sheet/Base/Slides/画板内部数据仍未覆盖。P4 已按代表性首批路径收尾，不把阶段完成扩大成
+  全部点名来源完成或来源 available。
+- P4-G1 至 P4-G6、TC-01 和 TC-02 已通过。P4 完成只证明飞书与正式 Chrome 点名平台的
+  首批流程、选择范围、逐条状态、失败重试和重采边界成立；OneNote、印象笔记、微信聊天、
+  视频号、抖音和书签自动遍历等未闭环来源转入 P7。抖音和视频号按用户决定暂时不处理，
+  保持 disabled，不阻塞 P4，也不冒充已有样本或自动化。
 - 微信样本使用官方 PC 微信 4.1.11.55 的“全部收藏”窄 UI，读取 8 个最新可见候选并选择
   “爬虫-这20个仓库教会什么叫降维打击”；保存 2,946 字符结构化正文、2,597 字节
   Markdown 和 2,331,350 字节原始 HTML。首次因候选白名单缺口进入可重试 `failed`，原
@@ -106,18 +111,14 @@ P8  备份、恢复、运维与长期加固                      未开始
              -> 1 条资料/1 个版本/2 个导出原件 -> 重采没变化
              -> 只形成已知公众号 URL 的重复取得；收藏自动遍历和聊天未形成长期能力
 
-正在往下闭合
-  微信聊天；微信收藏的其他类型和更大范围
-             继续优先官方 PC 微信窄 UI；任何内存扫描、数据库解密或代理证书都另行确认
+P4 已收尾，下一阶段
+  P5         C1 多模态清洗与百炼处理
 
-后续队列
-  OneNote -> 印象笔记
+转入 P7 扩展来源，不是 P4 完成证据
+  微信聊天/收藏其他类型；OneNote 官方整本 PDF+MHT；印象笔记官方 HTML；书签自动遍历
 
-靠后处理
-  抖音
-
-最低优先级
-  视频号（用户最新明确降到最低）
+暂时不处理
+  抖音；视频号（均保持 disabled，用户重新启用后再继续）
 ```
 
 这里的“真的收进”只表示上述明确小范围已经进入 C0 并有重采证据，不表示账号全量、
@@ -431,8 +432,16 @@ Issue #20 已按 `not planned` 关闭，实验代码全部撤销且未进入 Git
 | P4-G5 | 四种重收集结果不覆盖旧 C0 |
 | P4-G6 | 真实证据与 fixture 分开，未验证来源保持 disabled |
 
-只有 P4-G1 至 P4-G6 和 TC-01、TC-02 通过后，才能把首批来源标记 available，并
-满足 AC-01、AC-02。
+2026-07-19，P4-G1 至 P4-G6 和 TC-01、TC-02 已通过，AC-01、AC-02 的代表性首批路径
+成立，P4 完成。来源 `available` 仍按每个来源的内容形态、附件、限制和重采证据单独判断；
+阶段完成不会自动翻转任何 disabled route。00 点名来源并未全部跑通，长期自动化也仅在
+部分已验证薄命令/Agent 流程成立。OneNote、印象笔记和微信其余范围转入 P7；抖音、视频号
+暂时延期。
+
+P4 收尾验证：`cargo test --workspace` 共 94 个测试通过；`cargo fmt --all -- --check`、
+`cargo check --workspace`、`cargo clippy --workspace --all-targets -- -D warnings` 通过；P2
+inventory、P3 raw inventory（29 个活跃文件、59 个 raw 功能测试）、document traceability
+及 mutation、interface ownership、Rust boundary 和 no-secondary-writer 检查全部通过。
 
 ## 8. P5：C1 多模态清洗与百炼
 
@@ -484,10 +493,10 @@ P6 必须按核心价值顺序进行，不能直接跳到 Datasette/Obsidian：
 
 ## 10. P7：扩展来源、正式 Skill 与受控 Agent
 
-按真实价值扩展语雀、OneNote、印象笔记、微信、知乎、Bilibili、小红书、豆包/Kimi/GPT、
-本地文件等来源；当前未闭合队列先处理微信收藏/公众号/聊天、OneNote 和印象笔记，
-抖音靠后，视频号最低优先级。每条来源继续优先 Codex 浏览器、官方能力和现有工具，
-不先造重型爬虫。
+按真实价值扩展 OneNote 官方整本 PDF/MHT、印象笔记官方 HTML、微信聊天/收藏其他类型、
+书签自动遍历以及已有小样本来源的更多内容形态。抖音和视频号暂时不处理，只有用户重新
+启用时才回到队列。每条来源继续优先官方免费批量导出、Codex 浏览器和现有工具，不先造
+重型爬虫。
 
 对应底层能力通过自己的 AC/TC 后，P2 Skill 规格才转成真实 `SKILL.md`。Agent 默认
 人工触发或确认，批处理携带明确范围，不自动扩张授权或把模型判断升级为事实。
