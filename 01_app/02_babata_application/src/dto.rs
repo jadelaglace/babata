@@ -1,7 +1,7 @@
 use babata_domain::{
     AssetId, AssetRole, BuildTarget, CandidateEnvelope, CandidateSummary, CollectionId,
     CollectionSessionId, ContentType, DerivativeId, DerivativeKind, DerivativeRef, HealthState,
-    ItemId, JobId, LogicalPath, Metadata, PageCursor, PipelineId, ProcessRun, ProcessingState,
+    ItemId, LogicalPath, Metadata, PageCursor, PipelineId, ProcessJob, ProcessRun, ProcessingState,
     QueryFilter, RawState, RecordSummary, RelationKind, RevisionId, RouteCoverage, RunId, Sha256,
     SnapshotRef, SourceId, SourceKind, SourceRouteId, UtcTimestamp, ViewDescriptor, ViewId,
 };
@@ -273,8 +273,8 @@ pub enum AcquisitionOutcome {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProcessJobOutcome {
-    pub job_id: JobId,
     pub status: String,
+    pub job: Option<ProcessJob>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

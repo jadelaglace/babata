@@ -213,6 +213,28 @@ retry_of 只指向同身份 failed run
 
 API Key、鉴权文件、完整敏感 prompt 不进入 params、content、日志或报告。
 
+## 受控作业队列
+
+对已经由 Babata 正式保存的 C0，可以让核心队列直接执行当前已启用的窄 pipeline：
+
+```bash
+babata --json process enqueue --pipeline local_extract_text --revision rev_...
+babata --json process enqueue --pipeline bailian_summary --revision rev_...
+babata --json process run-once
+babata --json process status job_...
+babata --json process retry job_...
+babata --json process cancel job_...
+```
+
+- `local_extract_text` 必须读取该 revision 上真实、UTF-8、文本类 C0 asset，不接受任意外部路径。
+- `bailian_summary` 必须读取 ready revision 的 C0 正文；只有 `bl` 可执行且已鉴权时才 enabled。
+- queue job 保存在可清理的 C3 `runtime.sqlite`，provider 成功/失败仍由同一个 `ProcessService`
+  登记到 C1；job 只引用 `result_run_id`，不成为第二 C1 writer。
+- retry 新建 job，并让新的 C1 run 指向旧 failed run；父 job/run 均保留。
+- provider task/request ID、实际 usage 和 queue job ID 进入 C1 的非敏感处理元数据；鉴权输出不进入。
+- `bailian_ocr`、`bailian_transcript`、`bailian_visual_description` 尚无 queue provider 时明确
+  unavailable；继续由本 Skill 完成真实多模态调用并用 `agent_import` 登记。
+
 Provider 原始 JSON 还必须检查并移除：
 
 ```text

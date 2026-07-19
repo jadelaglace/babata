@@ -102,7 +102,9 @@ pub enum ProcessCommand {
         reason: String,
     },
     Enqueue {
+        #[arg(long)]
         pipeline: String,
+        #[arg(long)]
         revision: String,
     },
     RunOnce,

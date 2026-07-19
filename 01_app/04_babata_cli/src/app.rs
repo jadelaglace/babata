@@ -4,7 +4,8 @@ use babata_application::{
 use babata_domain::{PipelineId, RevisionId, RunId};
 use babata_infrastructure::{
     AppConfig, FileAssetStore, StaticCapabilityRegistry, SystemClock, load_config,
-    open_derived_database, open_raw_database, raw_status,
+    open_derived_database, open_job_database, open_raw_database,
+    processing::registry::ProcessProviderRouter, raw_status,
 };
 use clap::Parser;
 
@@ -81,9 +82,11 @@ fn execute_process(
     json: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let repository = open_derived_database(&config.paths(), config.sqlite.busy_timeout_ms)?;
+    let jobs = open_job_database(&config.paths(), config.sqlite.busy_timeout_ms)?;
     let raw = open_raw_database(&config.paths(), config.sqlite.busy_timeout_ms)?;
     let assets = FileAssetStore::new(config.paths());
-    let service = ProcessService::new(repository, raw, assets, SystemClock);
+    let service = ProcessService::new(repository, raw, assets, SystemClock)
+        .with_runtime(jobs, ProcessProviderRouter::detect());
     match command {
         ProcessCommand::ListPipelines => render_value(&service.list_pipelines()?, json)?,
         ProcessCommand::Register { .. } => {

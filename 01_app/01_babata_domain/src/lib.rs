@@ -34,7 +34,9 @@ pub use knowledge::{
 };
 pub use ops::{BackupClass, HealthState, RestoreState, SnapshotRef};
 pub use output::{OutputBuild, OutputKind, OutputManifestRef, OutputScope, OutputState};
-pub use processing::{DerivativeRef, JobRef, PipelineId, ProcessRun, ProviderTaskRef};
+pub use processing::{
+    DerivativeRef, JobRef, PipelineId, ProcessJob, ProcessJobState, ProcessRun, ProviderTaskRef,
+};
 pub use query::{PageCursor, QueryFilter, RecordSummary};
 pub use route::{
     CandidateEnvelope, CandidatePayload, RouteCoverage, RouteEvidence, SourceRouteDescriptor,

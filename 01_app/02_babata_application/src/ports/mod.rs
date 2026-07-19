@@ -22,7 +22,9 @@ pub use collection_repository::CollectionRepositoryPort;
 pub use derived_repository::{DerivedRepositoryPort, ProcessCommit};
 pub use job_repository::JobRepositoryPort;
 pub use output_builder::OutputBuilderPort;
-pub use process_provider::ProcessProviderPort;
+pub use process_provider::{
+    ProcessProviderPort, ProviderExecutionOutcome, ProviderExecutionRequest, ProviderIdentity,
+};
 pub use raw_repository::{
     NewAsset, NewCaptureOperation, NewCollection, NewItem, NewRelation, NewRevision,
     NewRouteEvidence, NewSource, PersistGraph, RawRepositoryPort,

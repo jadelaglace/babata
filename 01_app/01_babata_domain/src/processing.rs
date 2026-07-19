@@ -56,7 +56,48 @@ pub struct ProcessRun {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JobRef {
     pub id: JobId,
-    pub state: ProcessingState,
+    pub state: ProcessJobState,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ProcessJobState {
+    Queued,
+    Running,
+    Succeeded,
+    Failed,
+    Cancelled,
+}
+
+/// C3 lifecycle state for one queued processing attempt. C1 output remains in
+/// `ProcessRun`; retries create a new job and preserve the failed parent.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProcessJob {
+    pub id: JobId,
+    pub pipeline_id: PipelineId,
+    pub input_revision_id: RevisionId,
+    pub input_item_id: Option<ItemId>,
+    pub input_sha256: Sha256,
+    pub target_kind: DerivativeKind,
+    pub input_asset_id: Option<AssetId>,
+    pub state: ProcessJobState,
+    pub provider: String,
+    pub tool_or_model: String,
+    pub tool_version: String,
+    pub attempt: u32,
+    pub retry_of_job_id: Option<JobId>,
+    pub worker_id: Option<String>,
+    pub lease_expires_at: Option<UtcTimestamp>,
+    pub provider_task: Option<ProviderTaskRef>,
+    pub error_code: Option<String>,
+    pub error_message: Option<String>,
+    pub result_run_id: Option<RunId>,
+    pub cancel_requested: bool,
+    pub params: Metadata,
+    pub created_at: UtcTimestamp,
+    pub started_at: Option<UtcTimestamp>,
+    pub heartbeat_at: Option<UtcTimestamp>,
+    pub finished_at: Option<UtcTimestamp>,
 }
 
 /// Machine-produced C1 output. Multiple derivatives may share one run.

@@ -62,6 +62,52 @@ fn file_count(path: &std::path::Path) -> usize {
         .sum()
 }
 
+fn fake_bailian_cli(temp: &tempfile::TempDir) -> std::path::PathBuf {
+    #[cfg(windows)]
+    {
+        let path = temp.path().join("fake-bl.cmd");
+        std::fs::write(
+            &path,
+            r#"@echo off
+if "%1"=="--version" (
+  echo bl 1.10.0
+  exit /b 0
+)
+if "%1"=="auth" (
+  echo {"authenticated":true}
+  exit /b 0
+)
+if "%BABATA_TEST_PROVIDER_FAIL%"=="1" (
+  echo intentional provider failure 1>&2
+  exit /b 7
+)
+echo {"choices":[{"message":{"content":"queue summary"}}],"usage":{"input_tokens":3,"output_tokens":2},"request_id":"fake-request"}
+"#,
+        )
+        .unwrap();
+        path
+    }
+    #[cfg(not(windows))]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let path = temp.path().join("fake-bl");
+        std::fs::write(
+            &path,
+            r#"#!/bin/sh
+if [ "$1" = "--version" ]; then echo 'bl 1.10.0'; exit 0; fi
+if [ "$1" = "auth" ]; then echo '{"authenticated":true}'; exit 0; fi
+if [ "$BABATA_TEST_PROVIDER_FAIL" = "1" ]; then echo 'intentional provider failure' >&2; exit 7; fi
+echo '{"choices":[{"message":{"content":"queue summary"}}],"usage":{"input_tokens":3,"output_tokens":2},"request_id":"fake-request"}'
+"#,
+        )
+        .unwrap();
+        let mut permissions = std::fs::metadata(&path).unwrap().permissions();
+        permissions.set_mode(0o755);
+        std::fs::set_permissions(&path, permissions).unwrap();
+        path
+    }
+}
+
 #[test]
 fn capture_text_emits_a_parseable_json_envelope() {
     let temp = tempdir().unwrap();
@@ -176,6 +222,10 @@ fn attach_assets_appends_original_and_preview_without_mutating_parent() {
 fn capability_list_reports_processing_enabled_for_p5_register() {
     let temp = tempdir().unwrap();
     let output = babata(&temp)
+        .env(
+            "BABATA_BAILIAN_CLI",
+            temp.path().join("missing-bailian-cli"),
+        )
         .args(["--json", "capabilities", "list"])
         .assert()
         .success()
@@ -186,11 +236,10 @@ fn capability_list_reports_processing_enabled_for_p5_register() {
     assert!(value.as_array().unwrap().iter().any(|descriptor| {
         descriptor["id"] == "processing" && descriptor["status"] == "enabled"
     }));
-    for provider in [
-        "processing.local_extract",
-        "processing.bailian_cli",
-        "processing.bailian_api",
-    ] {
+    assert!(value.as_array().unwrap().iter().any(|descriptor| {
+        descriptor["id"] == "processing.local_extract" && descriptor["status"] == "enabled"
+    }));
+    for provider in ["processing.bailian_cli", "processing.bailian_api"] {
         assert!(value.as_array().unwrap().iter().any(|descriptor| {
             descriptor["id"] == provider && descriptor["status"] == "unavailable"
         }));
@@ -215,6 +264,225 @@ fn process_list_pipelines_is_enabled() {
             .iter()
             .any(|pipeline| pipeline == "agent_import")
     );
+}
+
+#[test]
+fn process_queue_local_extract_runs_from_a_real_c0_text_asset() {
+    let temp = tempdir().unwrap();
+    let source = temp.path().join("queue-input.txt");
+    let source_bytes = b"exact queue input\nsecond line";
+    std::fs::write(&source, source_bytes).unwrap();
+    let capture = capture_file(&temp, &source);
+    let revision = capture["revision_id"].as_str().unwrap();
+    let asset = &capture["record"]["assets"][0];
+    let original_asset = temp.path().join(asset["logical_path"].as_str().unwrap());
+
+    let queued: Value = serde_json::from_slice(
+        &babata(&temp)
+            .args([
+                "--json",
+                "process",
+                "enqueue",
+                "--pipeline",
+                "local_extract_text",
+                "--revision",
+                revision,
+            ])
+            .assert()
+            .success()
+            .get_output()
+            .stdout,
+    )
+    .unwrap();
+    assert_eq!(queued["status"], "queued");
+    assert_eq!(queued["job"]["input_asset_id"], asset["asset_id"]);
+    assert_eq!(queued["job"]["input_sha256"], sha256_hex(source_bytes));
+
+    let completed: Value = serde_json::from_slice(
+        &babata(&temp)
+            .args(["--json", "process", "run-once"])
+            .assert()
+            .success()
+            .get_output()
+            .stdout,
+    )
+    .unwrap();
+    assert_eq!(completed["status"], "succeeded");
+    let run_id = completed["job"]["result_run_id"].as_str().unwrap();
+    let shown: Value = serde_json::from_slice(
+        &babata(&temp)
+            .args(["--json", "process", "show-run", "--run", run_id])
+            .assert()
+            .success()
+            .get_output()
+            .stdout,
+    )
+    .unwrap();
+    assert_eq!(shown["run"]["provider"], "local_extract");
+    assert_eq!(shown["run"]["input_asset_id"], asset["asset_id"]);
+    assert_eq!(
+        shown["derivatives"][0]["content_text"],
+        "exact queue input\nsecond line"
+    );
+    assert_eq!(std::fs::read(original_asset).unwrap(), source_bytes);
+}
+
+#[test]
+fn process_queue_cancel_and_unavailable_paths_are_explicit() {
+    let temp = tempdir().unwrap();
+    let source = temp.path().join("cancel-input.txt");
+    std::fs::write(&source, "cancel me").unwrap();
+    let capture = capture_file(&temp, &source);
+    let revision = capture["revision_id"].as_str().unwrap();
+    let queued: Value = serde_json::from_slice(
+        &babata(&temp)
+            .args([
+                "--json",
+                "process",
+                "enqueue",
+                "--pipeline",
+                "local_extract_text",
+                "--revision",
+                revision,
+            ])
+            .assert()
+            .success()
+            .get_output()
+            .stdout,
+    )
+    .unwrap();
+    let job = queued["job"]["id"].as_str().unwrap();
+    let cancelled: Value = serde_json::from_slice(
+        &babata(&temp)
+            .args(["--json", "process", "cancel", job])
+            .assert()
+            .success()
+            .get_output()
+            .stdout,
+    )
+    .unwrap();
+    assert_eq!(cancelled["status"], "cancelled");
+    let idle: Value = serde_json::from_slice(
+        &babata(&temp)
+            .args(["--json", "process", "run-once"])
+            .assert()
+            .success()
+            .get_output()
+            .stdout,
+    )
+    .unwrap();
+    assert_eq!(idle["status"], "idle");
+
+    let unavailable: Value = serde_json::from_slice(
+        &babata(&temp)
+            .args([
+                "--json",
+                "process",
+                "enqueue",
+                "--pipeline",
+                "bailian_ocr",
+                "--revision",
+                revision,
+            ])
+            .assert()
+            .failure()
+            .get_output()
+            .stdout,
+    )
+    .unwrap();
+    assert_eq!(unavailable["code"], "capability_unavailable");
+}
+
+#[test]
+fn process_queue_provider_failure_and_retry_preserve_both_attempts() {
+    let temp = tempdir().unwrap();
+    let fake_bl = fake_bailian_cli(&temp);
+    let capture = capture_text(&temp, "source text that remains unchanged across retry");
+    let revision = capture["revision_id"].as_str().unwrap();
+    let original_hash = capture["record"]["revisions"][0]["text_sha256"]
+        .as_str()
+        .unwrap();
+
+    let queued: Value = serde_json::from_slice(
+        &babata(&temp)
+            .env("BABATA_BAILIAN_CLI", &fake_bl)
+            .args([
+                "--json",
+                "process",
+                "enqueue",
+                "--pipeline",
+                "bailian_summary",
+                "--revision",
+                revision,
+            ])
+            .assert()
+            .success()
+            .get_output()
+            .stdout,
+    )
+    .unwrap();
+    let first_job = queued["job"]["id"].as_str().unwrap();
+    let failed: Value = serde_json::from_slice(
+        &babata(&temp)
+            .env("BABATA_BAILIAN_CLI", &fake_bl)
+            .env("BABATA_TEST_PROVIDER_FAIL", "1")
+            .args(["--json", "process", "run-once"])
+            .assert()
+            .success()
+            .get_output()
+            .stdout,
+    )
+    .unwrap();
+    assert_eq!(failed["status"], "failed");
+    assert_eq!(failed["job"]["id"], first_job);
+    assert_eq!(failed["job"]["attempt"], 1);
+    assert_eq!(failed["job"]["error_code"], "provider_failed");
+    assert!(failed["job"]["result_run_id"].as_str().is_some());
+
+    let retry: Value = serde_json::from_slice(
+        &babata(&temp)
+            .env("BABATA_BAILIAN_CLI", &fake_bl)
+            .args(["--json", "process", "retry", first_job])
+            .assert()
+            .success()
+            .get_output()
+            .stdout,
+    )
+    .unwrap();
+    assert_eq!(retry["job"]["attempt"], 2);
+    assert_eq!(retry["job"]["retry_of_job_id"], first_job);
+
+    let succeeded: Value = serde_json::from_slice(
+        &babata(&temp)
+            .env("BABATA_BAILIAN_CLI", &fake_bl)
+            .args(["--json", "process", "run-once"])
+            .assert()
+            .success()
+            .get_output()
+            .stdout,
+    )
+    .unwrap();
+    assert_eq!(succeeded["status"], "succeeded");
+    assert_eq!(succeeded["job"]["attempt"], 2);
+    assert_eq!(succeeded["job"]["retry_of_job_id"], first_job);
+
+    let runs: Value = serde_json::from_slice(
+        &babata(&temp)
+            .args(["--json", "process", "list-runs", "--revision", revision])
+            .assert()
+            .success()
+            .get_output()
+            .stdout,
+    )
+    .unwrap();
+    let runs = runs.as_array().unwrap();
+    assert_eq!(runs.len(), 2);
+    assert_eq!(runs[0]["state"], "failed");
+    assert_eq!(runs[1]["state"], "succeeded");
+    assert_eq!(runs[1]["retry_of_run_id"], runs[0]["id"]);
+    assert_eq!(runs[1]["params"]["queue_job_id"], succeeded["job"]["id"]);
+    assert_eq!(runs[1]["params"]["provider_task_id"], "fake-request");
+    assert!(runs.iter().all(|run| run["input_sha256"] == original_hash));
 }
 
 #[test]

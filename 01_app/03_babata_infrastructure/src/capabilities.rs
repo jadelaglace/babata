@@ -42,7 +42,8 @@ pub fn all_descriptors() -> Vec<CapabilityDescriptor> {
             status: CapabilityStatus::Enabled,
             activation_phase: "P5".to_owned(),
             reason: Some(
-                "C1 register/list/show enabled; provider execution remains unavailable".to_owned(),
+                "C1 register/list/show and the runtime process queue are enabled; individual providers report their live availability"
+                    .to_owned(),
             ),
         },
         CapabilityDescriptor::unavailable("knowledge", "P6"),
