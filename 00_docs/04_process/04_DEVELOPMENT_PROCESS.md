@@ -6,7 +6,7 @@
 
 ## 1. 当前状态
 
-**更新时间：2026-07-18**
+**更新时间：2026-07-19**
 
 ```text
 P0  冻结旧版本                                    已完成
@@ -39,6 +39,12 @@ P8  备份、恢复、运维与长期加固                      未开始
   飞书样本另保存 3,391 字符 XML 正文和 8 张真实 PNG；ChatGPT 样本保存 2 条角色消息和
   10 个引用。来源仍保持 disabled：Kimi/ChatGPT 当前样本无附件，豆包二进制媒体未闭合，Bilibili 按用户要求只证明一条，飞书嵌入
   Sheet/Base/Slides/画板内部数据仍未覆盖。P4 正在进行中，不把局部闭环扩大成来源 available。
+- 2026-07-19 另完成豆包复杂会话“战略领导力W1”的 Agent 收集：16 条消息、8 轮问答和
+  完整脑图已拿回，7 个原始 DOCX 共 111,296,956 字节，逐个大小和 MD5 与豆包消息元数据
+  一致，并通过 DOCX 结构检查。对话和脑图已正式归档；7 个 Word 原件仍在临时回收区，
+  尚未登记为该对话的正式附件。该结果是 Agent 收集闭环，不冒充正式附件归档或长期自动化。
+- PR #22 已在 PRD 加入人话词汇表和三层闭环规则。后续界面和阶段汇报先说明实际拿回内容、
+  保存位置和缺口，再按需补充 C0、asset、revision 等工程词。
 - P3 已按蓝图重新审阅 29 个活跃文件：显式 text/file/export 和 first-party
   create/revise/annotate 通过同一 Rust application/infrastructure 链路进入 C0，返回包含
   来源、上下文、版本、关系、资产状态、哈希和 operation provenance 的 repository read-back。
@@ -59,6 +65,10 @@ P8  备份、恢复、运维与长期加固                      未开始
 已经真的收进 Babata，而且重采过
   Kimi      15 个真实候选 -> 选 1 条 -> 1 条资料/1 个版本 -> 重采没变化
   豆包      20 个真实候选 -> 选 1 条 -> 1 条资料/1 个版本 -> 重采没变化
+             -> 另收“战略领导力W1”：16 条消息 + 完整脑图 + 7 个原始 Word
+             -> 7 个 Word 共 111.30 MB，大小/MD5/Word 结构均已校验
+             -> 对话和脑图已正式归档；Word 仍在临时回收区，尚未挂为正式附件
+             -> Agent 收集已完成；当前不开发专用适配器，需要重复执行时优先整理 Skill
   Bilibili  20 个真实历史 -> 选 BV1ogzsBFE1T
              -> 正文 + 官方字幕 + 官方摘要 + 44.8 MB 视频
              -> 1 条资料/1 个版本/1 个附件 -> 重采没变化
@@ -330,6 +340,15 @@ P4 按 `07_P4_FIRST_COLLECTION_PATHS.md` 实现：
   revision，重采 `unchanged`；
 - 豆包：验证根 `p4-doubao-fingerprint-20260718-174826`，20 个候选中选 1 条，选择前
   0/0、选择后 1 item/1 revision，重采 `unchanged`；
+- 豆包复杂样本（2026-07-19）：会话“战略领导力W1”
+  (`https://www.doubao.com/chat/21060420230098690`) 共 16 条唯一消息、8 轮问答，消息链
+  `has_more=false`，完整 mindmap 文本已进入现有对话记录。Agent 从消息内嵌 JSON 识别
+  7 个原始 DOCX 对象键，通过登录态 `get_file_url` 路径取得真正 Word 原件；总计
+  111,296,956 字节，实际大小和 MD5 均与豆包元数据一致，SHA-256 已记录，DOCX ZIP 中
+  `[Content_Types].xml` 和 `word/document.xml` 均存在。文件和 manifest 位于
+  `C:\Users\Aiano\BabataData\recovery-staging\doubao\20260719-w1-complex\`。预览器下载的
+  43 页 PDF 只是豆包转换预览件，不是原件。当前结论分别是：Agent 收集闭环已完成；
+  对话/脑图已正式归档但 7 个 Word 尚未登记为正式附件；长期自动化未完成。
 - Bilibili：验证根 `p4-bilibili-final-20260718-181500`，20 个观看历史候选中选
   `BV1ogzsBFE1T`，保存元数据、官方字幕、官方 AI 摘要和 44,773,539 字节 MP4；最终
   1 item/1 revision/1 asset，资产 SHA-256 为
@@ -361,6 +380,12 @@ P4 按 `07_P4_FIRST_COLLECTION_PATHS.md` 实现：
   引擎-车辆材质质感提高方式”，保存官方 Markdown、渲染正文/HTML和 22 张不同哈希图片，
   共 3,101,329 字节；最终 1 item/1 revision/22 assets，重采 `unchanged`。个人 OpenAPI
   和官方 MCP 需要超级会员，只登记并等待全部来源闭环后的统一决策。
+
+2026-07-19 曾建立 Issue #20 尝试把豆包原附件取得开发成持久适配器。复核后确认 Agent
+已经把最复杂样本真实跑通，当前继续开发会偏离“优先现有工具、最少开发”的需求，因此
+Issue #20 已按 `not planned` 关闭，实验代码全部撤销且未进入 Git。若后续需要重复执行，
+优先把已验证的 Agent/Chrome 流程整理为 Skill；只有真实重复使用证明仍缺稳定能力时，
+才重新评估窄适配器。
 
 浏览器仍是当前存量回收首选。Kimi/豆包/ChatGPT/知乎/小红书/语雀的 OpenCLI 薄命令是为了把浏览器已经证明的
 读取动作变成任务结束后可调用的重试/重收集；Bilibili 是因为 Codex Chrome 历史页连续
