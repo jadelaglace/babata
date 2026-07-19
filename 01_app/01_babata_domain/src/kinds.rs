@@ -65,9 +65,13 @@ pub enum DerivativeKind {
     ExtractedText,
     OcrText,
     Transcript,
+    Subtitle,
     Summary,
     VisualDescription,
     KeyFrame,
+    Tags,
+    StructuredResult,
+    MediaMetadata,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

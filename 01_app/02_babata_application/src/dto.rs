@@ -1,8 +1,9 @@
-use babata_domain::{
+﻿use babata_domain::{
     AssetId, AssetRole, BuildTarget, CandidateEnvelope, CandidateSummary, CollectionId,
-    CollectionSessionId, ContentType, HealthState, ItemId, JobId, Metadata, PageCursor, PipelineId,
-    QueryFilter, RawState, RecordSummary, RelationKind, RevisionId, RouteCoverage, SnapshotRef,
-    SourceId, SourceKind, SourceRouteId, UtcTimestamp, ViewDescriptor, ViewId,
+    CollectionSessionId, ContentType, DerivativeId, DerivativeKind, DerivativeRef, HealthState,
+    ItemId, JobId, LogicalPath, Metadata, PageCursor, PipelineId, ProcessRun, ProcessingState,
+    QueryFilter, RawState, RecordSummary, RelationKind, RevisionId, RouteCoverage, RunId, Sha256,
+    SnapshotRef, SourceId, SourceKind, SourceRouteId, UtcTimestamp, ViewDescriptor, ViewId,
 };
 use serde::{Deserialize, Serialize};
 
@@ -267,6 +268,45 @@ pub struct ProcessJobOutcome {
     pub job_id: JobId,
     pub status: String,
 }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RegisterDerivativeCommand {
+    pub pipeline_id: PipelineId,
+    pub revision_id: RevisionId,
+    pub item_id: Option<ItemId>,
+    pub input_sha256: Sha256,
+    pub kind: DerivativeKind,
+    pub provider: String,
+    pub tool_or_model: Option<String>,
+    pub tool_version: Option<String>,
+    pub retry_of_run_id: Option<RunId>,
+    pub params: Metadata,
+    pub usage: Metadata,
+    pub loss_notes: Option<String>,
+    pub content_text: Option<String>,
+    pub content_json: Option<String>,
+    pub logical_path: Option<LogicalPath>,
+    pub media_type: Option<String>,
+    pub language: Option<String>,
+    pub input_asset_id: Option<AssetId>,
+    pub output_sha256: Option<Sha256>,
+    pub derivative_loss_notes: Option<String>,
+    pub derivative_metadata: Metadata,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RegisterDerivativeOutcome {
+    pub run_id: RunId,
+    pub derivative_id: DerivativeId,
+    pub pipeline_id: PipelineId,
+    pub kind: DerivativeKind,
+    pub state: ProcessingState,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ShowProcessRunOutcome {
+    pub run: ProcessRun,
+    pub derivatives: Vec<DerivativeRef>,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ViewBuildOutcome {
@@ -278,3 +318,7 @@ pub struct ViewBuildOutcome {
 pub struct BackupOutcome {
     pub snapshot: SnapshotRef,
 }
+
+
+
+

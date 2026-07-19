@@ -1,3 +1,4 @@
+﻿pub mod derived_migrate;
 pub mod derived_repository;
 pub mod job_repository;
 mod migrate;
@@ -13,9 +14,14 @@ use babata_application::ApplicationError;
 use rusqlite::Connection;
 
 pub use collection_migrate::migrate_collection;
+pub use derived_migrate::migrate_derived;
+pub use derived_repository::SqliteDerivedRepository;
 pub use migrate::migrate_raw;
 pub use raw_repository::SqliteRawRepository;
 pub use read_projection::SqliteReadProjection;
+
+mod collection_migrate;
+mod collection_repository;
 
 #[derive(Debug, Clone, Copy)]
 pub struct RawStatus {
@@ -32,6 +38,10 @@ pub(crate) fn open_connection(
     path: &Path,
     busy_timeout_ms: u64,
 ) -> Result<Connection, ApplicationError> {
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)
+            .map_err(|error| ApplicationError::Storage(error.to_string()))?;
+    }
     let connection =
         Connection::open(path).map_err(|error| ApplicationError::Storage(error.to_string()))?;
     connection
@@ -67,6 +77,16 @@ pub fn open_collection_database(
     Ok(repository)
 }
 
+pub fn open_derived_database(
+    paths: &crate::paths::DataPaths,
+    busy_timeout_ms: u64,
+) -> Result<SqliteDerivedRepository, ApplicationError> {
+    crate::paths::ensure_layout(paths).map_err(|error| ApplicationError::Storage(error.to_string()))?;
+    let connection = open_connection(&paths.derived_database(), busy_timeout_ms)?;
+    migrate_derived(&connection)?;
+    Ok(SqliteDerivedRepository::new(Arc::new(Mutex::new(connection))))
+}
+
 pub fn raw_status(
     paths: &crate::paths::DataPaths,
     busy_timeout_ms: u64,
@@ -90,47 +110,42 @@ pub fn raw_status(
         });
     }
     let connection = open_connection(&database, busy_timeout_ms)?;
-    let version = connection
+    let schema_version = connection
         .query_row(
             "SELECT COALESCE(MAX(version), 0) FROM schema_migrations",
             [],
             |row| row.get::<_, i64>(0),
         )
-        .map_err(|error| ApplicationError::Storage(error.to_string()))?;
+        .unwrap_or(0) as u32;
     let quarantined_revisions = connection
         .query_row(
             "SELECT COUNT(*) FROM revisions WHERE state = 'quarantined'",
             [],
             |row| row.get::<_, i64>(0),
         )
-        .map_err(|error| ApplicationError::Storage(error.to_string()))?;
-    let (pending_operations, quarantined_operations) = if version >= 4 {
-        let pending = connection
-            .query_row(
-                "SELECT COUNT(*) FROM capture_operations WHERE state = 'pending'",
-                [],
-                |row| row.get::<_, i64>(0),
-            )
-            .map_err(|error| ApplicationError::Storage(error.to_string()))?;
-        let quarantined = connection
-            .query_row(
-                "SELECT COUNT(*) FROM capture_operations WHERE state = 'quarantined'",
-                [],
-                |row| row.get::<_, i64>(0),
-            )
-            .map_err(|error| ApplicationError::Storage(error.to_string()))?;
-        (pending, quarantined)
-    } else {
-        (0, 0)
-    };
+        .unwrap_or(0) as usize;
+    let pending_operations = connection
+        .query_row(
+            "SELECT COUNT(*) FROM capture_operations WHERE state = 'pending'",
+            [],
+            |row| row.get::<_, i64>(0),
+        )
+        .unwrap_or(0) as usize;
+    let quarantined_operations = connection
+        .query_row(
+            "SELECT COUNT(*) FROM capture_operations WHERE state = 'quarantined'",
+            [],
+            |row| row.get::<_, i64>(0),
+        )
+        .unwrap_or(0) as usize;
     Ok(RawStatus {
         reachable: true,
-        schema_version: version as u32,
+        schema_version,
         pending_journals,
         orphans,
-        quarantined_revisions: quarantined_revisions as usize,
-        pending_operations: pending_operations as usize,
-        quarantined_operations: quarantined_operations as usize,
+        quarantined_revisions,
+        pending_operations,
+        quarantined_operations,
     })
 }
 
@@ -140,10 +155,11 @@ pub mod test_support {
 
     use rusqlite::{OptionalExtension, params};
 
-    use super::open_connection;
     use crate::paths::DataPaths;
 
-    #[derive(Debug, PartialEq, Eq)]
+    use super::open_connection;
+
+    #[derive(Debug, Clone)]
     pub struct CaptureOperationSnapshot {
         pub operation_state: String,
         pub revision_state: String,
@@ -249,6 +265,16 @@ mod tests {
     }
 
     #[test]
+    fn open_derived_database_migrates() {
+        let temporary = tempdir().unwrap();
+        let paths = crate::paths::DataPaths::new(temporary.path().to_path_buf());
+        crate::paths::ensure_layout(&paths).unwrap();
+        let repo = super::open_derived_database(&paths, 100).unwrap();
+        drop(repo);
+        assert!(paths.derived_database().exists());
+    }
+
+    #[test]
     fn raw_status_reads_a_pre_operation_schema_without_migrating_it() {
         let temporary = tempdir().unwrap();
         let paths = crate::paths::DataPaths::new(temporary.path().to_path_buf());
@@ -286,5 +312,7 @@ mod tests {
         assert_eq!(status.quarantined_operations, 0);
     }
 }
-mod collection_migrate;
-mod collection_repository;
+
+
+
+

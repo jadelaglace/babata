@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+﻿use std::path::{Path, PathBuf};
 
 use babata_domain::LogicalPath;
 
@@ -16,6 +16,12 @@ impl DataPaths {
     }
     pub fn raw_database(&self) -> PathBuf {
         self.root.join("01_raw/index/raw.sqlite")
+    }
+    pub fn derived_database(&self) -> PathBuf {
+        self.root.join("02_derived/index/derived.sqlite")
+    }
+    pub fn derived_index(&self) -> PathBuf {
+        self.root.join("02_derived/index")
     }
     pub fn raw_assets(&self) -> PathBuf {
         self.root.join("01_raw/assets/sha256")
@@ -46,6 +52,7 @@ pub fn ensure_layout(paths: &DataPaths) -> Result<(), std::io::Error> {
         paths.root().join("00_inbox"),
         paths.root().join("01_raw/index"),
         paths.raw_assets(),
+        paths.derived_index(),
         paths.staging(".keep"),
         paths.journal(),
         paths.orphan(),
@@ -69,6 +76,7 @@ mod tests {
         let paths = DataPaths::new(temporary.path().to_path_buf());
         ensure_layout(&paths).unwrap();
         assert!(paths.raw_assets().exists());
+        assert!(paths.derived_index().exists());
         assert!(
             paths
                 .resolve_logical(&LogicalPath::parse("01_raw/assets/sha256/aa/file").unwrap())

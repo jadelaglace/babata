@@ -1,14 +1,12 @@
 ﻿# Process Skill Specification
 
-- Target CLI (formal, later): `babata process ...`
-- Agent guidance skill (P5 now): `02_skills/babata-bailian-clean/`
-- Input: revision / pipeline identifiers (CLI); or local file/dir scope (Agent skill)
-- Output: job/run status and derivative references (CLI); or traceable derivatives under `BABATA_DATA_HOME` (Agent skill)
-- Permissions:
-  - Formal Skill: invoke Rust CLI only; no provider credentials in the Skill
-  - Agent skill: may call local tools and `bl` using user-configured Bailian auth; never write secrets into Git
-- Errors: provider, retry, privacy, `capability_unavailable`
+- Target CLI: `babata process ...`
+- Agent guidance skill (parallel): `02_skills/babata-bailian-clean/`
+- Input: revision id, pipeline id, derivative payload (text/json/path)
+- Output: process_run id, derivative id, status; list pipelines / list runs / show run
+- Permissions: invoke Rust CLI only for formal registration; no provider credentials in Skill
+- Errors: provider, retry, privacy, `capability_unavailable` (job queue still P5+)
 - Activation:
-  - Agent skill `babata-bailian-clean`: activated in P5 for real multimodal cleaning trials after Bailian CLI path is proven
-  - Formal `babata process` Skill / capability: after TC-03 and TC-04 and C1 process/provider gates
-- Non-goals for the Agent skill: overwriting C0 originals; claiming AC-03/AC-04 passed without core registration; silent replacement of prior derivatives
+  - P5 now: `list-pipelines`, `register`, `show-run`, `list-runs` against `derived.sqlite`
+  - P5+: enqueue/run-once provider execution, full AC-03/AC-04/TC-03/TC-04
+- Guarantees: C0 untouched; retries create new runs; derivatives are C1 only
