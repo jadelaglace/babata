@@ -268,6 +268,7 @@ pub struct ProcessJobOutcome {
     pub job_id: JobId,
     pub status: String,
 }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RegisterDerivativeCommand {
     pub pipeline_id: PipelineId,
@@ -294,11 +295,28 @@ pub struct RegisterDerivativeCommand {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RegisterFailureCommand {
+    pub pipeline_id: PipelineId,
+    pub revision_id: RevisionId,
+    pub item_id: Option<ItemId>,
+    pub input_sha256: Sha256,
+    pub provider: String,
+    pub tool_or_model: Option<String>,
+    pub tool_version: Option<String>,
+    pub retry_of_run_id: Option<RunId>,
+    pub params: Metadata,
+    pub error_code: String,
+    pub error_message: Option<String>,
+    pub loss_notes: Option<String>,
+    pub input_asset_id: Option<AssetId>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RegisterDerivativeOutcome {
     pub run_id: RunId,
-    pub derivative_id: DerivativeId,
+    pub derivative_id: Option<DerivativeId>,
     pub pipeline_id: PipelineId,
-    pub kind: DerivativeKind,
+    pub kind: Option<DerivativeKind>,
     pub state: ProcessingState,
 }
 

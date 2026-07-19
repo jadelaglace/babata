@@ -286,6 +286,46 @@ impl AssetStorePort for FileAssetStore {
         self.remove_empty_staging(&operation_id)
     }
 
+    fn hash_logical(&self, logical_path: &LogicalPath) -> Result<Sha256, ApplicationError> {
+        let path = self.paths.resolve_logical(logical_path).map_err(Self::io)?;
+        let bytes = fs::read(path).map_err(Self::io)?;
+        Ok(Sha256::of_bytes(&bytes))
+    }
+
+    fn import_derived_file(
+        &self,
+        source: &str,
+    ) -> Result<(LogicalPath, Sha256), ApplicationError> {
+        let bytes = fs::read(source).map_err(Self::io)?;
+        let sha256 = Sha256::of_bytes(&bytes);
+        let file_name = Path::new(source)
+            .file_name()
+            .and_then(|name| name.to_str())
+            .ok_or_else(|| ApplicationError::Asset("derived file name is invalid".to_owned()))?;
+        let logical = format!(
+            "02_derived/files/sha256/{}/{}-{}",
+            &sha256.as_str()[..2],
+            sha256.as_str(),
+            file_name
+        );
+        let logical_path = LogicalPath::parse(&logical).map_err(ApplicationError::from)?;
+        let destination = self.paths.resolve_logical(&logical_path).map_err(Self::io)?;
+        if let Some(parent) = destination.parent() {
+            fs::create_dir_all(parent).map_err(Self::io)?;
+        }
+        if destination.exists() {
+            let existing = fs::read(&destination).map_err(Self::io)?;
+            if Sha256::of_bytes(&existing) != sha256 {
+                return Err(ApplicationError::Integrity(
+                    "derived file hash collision in managed storage".to_owned(),
+                ));
+            }
+        } else {
+            fs::write(&destination, &bytes).map_err(Self::io)?;
+        }
+        Ok((logical_path, sha256))
+    }
+
     fn quarantine_finalized(
         &self,
         asset: &StagedAsset,

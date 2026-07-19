@@ -126,6 +126,11 @@ pub trait RawRepositoryPort {
         &self,
         revision_id: &RevisionId,
     ) -> Result<Option<RawState>, ApplicationError>;
+    fn find_asset(&self, asset_id: &AssetId) -> Result<Option<NewAsset>, ApplicationError>;
+    fn list_assets_for_revision(
+        &self,
+        revision_id: &RevisionId,
+    ) -> Result<Vec<NewAsset>, ApplicationError>;
     fn find_by_source_identity(
         &self,
         source_id: &SourceId,

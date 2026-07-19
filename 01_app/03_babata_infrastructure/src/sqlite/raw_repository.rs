@@ -72,6 +72,34 @@ impl RawRepositoryPort for SqliteRawRepository {
             .transpose()
     }
 
+    fn find_asset(&self, asset_id: &AssetId) -> Result<Option<NewAsset>, ApplicationError> {
+        let connection = self.lock()?;
+        connection
+            .query_row(
+                "SELECT asset_id, revision_id, asset_role, logical_path, sha256, byte_size, media_type, original_filename FROM assets WHERE asset_id = ?1",
+                params![asset_id.to_string()],
+                new_asset_from_row,
+            )
+            .optional()
+            .map_err(storage)
+    }
+
+    fn list_assets_for_revision(
+        &self,
+        revision_id: &RevisionId,
+    ) -> Result<Vec<NewAsset>, ApplicationError> {
+        let connection = self.lock()?;
+        let mut statement = connection
+            .prepare(
+                "SELECT asset_id, revision_id, asset_role, logical_path, sha256, byte_size, media_type, original_filename FROM assets WHERE revision_id = ?1 ORDER BY created_at",
+            )
+            .map_err(storage)?;
+        let rows = statement
+            .query_map(params![revision_id.to_string()], new_asset_from_row)
+            .map_err(storage)?;
+        rows.map(|row| row.map_err(storage)).collect()
+    }
+
     fn find_by_source_identity(
         &self,
         source_id: &SourceId,
@@ -404,6 +432,19 @@ fn load_revisions(
         })
         .map_err(storage)?;
     rows.map(|row| row.map_err(storage)).collect()
+}
+
+fn new_asset_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<NewAsset> {
+    Ok(NewAsset {
+        id: AssetId::parse(row.get::<_, String>(0)?).map_err(to_sql)?,
+        revision_id: RevisionId::parse(row.get::<_, String>(1)?).map_err(to_sql)?,
+        role: parse_asset_role(&row.get::<_, String>(2)?).map_err(to_sql)?,
+        logical_path: row.get(3)?,
+        sha256: Sha256::parse(row.get::<_, String>(4)?).map_err(to_sql)?,
+        byte_size: row.get::<_, i64>(5)? as u64,
+        media_type: row.get(6)?,
+        original_filename: row.get(7)?,
+    })
 }
 
 fn load_assets(
@@ -750,7 +791,7 @@ mod tests {
         CaptureFileCommand, CaptureService,
         ports::{AssetStorePort, FinalizeAssetOutcome, RawRepositoryPort, StagedAsset},
     };
-    use babata_domain::{ContentType, LogicalPath, Metadata};
+    use babata_domain::{ContentType, LogicalPath, Metadata, Sha256};
     use tempfile::tempdir;
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -835,6 +876,15 @@ mod tests {
         ) -> Result<(), ApplicationError> {
             self.inner
                 .quarantine_finalized(asset, operation_id, outcome)
+        }
+        fn hash_logical(&self, logical_path: &LogicalPath) -> Result<Sha256, ApplicationError> {
+            self.inner.hash_logical(logical_path)
+        }
+        fn import_derived_file(
+            &self,
+            source: &str,
+        ) -> Result<(LogicalPath, Sha256), ApplicationError> {
+            self.inner.import_derived_file(source)
         }
     }
 

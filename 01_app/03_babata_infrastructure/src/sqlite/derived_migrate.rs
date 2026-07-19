@@ -4,10 +4,16 @@ use babata_application::ApplicationError;
 use rusqlite::{Connection, params};
 use sha2::{Digest, Sha256};
 
-const MIGRATIONS: &[(&str, &str)] = &[(
-    "0001_derived_schema.sql",
-    include_str!("../../../../03_migrations/02_derived/0001_derived_schema.sql"),
-)];
+const MIGRATIONS: &[(&str, &str)] = &[
+    (
+        "0001_derived_schema.sql",
+        include_str!("../../../../03_migrations/02_derived/0001_derived_schema.sql"),
+    ),
+    (
+        "0002_derivative_output_hash_required.sql",
+        include_str!("../../../../03_migrations/02_derived/0002_derivative_output_hash_required.sql"),
+    ),
+];
 
 pub fn migrate_derived(connection: &Connection) -> Result<(), ApplicationError> {
     let mut recorded = BTreeMap::new();
@@ -76,7 +82,7 @@ mod tests {
                 .query_row("SELECT COUNT(*) FROM schema_migrations", [], |row| row
                     .get::<_, i64>(0))
                 .unwrap(),
-            1
+            2
         );
     }
 }

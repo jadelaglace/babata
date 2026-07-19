@@ -66,23 +66,44 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         RootCommand::Process(command) => {
             let repository =
                 open_derived_database(&config.paths(), config.sqlite.busy_timeout_ms)?;
-            let service = ProcessService::new(repository, SystemClock);
+            let raw = open_raw_database(&config.paths(), config.sqlite.busy_timeout_ms)?;
+            let assets = FileAssetStore::new(config.paths());
+            let service = ProcessService::new(repository, raw, assets, SystemClock);
             match command {
                 ProcessCommand::ListPipelines => {
                     let pipelines = service.list_pipelines()?;
                     render_value(&pipelines, cli.json)?;
                 }
                 ProcessCommand::Register { .. } => {
-                    let register = crate::commands::process::build_register_command(&command)
-                        .map_err(|error| {
-                            Box::new(ApplicationError::Integrity(error))
-                                as Box<dyn std::error::Error>
-                        })?;
+                    let register = crate::commands::process::build_register_command(
+                        &command,
+                        &FileAssetStore::new(config.paths()),
+                    )
+                    .map_err(|error| {
+                        Box::new(ApplicationError::Integrity(error))
+                            as Box<dyn std::error::Error>
+                    })?;
                     let outcome = service.register_derivative(register)?;
                     if cli.json {
                         render_value(&outcome, true)?;
                     } else {
-                        println!("{} {}", outcome.run_id, outcome.derivative_id);
+                        match &outcome.derivative_id {
+                            Some(derivative_id) => println!("{} {}", outcome.run_id, derivative_id),
+                            None => println!("{}", outcome.run_id),
+                        }
+                    }
+                }
+                ProcessCommand::RegisterFailure { .. } => {
+                    let failure = crate::commands::process::build_failure_command(&command)
+                        .map_err(|error| {
+                            Box::new(ApplicationError::Integrity(error))
+                                as Box<dyn std::error::Error>
+                        })?;
+                    let outcome = service.register_failure(failure)?;
+                    if cli.json {
+                        render_value(&outcome, true)?;
+                    } else {
+                        println!("{}", outcome.run_id);
                     }
                 }
                 ProcessCommand::ShowRun { run } => {
