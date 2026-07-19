@@ -2,7 +2,6 @@ use std::collections::BTreeMap;
 
 use babata_application::ApplicationError;
 use rusqlite::{Connection, params};
-use sha2::{Digest, Sha256};
 
 const MIGRATIONS: &[(&str, &str)] = &[
     (
@@ -46,9 +45,9 @@ pub fn migrate_collection(connection: &Connection) -> Result<(), ApplicationErro
     drop(statement);
     for (index, (name, sql)) in MIGRATIONS.iter().enumerate() {
         let version = (index + 1) as i64;
-        let checksum = format!("{:x}", Sha256::digest(sql.as_bytes()));
+        let checksum = super::migration_checksum(sql);
         if let Some(existing) = recorded.get(&version) {
-            if existing != &checksum {
+            if !super::migration_checksum_matches(existing, sql) {
                 return Err(ApplicationError::Integrity(format!(
                     "collection migration checksum changed: {name}"
                 )));
