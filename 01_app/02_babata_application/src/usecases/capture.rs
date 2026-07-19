@@ -178,6 +178,9 @@ where
             .find_source_by_id(&item.source_id)?
             .ok_or_else(|| ApplicationError::NotFound(format!("source {}", item.source_id)))?;
 
+        // Resolve every fallible repository value before staging files so an
+        // early database failure cannot leave an untracked staging operation.
+        let ordinal = self.repository.next_ordinal(&item.id)?;
         let operation_id = new_operation_id();
         let staged_assets = self.stage_import_assets(&command.assets, &operation_id)?;
 
@@ -187,7 +190,7 @@ where
             item_id: item.id.clone(),
             parent_revision_id: Some(parent.id.clone()),
             kind: RevisionKind::Import,
-            ordinal: self.repository.next_ordinal(&item.id)?,
+            ordinal,
             captured_at: now.clone(),
             authored_at: parent.authored_at,
             revision_note: Some(command.reason.trim().to_owned()),
@@ -820,6 +823,7 @@ pub(crate) mod tests {
     pub(crate) struct MockRepository {
         pub(crate) state: Arc<Mutex<State>>,
         pub(crate) fail_mark_ready: bool,
+        pub(crate) fail_next_ordinal: bool,
     }
     #[derive(Default)]
     pub(crate) struct State {
@@ -944,6 +948,9 @@ pub(crate) mod tests {
                 }))
         }
         fn next_ordinal(&self, item: &ItemId) -> Result<u32, ApplicationError> {
+            if self.fail_next_ordinal {
+                return Err(ApplicationError::Storage("next ordinal failed".to_owned()));
+            }
             Ok(self
                 .state
                 .lock()
@@ -1176,6 +1183,7 @@ pub(crate) mod tests {
         pub(crate) fail_stage: bool,
         pub(crate) fail_finalize: bool,
         pub(crate) fail_verify: bool,
+        staged: Arc<Mutex<u32>>,
         finalized: Arc<Mutex<u32>>,
         discarded: Arc<Mutex<u32>>,
         recovery_markers: Arc<Mutex<u32>>,
@@ -1199,6 +1207,7 @@ pub(crate) mod tests {
             if self.fail_stage {
                 return Err(ApplicationError::Asset("staging failed".to_owned()));
             }
+            *self.staged.lock().unwrap() += 1;
             Ok(StagedAsset {
                 asset_id: AssetId::new(),
                 role,
@@ -1254,6 +1263,36 @@ pub(crate) mod tests {
             metadata: Metadata::empty(),
             source_published_at: None,
         }
+    }
+
+    #[test]
+    fn attach_assets_resolves_ordinal_before_staging() {
+        let repository = MockRepository::default();
+        let assets = MockAssets::default();
+        let parent = CaptureService::new(repository.clone(), assets.clone(), FixedClock)
+            .capture_text(text("fixture", "existing source text"))
+            .unwrap();
+        let failing_repository = MockRepository {
+            state: repository.state.clone(),
+            fail_next_ordinal: true,
+            ..Default::default()
+        };
+        let service = CaptureService::new(failing_repository, assets.clone(), FixedClock);
+
+        let error = service
+            .attach_recovered_assets(AttachRecoveredAssetsCommand {
+                revision_id: parent.revision_id,
+                assets: vec![crate::CaptureImportAsset {
+                    path: "source.docx".to_owned(),
+                    role: AssetRole::Original,
+                }],
+                reason: "recover source".to_owned(),
+                metadata: Metadata::empty(),
+            })
+            .unwrap_err();
+
+        assert!(error.to_string().contains("next ordinal failed"));
+        assert_eq!(*assets.staged.lock().unwrap(), 0);
     }
 
     #[test]

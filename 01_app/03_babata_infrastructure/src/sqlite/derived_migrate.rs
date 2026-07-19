@@ -55,6 +55,14 @@ pub fn migrate_derived(connection: &Connection) -> Result<(), ApplicationError> 
             recorded.insert(version, checksum);
         }
     }
+    if let Some((&recorded_version, _)) = recorded.last_key_value() {
+        let supported_version = MIGRATIONS.len() as i64;
+        if recorded_version > supported_version {
+            return Err(ApplicationError::Integrity(format!(
+                "derived schema version {recorded_version} is newer than this binary supports ({supported_version})"
+            )));
+        }
+    }
     for (index, (name, sql)) in MIGRATIONS.iter().enumerate() {
         let version = (index + 1) as i64;
         let checksum = format!("{:x}", Sha256::digest(sql.as_bytes()));
@@ -301,5 +309,29 @@ mod tests {
 
         let error = migrate_derived(&connection).unwrap_err();
         assert!(error.to_string().contains("migration checksum changed"));
+    }
+
+    #[test]
+    fn newer_derived_schema_is_rejected() {
+        let connection = Connection::open_in_memory().unwrap();
+        migrate_derived(&connection).unwrap();
+        connection
+            .execute(
+                "INSERT INTO schema_migrations
+                 (version, name, applied_at, checksum_sha256)
+                 VALUES (?1, 'future.sql', '2026-01-01T00:00:00Z', ?2)",
+                params![
+                    (MIGRATIONS.len() + 1) as i64,
+                    "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+                ],
+            )
+            .unwrap();
+
+        let error = migrate_derived(&connection).unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("newer than this binary supports")
+        );
     }
 }

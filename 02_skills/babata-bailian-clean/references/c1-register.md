@@ -212,3 +212,16 @@ retry_of 只指向同身份 failed run
 ```
 
 API Key、鉴权文件、完整敏感 prompt 不进入 params、content、日志或报告。
+
+Provider 原始 JSON 还必须检查并移除：
+
+```text
+临时上传/下载签名 URL
+URL 查询参数中的 token、Signature、credential
+Authorization/Cookie 等鉴权头
+账号密钥或可复用会话凭据
+```
+
+只把脱敏后的 JSON 作为 `--json-file` / `--output-file` 登记；在 `--params-json` 增加
+`sanitization` 数组说明删除了什么。完整响应确需审计时，只进入明确受限且不会被普通
+检索、视图或输出消费的证据区，不能把普通 C1 当凭据仓库。
