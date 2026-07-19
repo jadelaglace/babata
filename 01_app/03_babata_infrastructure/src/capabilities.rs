@@ -1,4 +1,4 @@
-﻿use babata_application::{ApplicationError, ports::CapabilityRegistryPort};
+use babata_application::{ApplicationError, ports::CapabilityRegistryPort};
 use babata_domain::{CapabilityDescriptor, CapabilityId, CapabilityStatus};
 
 #[derive(Debug, Clone)]
@@ -41,9 +41,7 @@ pub fn all_descriptors() -> Vec<CapabilityDescriptor> {
             id: CapabilityId::new("processing"),
             status: CapabilityStatus::Enabled,
             activation_phase: "P5".to_owned(),
-            reason: Some(
-                "C1 register/list/show enabled; provider job queue still P5+".to_owned(),
-            ),
+            reason: Some("C1 register/list/show enabled; provider job queue still P5+".to_owned()),
         },
         CapabilityDescriptor::unavailable("knowledge", "P6"),
         CapabilityDescriptor::unavailable("explore", "P6"),

@@ -1,4 +1,4 @@
-﻿use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     AssetId, DerivativeId, DerivativeKind, ItemId, JobId, LogicalPath, Metadata, ProcessingState,
@@ -94,4 +94,3 @@ mod tests {
         );
     }
 }
-

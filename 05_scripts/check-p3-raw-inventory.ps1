@@ -100,7 +100,13 @@ foreach ($group in $testGroups.Keys) {
 }
 if ($total -lt 22) { throw "P3 requires at least 22 functional tests, found $total" }
 
-$unexpectedRuntime = @(rg --files $repo -g '*.sqlite' -g '*.sqlite-wal' -g '*.sqlite-shm' -g '*.db' -g '*.log')
+$unexpectedRuntime = @(
+    git -C $repo ls-files --cached --others --exclude-standard |
+        Where-Object { $_ -match '\.(?:db|sqlite|sqlite3|sqlite-wal|sqlite-shm|log)$' }
+)
+if ($LASTEXITCODE -ne 0) {
+    throw 'Unable to inspect the repository for generated runtime data'
+}
 if ($unexpectedRuntime.Count -gt 0) {
     throw "Generated runtime data entered the repository: $($unexpectedRuntime -join ', ')"
 }

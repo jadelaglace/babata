@@ -22,11 +22,11 @@ pub enum ProcessCommand {
         text: Option<String>,
         #[arg(long)]
         json_file: Option<String>,
-        /// Logical path under BABATA_DATA_HOME for an already stored derivative file.
+        /// Logical path under `BABATA_DATA_HOME` for an already stored derivative file.
         #[arg(long)]
         logical_path: Option<String>,
         /// External derivative file to import into managed C1 storage
-        /// (02_derived/files/sha256/...) before registration.
+        /// (`02_derived/files/sha256/...`) before registration.
         #[arg(long)]
         output_file: Option<String>,
         #[arg(long)]
@@ -89,11 +89,20 @@ pub enum ProcessCommand {
         #[arg(long)]
         revision: String,
     },
-    Enqueue { pipeline: String, revision: String },
+    Enqueue {
+        pipeline: String,
+        revision: String,
+    },
     RunOnce,
-    Status { job: String },
-    Retry { job: String },
-    Cancel { job: String },
+    Status {
+        job: String,
+    },
+    Retry {
+        job: String,
+    },
+    Cancel {
+        job: String,
+    },
 }
 
 pub fn parse_kind(value: &str) -> Result<DerivativeKind, String> {
@@ -112,7 +121,7 @@ pub fn parse_kind(value: &str) -> Result<DerivativeKind, String> {
     }
 }
 
-pub fn load_optional_file(path: &Option<String>) -> Result<Option<String>, String> {
+pub fn load_optional_file(path: Option<&str>) -> Result<Option<String>, String> {
     match path {
         Some(path) => std::fs::read_to_string(path)
             .map(Some)
@@ -153,9 +162,9 @@ pub fn build_register_command(
     let content_text = if let Some(text) = text {
         Some(text.clone())
     } else {
-        load_optional_file(text_file)?
+        load_optional_file(text_file.as_deref())?
     };
-    let content_json = load_optional_file(json_file)?;
+    let content_json = load_optional_file(json_file.as_deref())?;
 
     let mut logical_path = logical_path
         .as_ref()

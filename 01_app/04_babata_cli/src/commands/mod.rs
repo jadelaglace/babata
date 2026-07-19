@@ -59,7 +59,7 @@ pub enum RootCommand {
     #[command(subcommand)]
     Knowledge(KnowledgeCommand),
     #[command(subcommand)]
-    Process(ProcessCommand),
+    Process(Box<ProcessCommand>),
     #[command(subcommand)]
     Explore(ExploreCommand),
     #[command(subcommand)]
