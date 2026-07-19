@@ -109,6 +109,70 @@ fn invalid_text_emits_a_json_error_envelope() {
 }
 
 #[test]
+fn attach_assets_appends_original_and_preview_without_mutating_parent() {
+    let temp = tempdir().unwrap();
+    let capture = capture_text(&temp, "real document body retained from the source");
+    let parent_revision = capture["revision_id"].as_str().unwrap();
+    let item_id = capture["item_id"].as_str().unwrap();
+    let parent_hash = capture["record"]["revisions"][0]["text_sha256"]
+        .as_str()
+        .unwrap();
+    let original = temp.path().join("source.docx");
+    let preview = temp.path().join("platform-preview.pdf");
+    std::fs::write(&original, b"original-docx-bytes").unwrap();
+    std::fs::write(&preview, b"preview-pdf-bytes").unwrap();
+
+    let output = babata(&temp)
+        .args([
+            "--json",
+            "capture",
+            "attach-assets",
+            "--revision",
+            parent_revision,
+            "--original",
+            original.to_str().unwrap(),
+            "--preview",
+            preview.to_str().unwrap(),
+            "--reason",
+            "recover source file and distinguish platform preview",
+            "--metadata-json",
+            r#"{"recovery":"fixture"}"#,
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let output: Value = serde_json::from_slice(&output).unwrap();
+
+    assert_eq!(output["item_id"], item_id);
+    assert_ne!(output["revision_id"], parent_revision);
+    assert_eq!(output["reimported"], true);
+    assert_eq!(output["record"]["revisions"].as_array().unwrap().len(), 2);
+    assert_eq!(
+        output["record"]["revisions"][1]["parent_revision_id"],
+        parent_revision
+    );
+    assert_eq!(output["record"]["revisions"][0]["text_sha256"], parent_hash);
+    assert_eq!(output["record"]["revisions"][1]["text_sha256"], parent_hash);
+    let assets = output["record"]["assets"].as_array().unwrap();
+    assert_eq!(assets.len(), 2);
+    assert!(assets.iter().any(|asset| {
+        asset["role"] == "original" && asset["sha256"] == sha256_hex(b"original-docx-bytes")
+    }));
+    assert!(assets.iter().any(|asset| {
+        asset["role"] == "preview" && asset["sha256"] == sha256_hex(b"preview-pdf-bytes")
+    }));
+    for asset in assets {
+        assert!(
+            temp.path()
+                .join(asset["logical_path"].as_str().unwrap())
+                .exists()
+        );
+    }
+}
+
+#[test]
 fn capability_list_reports_processing_enabled_for_p5_register() {
     let temp = tempdir().unwrap();
     let output = babata(&temp)

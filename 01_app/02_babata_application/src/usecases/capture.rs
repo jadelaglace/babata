@@ -4,8 +4,8 @@ use babata_domain::{
 };
 
 use crate::{
-    ApplicationError, CandidateCaptureCommand, CaptureFileCommand, CaptureImportCommand,
-    CaptureOutcome, CaptureTextCommand,
+    ApplicationError, AttachRecoveredAssetsCommand, CandidateCaptureCommand, CaptureFileCommand,
+    CaptureImportCommand, CaptureOutcome, CaptureTextCommand,
     ports::{
         AssetStorePort, ClockPort, FinalizeAssetOutcome, NewAsset, NewCaptureOperation,
         NewCollection, NewItem, NewRevision, NewSource, PersistGraph, RawRepositoryPort,
@@ -85,19 +85,7 @@ where
         let text = TextPayload::new(command.text)?;
         let route_evidence = command.route_evidence.clone();
         let operation_id = new_operation_id();
-        let mut staged_assets = Vec::with_capacity(command.assets.len());
-        for asset in &command.assets {
-            match self.assets.stage(&asset.path, asset.role, &operation_id) {
-                Ok(staged) => staged_assets.push(staged),
-                Err(error) => {
-                    for staged in &staged_assets {
-                        let _ = self.assets.discard_stage(staged);
-                    }
-                    let _ = self.assets.complete_operation(&operation_id);
-                    return Err(error.with_operation(operation_id));
-                }
-            }
-        }
+        let staged_assets = self.stage_import_assets(&command.assets, &operation_id)?;
         let identity = command
             .identity
             .or_else(|| command.native_id.as_ref().map(|id| format!("native:{id}")))
@@ -145,6 +133,133 @@ where
             }
         }
         Ok(outcome)
+    }
+
+    /// Append recovered source/preview assets as a new C0 revision. The parent
+    /// revision and all existing bytes remain immutable.
+    pub fn attach_recovered_assets(
+        &self,
+        command: AttachRecoveredAssetsCommand,
+    ) -> Result<CaptureOutcome, ApplicationError> {
+        if command.assets.is_empty() {
+            return Err(ApplicationError::Integrity(
+                "attach-assets needs at least one file".to_owned(),
+            ));
+        }
+        if command.reason.trim().is_empty() {
+            return Err(ApplicationError::Integrity(
+                "attach-assets needs a non-empty reason".to_owned(),
+            ));
+        }
+        let parent = self
+            .repository
+            .find_revision(&command.revision_id)?
+            .ok_or_else(|| {
+                ApplicationError::NotFound(format!("revision {}", command.revision_id))
+            })?;
+        let state = self
+            .repository
+            .find_revision_state(&command.revision_id)?
+            .ok_or_else(|| {
+                ApplicationError::NotFound(format!("revision {}", command.revision_id))
+            })?;
+        if state != RawState::Ready {
+            return Err(ApplicationError::Integrity(format!(
+                "revision {} is {state:?}; recovered assets require a ready parent",
+                command.revision_id
+            )));
+        }
+        let item = self
+            .repository
+            .find_item(&parent.item_id)?
+            .ok_or_else(|| ApplicationError::NotFound(format!("item {}", parent.item_id)))?;
+        let source = self
+            .repository
+            .find_source_by_id(&item.source_id)?
+            .ok_or_else(|| ApplicationError::NotFound(format!("source {}", item.source_id)))?;
+
+        let operation_id = new_operation_id();
+        let staged_assets = self.stage_import_assets(&command.assets, &operation_id)?;
+
+        let now = self.clock.now();
+        let revision = NewRevision {
+            id: RevisionId::new(),
+            item_id: item.id.clone(),
+            parent_revision_id: Some(parent.id.clone()),
+            kind: RevisionKind::Import,
+            ordinal: self.repository.next_ordinal(&item.id)?,
+            captured_at: now.clone(),
+            authored_at: parent.authored_at,
+            revision_note: Some(command.reason.trim().to_owned()),
+            raw_text: parent.raw_text,
+            text_sha256: parent.text_sha256.clone(),
+            metadata: parent.metadata,
+        };
+        let operation = NewCaptureOperation {
+            operation_id: operation_id.clone(),
+            item_id: item.id.clone(),
+            revision_id: revision.id.clone(),
+            source_native_id: item.source_native_id.clone(),
+            source_locator: item.source_locator.clone(),
+            source_published_at: item.source_published_at.clone(),
+            metadata: command.metadata,
+            started_at: now,
+        };
+        let assets = staged_assets
+            .iter()
+            .map(|asset| NewAsset {
+                id: asset.asset_id.clone(),
+                revision_id: revision.id.clone(),
+                role: asset.role,
+                logical_path: asset.logical_path.as_str().to_owned(),
+                sha256: asset.sha256.clone(),
+                byte_size: asset.byte_size,
+                media_type: asset.media_type.clone(),
+                original_filename: asset.original_filename.clone(),
+            })
+            .collect();
+        let duplicate_of = revision.text_sha256.as_ref().map(|_| parent.id);
+        let result = self.persist_and_finalize(
+            operation_id.clone(),
+            operation,
+            source,
+            None,
+            item,
+            revision,
+            assets,
+            Vec::new(),
+            staged_assets.clone(),
+            duplicate_of,
+            true,
+        );
+        if result.is_err() {
+            for asset in &staged_assets {
+                let _ = self.assets.discard_stage(asset);
+            }
+            let _ = self.assets.complete_operation(&operation_id);
+        }
+        result.map_err(|error| error.with_operation(operation_id))
+    }
+
+    fn stage_import_assets(
+        &self,
+        assets: &[crate::CaptureImportAsset],
+        operation_id: &str,
+    ) -> Result<Vec<StagedAsset>, ApplicationError> {
+        let mut staged_assets = Vec::with_capacity(assets.len());
+        for asset in assets {
+            match self.assets.stage(&asset.path, asset.role, operation_id) {
+                Ok(staged) => staged_assets.push(staged),
+                Err(error) => {
+                    for staged in &staged_assets {
+                        let _ = self.assets.discard_stage(staged);
+                    }
+                    let _ = self.assets.complete_operation(operation_id);
+                    return Err(error.with_operation(operation_id.to_owned()));
+                }
+            }
+        }
+        Ok(staged_assets)
     }
 
     pub fn capture_candidate(
@@ -736,6 +851,16 @@ pub(crate) mod tests {
                         && source.provider == provider
                         && source.account_or_workspace.as_deref() == account
                 })
+                .cloned())
+        }
+        fn find_source_by_id(&self, id: &SourceId) -> Result<Option<NewSource>, ApplicationError> {
+            Ok(self
+                .state
+                .lock()
+                .unwrap()
+                .sources
+                .iter()
+                .find(|source| &source.id == id)
                 .cloned())
         }
         fn find_item(&self, id: &ItemId) -> Result<Option<NewItem>, ApplicationError> {

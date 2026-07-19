@@ -38,6 +38,14 @@ pub struct CaptureImportAsset {
 }
 
 #[derive(Debug, Clone)]
+pub struct AttachRecoveredAssetsCommand {
+    pub revision_id: RevisionId,
+    pub assets: Vec<CaptureImportAsset>,
+    pub reason: String,
+    pub metadata: Metadata,
+}
+
+#[derive(Debug, Clone)]
 pub struct CaptureImportCommand {
     pub provider: String,
     pub text: String,

@@ -1,7 +1,7 @@
 use babata_application::{
-    AnnotateCommand, CandidateCaptureCommand, CaptureFileCommand, CaptureImportAsset,
-    CaptureImportCommand, CaptureOutcome, CaptureService, CaptureTextCommand, CreateNoteCommand,
-    ReviseCommand, RouteEvidenceCommand, WorkspaceService,
+    AnnotateCommand, AttachRecoveredAssetsCommand, CandidateCaptureCommand, CaptureFileCommand,
+    CaptureImportAsset, CaptureImportCommand, CaptureOutcome, CaptureService, CaptureTextCommand,
+    CreateNoteCommand, ReviseCommand, RouteEvidenceCommand, WorkspaceService,
 };
 use babata_domain::{
     AssetRole, CandidateEnvelope, ContentType, ItemId, Metadata, RevisionId, RouteCoverage,
@@ -39,6 +39,29 @@ pub fn execute(
         RootCommand::Capture(CaptureCommand::Export(input)) => {
             capture.capture_export(file_command(input)?).map(single)
         }
+        RootCommand::Capture(CaptureCommand::AttachAssets(input)) => capture
+            .attach_recovered_assets(AttachRecoveredAssetsCommand {
+                revision_id: RevisionId::parse(&input.revision)?,
+                assets: input
+                    .original
+                    .into_iter()
+                    .map(|path| CaptureImportAsset {
+                        path: path.to_string_lossy().to_string(),
+                        role: AssetRole::Original,
+                    })
+                    .chain(input.preview.into_iter().map(|path| CaptureImportAsset {
+                        path: path.to_string_lossy().to_string(),
+                        role: AssetRole::Preview,
+                    }))
+                    .chain(input.attachment.into_iter().map(|path| CaptureImportAsset {
+                        path: path.to_string_lossy().to_string(),
+                        role: AssetRole::Attachment,
+                    }))
+                    .collect(),
+                reason: input.reason,
+                metadata: Metadata::parse(&input.metadata_json)?,
+            })
+            .map(single),
         RootCommand::Capture(CaptureCommand::Candidate(input)) => capture
             .capture_candidate(CandidateCaptureCommand {
                 candidate: read_candidate(&input.path)?,
@@ -205,9 +228,26 @@ pub enum CaptureCommand {
     Text(ExternalTextInput),
     File(ExternalFileInput),
     Export(ExternalFileInput),
+    AttachAssets(AttachAssetsInput),
     Candidate(CandidateInput),
     FeishuExport(FeishuExportInput),
     Bookmarks(BookmarksInput),
+}
+
+#[derive(Debug, clap::Args)]
+pub struct AttachAssetsInput {
+    #[arg(long)]
+    pub revision: String,
+    #[arg(long = "original")]
+    pub original: Vec<std::path::PathBuf>,
+    #[arg(long = "preview")]
+    pub preview: Vec<std::path::PathBuf>,
+    #[arg(long = "attachment")]
+    pub attachment: Vec<std::path::PathBuf>,
+    #[arg(long)]
+    pub reason: String,
+    #[arg(long, default_value = "{}")]
+    pub metadata_json: String,
 }
 
 #[derive(Debug, clap::Args)]

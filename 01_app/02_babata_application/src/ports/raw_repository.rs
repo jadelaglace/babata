@@ -117,6 +117,10 @@ pub trait RawRepositoryPort {
         provider: &str,
         account_or_workspace: Option<&str>,
     ) -> Result<Option<NewSource>, ApplicationError>;
+    fn find_source_by_id(
+        &self,
+        source_id: &SourceId,
+    ) -> Result<Option<NewSource>, ApplicationError>;
     fn find_item(&self, item_id: &ItemId) -> Result<Option<NewItem>, ApplicationError>;
     fn find_revision(
         &self,

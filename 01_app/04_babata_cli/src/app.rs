@@ -35,7 +35,8 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         command @ (RootCommand::Capture(
             crate::commands::CaptureCommand::Text(_)
             | crate::commands::CaptureCommand::File(_)
-            | crate::commands::CaptureCommand::Export(_),
+            | crate::commands::CaptureCommand::Export(_)
+            | crate::commands::CaptureCommand::AttachAssets(_),
         )
         | RootCommand::Workspace(_)
         | RootCommand::Create(_)
