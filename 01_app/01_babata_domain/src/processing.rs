@@ -33,6 +33,8 @@ pub struct ProcessRun {
     pub input_revision_id: RevisionId,
     pub input_item_id: Option<ItemId>,
     pub input_sha256: Sha256,
+    pub target_kind: Option<DerivativeKind>,
+    pub input_asset_id: Option<AssetId>,
     pub state: ProcessingState,
     pub provider: String,
     pub tool_or_model: Option<String>,

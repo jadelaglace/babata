@@ -49,6 +49,9 @@ pub enum ProcessCommand {
         /// Extra run params as a JSON object (never include secrets).
         #[arg(long, default_value = "{}")]
         params_json: String,
+        /// Provider usage as a JSON object when the provider reports it.
+        #[arg(long, default_value = "{}")]
+        usage_json: String,
     },
     /// Record a failed processing attempt so retries keep honest history.
     RegisterFailure {
@@ -56,6 +59,8 @@ pub enum ProcessCommand {
         pipeline: String,
         #[arg(long)]
         revision: String,
+        #[arg(long)]
+        kind: String,
         #[arg(long)]
         provider: String,
         #[arg(long)]
@@ -132,7 +137,6 @@ pub fn load_optional_file(path: Option<&str>) -> Result<Option<String>, String> 
 
 pub fn build_register_command(
     command: &ProcessCommand,
-    assets: &dyn babata_application::ports::AssetStorePort,
 ) -> Result<babata_application::RegisterDerivativeCommand, String> {
     let ProcessCommand::Register {
         pipeline,
@@ -154,6 +158,7 @@ pub fn build_register_command(
         item,
         input_asset_id,
         params_json,
+        usage_json,
     } = command
     else {
         return Err("not a register command".to_owned());
@@ -166,20 +171,12 @@ pub fn build_register_command(
     };
     let content_json = load_optional_file(json_file.as_deref())?;
 
-    let mut logical_path = logical_path
+    let logical_path = logical_path
         .as_ref()
         .map(|path| LogicalPath::parse(path).map_err(|e| e.to_string()))
         .transpose()?;
-    let mut output_sha256 = None;
-    if let Some(output_file) = output_file {
-        if logical_path.is_some() {
-            return Err("use either --logical-path or --output-file, not both".to_owned());
-        }
-        let (imported_path, imported_hash) = assets
-            .import_derived_file(output_file)
-            .map_err(|error| error.to_string())?;
-        logical_path = Some(imported_path);
-        output_sha256 = Some(imported_hash);
+    if output_file.is_some() && logical_path.is_some() {
+        return Err("use either --logical-path or --output-file, not both".to_owned());
     }
 
     Ok(babata_application::RegisterDerivativeCommand {
@@ -199,18 +196,19 @@ pub fn build_register_command(
             .map(|value| RunId::parse(value).map_err(|e| e.to_string()))
             .transpose()?,
         params: Metadata::parse(params_json).map_err(|e| e.to_string())?,
-        usage: Metadata::empty(),
+        usage: Metadata::parse(usage_json).map_err(|e| e.to_string())?,
         loss_notes: loss_notes.clone(),
         content_text,
         content_json,
         logical_path,
+        source_file: output_file.clone(),
         media_type: media_type.clone(),
         language: language.clone(),
         input_asset_id: input_asset_id
             .as_ref()
             .map(|value| babata_domain::AssetId::parse(value).map_err(|e| e.to_string()))
             .transpose()?,
-        output_sha256,
+        output_sha256: None,
         derivative_loss_notes: loss_notes.clone(),
         derivative_metadata: Metadata::empty(),
     })
@@ -222,6 +220,7 @@ pub fn build_failure_command(
     let ProcessCommand::RegisterFailure {
         pipeline,
         revision,
+        kind,
         provider,
         input_sha256,
         error_code,
@@ -246,6 +245,7 @@ pub fn build_failure_command(
             .map(|value| babata_domain::ItemId::parse(value).map_err(|e| e.to_string()))
             .transpose()?,
         input_sha256: Sha256::parse(input_sha256).map_err(|e| e.to_string())?,
+        kind: parse_kind(kind)?,
         provider: provider.clone(),
         tool_or_model: model.clone(),
         tool_version: tool_version.clone(),

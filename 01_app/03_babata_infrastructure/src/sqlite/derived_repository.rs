@@ -25,6 +25,16 @@ impl SqliteDerivedRepository {
             .lock()
             .map_err(|_| ApplicationError::Storage("SQLite connection lock poisoned".to_owned()))
     }
+
+    #[cfg(feature = "test-support")]
+    fn commit_fault() -> bool {
+        std::env::var("BABATA_TEST_DERIVED_FAULT").is_ok_and(|value| value == "commit")
+    }
+
+    #[cfg(not(feature = "test-support"))]
+    fn commit_fault() -> bool {
+        false
+    }
 }
 
 impl DerivedRepositoryPort for SqliteDerivedRepository {
@@ -42,19 +52,21 @@ impl DerivedRepositoryPort for SqliteDerivedRepository {
                     input_revision_id = ?3,
                     input_item_id = ?4,
                     input_sha256 = ?5,
-                    state = ?6,
-                    provider = ?7,
-                    tool_or_model = ?8,
-                    tool_version = ?9,
-                    attempt = ?10,
-                    retry_of_run_id = ?11,
-                    error_code = ?12,
-                    error_message = ?13,
-                    params_json = ?14,
-                    usage_json = ?15,
-                    loss_notes = ?16,
-                    started_at = ?17,
-                    finished_at = ?18
+                    target_kind = ?6,
+                    input_asset_id = ?7,
+                    state = ?8,
+                    provider = ?9,
+                    tool_or_model = ?10,
+                    tool_version = ?11,
+                    attempt = ?12,
+                    retry_of_run_id = ?13,
+                    error_code = ?14,
+                    error_message = ?15,
+                    params_json = ?16,
+                    usage_json = ?17,
+                    loss_notes = ?18,
+                    started_at = ?19,
+                    finished_at = ?20
                  WHERE run_id = ?1",
                 params![
                     run.id.to_string(),
@@ -62,6 +74,8 @@ impl DerivedRepositoryPort for SqliteDerivedRepository {
                     run.input_revision_id.to_string(),
                     run.input_item_id.as_ref().map(ToString::to_string),
                     run.input_sha256.as_str(),
+                    run.target_kind.map(derivative_kind),
+                    run.input_asset_id.as_ref().map(ToString::to_string),
                     processing_state(run.state),
                     run.provider,
                     run.tool_or_model,
@@ -88,7 +102,8 @@ impl DerivedRepositoryPort for SqliteDerivedRepository {
         let connection = self.lock()?;
         connection
             .query_row(
-                "SELECT run_id, pipeline_id, input_revision_id, input_item_id, input_sha256, state,
+                "SELECT run_id, pipeline_id, input_revision_id, input_item_id, input_sha256,
+                        target_kind, input_asset_id, state,
                         provider, tool_or_model, tool_version, attempt, retry_of_run_id,
                         error_code, error_message, params_json, usage_json, loss_notes,
                         created_at, started_at, finished_at
@@ -107,7 +122,8 @@ impl DerivedRepositoryPort for SqliteDerivedRepository {
         let connection = self.lock()?;
         let mut statement = connection
             .prepare(
-                "SELECT run_id, pipeline_id, input_revision_id, input_item_id, input_sha256, state,
+                "SELECT run_id, pipeline_id, input_revision_id, input_item_id, input_sha256,
+                        target_kind, input_asset_id, state,
                         provider, tool_or_model, tool_version, attempt, retry_of_run_id,
                         error_code, error_message, params_json, usage_json, loss_notes,
                         created_at, started_at, finished_at
@@ -170,6 +186,11 @@ impl DerivedRepositoryPort for SqliteDerivedRepository {
     }
 
     fn commit_run(&self, commit: &ProcessCommit) -> Result<(), ApplicationError> {
+        if Self::commit_fault() {
+            return Err(ApplicationError::Storage(
+                "injected derived commit failure".to_owned(),
+            ));
+        }
         let mut connection = self.lock()?;
         let transaction = connection.transaction().map_err(storage)?;
         insert_run(&transaction, &commit.run)?;
@@ -185,17 +206,20 @@ fn insert_run(connection: &Connection, run: &ProcessRun) -> Result<(), Applicati
     connection
         .execute(
             "INSERT INTO process_runs (
-                run_id, pipeline_id, input_revision_id, input_item_id, input_sha256, state,
+                run_id, pipeline_id, input_revision_id, input_item_id, input_sha256,
+                target_kind, input_asset_id, state,
                 provider, tool_or_model, tool_version, attempt, retry_of_run_id,
                 error_code, error_message, params_json, usage_json, loss_notes,
                 created_at, started_at, finished_at
-             ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19)",
+             ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21)",
             params![
                 run.id.to_string(),
                 run.pipeline_id.as_str(),
                 run.input_revision_id.to_string(),
                 run.input_item_id.as_ref().map(ToString::to_string),
                 run.input_sha256.as_str(),
+                run.target_kind.map(derivative_kind),
+                run.input_asset_id.as_ref().map(ToString::to_string),
                 processing_state(run.state),
                 run.provider,
                 run.tool_or_model,
@@ -264,29 +288,39 @@ fn run_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<ProcessRun> {
             .transpose()
             .map_err(to_sql)?,
         input_sha256: Sha256::parse(row.get::<_, String>(4)?).map_err(to_sql)?,
-        state: parse_processing_state(&row.get::<_, String>(5)?).map_err(to_sql)?,
-        provider: row.get(6)?,
-        tool_or_model: row.get(7)?,
-        tool_version: row.get(8)?,
-        attempt: row.get::<_, i64>(9)? as u32,
+        target_kind: row
+            .get::<_, Option<String>>(5)?
+            .map(|kind| parse_derivative_kind(&kind))
+            .transpose()
+            .map_err(to_sql)?,
+        input_asset_id: row
+            .get::<_, Option<String>>(6)?
+            .map(AssetId::parse)
+            .transpose()
+            .map_err(to_sql)?,
+        state: parse_processing_state(&row.get::<_, String>(7)?).map_err(to_sql)?,
+        provider: row.get(8)?,
+        tool_or_model: row.get(9)?,
+        tool_version: row.get(10)?,
+        attempt: row.get::<_, i64>(11)? as u32,
         retry_of_run_id: row
-            .get::<_, Option<String>>(10)?
+            .get::<_, Option<String>>(12)?
             .map(RunId::parse)
             .transpose()
             .map_err(to_sql)?,
-        error_code: row.get(11)?,
-        error_message: row.get(12)?,
-        params: Metadata::parse(&row.get::<_, String>(13)?).map_err(to_sql)?,
-        usage: Metadata::parse(&row.get::<_, String>(14)?).map_err(to_sql)?,
-        loss_notes: row.get(15)?,
-        created_at: UtcTimestamp::parse(row.get::<_, String>(16)?).map_err(to_sql)?,
+        error_code: row.get(13)?,
+        error_message: row.get(14)?,
+        params: Metadata::parse(&row.get::<_, String>(15)?).map_err(to_sql)?,
+        usage: Metadata::parse(&row.get::<_, String>(16)?).map_err(to_sql)?,
+        loss_notes: row.get(17)?,
+        created_at: UtcTimestamp::parse(row.get::<_, String>(18)?).map_err(to_sql)?,
         started_at: row
-            .get::<_, Option<String>>(17)?
+            .get::<_, Option<String>>(19)?
             .map(UtcTimestamp::parse)
             .transpose()
             .map_err(to_sql)?,
         finished_at: row
-            .get::<_, Option<String>>(18)?
+            .get::<_, Option<String>>(20)?
             .map(UtcTimestamp::parse)
             .transpose()
             .map_err(to_sql)?,

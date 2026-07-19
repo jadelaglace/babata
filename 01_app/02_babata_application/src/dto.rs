@@ -286,6 +286,7 @@ pub struct RegisterDerivativeCommand {
     pub content_text: Option<String>,
     pub content_json: Option<String>,
     pub logical_path: Option<LogicalPath>,
+    pub source_file: Option<String>,
     pub media_type: Option<String>,
     pub language: Option<String>,
     pub input_asset_id: Option<AssetId>,
@@ -300,6 +301,7 @@ pub struct RegisterFailureCommand {
     pub revision_id: RevisionId,
     pub item_id: Option<ItemId>,
     pub input_sha256: Sha256,
+    pub kind: DerivativeKind,
     pub provider: String,
     pub tool_or_model: Option<String>,
     pub tool_version: Option<String>,
@@ -318,6 +320,7 @@ pub struct RegisterDerivativeOutcome {
     pub pipeline_id: PipelineId,
     pub kind: Option<DerivativeKind>,
     pub state: ProcessingState,
+    pub warnings: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -42,8 +42,22 @@ pub trait AssetStorePort {
     fn verify(&self, asset: &StagedAsset) -> Result<bool, ApplicationError>;
     /// Hash the finalized bytes behind a logical path under the data root.
     fn hash_logical(&self, logical_path: &LogicalPath) -> Result<Sha256, ApplicationError>;
-    /// Copy an external file into managed C1 storage and return its logical path.
-    fn import_derived_file(&self, source: &str) -> Result<(LogicalPath, Sha256), ApplicationError>;
+    /// Stage an external derivative under a recoverable operation. Final bytes
+    /// use a content-addressed path in managed C1 storage.
+    fn stage_derived_file(
+        &self,
+        source: &str,
+        operation_id: &str,
+    ) -> Result<StagedAsset, ApplicationError> {
+        let mut staged = self.stage(source, AssetRole::Derived, operation_id)?;
+        staged.logical_path = LogicalPath::parse(format!(
+            "02_derived/files/sha256/{}/{}",
+            &staged.sha256.as_str()[..2],
+            staged.sha256
+        ))
+        .map_err(ApplicationError::from)?;
+        Ok(staged)
+    }
     fn quarantine_finalized(
         &self,
         asset: &StagedAsset,
