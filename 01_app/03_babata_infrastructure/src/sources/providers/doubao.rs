@@ -12,7 +12,13 @@ use serde_json::Value;
 use time::{OffsetDateTime, format_description::well_known::Rfc3339};
 
 const ROUTE_ID: &str = "source.doubao";
-const ADAPTER_VERSION: &str = "opencli-doubao/1";
+const ADAPTER_VERSION: &str = "opencli-doubao/2";
+
+#[derive(Debug, PartialEq, Eq)]
+enum DoubaoScope {
+    Recent(usize),
+    Conversation(String),
+}
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct DoubaoOpenCliAdapter;
@@ -32,21 +38,39 @@ impl SourceAdapterPort for DoubaoOpenCliAdapter {
         session_id: &CollectionSessionId,
         source_reference: &str,
     ) -> Result<Vec<DiscoveredCandidate>, ApplicationError> {
-        let limit = source_reference
-            .strip_prefix("recent:")
-            .ok_or_else(|| {
-                ApplicationError::Conflict(
-                    "Doubao scope must be recent:<count>; account-wide all is never implicit"
-                        .to_owned(),
-                )
-            })?
-            .parse::<usize>()
-            .map_err(|_| ApplicationError::Conflict("invalid Doubao recent count".to_owned()))?;
-        if !(1..=20).contains(&limit) {
-            return Err(ApplicationError::Conflict(
-                "Doubao recent count must be between 1 and 20".to_owned(),
-            ));
-        }
+        let limit = match parse_scope(source_reference)? {
+            DoubaoScope::Conversation(conversation_id) => {
+                let title = format!("Doubao conversation {conversation_id}");
+                return Ok(vec![DiscoveredCandidate {
+                    summary: CandidateSummary {
+                        candidate_id: format!("doubao_{conversation_id}"),
+                        session_id: session_id.clone(),
+                        route_id: SourceRouteId(ROUTE_ID.to_owned()),
+                        source_native_id: Some(conversation_id.clone()),
+                        title: Some(title.clone()),
+                        source_location: Some(format!(
+                            "https://www.doubao.com/chat/{conversation_id}"
+                        )),
+                        hierarchy: vec![
+                            "Doubao".to_owned(),
+                            "Explicit conversation".to_owned(),
+                            title,
+                        ],
+                        content_type: ContentType::Document,
+                        source_updated_at: None,
+                        attachment_available: None,
+                        limitations: vec![
+                        "the conversation was explicitly discovered in the signed-in Chrome sidebar"
+                            .to_owned(),
+                        "history metadata does not declare message attachments".to_owned(),
+                    ],
+                        selection_capabilities: vec!["single".to_owned(), "explicit_id".to_owned()],
+                    },
+                    prefetched: None,
+                }]);
+            }
+            DoubaoScope::Recent(limit) => limit,
+        };
         let output = run_opencli(&[
             "doubao",
             "history-full",
@@ -147,26 +171,25 @@ impl SourceAdapterPort for DoubaoOpenCliAdapter {
             .ok_or_else(|| {
                 ApplicationError::Integrity("Doubao detail-full has no Messages array".to_owned())
             })?;
+        let title = info
+            .pointer("/conversation_info/name")
+            .and_then(Value::as_str)
+            .filter(|value| !value.trim().is_empty())
+            .map(str::to_owned)
+            .or_else(|| candidate.title.clone());
         let payload = serde_json::to_string_pretty(&serde_json::json!({
             "platform": "doubao",
             "conversation_id": conversation_id,
-            "title": candidate.title,
+            "title": title,
             "conversation_info": info,
             "messages": messages,
         }))
         .map_err(|error| ApplicationError::Integrity(error.to_string()))?;
-        let content_fingerprint = Sha256::of_bytes(
-            serde_json::json!({
-                "conversation_id": conversation_id,
-                "title": candidate.title,
-                "messages": messages,
-            })
-            .to_string()
-            .as_bytes(),
-        );
+        let content_fingerprint =
+            doubao_content_fingerprint(conversation_id, title.as_deref(), messages);
         let metadata = Metadata::parse(
             &serde_json::json!({
-                "title": candidate.title,
+                "title": title,
                 "conversation_id": conversation_id,
                 "message_count": messages.len(),
                 "message_cursor": row.get("MessageCursor").and_then(Value::as_str),
@@ -215,6 +238,94 @@ impl SourceAdapterPort for DoubaoOpenCliAdapter {
             ],
         }
     }
+}
+
+fn parse_scope(source_reference: &str) -> Result<DoubaoScope, ApplicationError> {
+    if let Some(raw) = source_reference.strip_prefix("recent:") {
+        let limit = raw
+            .parse::<usize>()
+            .map_err(|_| ApplicationError::Conflict("invalid Doubao recent count".to_owned()))?;
+        if !(1..=20).contains(&limit) {
+            return Err(ApplicationError::Conflict(
+                "Doubao recent count must be between 1 and 20".to_owned(),
+            ));
+        }
+        return Ok(DoubaoScope::Recent(limit));
+    }
+    if let Some(conversation_id) = source_reference.strip_prefix("conversation:")
+        && conversation_id.len() >= 8
+        && conversation_id.bytes().all(|byte| byte.is_ascii_digit())
+    {
+        return Ok(DoubaoScope::Conversation(conversation_id.to_owned()));
+    }
+    Err(ApplicationError::Conflict(
+        "Doubao scope must be recent:<count> or conversation:<id>; account-wide all is never implicit"
+            .to_owned(),
+    ))
+}
+
+fn doubao_content_fingerprint(
+    conversation_id: &str,
+    title: Option<&str>,
+    messages: &[Value],
+) -> Sha256 {
+    let stable_messages = messages
+        .iter()
+        .map(stable_message_value)
+        .collect::<Vec<_>>();
+    Sha256::of_bytes(
+        serde_json::json!({
+            "conversation_id": conversation_id,
+            "title": title,
+            "messages": stable_messages,
+        })
+        .to_string()
+        .as_bytes(),
+    )
+}
+
+fn stable_message_value(value: &Value) -> Value {
+    match value {
+        Value::Object(object) => Value::Object(
+            object
+                .iter()
+                .filter(|(key, _)| key.as_str() != "block_id")
+                .map(|(key, value)| {
+                    let stable = if matches!(key.as_str(), "info" | "tag_info") {
+                        stable_embedded_json(value)
+                    } else {
+                        stable_message_value(value)
+                    };
+                    (key.clone(), stable)
+                })
+                .collect(),
+        ),
+        Value::Array(values) => Value::Array(values.iter().map(stable_message_value).collect()),
+        Value::String(value) => Value::String(stable_url(value)),
+        _ => value.clone(),
+    }
+}
+
+fn stable_embedded_json(value: &Value) -> Value {
+    let Value::String(raw) = value else {
+        return stable_message_value(value);
+    };
+    serde_json::from_str::<Value>(raw)
+        .map(|parsed| stable_message_value(&parsed).to_string())
+        .map_or_else(|_| Value::String(stable_url(raw)), Value::String)
+}
+
+fn stable_url(value: &str) -> String {
+    const SIGNED_HOST: &str = "flow-imagex-sign.byteimg.com";
+    if !value.starts_with("https://") && !value.starts_with("http://") {
+        return value.to_owned();
+    }
+    let Some(host_at) = value.find(SIGNED_HOST) else {
+        return value.to_owned();
+    };
+    let path_at = host_at + SIGNED_HOST.len();
+    let path = value[path_at..].split('?').next().unwrap_or_default();
+    format!("https://{SIGNED_HOST}{path}")
 }
 
 fn run_opencli(args: &[&str]) -> Result<Value, ApplicationError> {
@@ -276,4 +387,68 @@ fn unix_seconds_timestamp(
         .format(&Rfc3339)
         .map_err(|_| ApplicationError::Integrity(format!("OpenCLI result has an invalid {key}")))?;
     UtcTimestamp::parse(canonical).map(Some).map_err(Into::into)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{DoubaoScope, doubao_content_fingerprint, parse_scope};
+    use serde_json::json;
+
+    #[test]
+    fn scope_is_explicit_and_bounded() {
+        assert_eq!(parse_scope("recent:1").unwrap(), DoubaoScope::Recent(1));
+        assert_eq!(parse_scope("recent:20").unwrap(), DoubaoScope::Recent(20));
+        assert_eq!(
+            parse_scope("conversation:38434881297298946").unwrap(),
+            DoubaoScope::Conversation("38434881297298946".to_owned())
+        );
+        assert!(parse_scope("recent:0").is_err());
+        assert!(parse_scope("recent:21").is_err());
+        assert!(parse_scope("conversation:1234567").is_err());
+        assert!(parse_scope("conversation:not-an-id").is_err());
+        assert!(parse_scope("all").is_err());
+    }
+
+    #[test]
+    fn content_fingerprint_ignores_transient_blocks_and_signed_media_urls() {
+        let first = vec![json!({
+            "message_id": "message-1",
+            "content": "stable",
+            "content_block": [{
+                "block_id": "generated-one",
+                "content": {"text_block": {"text": "stable"}},
+                "meta_info": [{
+                    "info": r#"{"media":[{"image":{"item_id":"image-1","thumb_url":"https://p11-flow-imagex-sign.byteimg.com/path/image.jpeg?x-signature=one"}}]}"#
+                }]
+            }]
+        })];
+        let refreshed = vec![json!({
+            "message_id": "message-1",
+            "content": "stable",
+            "content_block": [{
+                "block_id": "generated-two",
+                "content": {"text_block": {"text": "stable"}},
+                "meta_info": [{
+                    "info": r#"{"media":[{"image":{"item_id":"image-1","thumb_url":"https://p26-flow-imagex-sign.byteimg.com/path/image.jpeg?x-signature=two"}}]}"#
+                }]
+            }]
+        })];
+        let changed = vec![json!({
+            "message_id": "message-1",
+            "content": "changed",
+            "content_block": [{
+                "block_id": "generated-three",
+                "content": {"text_block": {"text": "changed"}}
+            }]
+        })];
+
+        assert_eq!(
+            doubao_content_fingerprint("conversation-1", Some("title"), &first),
+            doubao_content_fingerprint("conversation-1", Some("title"), &refreshed)
+        );
+        assert_ne!(
+            doubao_content_fingerprint("conversation-1", Some("title"), &first),
+            doubao_content_fingerprint("conversation-1", Some("title"), &changed)
+        );
+    }
 }
