@@ -17,6 +17,7 @@ use sha2::{Digest, Sha256};
 pub use collection_migrate::migrate_collection;
 pub use derived_migrate::migrate_derived;
 pub use derived_repository::SqliteDerivedRepository;
+pub use job_repository::SqliteJobRepository;
 pub use migrate::migrate_raw;
 pub use raw_repository::SqliteRawRepository;
 pub use read_projection::SqliteReadProjection;
@@ -106,6 +107,15 @@ pub fn open_derived_database(
     Ok(SqliteDerivedRepository::new(Arc::new(Mutex::new(
         connection,
     ))))
+}
+
+pub fn open_job_database(
+    paths: &crate::paths::DataPaths,
+    busy_timeout_ms: u64,
+) -> Result<SqliteJobRepository, ApplicationError> {
+    let connection = open_connection(&paths.runtime_database(), busy_timeout_ms)?;
+    job_repository::migrate_runtime(&connection)?;
+    Ok(SqliteJobRepository::new(Arc::new(Mutex::new(connection))))
 }
 
 pub fn raw_status(

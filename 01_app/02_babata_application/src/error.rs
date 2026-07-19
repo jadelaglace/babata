@@ -13,6 +13,8 @@ pub enum ApplicationError {
     Storage(String),
     #[error("asset failure: {0}")]
     Asset(String),
+    #[error("provider failure: {0}")]
+    Provider(String),
     #[error("integrity failure: {0}")]
     Integrity(String),
     #[error("capability_unavailable: {capability} (activation phase: {activation_phase})")]
@@ -45,6 +47,7 @@ impl ApplicationError {
             Self::Domain(_) => "validation_failed",
             Self::NotFound(_) => "not_found",
             Self::Conflict(_) => "conflict",
+            Self::Provider(_) => "provider_failed",
             Self::Storage(_) | Self::Asset(_) => "io_failed",
             Self::Integrity(_) => "integrity_failed",
             Self::Operation { source, .. } => source.code(),

@@ -23,6 +23,12 @@ impl DataPaths {
     pub fn derived_index(&self) -> PathBuf {
         self.root.join("02_derived/index")
     }
+    pub fn runtime_database(&self) -> PathBuf {
+        self.root.join("04_runtime/index/runtime.sqlite")
+    }
+    pub fn runtime_index(&self) -> PathBuf {
+        self.root.join("04_runtime/index")
+    }
     pub fn raw_assets(&self) -> PathBuf {
         self.root.join("01_raw/assets/sha256")
     }
@@ -53,6 +59,7 @@ pub fn ensure_layout(paths: &DataPaths) -> Result<(), std::io::Error> {
         paths.root().join("01_raw/index"),
         paths.raw_assets(),
         paths.derived_index(),
+        paths.runtime_index(),
         paths.staging(".keep"),
         paths.journal(),
         paths.orphan(),

@@ -18,6 +18,7 @@ pub use observability::SystemClock;
 #[cfg(feature = "test-support")]
 pub use sqlite::test_support;
 pub use sqlite::{
-    RawStatus, SqliteDerivedRepository, SqliteRawRepository, open_collection_database,
-    open_derived_database, open_raw_database, raw_status,
+    RawStatus, SqliteDerivedRepository, SqliteJobRepository, SqliteRawRepository,
+    open_collection_database, open_derived_database, open_job_database, open_raw_database,
+    raw_status,
 };

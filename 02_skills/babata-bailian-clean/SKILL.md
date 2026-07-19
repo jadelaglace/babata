@@ -222,7 +222,9 @@ babata --json process register \
 ## 与 Babata 阶段关系
 
 - 本 skill 覆盖 **P5 C1 清洗试跑 + Agent 结果正式登记**。
-- `agent_import` 是当前推荐登记 pipeline；`enqueue/run-once` 作业队列仍可能未启用。
+- `agent_import` 仍是多模态 Agent 清洗的推荐登记 pipeline。`enqueue/run-once` 队列只对
+  `local_extract_text` 与已鉴权的 `bailian_summary` 可用；OCR、ASR、视觉队列未启用时必须
+  返回 unavailable，不能用文本摘要冒充。
 - 不要把本 skill 结果假装成 P6 检索库或人工事实。
 - 模型摘要/标签永远是 C1，不是 first-party C0。
 
