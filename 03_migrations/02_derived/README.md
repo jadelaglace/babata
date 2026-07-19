@@ -3,6 +3,9 @@
 | File | Purpose | Activation |
 | --- | --- | --- |
 | `0001_derived_schema.sql` | `process_runs` + `derivatives` | P5 |
+| `0002_derivative_output_hash_required.sql` | Require a verifiable hash for every C1 derivative | P5 / #48 |
+| `0003_process_target_identity.sql` | Persist target kind and input asset identity on each run | P5 / #48 |
+| `0004_reconcile_precommit_v3.sql` | Audit and reconcile the one verified pre-commit v3 checksum applied to the real data root | P5 / #48 |
 
 Owner: `SqliteDerivedRepository` → `derived.sqlite` under `02_derived/index/`.
 
@@ -10,4 +13,5 @@ Owner: `SqliteDerivedRepository` → `derived.sqlite` under `02_derived/index/`.
 
 - **process_runs**: one attempt per row; retries set `retry_of_run_id` and increment `attempt`.
 - **derivatives**: C1 outputs only; never mutate C0. Text/json body may live in-row; binaries use `logical_path` + `output_sha256` under data home.
+- **schema_migration_repairs**: immutable evidence for an explicitly recognized migration-history repair; unknown checksums still fail closed.
 - Provider credentials never stored; only `provider`, `tool_or_model`, `tool_version`, `params_json`, `usage_json`.
