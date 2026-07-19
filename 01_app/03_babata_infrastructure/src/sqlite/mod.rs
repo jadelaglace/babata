@@ -1,4 +1,4 @@
-﻿pub mod derived_migrate;
+pub mod derived_migrate;
 pub mod derived_repository;
 pub mod job_repository;
 mod migrate;
@@ -81,10 +81,13 @@ pub fn open_derived_database(
     paths: &crate::paths::DataPaths,
     busy_timeout_ms: u64,
 ) -> Result<SqliteDerivedRepository, ApplicationError> {
-    crate::paths::ensure_layout(paths).map_err(|error| ApplicationError::Storage(error.to_string()))?;
+    crate::paths::ensure_layout(paths)
+        .map_err(|error| ApplicationError::Storage(error.to_string()))?;
     let connection = open_connection(&paths.derived_database(), busy_timeout_ms)?;
     migrate_derived(&connection)?;
-    Ok(SqliteDerivedRepository::new(Arc::new(Mutex::new(connection))))
+    Ok(SqliteDerivedRepository::new(Arc::new(Mutex::new(
+        connection,
+    ))))
 }
 
 pub fn raw_status(
@@ -312,7 +315,3 @@ mod tests {
         assert_eq!(status.quarantined_operations, 0);
     }
 }
-
-
-
-

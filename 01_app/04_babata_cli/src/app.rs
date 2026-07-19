@@ -1,10 +1,10 @@
-﻿use babata_application::{
+use babata_application::{
     ApplicationError, CapabilityService, CaptureService, ProcessService, WorkspaceService,
 };
 use babata_domain::{PipelineId, RevisionId, RunId};
 use babata_infrastructure::{
-    FileAssetStore, StaticCapabilityRegistry, SystemClock, load_config, open_derived_database,
-    open_raw_database, raw_status,
+    AppConfig, FileAssetStore, StaticCapabilityRegistry, SystemClock, load_config,
+    open_derived_database, open_raw_database, raw_status,
 };
 use clap::Parser;
 
@@ -63,99 +63,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         }
         RootCommand::Capture(_) => return Err(unavailable("capture.provider", "P4")),
         RootCommand::Knowledge(_) => return Err(unavailable("knowledge", "P6")),
-        RootCommand::Process(command) => {
-            let repository =
-                open_derived_database(&config.paths(), config.sqlite.busy_timeout_ms)?;
-            let raw = open_raw_database(&config.paths(), config.sqlite.busy_timeout_ms)?;
-            let assets = FileAssetStore::new(config.paths());
-            let service = ProcessService::new(repository, raw, assets, SystemClock);
-            match command {
-                ProcessCommand::ListPipelines => {
-                    let pipelines = service.list_pipelines()?;
-                    render_value(&pipelines, cli.json)?;
-                }
-                ProcessCommand::Register { .. } => {
-                    let register = crate::commands::process::build_register_command(
-                        &command,
-                        &FileAssetStore::new(config.paths()),
-                    )
-                    .map_err(|error| {
-                        Box::new(ApplicationError::Integrity(error))
-                            as Box<dyn std::error::Error>
-                    })?;
-                    let outcome = service.register_derivative(register)?;
-                    if cli.json {
-                        render_value(&outcome, true)?;
-                    } else {
-                        match &outcome.derivative_id {
-                            Some(derivative_id) => println!("{} {}", outcome.run_id, derivative_id),
-                            None => println!("{}", outcome.run_id),
-                        }
-                    }
-                }
-                ProcessCommand::RegisterFailure { .. } => {
-                    let failure = crate::commands::process::build_failure_command(&command)
-                        .map_err(|error| {
-                            Box::new(ApplicationError::Integrity(error))
-                                as Box<dyn std::error::Error>
-                        })?;
-                    let outcome = service.register_failure(failure)?;
-                    if cli.json {
-                        render_value(&outcome, true)?;
-                    } else {
-                        println!("{}", outcome.run_id);
-                    }
-                }
-                ProcessCommand::ShowRun { run } => {
-                    let run_id = RunId::parse(&run).map_err(|error| {
-                        Box::new(ApplicationError::Domain(error)) as Box<dyn std::error::Error>
-                    })?;
-                    let outcome = service.show_run(&run_id)?;
-                    render_value(&outcome, cli.json)?;
-                }
-                ProcessCommand::ListRuns { revision } => {
-                    let revision_id = RevisionId::parse(&revision).map_err(|error| {
-                        Box::new(ApplicationError::Domain(error)) as Box<dyn std::error::Error>
-                    })?;
-                    let runs = service.list_runs_for_revision(&revision_id)?;
-                    render_value(&runs, cli.json)?;
-                }
-                ProcessCommand::Enqueue { pipeline, revision } => {
-                    let outcome = service.enqueue(babata_application::EnqueueProcessCommand {
-                        pipeline_id: PipelineId::new(pipeline),
-                        revision_id: RevisionId::parse(&revision).map_err(|error| {
-                            Box::new(ApplicationError::Domain(error)) as Box<dyn std::error::Error>
-                        })?,
-                    })?;
-                    render_value(&outcome, cli.json)?;
-                }
-                ProcessCommand::RunOnce => {
-                    let outcome = service.run_once()?;
-                    render_value(&outcome, cli.json)?;
-                }
-                ProcessCommand::Status { job } => {
-                    let job_id = babata_domain::JobId::parse(&job).map_err(|error| {
-                        Box::new(ApplicationError::Domain(error)) as Box<dyn std::error::Error>
-                    })?;
-                    let outcome = service.status(&job_id)?;
-                    render_value(&outcome, cli.json)?;
-                }
-                ProcessCommand::Retry { job } => {
-                    let job_id = babata_domain::JobId::parse(&job).map_err(|error| {
-                        Box::new(ApplicationError::Domain(error)) as Box<dyn std::error::Error>
-                    })?;
-                    let outcome = service.retry(&job_id)?;
-                    render_value(&outcome, cli.json)?;
-                }
-                ProcessCommand::Cancel { job } => {
-                    let job_id = babata_domain::JobId::parse(&job).map_err(|error| {
-                        Box::new(ApplicationError::Domain(error)) as Box<dyn std::error::Error>
-                    })?;
-                    let outcome = service.cancel(&job_id)?;
-                    render_value(&outcome, cli.json)?;
-                }
-            }
-        }
+        RootCommand::Process(command) => execute_process(*command, &config, cli.json)?,
         RootCommand::Explore(_) => return Err(unavailable("explore", "P6")),
         RootCommand::Sublibraries(_) => return Err(unavailable("sublibraries", "P6")),
         RootCommand::Views(_) => return Err(unavailable("views", "P6")),
@@ -166,7 +74,90 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+fn execute_process(
+    command: ProcessCommand,
+    config: &AppConfig,
+    json: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let repository = open_derived_database(&config.paths(), config.sqlite.busy_timeout_ms)?;
+    let raw = open_raw_database(&config.paths(), config.sqlite.busy_timeout_ms)?;
+    let assets = FileAssetStore::new(config.paths());
+    let service = ProcessService::new(repository, raw, assets, SystemClock);
+    match command {
+        ProcessCommand::ListPipelines => render_value(&service.list_pipelines()?, json)?,
+        ProcessCommand::Register { .. } => {
+            let register = crate::commands::process::build_register_command(
+                &command,
+                &FileAssetStore::new(config.paths()),
+            )
+            .map_err(|error| {
+                Box::new(ApplicationError::Integrity(error)) as Box<dyn std::error::Error>
+            })?;
+            let outcome = service.register_derivative(register)?;
+            if json {
+                render_value(&outcome, true)?;
+            } else {
+                match &outcome.derivative_id {
+                    Some(derivative_id) => println!("{} {}", outcome.run_id, derivative_id),
+                    None => println!("{}", outcome.run_id),
+                }
+            }
+        }
+        ProcessCommand::RegisterFailure { .. } => {
+            let failure =
+                crate::commands::process::build_failure_command(&command).map_err(|error| {
+                    Box::new(ApplicationError::Integrity(error)) as Box<dyn std::error::Error>
+                })?;
+            let outcome = service.register_failure(failure)?;
+            if json {
+                render_value(&outcome, true)?;
+            } else {
+                println!("{}", outcome.run_id);
+            }
+        }
+        ProcessCommand::ShowRun { run } => {
+            let run_id = RunId::parse(&run).map_err(|error| {
+                Box::new(ApplicationError::Domain(error)) as Box<dyn std::error::Error>
+            })?;
+            render_value(&service.show_run(&run_id)?, json)?;
+        }
+        ProcessCommand::ListRuns { revision } => {
+            let revision_id = RevisionId::parse(&revision).map_err(|error| {
+                Box::new(ApplicationError::Domain(error)) as Box<dyn std::error::Error>
+            })?;
+            render_value(&service.list_runs_for_revision(&revision_id)?, json)?;
+        }
+        ProcessCommand::Enqueue { pipeline, revision } => {
+            let outcome = service.enqueue(babata_application::EnqueueProcessCommand {
+                pipeline_id: PipelineId::new(pipeline),
+                revision_id: RevisionId::parse(&revision).map_err(|error| {
+                    Box::new(ApplicationError::Domain(error)) as Box<dyn std::error::Error>
+                })?,
+            })?;
+            render_value(&outcome, json)?;
+        }
+        ProcessCommand::RunOnce => render_value(&service.run_once()?, json)?,
+        ProcessCommand::Status { job } => {
+            let job_id = parse_job_id(&job)?;
+            render_value(&service.status(&job_id)?, json)?;
+        }
+        ProcessCommand::Retry { job } => {
+            let job_id = parse_job_id(&job)?;
+            render_value(&service.retry(&job_id)?, json)?;
+        }
+        ProcessCommand::Cancel { job } => {
+            let job_id = parse_job_id(&job)?;
+            render_value(&service.cancel(&job_id)?, json)?;
+        }
+    }
+    Ok(())
+}
+
+fn parse_job_id(value: &str) -> Result<babata_domain::JobId, Box<dyn std::error::Error>> {
+    babata_domain::JobId::parse(value)
+        .map_err(|error| Box::new(ApplicationError::Domain(error)) as Box<dyn std::error::Error>)
+}
+
 fn unavailable(capability: &str, phase: &str) -> Box<dyn std::error::Error> {
     Box::new(ApplicationError::capability_unavailable(capability, phase))
 }
-

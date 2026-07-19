@@ -292,10 +292,7 @@ impl AssetStorePort for FileAssetStore {
         Ok(Sha256::of_bytes(&bytes))
     }
 
-    fn import_derived_file(
-        &self,
-        source: &str,
-    ) -> Result<(LogicalPath, Sha256), ApplicationError> {
+    fn import_derived_file(&self, source: &str) -> Result<(LogicalPath, Sha256), ApplicationError> {
         let bytes = fs::read(source).map_err(Self::io)?;
         let sha256 = Sha256::of_bytes(&bytes);
         let file_name = Path::new(source)
@@ -309,7 +306,10 @@ impl AssetStorePort for FileAssetStore {
             file_name
         );
         let logical_path = LogicalPath::parse(&logical).map_err(ApplicationError::from)?;
-        let destination = self.paths.resolve_logical(&logical_path).map_err(Self::io)?;
+        let destination = self
+            .paths
+            .resolve_logical(&logical_path)
+            .map_err(Self::io)?;
         if let Some(parent) = destination.parent() {
             fs::create_dir_all(parent).map_err(Self::io)?;
         }

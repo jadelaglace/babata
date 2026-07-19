@@ -55,7 +55,7 @@ where
     /// The run must prove its input: revision exists and is ready, the
     /// declared input hash matches the revision text hash or a bound asset
     /// hash, and any input asset belongs to that same revision.
-    /// Retries always create a new process_run row chained to the parent.
+    /// Retries always create a new `process_run` row chained to the parent.
     pub fn register_derivative(
         &self,
         mut command: RegisterDerivativeCommand,
@@ -334,7 +334,7 @@ where
             )));
         }
         if command.media_type.is_none() {
-            command.media_type = asset.media_type.clone();
+            command.media_type.clone_from(&asset.media_type);
         }
         Ok(())
     }

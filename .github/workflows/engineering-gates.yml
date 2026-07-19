@@ -1,0 +1,57 @@
+name: Engineering gates
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: engineering-gates-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rust:
+    name: Rust
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - name: Check formatting
+        run: cargo fmt --all --check --manifest-path ./01_app/Cargo.toml
+      - name: Run Clippy
+        run: cargo clippy --workspace --all-targets --manifest-path ./01_app/Cargo.toml -- -D warnings
+      - name: Run workspace tests
+        run: cargo test --workspace --manifest-path ./01_app/Cargo.toml
+
+  architecture:
+    name: Architecture and docs
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Check P2 skeleton inventory
+        shell: pwsh
+        run: ./05_scripts/check-p2-skeleton-inventory.ps1
+      - name: Check P3 raw inventory
+        shell: pwsh
+        run: ./05_scripts/check-p3-raw-inventory.ps1
+      - name: Check interface ownership
+        shell: pwsh
+        run: ./05_scripts/check-interface-ownership.ps1
+      - name: Check Rust boundaries
+        shell: pwsh
+        run: ./05_scripts/check-rust-boundaries.ps1
+      - name: Check storage ownership
+        shell: pwsh
+        run: ./05_scripts/check-no-secondary-writer.ps1
+      - name: Check document traceability
+        shell: pwsh
+        run: ./05_scripts/check-doc-traceability.ps1
+      - name: Test document traceability checker
+        shell: pwsh
+        run: ./05_scripts/test-doc-traceability.ps1

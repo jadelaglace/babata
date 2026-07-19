@@ -1,4 +1,4 @@
-﻿use babata_domain::{
+use babata_domain::{
     AssetId, AssetRole, BuildTarget, CandidateEnvelope, CandidateSummary, CollectionId,
     CollectionSessionId, ContentType, DerivativeId, DerivativeKind, DerivativeRef, HealthState,
     ItemId, JobId, LogicalPath, Metadata, PageCursor, PipelineId, ProcessRun, ProcessingState,
@@ -336,7 +336,3 @@ pub struct ViewBuildOutcome {
 pub struct BackupOutcome {
     pub snapshot: SnapshotRef,
 }
-
-
-
-

@@ -1,4 +1,4 @@
-﻿use std::collections::BTreeMap;
+use std::collections::BTreeMap;
 
 use babata_application::ApplicationError;
 use rusqlite::{Connection, params};
@@ -11,7 +11,9 @@ const MIGRATIONS: &[(&str, &str)] = &[
     ),
     (
         "0002_derivative_output_hash_required.sql",
-        include_str!("../../../../03_migrations/02_derived/0002_derivative_output_hash_required.sql"),
+        include_str!(
+            "../../../../03_migrations/02_derived/0002_derivative_output_hash_required.sql"
+        ),
     ),
 ];
 

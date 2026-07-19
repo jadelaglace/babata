@@ -1,4 +1,4 @@
-﻿pub mod assets;
+pub mod assets;
 pub mod backup;
 pub mod capabilities;
 pub mod config;
@@ -21,4 +21,3 @@ pub use sqlite::{
     RawStatus, SqliteDerivedRepository, SqliteRawRepository, open_collection_database,
     open_derived_database, open_raw_database, raw_status,
 };
-
