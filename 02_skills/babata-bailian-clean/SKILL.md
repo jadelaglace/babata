@@ -13,7 +13,7 @@ description: >
 
 # Babata × 百炼多模态清洗（引导型）
 
-> 仓库位置：`02_skills/babata-bailian-clean/`（P5 进行中）。
+> 仓库位置：`02_skills/babata-bailian-clean/`（P5 已完成；后续仍可复用和扩展）。
 > **清洗 + 正式 C1 登记** 一体引导：staging 写 `BABATA_DATA_HOME/generated/`，正式入库走
 > `babata process register --pipeline agent_import`（见 [references/c1-register.md](references/c1-register.md)）。
 

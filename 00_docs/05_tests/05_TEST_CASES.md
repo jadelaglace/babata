@@ -162,6 +162,12 @@ Git。所有 destructive 测试使用临时或隔离数据根。
 预期：处理可检查、失败可理解、重试不改 C0；多次结果可并存/比较；原媒体可回看；
 未启用能力返回 unavailable；百炼输出不被当作原件或人工事实。
 
+2026-07-20，TC-04 在合并 `main` `0de2858` 上通过。真实微信 C0 同时完成 local extract
+删除/重建与一次 `qwen-plus` 摘要；注入 provider 失败后新 job/run retry 成功，父子记录、
+实际 task、1,739 tokens usage、输出哈希和 loss notes 可读；未启用 OCR queue 返回
+unavailable；C0 正文和 asset 哈希前后不变。证据：
+`BABATA_DATA_HOME/verification/p5-tc04-20260720-0015/TC04_PROVIDER_QUEUE_E2E.md`。
+
 ### TC-05：核心人工沉淀与模型建议边界
 
 关联：AC-05，阶段 P6.1。
