@@ -1,0 +1,6 @@
+﻿interface:
+  display_name: "Babata 百炼清洗"
+  short_description: "引导 Agent 做多模态资料清洗与转写"
+  default_prompt: "用 $babata-bailian-clean 对指定目录做最小验证清洗：每类样本一个，原件只读，视频优先转写。"
+policy:
+  allow_implicit_invocation: true
