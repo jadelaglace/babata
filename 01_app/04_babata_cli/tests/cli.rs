@@ -181,3 +181,73 @@ fn process_register_and_retry_create_separate_runs() {
     assert_eq!(runs[1]["attempt"], 2);
     assert_eq!(runs[1]["retry_of_run_id"], run_id);
 }
+
+#[test]
+fn process_register_accepts_logical_path_for_agent_import() {
+    let temp = tempdir().unwrap();
+    let capture = babata(&temp)
+        .args([
+            "--json",
+            "capture",
+            "text",
+            "--provider",
+            "fixture",
+            "--text",
+            "source for logical path register",
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let capture: Value = serde_json::from_slice(&capture).unwrap();
+    let revision = capture["revision_id"].as_str().unwrap();
+    let sha = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+
+    let registered = babata(&temp)
+        .args([
+            "--json",
+            "process",
+            "register",
+            "--pipeline",
+            "agent_import",
+            "--revision",
+            revision,
+            "--kind",
+            "summary",
+            "--provider",
+            "bailian_cli",
+            "--input-sha256",
+            sha,
+            "--text",
+            "summary body also stored",
+            "--logical-path",
+            "generated/demo/results/summary.md",
+            "--media-type",
+            "text/markdown",
+            "--model",
+            "qwen-plus",
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let registered: Value = serde_json::from_slice(&registered).unwrap();
+    let run_id = registered["run_id"].as_str().unwrap();
+
+    let shown = babata(&temp)
+        .args(["--json", "process", "show-run", "--run", run_id])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let shown: Value = serde_json::from_slice(&shown).unwrap();
+    assert_eq!(
+        shown["derivatives"][0]["logical_path"],
+        "generated/demo/results/summary.md"
+    );
+    assert_eq!(shown["derivatives"][0]["media_type"], "text/markdown");
+    assert_eq!(shown["run"]["pipeline_id"], "agent_import");
+}
