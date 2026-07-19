@@ -61,7 +61,7 @@ Windows 上 `subprocess` 找不到 `bl` 时，用：
 
 ```text
 1. 摸清范围     盘点扩展名、体量、代表样本
-2. 绑定 C0      文件必须取得真实 revision_id、asset_id、asset sha256；否则先 capture/collector
+2. 绑定 C0      文件必须取得真实 revision_id、asset_id、asset sha256；否则先 capture/collector；已有 revision 后找回原件/预览则用 capture attach-assets 追加版本
 3. 选定样本     每类先 1 个（优先小文件 / 用户点名）
 4. 本地探针     元数据：页数、分辨率、时长、可否抽文本；核对 C0 原件 sha256
 5. 规范化       仅当会阻碍模型或成本过高
@@ -148,6 +148,7 @@ babata --json process register \
 
 - pipeline 固定优先 **`agent_import`**（Agent 按本 skill 完成清洗）。
 - 文件派生结果必须传 `--input-asset-id`，`--input-sha256` 必须是该 C0 asset 的哈希；不能改用 staging/规范化文件哈希。
+- 同一来源同时取得上传原文件和平台预览时，先用 `capture attach-assets --original ... --preview ...` 追加 C0 revision；后续清洗绑定 `original` asset，预览件不冒充源文件。
 - `--output-file` 把结果复制到受控 `02_derived/files/sha256/`；不得把 `generated/...` 作为 `--logical-path`。
 - 同时传 `--text-file`/`--json-file` 与 `--output-file` 时必须指向完全相同的字节，否则登记失败。
 - 只有 failed run 可用 `--retry-of`；revision、item、asset、input hash、pipeline、kind 必须与父 run 一致。
@@ -199,6 +200,7 @@ babata --json process register \
 | register 缺 revision | 先 capture/collector；禁止伪造 id |
 | provider 失败 | 先 `process register-failure --kind ...`；修复后用同一身份 `--retry-of` |
 | register 校验失败 | 不会创建 run；保留 staging，修正 C0/字段后新 register，不伪称 retry |
+| 删除并重建 C1 | `process delete-result --run ... --reason ...`；重建创建新 run，不使用 `--retry-of` |
 
 ## 汇报口径（对人）
 
