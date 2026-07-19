@@ -117,6 +117,8 @@ where
             created_at: now.clone(),
             started_at: Some(now.clone()),
             finished_at: Some(now.clone()),
+            invalidated_at: None,
+            invalidation_reason: None,
         };
         let derivative = DerivativeRef {
             id: DerivativeId::new(),
@@ -212,6 +214,8 @@ where
             created_at: now.clone(),
             started_at: Some(now.clone()),
             finished_at: Some(now),
+            invalidated_at: None,
+            invalidation_reason: None,
         };
         let commit = ProcessCommit::new(run);
         self.repository.commit_run(&commit)?;
@@ -240,6 +244,39 @@ where
         revision_id: &RevisionId,
     ) -> Result<Vec<ProcessRun>, ApplicationError> {
         self.repository.list_runs_for_revision(revision_id)
+    }
+
+    /// Logically delete a completed C1 result without erasing its audit trail
+    /// or touching the C0 input. A rebuild is a separate process run.
+    pub fn delete_result(
+        &self,
+        run_id: &RunId,
+        reason: &str,
+    ) -> Result<ShowProcessRunOutcome, ApplicationError> {
+        if reason.trim().is_empty() {
+            return Err(ApplicationError::Integrity(
+                "C1 result deletion needs a non-empty reason".to_owned(),
+            ));
+        }
+        let mut run = self.parent_run(run_id)?;
+        if run.state != ProcessingState::Succeeded {
+            return Err(ApplicationError::Integrity(format!(
+                "only succeeded C1 results can be deleted; run {run_id} is {:?}",
+                run.state
+            )));
+        }
+        let derivatives = self.repository.list_derivatives(run_id)?;
+        if derivatives.is_empty() {
+            return Err(ApplicationError::Integrity(format!(
+                "succeeded run {run_id} has no derivative to delete"
+            )));
+        }
+        if run.invalidated_at.is_none() {
+            run.invalidated_at = Some(self.clock.now());
+            run.invalidation_reason = Some(reason.trim().to_owned());
+            self.repository.update_run(&run)?;
+        }
+        Ok(ShowProcessRunOutcome { run, derivatives })
     }
 
     pub fn enqueue(

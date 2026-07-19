@@ -23,6 +23,10 @@ const MIGRATIONS: &[(&str, &str)] = &[
         "0004_reconcile_precommit_v3.sql",
         include_str!("../../../../03_migrations/02_derived/0004_reconcile_precommit_v3.sql"),
     ),
+    (
+        "0005_process_result_invalidation.sql",
+        include_str!("../../../../03_migrations/02_derived/0005_process_result_invalidation.sql"),
+    ),
 ];
 
 const PRECOMMIT_V3_CHECKSUM: &str =
@@ -55,12 +59,12 @@ pub fn migrate_derived(connection: &Connection) -> Result<(), ApplicationError> 
         let version = (index + 1) as i64;
         let checksum = format!("{:x}", Sha256::digest(sql.as_bytes()));
         if let Some(existing) = recorded.get(&version) {
-            if existing != &checksum {
-                if !is_compatible_precommit_v3(connection, version, existing)? {
-                    return Err(ApplicationError::Integrity(format!(
-                        "derived migration checksum changed: {name}"
-                    )));
-                }
+            if existing != &checksum
+                && !is_compatible_precommit_v3(connection, version, existing)?
+            {
+                return Err(ApplicationError::Integrity(format!(
+                    "derived migration checksum changed: {name}"
+                )));
             }
             continue;
         }
@@ -126,7 +130,7 @@ mod tests {
                 .query_row("SELECT COUNT(*) FROM schema_migrations", [], |row| row
                     .get::<_, i64>(0))
                 .unwrap(),
-            4
+            5
         );
         assert_eq!(
             connection

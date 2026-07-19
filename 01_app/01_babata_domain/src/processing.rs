@@ -49,6 +49,8 @@ pub struct ProcessRun {
     pub created_at: UtcTimestamp,
     pub started_at: Option<UtcTimestamp>,
     pub finished_at: Option<UtcTimestamp>,
+    pub invalidated_at: Option<UtcTimestamp>,
+    pub invalidation_reason: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

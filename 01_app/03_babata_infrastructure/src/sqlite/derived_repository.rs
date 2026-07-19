@@ -66,7 +66,9 @@ impl DerivedRepositoryPort for SqliteDerivedRepository {
                     usage_json = ?17,
                     loss_notes = ?18,
                     started_at = ?19,
-                    finished_at = ?20
+                    finished_at = ?20,
+                    invalidated_at = ?21,
+                    invalidation_reason = ?22
                  WHERE run_id = ?1",
                 params![
                     run.id.to_string(),
@@ -89,6 +91,8 @@ impl DerivedRepositoryPort for SqliteDerivedRepository {
                     run.loss_notes,
                     run.started_at.as_ref().map(|t| t.as_str().to_owned()),
                     run.finished_at.as_ref().map(|t| t.as_str().to_owned()),
+                    run.invalidated_at.as_ref().map(|t| t.as_str().to_owned()),
+                    run.invalidation_reason,
                 ],
             )
             .map_err(storage)?;
@@ -106,7 +110,8 @@ impl DerivedRepositoryPort for SqliteDerivedRepository {
                         target_kind, input_asset_id, state,
                         provider, tool_or_model, tool_version, attempt, retry_of_run_id,
                         error_code, error_message, params_json, usage_json, loss_notes,
-                        created_at, started_at, finished_at
+                        created_at, started_at, finished_at,
+                        invalidated_at, invalidation_reason
                  FROM process_runs WHERE run_id = ?1",
                 params![run_id.to_string()],
                 run_from_row,
@@ -126,7 +131,8 @@ impl DerivedRepositoryPort for SqliteDerivedRepository {
                         target_kind, input_asset_id, state,
                         provider, tool_or_model, tool_version, attempt, retry_of_run_id,
                         error_code, error_message, params_json, usage_json, loss_notes,
-                        created_at, started_at, finished_at
+                        created_at, started_at, finished_at,
+                        invalidated_at, invalidation_reason
                  FROM process_runs
                  WHERE input_revision_id = ?1
                  ORDER BY created_at ASC",
@@ -210,8 +216,8 @@ fn insert_run(connection: &Connection, run: &ProcessRun) -> Result<(), Applicati
                 target_kind, input_asset_id, state,
                 provider, tool_or_model, tool_version, attempt, retry_of_run_id,
                 error_code, error_message, params_json, usage_json, loss_notes,
-                created_at, started_at, finished_at
-             ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21)",
+                created_at, started_at, finished_at, invalidated_at, invalidation_reason
+             ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?22,?23)",
             params![
                 run.id.to_string(),
                 run.pipeline_id.as_str(),
@@ -234,6 +240,8 @@ fn insert_run(connection: &Connection, run: &ProcessRun) -> Result<(), Applicati
                 run.created_at.as_str(),
                 run.started_at.as_ref().map(|t| t.as_str().to_owned()),
                 run.finished_at.as_ref().map(|t| t.as_str().to_owned()),
+                run.invalidated_at.as_ref().map(|t| t.as_str().to_owned()),
+                run.invalidation_reason,
             ],
         )
         .map_err(storage)?;
@@ -324,6 +332,12 @@ fn run_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<ProcessRun> {
             .map(UtcTimestamp::parse)
             .transpose()
             .map_err(to_sql)?,
+        invalidated_at: row
+            .get::<_, Option<String>>(21)?
+            .map(UtcTimestamp::parse)
+            .transpose()
+            .map_err(to_sql)?,
+        invalidation_reason: row.get(22)?,
     })
 }
 

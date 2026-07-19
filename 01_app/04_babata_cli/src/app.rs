@@ -124,6 +124,12 @@ fn execute_process(
             })?;
             render_value(&service.list_runs_for_revision(&revision_id)?, json)?;
         }
+        ProcessCommand::DeleteResult { run, reason } => {
+            let run_id = RunId::parse(&run).map_err(|error| {
+                Box::new(ApplicationError::Domain(error)) as Box<dyn std::error::Error>
+            })?;
+            render_value(&service.delete_result(&run_id, &reason)?, json)?;
+        }
         ProcessCommand::Enqueue { pipeline, revision } => {
             let outcome = service.enqueue(babata_application::EnqueueProcessCommand {
                 pipeline_id: PipelineId::new(pipeline),
