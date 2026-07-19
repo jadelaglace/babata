@@ -59,8 +59,7 @@ pub fn migrate_derived(connection: &Connection) -> Result<(), ApplicationError> 
         let version = (index + 1) as i64;
         let checksum = format!("{:x}", Sha256::digest(sql.as_bytes()));
         if let Some(existing) = recorded.get(&version) {
-            if existing != &checksum
-                && !is_compatible_precommit_v3(connection, version, existing)?
+            if existing != &checksum && !is_compatible_precommit_v3(connection, version, existing)?
             {
                 return Err(ApplicationError::Integrity(format!(
                     "derived migration checksum changed: {name}"
