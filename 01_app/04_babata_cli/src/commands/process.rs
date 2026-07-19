@@ -22,6 +22,11 @@ pub enum ProcessCommand {
         text: Option<String>,
         #[arg(long)]
         json_file: Option<String>,
+        /// Logical path under BABATA_DATA_HOME (e.g. generated/.../results/x.md).
+        #[arg(long)]
+        logical_path: Option<String>,
+        #[arg(long)]
+        media_type: Option<String>,
         #[arg(long)]
         model: Option<String>,
         #[arg(long)]
@@ -89,6 +94,8 @@ pub fn build_register_command(
         text_file,
         text,
         json_file,
+        logical_path,
+        media_type,
         model,
         tool_version,
         language,
@@ -106,6 +113,10 @@ pub fn build_register_command(
         load_optional_file(text_file)?
     };
     let content_json = load_optional_file(json_file)?;
+    let logical_path = logical_path
+        .as_ref()
+        .map(|path| LogicalPath::parse(path).map_err(|e| e.to_string()))
+        .transpose()?;
 
     Ok(babata_application::RegisterDerivativeCommand {
         pipeline_id: PipelineId::new(pipeline.clone()),
@@ -128,8 +139,8 @@ pub fn build_register_command(
         loss_notes: loss_notes.clone(),
         content_text,
         content_json,
-        logical_path: None::<LogicalPath>,
-        media_type: None,
+        logical_path,
+        media_type: media_type.clone(),
         language: language.clone(),
         input_asset_id: None,
         output_sha256: None,
