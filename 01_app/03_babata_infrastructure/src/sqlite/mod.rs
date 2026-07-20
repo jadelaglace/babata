@@ -18,7 +18,7 @@ pub use collection_migrate::migrate_collection;
 pub use derived_migrate::migrate_derived;
 pub use derived_repository::SqliteDerivedRepository;
 pub use job_repository::SqliteJobRepository;
-pub use migrate::migrate_raw;
+pub use migrate::{migrate_knowledge, migrate_raw};
 pub use raw_repository::SqliteRawRepository;
 pub use read_projection::SqliteReadProjection;
 
@@ -92,6 +92,18 @@ pub fn open_collection_database(
     {
         let connection = repository.lock()?;
         migrate_collection(&connection)?;
+    }
+    Ok(repository)
+}
+
+pub fn open_knowledge_database(
+    paths: &crate::paths::DataPaths,
+    busy_timeout_ms: u64,
+) -> Result<SqliteRawRepository, ApplicationError> {
+    let repository = open_raw_database(paths, busy_timeout_ms)?;
+    {
+        let connection = repository.lock()?;
+        migrate_knowledge(&connection)?;
     }
     Ok(repository)
 }
@@ -317,6 +329,26 @@ mod tests {
         let repo = super::open_derived_database(&paths, 100).unwrap();
         drop(repo);
         assert!(paths.derived_database().exists());
+    }
+
+    #[test]
+    fn open_knowledge_database_migrates_in_the_raw_authority() {
+        let temporary = tempdir().unwrap();
+        let paths = crate::paths::DataPaths::new(temporary.path().to_path_buf());
+        crate::paths::ensure_layout(&paths).unwrap();
+        let repo = super::open_knowledge_database(&paths, 100).unwrap();
+        drop(repo);
+        let connection = rusqlite::Connection::open(paths.raw_database()).unwrap();
+        assert_eq!(
+            connection
+                .query_row(
+                    "SELECT MAX(version) FROM knowledge_schema_migrations",
+                    [],
+                    |row| row.get::<_, i64>(0)
+                )
+                .unwrap(),
+            1
+        );
     }
 
     #[test]
