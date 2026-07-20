@@ -93,13 +93,13 @@ domain <- application <- infrastructure
 | Crate | 新增文件 | 责任 |
 | --- | --- | --- |
 | domain | `collection.rs` | 候选、会话、逐条收集状态和重收集结果 |
-| domain | `knowledge.rs` | 人工记录/判断/关系/分类/模型/评分/分析与模型建议决定 |
+| domain | `knowledge.rs` | 个人知识宇宙语义、人工记录/关系/评分与模型建议审阅标记 |
 | domain | `sublibrary.rs` | 子库定义、成员选择和组织规则 |
 | domain | `output.rs` | 输出类型、范围、manifest 和 build 状态 |
 | application port | `read_projection.rs` | 从 C0/C1 构建与查询可重建读投影 |
 | application port | `output_builder.rs` | 只读生成广义 C2 输出及 manifest |
 | application use case | `collector.rs` | 发现候选、选择、逐条状态和重收集 |
-| application use case | `knowledge.rs` | 人工沉淀与模型建议决定 |
+| application use case | `knowledge.rs` | 人工沉淀与模型建议的非阻塞审阅标记 |
 | application use case | `sublibraries.rs` | 创建、修订、查看和物化子库定义 |
 | application use case | `outputs.rs` | 列出、构建、查看和验证输出 |
 | infrastructure | `sqlite/read_projection.rs` | 可重建读投影的 SQLite 实现位置 |
@@ -146,7 +146,7 @@ domain <- application <- infrastructure
 | `entities.rs` | SourceRef、RawItem、RawRevision、AssetRef、Relation 与稳定构造约束 |
 | `collection.rs` | CandidateSummary、CollectionSelection、CollectionItemState、RecollectionState |
 | `processing.rs` | ProcessRun、JobRef、DerivativeRef、ProviderTaskRef |
-| `knowledge.rs` | KnowledgeRecord、ModelSuggestion、SuggestionDecision 与人工/机器来源 |
+| `knowledge.rs` | 知识/案例/日志/感悟、WorldviewMap、ModelSuggestion、SuggestionReview 与人工/机器来源 |
 | `query.rs` | QueryFilter、PageCursor、RecordSummary、RecordDetail 聚合引用 |
 | `sublibrary.rs` | SublibraryDefinition、include/exclude/organise 规则与版本 |
 | `output.rs` | OutputKind、OutputScope、OutputBuild、OutputManifestRef |

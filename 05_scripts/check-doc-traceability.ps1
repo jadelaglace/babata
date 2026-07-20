@@ -134,6 +134,7 @@ $requiredMarkers = @(
     @('03_architecture/06_RAW_FOUNDATION_EXECUTION_PLAN.md', 'P3-G6'),
     @('03_architecture/07_P4_FIRST_COLLECTION_PATHS.md', 'P4-G6'),
     @('03_architecture/08_SOURCE_TOOL_RESEARCH.md', 'P2-G7: passed'),
+    @('03_architecture/09_P6_PERSONAL_KNOWLEDGE_UNIVERSE_BLUEPRINT.md', 'P6-BLUEPRINT-STATUS: not-started'),
     @('04_process/04_DEVELOPMENT_PROCESS.md', 'P2: completed; P2-G1..P2-G7: passed'),
     @('05_tests/05_TEST_CASES.md', 'GT-P2-07')
 )

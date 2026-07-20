@@ -16,6 +16,7 @@ Architecture supplements:
 - `03_architecture/06_RAW_FOUNDATION_EXECUTION_PLAN.md` — P3 migration, transaction, implementation and verification sequence.
 - `03_architecture/07_P4_FIRST_COLLECTION_PATHS.md` — P4 Feishu/browser contextual candidates, selection, status and re-collection.
 - `03_architecture/08_SOURCE_TOOL_RESEARCH.md` — evidence-backed existing-tool routes, minimum authorization and adapter decisions for every named source.
+- `03_architecture/09_P6_PERSONAL_KNOWLEDGE_UNIVERSE_BLUEPRINT.md` — P6 worldview map, semantic types, dynamic relevance, non-blocking model suggestions, discovery, sublibraries and output boundaries.
 
 Do not introduce a new abstraction before it has a concrete working caller.
 
