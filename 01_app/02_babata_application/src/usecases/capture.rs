@@ -1038,6 +1038,7 @@ pub(crate) mod tests {
             }
             Ok(())
         }
+        #[allow(clippy::too_many_lines)]
         fn load_detail(&self, item_id: &ItemId) -> Result<crate::RecordDetail, ApplicationError> {
             let state = self.state.lock().unwrap();
             let item = state
