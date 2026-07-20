@@ -111,6 +111,8 @@ where
             command.tool_or_model.as_deref(),
             command.tool_version.as_deref(),
         )?;
+        command.item_id =
+            Some(self.canonical_item_id(&command.revision_id, command.item_id.as_ref())?);
         self.validate_input(
             command.kind,
             &command.revision_id,
@@ -187,7 +189,7 @@ where
     /// failed run stays in C1 history and a later success chains to it.
     pub fn register_failure(
         &self,
-        command: RegisterFailureCommand,
+        mut command: RegisterFailureCommand,
     ) -> Result<RegisterDerivativeOutcome, ApplicationError> {
         ensure_known_pipeline(&command.pipeline_id)?;
         ensure_pipeline_kind(&command.pipeline_id, command.kind)?;
@@ -196,6 +198,8 @@ where
             command.tool_or_model.as_deref(),
             command.tool_version.as_deref(),
         )?;
+        command.item_id =
+            Some(self.canonical_item_id(&command.revision_id, command.item_id.as_ref())?);
         self.validate_input(
             command.kind,
             &command.revision_id,
@@ -307,9 +311,11 @@ where
             )));
         }
         if run.invalidated_at.is_none() {
-            run.invalidated_at = Some(self.clock.now());
+            let invalidated_at = self.clock.now();
+            self.repository
+                .invalidate_run(run_id, &invalidated_at, reason.trim())?;
+            run.invalidated_at = Some(invalidated_at);
             run.invalidation_reason = Some(reason.trim().to_owned());
-            self.repository.update_run(&run)?;
         }
         Ok(ShowProcessRunOutcome { run, derivatives })
     }
@@ -793,6 +799,26 @@ where
         self.validate_revision_binding(revision_id, item_id, input_sha256, bound_asset.as_ref())
     }
 
+    fn canonical_item_id(
+        &self,
+        revision_id: &RevisionId,
+        declared_item_id: Option<&babata_domain::ItemId>,
+    ) -> Result<babata_domain::ItemId, ApplicationError> {
+        let revision = self
+            .raw
+            .find_revision(revision_id)?
+            .ok_or_else(|| ApplicationError::NotFound(format!("revision {revision_id}")))?;
+        if let Some(declared_item_id) = declared_item_id {
+            if declared_item_id != &revision.item_id {
+                return Err(ApplicationError::Integrity(format!(
+                    "revision {revision_id} belongs to item {}, not {declared_item_id}",
+                    revision.item_id,
+                )));
+            }
+        }
+        Ok(revision.item_id)
+    }
+
     fn prepare_output(
         &self,
         command: &mut RegisterDerivativeCommand,
@@ -1080,7 +1106,11 @@ where
                 parent.input_revision_id, identity.revision_id
             )));
         }
-        if parent.input_item_id.as_ref() != identity.item_id {
+        if parent
+            .input_item_id
+            .as_ref()
+            .is_some_and(|parent_item_id| Some(parent_item_id) != identity.item_id)
+        {
             return Err(ApplicationError::Integrity(
                 "retry parent item identity does not match this attempt".to_owned(),
             ));

@@ -52,7 +52,7 @@ impl RawRepositoryPort for SqliteRawRepository {
 
     fn find_item(&self, item_id: &ItemId) -> Result<Option<NewItem>, ApplicationError> {
         let connection = self.lock()?;
-        connection.query_row("SELECT item_id, source_id, source_native_id, source_locator, source_identity_key, content_type, source_published_at, first_captured_at, metadata_json FROM items WHERE item_id = ?1", params![item_id.to_string()], item_from_row).optional().map_err(storage)
+        connection.query_row("SELECT item_id, source_id, source_native_id, source_locator, source_identity_key, content_type, source_published_at, source_updated_at, first_captured_at, metadata_json FROM items WHERE item_id = ?1", params![item_id.to_string()], item_from_row).optional().map_err(storage)
     }
 
     fn find_revision(
@@ -114,7 +114,7 @@ impl RawRepositoryPort for SqliteRawRepository {
         identity: &str,
     ) -> Result<Option<(NewItem, NewRevision)>, ApplicationError> {
         let connection = self.lock()?;
-        let item = connection.query_row("SELECT item_id, source_id, source_native_id, source_locator, source_identity_key, content_type, source_published_at, first_captured_at, metadata_json FROM items WHERE source_id = ?1 AND source_identity_key = ?2", params![source_id.to_string(), identity], item_from_row).optional().map_err(storage)?;
+        let item = connection.query_row("SELECT item_id, source_id, source_native_id, source_locator, source_identity_key, content_type, source_published_at, source_updated_at, first_captured_at, metadata_json FROM items WHERE source_id = ?1 AND source_identity_key = ?2", params![source_id.to_string(), identity], item_from_row).optional().map_err(storage)?;
         item.map(|item| {
             let revision = connection.query_row("SELECT revision_id, item_id, parent_revision_id, revision_kind, ordinal, captured_at, authored_at, revision_note, raw_text, text_sha256, metadata_json FROM revisions WHERE item_id = ?1 ORDER BY ordinal DESC LIMIT 1", params![item.id.to_string()], revision_from_row).map_err(storage)?;
             Ok((item, revision))
@@ -261,10 +261,14 @@ impl RawRepositoryPort for SqliteRawRepository {
             source_id: header.source_id,
             source_kind: header.source_kind,
             provider: header.provider,
+            source_account_or_workspace: header.source_account_or_workspace,
             content_type: header.content_type,
             source_native_id: header.source_native_id,
             source_locator: header.source_locator,
             source_identity_key: header.source_identity_key,
+            source_published_at: header.source_published_at,
+            source_updated_at: header.source_updated_at,
+            first_captured_at: header.first_captured_at,
             metadata: header.metadata,
             collections: load_collections(&connection, item_id)?,
             revisions: load_revisions(&connection, item_id)?,
@@ -337,10 +341,14 @@ struct ItemHeader {
     source_id: SourceId,
     source_kind: SourceKind,
     provider: String,
+    source_account_or_workspace: Option<String>,
     content_type: ContentType,
     source_native_id: Option<String>,
     source_locator: Option<String>,
     source_identity_key: Option<String>,
+    source_published_at: Option<UtcTimestamp>,
+    source_updated_at: Option<UtcTimestamp>,
+    first_captured_at: UtcTimestamp,
     metadata: Metadata,
 }
 
@@ -350,8 +358,9 @@ fn load_item_header(
 ) -> Result<ItemHeader, ApplicationError> {
     connection
         .query_row(
-            "SELECT s.source_id, s.source_kind, s.provider, i.content_type,
-                    i.source_native_id, i.source_locator, i.source_identity_key, i.metadata_json
+            "SELECT s.source_id, s.source_kind, s.provider, s.account_or_workspace, i.content_type,
+                    i.source_native_id, i.source_locator, i.source_identity_key,
+                    i.source_published_at, i.source_updated_at, i.first_captured_at, i.metadata_json
              FROM items i JOIN sources s ON s.source_id = i.source_id
              WHERE i.item_id = ?1",
             params![item_id.to_string()],
@@ -360,11 +369,24 @@ fn load_item_header(
                     source_id: SourceId::parse(row.get::<_, String>(0)?).map_err(to_sql)?,
                     source_kind: parse_source_kind(&row.get::<_, String>(1)?).map_err(to_sql)?,
                     provider: row.get(2)?,
-                    content_type: parse_content_type(&row.get::<_, String>(3)?).map_err(to_sql)?,
-                    source_native_id: row.get(4)?,
-                    source_locator: row.get(5)?,
-                    source_identity_key: row.get(6)?,
-                    metadata: Metadata::parse(&row.get::<_, String>(7)?).map_err(to_sql)?,
+                    source_account_or_workspace: row.get(3)?,
+                    content_type: parse_content_type(&row.get::<_, String>(4)?).map_err(to_sql)?,
+                    source_native_id: row.get(5)?,
+                    source_locator: row.get(6)?,
+                    source_identity_key: row.get(7)?,
+                    source_published_at: row
+                        .get::<_, Option<String>>(8)?
+                        .map(UtcTimestamp::parse)
+                        .transpose()
+                        .map_err(to_sql)?,
+                    source_updated_at: row
+                        .get::<_, Option<String>>(9)?
+                        .map(UtcTimestamp::parse)
+                        .transpose()
+                        .map_err(to_sql)?,
+                    first_captured_at: UtcTimestamp::parse(row.get::<_, String>(10)?)
+                        .map_err(to_sql)?,
+                    metadata: Metadata::parse(&row.get::<_, String>(11)?).map_err(to_sql)?,
                 })
             },
         )
@@ -375,15 +397,23 @@ fn load_collections(
     connection: &Connection,
     item_id: &ItemId,
 ) -> Result<Vec<CollectionDetail>, ApplicationError> {
-    let mut statement = connection.prepare("SELECT c.collection_id, c.native_id, c.collection_kind, c.title, c.observed_at FROM collections c JOIN item_collections ic ON ic.collection_id = c.collection_id WHERE ic.item_id = ?1 ORDER BY c.created_at").map_err(storage)?;
+    let mut statement = connection.prepare("SELECT c.collection_id, c.parent_collection_id, c.native_id, c.locator, c.collection_kind, c.title, c.metadata_json, c.observed_at, c.created_at FROM collections c JOIN item_collections ic ON ic.collection_id = c.collection_id WHERE ic.item_id = ?1 ORDER BY c.created_at").map_err(storage)?;
     let rows = statement
         .query_map(params![item_id.to_string()], |row| {
             Ok(CollectionDetail {
                 collection_id: CollectionId::parse(row.get::<_, String>(0)?).map_err(to_sql)?,
-                native_id: row.get(1)?,
-                kind: row.get(2)?,
-                title: row.get(3)?,
-                observed_at: UtcTimestamp::parse(row.get::<_, String>(4)?).map_err(to_sql)?,
+                parent_collection_id: row
+                    .get::<_, Option<String>>(1)?
+                    .map(CollectionId::parse)
+                    .transpose()
+                    .map_err(to_sql)?,
+                native_id: row.get(2)?,
+                locator: row.get(3)?,
+                kind: row.get(4)?,
+                title: row.get(5)?,
+                metadata: Metadata::parse(&row.get::<_, String>(6)?).map_err(to_sql)?,
+                observed_at: UtcTimestamp::parse(row.get::<_, String>(7)?).map_err(to_sql)?,
+                created_at: UtcTimestamp::parse(row.get::<_, String>(8)?).map_err(to_sql)?,
             })
         })
         .map_err(storage)?;
@@ -394,7 +424,7 @@ fn load_revisions(
     connection: &Connection,
     item_id: &ItemId,
 ) -> Result<Vec<RevisionDetail>, ApplicationError> {
-    let mut statement = connection.prepare("SELECT r.revision_id, r.parent_revision_id, r.revision_kind, r.ordinal, r.captured_at, r.authored_at, r.revision_note, r.raw_text, r.text_sha256, r.metadata_json, r.state, o.operation_id, o.source_native_id, o.source_locator, o.source_published_at, o.metadata_json, o.state, o.failure_code FROM revisions r LEFT JOIN capture_operations o ON o.revision_id = r.revision_id WHERE r.item_id = ?1 ORDER BY r.ordinal").map_err(storage)?;
+    let mut statement = connection.prepare("SELECT r.revision_id, r.parent_revision_id, r.revision_kind, r.ordinal, r.captured_at, r.authored_at, r.revision_note, r.raw_text, r.text_sha256, r.metadata_json, r.state, r.created_at, o.operation_id, o.source_native_id, o.source_locator, o.source_published_at, o.metadata_json, o.state, o.failure_code FROM revisions r LEFT JOIN capture_operations o ON o.revision_id = r.revision_id WHERE r.item_id = ?1 ORDER BY r.ordinal").map_err(storage)?;
     let rows = statement
         .query_map(params![item_id.to_string()], |row| {
             Ok(RevisionDetail {
@@ -417,22 +447,23 @@ fn load_revisions(
                 text_sha256: row.get(8)?,
                 metadata: Metadata::parse(&row.get::<_, String>(9)?).map_err(to_sql)?,
                 state: parse_raw_state(&row.get::<_, String>(10)?).map_err(to_sql)?,
+                created_at: UtcTimestamp::parse(row.get::<_, String>(11)?).map_err(to_sql)?,
                 provenance: row
-                    .get::<_, Option<String>>(11)?
+                    .get::<_, Option<String>>(12)?
                     .map(|operation_id| {
                         Ok::<CaptureProvenanceDetail, rusqlite::Error>(CaptureProvenanceDetail {
                             operation_id,
-                            source_native_id: row.get(12)?,
-                            source_locator: row.get(13)?,
+                            source_native_id: row.get(13)?,
+                            source_locator: row.get(14)?,
                             source_published_at: row
-                                .get::<_, Option<String>>(14)?
+                                .get::<_, Option<String>>(15)?
                                 .map(UtcTimestamp::parse)
                                 .transpose()
                                 .map_err(to_sql)?,
-                            metadata: Metadata::parse(&row.get::<_, String>(15)?)
+                            metadata: Metadata::parse(&row.get::<_, String>(16)?)
                                 .map_err(to_sql)?,
-                            state: parse_raw_state(&row.get::<_, String>(16)?).map_err(to_sql)?,
-                            failure_code: row.get(17)?,
+                            state: parse_raw_state(&row.get::<_, String>(17)?).map_err(to_sql)?,
+                            failure_code: row.get(18)?,
                         })
                     })
                     .transpose()?,
@@ -459,18 +490,20 @@ fn load_assets(
     connection: &Connection,
     item_id: &ItemId,
 ) -> Result<Vec<AssetDetail>, ApplicationError> {
-    let mut statement = connection.prepare("SELECT a.asset_id, a.asset_role, a.logical_path, a.sha256, a.byte_size, a.media_type, a.original_filename, a.state FROM assets a JOIN revisions r ON r.revision_id = a.revision_id WHERE r.item_id = ?1 ORDER BY a.created_at").map_err(storage)?;
+    let mut statement = connection.prepare("SELECT a.asset_id, a.revision_id, a.asset_role, a.logical_path, a.sha256, a.byte_size, a.media_type, a.original_filename, a.state, a.created_at FROM assets a JOIN revisions r ON r.revision_id = a.revision_id WHERE r.item_id = ?1 ORDER BY a.created_at").map_err(storage)?;
     let rows = statement
         .query_map(params![item_id.to_string()], |row| {
             Ok(AssetDetail {
                 asset_id: AssetId::parse(row.get::<_, String>(0)?).map_err(to_sql)?,
-                role: parse_asset_role(&row.get::<_, String>(1)?).map_err(to_sql)?,
-                logical_path: row.get(2)?,
-                sha256: row.get(3)?,
-                byte_size: row.get::<_, i64>(4)? as u64,
-                media_type: row.get(5)?,
-                original_filename: row.get(6)?,
-                state: parse_raw_state(&row.get::<_, String>(7)?).map_err(to_sql)?,
+                revision_id: RevisionId::parse(row.get::<_, String>(1)?).map_err(to_sql)?,
+                role: parse_asset_role(&row.get::<_, String>(2)?).map_err(to_sql)?,
+                logical_path: row.get(3)?,
+                sha256: row.get(4)?,
+                byte_size: row.get::<_, i64>(5)? as u64,
+                media_type: row.get(6)?,
+                original_filename: row.get(7)?,
+                state: parse_raw_state(&row.get::<_, String>(8)?).map_err(to_sql)?,
+                created_at: UtcTimestamp::parse(row.get::<_, String>(9)?).map_err(to_sql)?,
             })
         })
         .map_err(storage)?;
@@ -481,23 +514,26 @@ fn load_relations(
     connection: &Connection,
     item_id: &ItemId,
 ) -> Result<Vec<RelationDetail>, ApplicationError> {
-    let mut statement = connection.prepare("SELECT relation_kind, from_item_id, from_revision_id, to_item_id, to_revision_id FROM relations WHERE from_item_id = ?1 OR to_item_id = ?1 ORDER BY created_at").map_err(storage)?;
+    let mut statement = connection.prepare("SELECT relation_id, relation_kind, from_item_id, from_revision_id, to_item_id, to_revision_id, metadata_json, created_at FROM relations WHERE from_item_id = ?1 OR to_item_id = ?1 ORDER BY created_at").map_err(storage)?;
     let rows = statement
         .query_map(params![item_id.to_string()], |row| {
             Ok(RelationDetail {
-                kind: parse_relation_kind(&row.get::<_, String>(0)?).map_err(to_sql)?,
-                from_item_id: ItemId::parse(row.get::<_, String>(1)?).map_err(to_sql)?,
+                relation_id: RelationId::parse(row.get::<_, String>(0)?).map_err(to_sql)?,
+                kind: parse_relation_kind(&row.get::<_, String>(1)?).map_err(to_sql)?,
+                from_item_id: ItemId::parse(row.get::<_, String>(2)?).map_err(to_sql)?,
                 from_revision_id: row
-                    .get::<_, Option<String>>(2)?
+                    .get::<_, Option<String>>(3)?
                     .map(parse_revision)
                     .transpose()
                     .map_err(to_sql)?,
-                to_item_id: ItemId::parse(row.get::<_, String>(3)?).map_err(to_sql)?,
+                to_item_id: ItemId::parse(row.get::<_, String>(4)?).map_err(to_sql)?,
                 to_revision_id: row
-                    .get::<_, Option<String>>(4)?
+                    .get::<_, Option<String>>(5)?
                     .map(parse_revision)
                     .transpose()
                     .map_err(to_sql)?,
+                metadata: Metadata::parse(&row.get::<_, String>(6)?).map_err(to_sql)?,
+                created_at: UtcTimestamp::parse(row.get::<_, String>(7)?).map_err(to_sql)?,
             })
         })
         .map_err(storage)?;
@@ -513,7 +549,7 @@ fn insert_source(
 }
 
 fn insert_item(transaction: &Transaction<'_>, item: &NewItem) -> Result<(), ApplicationError> {
-    transaction.execute("INSERT OR IGNORE INTO items (item_id, source_id, source_native_id, source_locator, source_identity_key, content_type, source_published_at, first_captured_at, metadata_json, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?8)", params![item.id.to_string(), item.source_id.to_string(), item.source_native_id, item.source_locator, item.source_identity_key, content_type(item.content_type), item.source_published_at.as_ref().map(UtcTimestamp::as_str), item.first_captured_at.as_str(), item.metadata.to_json()]).map_err(storage)?;
+    transaction.execute("INSERT OR IGNORE INTO items (item_id, source_id, source_native_id, source_locator, source_identity_key, content_type, source_published_at, source_updated_at, first_captured_at, metadata_json, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?9)", params![item.id.to_string(), item.source_id.to_string(), item.source_native_id, item.source_locator, item.source_identity_key, content_type(item.content_type), item.source_published_at.as_ref().map(UtcTimestamp::as_str), item.source_updated_at.as_ref().map(UtcTimestamp::as_str), item.first_captured_at.as_str(), item.metadata.to_json()]).map_err(storage)?;
     Ok(())
 }
 
@@ -581,7 +617,7 @@ fn insert_relation(
     transaction: &Transaction<'_>,
     relation: &NewRelation,
 ) -> Result<(), ApplicationError> {
-    transaction.execute("INSERT INTO relations (relation_id, from_item_id, from_revision_id, relation_kind, to_item_id, to_revision_id, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))", params![RelationId::new().to_string(), relation.from_item_id.to_string(), relation.from_revision_id.as_ref().map(ToString::to_string), relation_kind(relation.kind), relation.to_item_id.to_string(), relation.to_revision_id.as_ref().map(ToString::to_string)]).map_err(storage)?;
+    transaction.execute("INSERT INTO relations (relation_id, from_item_id, from_revision_id, relation_kind, to_item_id, to_revision_id, metadata_json, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)", params![relation.id.to_string(), relation.from_item_id.to_string(), relation.from_revision_id.as_ref().map(ToString::to_string), relation_kind(relation.kind), relation.to_item_id.to_string(), relation.to_revision_id.as_ref().map(ToString::to_string), relation.metadata.to_json(), relation.created_at.as_str()]).map_err(storage)?;
     Ok(())
 }
 
@@ -630,8 +666,13 @@ fn item_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<NewItem> {
             .map(UtcTimestamp::parse)
             .transpose()
             .map_err(to_sql)?,
-        first_captured_at: UtcTimestamp::parse(row.get::<_, String>(7)?).map_err(to_sql)?,
-        metadata: Metadata::parse(&row.get::<_, String>(8)?).map_err(to_sql)?,
+        source_updated_at: row
+            .get::<_, Option<String>>(7)?
+            .map(UtcTimestamp::parse)
+            .transpose()
+            .map_err(to_sql)?,
+        first_captured_at: UtcTimestamp::parse(row.get::<_, String>(8)?).map_err(to_sql)?,
+        metadata: Metadata::parse(&row.get::<_, String>(9)?).map_err(to_sql)?,
     })
 }
 fn revision_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<NewRevision> {
@@ -925,6 +966,7 @@ mod tests {
             source_identity_key: Some("text:test".to_owned()),
             content_type: ContentType::Text,
             source_published_at: None,
+            source_updated_at: Some(now.clone()),
             first_captured_at: now.clone(),
             metadata: Metadata::empty(),
         };
@@ -934,7 +976,7 @@ mod tests {
             parent_revision_id: None,
             kind: RevisionKind::Capture,
             ordinal: 1,
-            captured_at: now,
+            captured_at: now.clone(),
             authored_at: None,
             revision_note: None,
             raw_text: Some("fixture".to_owned()),
@@ -965,6 +1007,7 @@ mod tests {
         let detail = repository.load_detail(&item.id).unwrap();
         assert_eq!(detail.revisions.len(), 1);
         assert_eq!(detail.revisions[0].state, RawState::Ready);
+        assert_eq!(detail.source_updated_at, Some(now));
     }
 
     #[test]
@@ -989,6 +1032,7 @@ mod tests {
             source_identity_key: Some("rollback:test".to_owned()),
             content_type: ContentType::Text,
             source_published_at: None,
+            source_updated_at: None,
             first_captured_at: now.clone(),
             metadata: Metadata::empty(),
         };
@@ -998,7 +1042,7 @@ mod tests {
             parent_revision_id: None,
             kind: RevisionKind::Capture,
             ordinal: 1,
-            captured_at: now,
+            captured_at: now.clone(),
             authored_at: None,
             revision_note: None,
             raw_text: Some("fixture".to_owned()),
@@ -1022,11 +1066,14 @@ mod tests {
             revision,
             assets: Vec::new(),
             relations: vec![NewRelation {
+                id: RelationId::new(),
                 kind: RelationKind::RelatedTo,
                 from_item_id: item.id.clone(),
                 from_revision_id: None,
                 to_item_id: item.id,
                 to_revision_id: None,
+                metadata: Metadata::empty(),
+                created_at: now.clone(),
             }],
         };
         assert!(repository.insert_capture_graph(&graph).is_err());
@@ -1069,6 +1116,7 @@ mod tests {
             source_identity_key: Some("context:test".to_owned()),
             content_type: ContentType::Text,
             source_published_at: None,
+            source_updated_at: None,
             first_captured_at: now.clone(),
             metadata: Metadata::empty(),
         };
