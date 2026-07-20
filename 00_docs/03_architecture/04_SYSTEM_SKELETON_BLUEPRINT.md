@@ -99,7 +99,7 @@ domain <- application <- infrastructure
 | application port | `read_projection.rs` | 从 C0/C1 构建与查询可重建读投影 |
 | application port | `output_builder.rs` | 只读生成广义 C2 输出及 manifest |
 | application use case | `collector.rs` | 发现候选、选择、逐条状态和重收集 |
-| application use case | `knowledge.rs` | 人工沉淀与模型建议的非阻塞审阅标记 |
+| application use case | `knowledge.rs` | 语义审阅准备、机器候选与第一方内容边界 |
 | application use case | `sublibraries.rs` | 创建、修订、查看和物化子库定义 |
 | application use case | `outputs.rs` | 列出、构建、查看和验证输出 |
 | infrastructure | `sqlite/read_projection.rs` | 可重建读投影的 SQLite 实现位置 |
@@ -107,7 +107,7 @@ domain <- application <- infrastructure
 | infrastructure | `views/output.rs` | 报告/网页/结构化输出 builder 位置 |
 | infrastructure | `views/manifest.rs` | 输出输入范围、版本和生成信息清单 |
 | CLI | `commands/collector.rs` | 来源发现、选择、状态和重收集的运维/自动化入口 |
-| CLI | `commands/knowledge.rs` | 人工沉淀的调试/自动化入口，不替代日常 UI |
+| CLI | `commands/knowledge.rs` | P6 审阅准备与后续语义能力的调试/自动化入口，不替代日常 UI |
 | CLI | `commands/sublibraries.rs` | 子库定义和物化入口 |
 | CLI | `commands/outputs.rs` | 广义输出与 manifest 入口 |
 | local API | `routes/collector.rs` | 浏览器/窄 UI 的候选与选择路由位置 |
@@ -212,7 +212,7 @@ Domain 不读取时钟、文件、环境变量或网络，不依赖 SQLite、HTT
 
 `CaptureService` 只负责已取得内容的 C0 提交；`CollectorSessionService` 负责写入前的
 候选、选择和逐条状态。`WorkspaceService` 负责第一方正文版本；`KnowledgeService`
-负责核心区人工沉淀。`ViewService` 负责具体展示 view；`OutputService` 负责带 manifest
+负责 P6 语义审阅准备及后续机器候选/第一方边界。`ViewService` 负责具体展示 view；`OutputService` 负责带 manifest
 的广义输出。
 
 ### 6.2 13 个 port、57 个最低接口方法
@@ -425,7 +425,7 @@ P2 使用工程交付门，不使用产品 AC/TC 冒充骨架验收：
 - P3：C0 原件与 first-party 版本的统一写入底座；
 - P4：飞书与浏览器上下文候选、选择、状态和重收集；
 - P5：C1 多模态清洗与百炼；
-- P6：核心人工沉淀、检索、子库和输出；
+- P6：核心语义沉淀、检索、子库和输出；
 - P7：扩展来源、正式 Skill 和受控 Agent；
 - P8：备份、恢复、运维与长期加固。
 

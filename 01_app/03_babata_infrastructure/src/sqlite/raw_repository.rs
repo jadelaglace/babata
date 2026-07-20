@@ -4,15 +4,14 @@ use babata_application::{
     ApplicationError, AssetDetail, CaptureProvenanceDetail, CollectionDetail, RecordDetail,
     RelationDetail, RevisionDetail,
     ports::{
-        KnowledgeRepositoryPort, NewAsset, NewCaptureOperation, NewCollection, NewItem,
-        NewRelation, NewRevision, NewRouteEvidence, NewSource, PersistGraph, RawRepositoryPort,
+        NewAsset, NewCaptureOperation, NewCollection, NewItem, NewRelation, NewRevision,
+        NewRouteEvidence, NewSource, PersistGraph, RawRepositoryPort,
     },
 };
 use babata_domain::{
-    AssetId, AssetRole, CollectionId, ContentType, ItemId, KnowledgeId, KnowledgeKind,
-    KnowledgeRecord, KnowledgeVersion, Metadata, RawState, RelationId, RelationKind, RevisionId,
-    RevisionKind, RouteCoverage, RouteEvidence, Sha256, SourceId, SourceKind, SourceRouteId,
-    UtcTimestamp,
+    AssetId, AssetRole, CollectionId, ContentType, ItemId, Metadata, RawState, RelationId,
+    RelationKind, RevisionId, RevisionKind, RouteCoverage, RouteEvidence, Sha256, SourceId,
+    SourceKind, SourceRouteId, UtcTimestamp,
 };
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
 
@@ -336,170 +335,6 @@ impl RawRepositoryPort for SqliteRawRepository {
             .map_err(storage)?;
         rows.map(|row| row.map_err(storage)).collect()
     }
-}
-
-impl KnowledgeRepositoryPort for SqliteRawRepository {
-    fn create_knowledge(&self, record: &KnowledgeRecord) -> Result<(), ApplicationError> {
-        if record.versions.len() != 1 || record.versions[0].ordinal != 1 {
-            return Err(ApplicationError::Integrity(
-                "new knowledge must contain exactly version one".to_owned(),
-            ));
-        }
-        let mut connection = self.lock()?;
-        let transaction = connection
-            .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)
-            .map_err(storage)?;
-        transaction
-            .execute(
-                "INSERT INTO knowledge_records (
-                    knowledge_id, semantic_kind, author, first_party_item_id,
-                    source_item_id, source_revision_id, created_at
-                 ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-                params![
-                    record.id.to_string(),
-                    knowledge_kind(record.kind),
-                    record.author,
-                    record.first_party_item_id.to_string(),
-                    record.source_item_id.to_string(),
-                    record.source_revision_id.to_string(),
-                    record.created_at.as_str(),
-                ],
-            )
-            .map_err(storage)?;
-        insert_knowledge_version(&transaction, &record.id, &record.versions[0])?;
-        transaction.commit().map_err(storage)
-    }
-
-    fn append_knowledge_version(
-        &self,
-        knowledge_id: &KnowledgeId,
-        version: &KnowledgeVersion,
-    ) -> Result<(), ApplicationError> {
-        let connection = self.lock()?;
-        insert_knowledge_version(&connection, knowledge_id, version)
-    }
-
-    fn get_knowledge(
-        &self,
-        knowledge_id: &KnowledgeId,
-    ) -> Result<Option<KnowledgeRecord>, ApplicationError> {
-        let connection = self.lock()?;
-        load_knowledge(&connection, knowledge_id)
-    }
-
-    fn list_knowledge_for_source_revision(
-        &self,
-        revision_id: &RevisionId,
-    ) -> Result<Vec<KnowledgeRecord>, ApplicationError> {
-        let connection = self.lock()?;
-        let mut statement = connection
-            .prepare(
-                "SELECT knowledge_id FROM knowledge_records
-                 WHERE source_revision_id = ?1 ORDER BY created_at, knowledge_id",
-            )
-            .map_err(storage)?;
-        let ids = statement
-            .query_map(params![revision_id.to_string()], |row| {
-                KnowledgeId::parse(row.get::<_, String>(0)?).map_err(to_sql)
-            })
-            .map_err(storage)?
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(storage)?;
-        drop(statement);
-        ids.into_iter()
-            .map(|id| {
-                load_knowledge(&connection, &id)?.ok_or_else(|| {
-                    ApplicationError::Integrity(format!("knowledge {id} disappeared while reading"))
-                })
-            })
-            .collect()
-    }
-}
-
-fn load_knowledge(
-    connection: &Connection,
-    knowledge_id: &KnowledgeId,
-) -> Result<Option<KnowledgeRecord>, ApplicationError> {
-    let header = connection
-        .query_row(
-            "SELECT semantic_kind, author, first_party_item_id, source_item_id,
-                    source_revision_id, created_at
-             FROM knowledge_records WHERE knowledge_id = ?1",
-            params![knowledge_id.to_string()],
-            |row| {
-                Ok((
-                    parse_knowledge_kind(&row.get::<_, String>(0)?).map_err(to_sql)?,
-                    row.get::<_, String>(1)?,
-                    ItemId::parse(row.get::<_, String>(2)?).map_err(to_sql)?,
-                    ItemId::parse(row.get::<_, String>(3)?).map_err(to_sql)?,
-                    RevisionId::parse(row.get::<_, String>(4)?).map_err(to_sql)?,
-                    UtcTimestamp::parse(row.get::<_, String>(5)?).map_err(to_sql)?,
-                ))
-            },
-        )
-        .optional()
-        .map_err(storage)?;
-    let Some((kind, author, first_party_item_id, source_item_id, source_revision_id, created_at)) =
-        header
-    else {
-        return Ok(None);
-    };
-    let mut statement = connection
-        .prepare(
-            "SELECT ordinal, first_party_revision_id, title, created_at
-             FROM knowledge_versions WHERE knowledge_id = ?1 ORDER BY ordinal",
-        )
-        .map_err(storage)?;
-    let versions = statement
-        .query_map(params![knowledge_id.to_string()], |row| {
-            Ok(KnowledgeVersion {
-                ordinal: row.get::<_, i64>(0)? as u32,
-                first_party_revision_id: RevisionId::parse(row.get::<_, String>(1)?)
-                    .map_err(to_sql)?,
-                title: row.get(2)?,
-                created_at: UtcTimestamp::parse(row.get::<_, String>(3)?).map_err(to_sql)?,
-            })
-        })
-        .map_err(storage)?
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(storage)?;
-    if versions.is_empty() {
-        return Err(ApplicationError::Integrity(format!(
-            "knowledge {knowledge_id} has no versions"
-        )));
-    }
-    Ok(Some(KnowledgeRecord {
-        id: knowledge_id.clone(),
-        kind,
-        author,
-        first_party_item_id,
-        source_item_id,
-        source_revision_id,
-        created_at,
-        versions,
-    }))
-}
-
-fn insert_knowledge_version(
-    connection: &Connection,
-    knowledge_id: &KnowledgeId,
-    version: &KnowledgeVersion,
-) -> Result<(), ApplicationError> {
-    connection
-        .execute(
-            "INSERT INTO knowledge_versions (
-                knowledge_id, ordinal, first_party_revision_id, title, created_at
-             ) VALUES (?1, ?2, ?3, ?4, ?5)",
-            params![
-                knowledge_id.to_string(),
-                i64::from(version.ordinal),
-                version.first_party_revision_id.to_string(),
-                version.title,
-                version.created_at.as_str(),
-            ],
-        )
-        .map_err(storage)?;
-    Ok(())
 }
 
 struct ItemHeader {
@@ -926,15 +761,6 @@ fn relation_kind(value: RelationKind) -> &'static str {
         RelationKind::RelatedTo => "related_to",
     }
 }
-fn knowledge_kind(value: KnowledgeKind) -> &'static str {
-    match value {
-        KnowledgeKind::MapDirection => "map_direction",
-        KnowledgeKind::Knowledge => "knowledge",
-        KnowledgeKind::Case => "case",
-        KnowledgeKind::Log => "log",
-        KnowledgeKind::Insight => "insight",
-    }
-}
 fn parse_source_kind(value: &str) -> Result<SourceKind, ApplicationError> {
     match value {
         "external" => Ok(SourceKind::External),
@@ -1006,19 +832,6 @@ fn parse_relation_kind(value: &str) -> Result<RelationKind, ApplicationError> {
         ))),
     }
 }
-fn parse_knowledge_kind(value: &str) -> Result<KnowledgeKind, ApplicationError> {
-    match value {
-        "map_direction" => Ok(KnowledgeKind::MapDirection),
-        "knowledge" => Ok(KnowledgeKind::Knowledge),
-        "case" => Ok(KnowledgeKind::Case),
-        "log" => Ok(KnowledgeKind::Log),
-        "insight" => Ok(KnowledgeKind::Insight),
-        _ => Err(ApplicationError::Integrity(format!(
-            "unknown knowledge kind: {value}"
-        ))),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -1,6 +1,14 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{ItemId, KnowledgeId, RevisionId, UtcTimestamp};
+use crate::ItemId;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum KnowledgeRealm {
+    KnowledgeMap,
+    KnowledgeAndCases,
+    CognitiveTrail,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -12,24 +20,14 @@ pub enum KnowledgeKind {
     Insight,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct KnowledgeVersion {
-    pub ordinal: u32,
-    pub first_party_revision_id: RevisionId,
-    pub title: String,
-    pub created_at: UtcTimestamp,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct KnowledgeRecord {
-    pub id: KnowledgeId,
-    pub kind: KnowledgeKind,
-    pub author: String,
-    pub first_party_item_id: ItemId,
-    pub source_item_id: ItemId,
-    pub source_revision_id: RevisionId,
-    pub created_at: UtcTimestamp,
-    pub versions: Vec<KnowledgeVersion>,
+impl KnowledgeKind {
+    pub const fn realm(self) -> KnowledgeRealm {
+        match self {
+            Self::MapDirection => KnowledgeRealm::KnowledgeMap,
+            Self::Knowledge | Self::Case => KnowledgeRealm::KnowledgeAndCases,
+            Self::Log | Self::Insight => KnowledgeRealm::CognitiveTrail,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -52,7 +50,7 @@ pub enum SuggestionDecisionKind {
 pub struct SuggestionDecision {
     pub suggestion_id: String,
     pub decision: SuggestionDecisionKind,
-    pub human_record_id: Option<KnowledgeId>,
+    pub first_party_item_id: Option<ItemId>,
 }
 
 #[cfg(test)]
@@ -68,6 +66,23 @@ mod tests {
         assert_eq!(
             serde_json::to_string(&KnowledgeKind::Knowledge).unwrap(),
             "\"knowledge\""
+        );
+        assert_eq!(
+            KnowledgeKind::MapDirection.realm(),
+            KnowledgeRealm::KnowledgeMap
+        );
+        assert_eq!(
+            KnowledgeKind::Knowledge.realm(),
+            KnowledgeRealm::KnowledgeAndCases
+        );
+        assert_eq!(
+            KnowledgeKind::Case.realm(),
+            KnowledgeRealm::KnowledgeAndCases
+        );
+        assert_eq!(KnowledgeKind::Log.realm(), KnowledgeRealm::CognitiveTrail);
+        assert_eq!(
+            KnowledgeKind::Insight.realm(),
+            KnowledgeRealm::CognitiveTrail
         );
     }
 }

@@ -27,10 +27,18 @@ const INTEGRITY_MIGRATIONS: &[(&str, &str)] = &[(
     include_str!("../../../../03_migrations/04_integrity/0001_raw_reference_bindings.sql"),
 )];
 
-const KNOWLEDGE_MIGRATIONS: &[(&str, &str)] = &[(
-    "0001_knowledge_records.sql",
-    include_str!("../../../../03_migrations/05_knowledge/0001_knowledge_records.sql"),
-)];
+const KNOWLEDGE_MIGRATIONS: &[(&str, &str)] = &[
+    (
+        "0001_knowledge_records.sql",
+        include_str!("../../../../03_migrations/05_knowledge/0001_knowledge_records.sql"),
+    ),
+    (
+        "0002_deprecate_manual_knowledge_loop.sql",
+        include_str!(
+            "../../../../03_migrations/05_knowledge/0002_deprecate_manual_knowledge_loop.sql"
+        ),
+    ),
+];
 
 pub fn migrate_raw(connection: &Connection) -> Result<(), ApplicationError> {
     let mut recorded = BTreeMap::new();
@@ -319,18 +327,18 @@ mod tests {
                     |row| row.get::<_, i64>(0)
                 )
                 .unwrap(),
-            1
+            2
         );
     }
 
     #[test]
-    fn knowledge_bindings_and_versions_fail_closed() {
+    fn superseded_manual_knowledge_rows_are_preserved_but_isolated() {
         let connection = Connection::open_in_memory().unwrap();
         connection
             .pragma_update(None, "foreign_keys", "ON")
             .unwrap();
         migrate_raw(&connection).unwrap();
-        migrate_knowledge(&connection).unwrap();
+        connection.execute_batch(KNOWLEDGE_MIGRATIONS[0].1).unwrap();
         connection
             .execute_batch(
                 "INSERT INTO sources (source_id, source_kind, provider, created_at) VALUES
@@ -339,39 +347,59 @@ mod tests {
                  INSERT INTO items
                     (item_id, source_id, content_type, first_captured_at, created_at) VALUES
                     ('item_source', 'source_external', 'text', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-                    ('item_other', 'source_external', 'text', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-                    ('item_knowledge', 'source_first_party', 'text', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-                    ('item_other_first_party', 'source_first_party', 'text', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z');
+                    ('item_knowledge', 'source_first_party', 'text', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z');
                  INSERT INTO revisions
                     (revision_id, item_id, revision_kind, ordinal, captured_at, raw_text,
                      text_sha256, state, created_at) VALUES
                     ('revision_source', 'item_source', 'capture', 1, '2026-01-01T00:00:00Z', 'source',
                      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'ready', '2026-01-01T00:00:00Z'),
-                    ('revision_knowledge_1', 'item_knowledge', 'authored', 1, '2026-01-01T00:00:00Z', 'v1',
-                     'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'ready', '2026-01-01T00:00:00Z'),
-                    ('revision_knowledge_2', 'item_knowledge', 'edit', 2, '2026-01-02T00:00:00Z', 'v2',
-                     'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc', 'ready', '2026-01-02T00:00:00Z'),
-                    ('revision_wrong_item', 'item_other_first_party', 'edit', 1, '2026-01-02T00:00:00Z', 'wrong',
-                     'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd', 'ready', '2026-01-02T00:00:00Z');",
+                    ('revision_knowledge', 'item_knowledge', 'authored', 1, '2026-01-01T00:00:00Z', 'old model',
+                     'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'ready', '2026-01-01T00:00:00Z');
+                 INSERT INTO knowledge_records
+                    (knowledge_id, semantic_kind, author, first_party_item_id, source_item_id,
+                     source_revision_id, created_at)
+                 VALUES ('knowledge_old', 'knowledge', 'user', 'item_knowledge', 'item_source',
+                         'revision_source', '2026-01-01T00:00:00Z');
+                 INSERT INTO knowledge_versions
+                    (knowledge_id, ordinal, first_party_revision_id, title, created_at)
+                 VALUES ('knowledge_old', 1, 'revision_knowledge', 'old model',
+                         '2026-01-01T00:00:00Z');",
             )
             .unwrap();
-        assert!(connection.execute("INSERT INTO knowledge_records (knowledge_id, semantic_kind, author, first_party_item_id, source_item_id, source_revision_id, created_at) VALUES ('knowledge_bad_source', 'knowledge', 'user', 'item_knowledge', 'item_other', 'revision_source', '2026-01-01T00:00:00Z')", []).is_err());
-        assert!(connection.execute("INSERT INTO knowledge_records (knowledge_id, semantic_kind, author, first_party_item_id, source_item_id, source_revision_id, created_at) VALUES ('knowledge_bad_authority', 'knowledge', 'user', 'item_other', 'item_source', 'revision_source', '2026-01-01T00:00:00Z')", []).is_err());
-        connection.execute("INSERT INTO knowledge_records (knowledge_id, semantic_kind, author, first_party_item_id, source_item_id, source_revision_id, created_at) VALUES ('knowledge_valid', 'knowledge', 'user', 'item_knowledge', 'item_source', 'revision_source', '2026-01-01T00:00:00Z')", []).unwrap();
-        assert!(connection.execute("INSERT INTO knowledge_versions (knowledge_id, ordinal, first_party_revision_id, title, created_at) VALUES ('knowledge_valid', 2, 'revision_knowledge_2', 'v2', '2026-01-02T00:00:00Z')", []).is_err());
-        assert!(connection.execute("INSERT INTO knowledge_versions (knowledge_id, ordinal, first_party_revision_id, title, created_at) VALUES ('knowledge_valid', 1, 'revision_wrong_item', 'wrong', '2026-01-01T00:00:00Z')", []).is_err());
-        connection.execute("INSERT INTO knowledge_versions (knowledge_id, ordinal, first_party_revision_id, title, created_at) VALUES ('knowledge_valid', 1, 'revision_knowledge_1', 'v1', '2026-01-01T00:00:00Z')", []).unwrap();
-        assert!(connection.execute("UPDATE knowledge_records SET author = 'other' WHERE knowledge_id = 'knowledge_valid'", []).is_err());
+
+        connection.execute_batch(KNOWLEDGE_MIGRATIONS[1].1).unwrap();
+
+        assert_eq!(
+            connection
+                .query_row(
+                    "SELECT COUNT(*) FROM deprecated_manual_knowledge_records",
+                    [],
+                    |row| row.get::<_, i64>(0)
+                )
+                .unwrap(),
+            1
+        );
+        assert_eq!(
+            connection
+                .query_row(
+                    "SELECT COUNT(*) FROM deprecated_manual_knowledge_versions",
+                    [],
+                    |row| row.get::<_, i64>(0)
+                )
+                .unwrap(),
+            1
+        );
         assert!(
             connection
-                .execute(
-                    "DELETE FROM knowledge_versions WHERE knowledge_id = 'knowledge_valid'",
-                    []
+                .query_row(
+                    "SELECT 1 FROM sqlite_master
+                     WHERE type = 'table' AND name = 'knowledge_records'",
+                    [],
+                    |_| Ok(())
                 )
                 .is_err()
         );
     }
-
     #[test]
     fn raw_reference_trigger_rejects_cross_item_revision() {
         let connection = Connection::open_in_memory().unwrap();

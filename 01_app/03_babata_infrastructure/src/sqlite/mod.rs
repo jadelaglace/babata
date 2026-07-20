@@ -96,7 +96,7 @@ pub fn open_collection_database(
     Ok(repository)
 }
 
-pub fn open_knowledge_database(
+pub fn open_knowledge_review_database(
     paths: &crate::paths::DataPaths,
     busy_timeout_ms: u64,
 ) -> Result<SqliteRawRepository, ApplicationError> {
@@ -332,11 +332,11 @@ mod tests {
     }
 
     #[test]
-    fn open_knowledge_database_migrates_in_the_raw_authority() {
+    fn open_knowledge_review_database_migrates_compatibility_state_in_raw_authority() {
         let temporary = tempdir().unwrap();
         let paths = crate::paths::DataPaths::new(temporary.path().to_path_buf());
         crate::paths::ensure_layout(&paths).unwrap();
-        let repo = super::open_knowledge_database(&paths, 100).unwrap();
+        let repo = super::open_knowledge_review_database(&paths, 100).unwrap();
         drop(repo);
         let connection = rusqlite::Connection::open(paths.raw_database()).unwrap();
         assert_eq!(
@@ -347,7 +347,7 @@ mod tests {
                     |row| row.get::<_, i64>(0)
                 )
                 .unwrap(),
-            1
+            2
         );
     }
 
