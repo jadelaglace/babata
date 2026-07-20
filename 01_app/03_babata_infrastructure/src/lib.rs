@@ -19,6 +19,6 @@ pub use observability::SystemClock;
 pub use sqlite::test_support;
 pub use sqlite::{
     RawStatus, SqliteDerivedRepository, SqliteJobRepository, SqliteRawRepository,
-    open_collection_database, open_derived_database, open_job_database, open_raw_database,
-    raw_status,
+    open_collection_database, open_derived_database, open_job_database, open_knowledge_database,
+    open_raw_database, raw_status,
 };

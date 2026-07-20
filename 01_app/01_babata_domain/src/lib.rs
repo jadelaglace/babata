@@ -30,7 +30,8 @@ pub use kinds::{
     SourceKind,
 };
 pub use knowledge::{
-    KnowledgeKind, KnowledgeRecord, ModelSuggestion, SuggestionDecision, SuggestionDecisionKind,
+    KnowledgeKind, KnowledgeRecord, KnowledgeVersion, ModelSuggestion, SuggestionDecision,
+    SuggestionDecisionKind,
 };
 pub use ops::{BackupClass, HealthState, RestoreState, SnapshotRef};
 pub use output::{OutputBuild, OutputKind, OutputManifestRef, OutputScope, OutputState};

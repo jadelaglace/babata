@@ -1,10 +1,11 @@
 use babata_application::{
-    ApplicationError, CapabilityService, CaptureService, ProcessService, WorkspaceService,
+    ApplicationError, CapabilityService, CaptureService, CreateKnowledgeCommand, KnowledgeService,
+    ProcessService, ReviseKnowledgeCommand, WorkspaceService,
 };
-use babata_domain::{PipelineId, RevisionId, RunId};
+use babata_domain::{ItemId, KnowledgeId, PipelineId, RevisionId, RunId};
 use babata_infrastructure::{
     AppConfig, FileAssetStore, StaticCapabilityRegistry, SystemClock, load_config,
-    open_derived_database, open_job_database, open_raw_database,
+    open_derived_database, open_job_database, open_knowledge_database, open_raw_database,
     processing::registry::ProcessProviderRouter, raw_status,
 };
 use clap::Parser;
@@ -64,7 +65,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         RootCommand::Capture(_) => return Err(unavailable("capture.provider", "P4")),
-        RootCommand::Knowledge(_) => return Err(unavailable("knowledge", "P6")),
+        RootCommand::Knowledge(command) => execute_knowledge(command, &config, cli.json)?,
         RootCommand::Process(command) => execute_process(*command, &config, cli.json)?,
         RootCommand::Explore(_) => return Err(unavailable("explore", "P6")),
         RootCommand::Sublibraries(_) => return Err(unavailable("sublibraries", "P6")),
@@ -72,6 +73,65 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         RootCommand::Outputs(_) => return Err(unavailable("outputs", "P6")),
         RootCommand::Routes(_) => return Err(unavailable("routes", "P4")),
         RootCommand::Ops(_) => return Err(unavailable("ops.backup", "P8")),
+    }
+    Ok(())
+}
+
+fn execute_knowledge(
+    command: crate::commands::KnowledgeCommand,
+    config: &AppConfig,
+    json: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let raw = open_knowledge_database(&config.paths(), config.sqlite.busy_timeout_ms)?;
+    let derived = open_derived_database(&config.paths(), config.sqlite.busy_timeout_ms)?;
+    let service = KnowledgeService::new(
+        raw,
+        derived,
+        FileAssetStore::new(config.paths()),
+        SystemClock,
+    );
+    match command {
+        crate::commands::KnowledgeCommand::Review { item, revision } => {
+            render_value(
+                &service.review(&ItemId::parse(item)?, &RevisionId::parse(revision)?)?,
+                json,
+            )?;
+        }
+        crate::commands::KnowledgeCommand::Create {
+            source_revision,
+            author,
+            content,
+        } => {
+            let (title, body) = crate::commands::knowledge::read_content(content)?;
+            render_value(
+                &service.create(CreateKnowledgeCommand {
+                    source_revision_id: RevisionId::parse(source_revision)?,
+                    title,
+                    body,
+                    author,
+                })?,
+                json,
+            )?;
+        }
+        crate::commands::KnowledgeCommand::Revise {
+            knowledge,
+            note,
+            content,
+        } => {
+            let (title, body) = crate::commands::knowledge::read_content(content)?;
+            render_value(
+                &service.revise(ReviseKnowledgeCommand {
+                    knowledge_id: KnowledgeId::parse(knowledge)?,
+                    title,
+                    body,
+                    note,
+                })?,
+                json,
+            )?;
+        }
+        crate::commands::KnowledgeCommand::Show { knowledge } => {
+            render_value(&service.show(&KnowledgeId::parse(knowledge)?)?, json)?;
+        }
     }
     Ok(())
 }

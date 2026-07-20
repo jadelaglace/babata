@@ -1,7 +1,7 @@
 use babata_domain::{
-    AssetId, AssetRole, CollectionId, ContentType, ItemId, Metadata, RawState, RelationId,
-    RelationKind, RevisionId, RevisionKind, RouteCoverage, RouteEvidence, Sha256, SourceId,
-    SourceKind, UtcTimestamp,
+    AssetId, AssetRole, CollectionId, ContentType, ItemId, KnowledgeId, KnowledgeRecord,
+    KnowledgeVersion, Metadata, RawState, RelationId, RelationKind, RevisionId, RevisionKind,
+    RouteCoverage, RouteEvidence, Sha256, SourceId, SourceKind, UtcTimestamp,
 };
 
 use crate::{ApplicationError, RecordDetail};
@@ -160,4 +160,21 @@ pub trait RawRepositoryPort {
     fn load_detail(&self, item_id: &ItemId) -> Result<RecordDetail, ApplicationError>;
     fn record_route_evidence(&self, evidence: &NewRouteEvidence) -> Result<(), ApplicationError>;
     fn route_evidence(&self, route_id: &str) -> Result<Vec<RouteEvidence>, ApplicationError>;
+}
+
+pub trait KnowledgeRepositoryPort {
+    fn create_knowledge(&self, record: &KnowledgeRecord) -> Result<(), ApplicationError>;
+    fn append_knowledge_version(
+        &self,
+        knowledge_id: &KnowledgeId,
+        version: &KnowledgeVersion,
+    ) -> Result<(), ApplicationError>;
+    fn get_knowledge(
+        &self,
+        knowledge_id: &KnowledgeId,
+    ) -> Result<Option<KnowledgeRecord>, ApplicationError>;
+    fn list_knowledge_for_source_revision(
+        &self,
+        revision_id: &RevisionId,
+    ) -> Result<Vec<KnowledgeRecord>, ApplicationError>;
 }

@@ -46,7 +46,15 @@ pub fn all_descriptors() -> Vec<CapabilityDescriptor> {
                     .to_owned(),
             ),
         },
-        CapabilityDescriptor::unavailable("knowledge", "P6"),
+        CapabilityDescriptor {
+            id: CapabilityId::new("knowledge"),
+            status: CapabilityStatus::Enabled,
+            activation_phase: "P6.1".to_owned(),
+            reason: Some(
+                "C0/C1 review and versioned first-party Knowledge create/revise/show are enabled; map, scoring, suggestions, and discovery remain unavailable"
+                    .to_owned(),
+            ),
+        },
         CapabilityDescriptor::unavailable("explore", "P6"),
         CapabilityDescriptor::unavailable("sublibraries", "P6"),
         CapabilityDescriptor::unavailable("views", "P6"),
