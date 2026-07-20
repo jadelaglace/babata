@@ -153,6 +153,7 @@ where
             source_identity_key: None,
             content_type: ContentType::Text,
             source_published_at: None,
+            source_updated_at: None,
             first_captured_at: now.clone(),
             metadata: command.metadata,
         };
@@ -256,15 +257,19 @@ where
             source_identity_key: None,
             content_type: ContentType::Text,
             source_published_at: None,
+            source_updated_at: None,
             first_captured_at: now.clone(),
             metadata: command.metadata,
         };
         let relation = NewRelation {
+            id: babata_domain::RelationId::new(),
             kind: RelationKind::Annotates,
             from_item_id: item.id.clone(),
             from_revision_id: None,
             to_item_id: command.target_item,
             to_revision_id: Some(target_revision),
+            metadata: Metadata::empty(),
+            created_at: now.clone(),
         };
         let collection = collection_from_context(&source, command.context, now.clone())?;
         self.write_note(
@@ -309,7 +314,7 @@ where
         })
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, clippy::too_many_lines)]
     fn write_note(
         &self,
         source: NewSource,
@@ -367,7 +372,7 @@ where
                 source_locator: None,
                 source_published_at: None,
                 metadata: revision_metadata,
-                started_at: now,
+                started_at: now.clone(),
             };
             let mut all_relations = relations;
             for relation in &mut all_relations {
@@ -377,11 +382,14 @@ where
             }
             if let Some(parent_id) = parent {
                 all_relations.push(NewRelation {
+                    id: babata_domain::RelationId::new(),
                     kind: RelationKind::Revises,
                     from_item_id: item.id.clone(),
                     from_revision_id: Some(revision.id.clone()),
                     to_item_id: item.id.clone(),
                     to_revision_id: Some(parent_id),
+                    metadata: Metadata::empty(),
+                    created_at: now.clone(),
                 });
             }
             let assets = staged

@@ -117,10 +117,14 @@ pub struct RecordDetail {
     pub source_id: SourceId,
     pub source_kind: SourceKind,
     pub provider: String,
+    pub source_account_or_workspace: Option<String>,
     pub content_type: ContentType,
     pub source_native_id: Option<String>,
     pub source_locator: Option<String>,
     pub source_identity_key: Option<String>,
+    pub source_published_at: Option<UtcTimestamp>,
+    pub source_updated_at: Option<UtcTimestamp>,
+    pub first_captured_at: UtcTimestamp,
     pub metadata: Metadata,
     pub collections: Vec<CollectionDetail>,
     pub revisions: Vec<RevisionDetail>,
@@ -131,10 +135,14 @@ pub struct RecordDetail {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CollectionDetail {
     pub collection_id: CollectionId,
+    pub parent_collection_id: Option<CollectionId>,
     pub native_id: Option<String>,
+    pub locator: Option<String>,
     pub kind: String,
     pub title: Option<String>,
+    pub metadata: Metadata,
     pub observed_at: UtcTimestamp,
+    pub created_at: UtcTimestamp,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -150,6 +158,7 @@ pub struct RevisionDetail {
     pub text_sha256: Option<String>,
     pub metadata: Metadata,
     pub state: RawState,
+    pub created_at: UtcTimestamp,
     pub provenance: Option<CaptureProvenanceDetail>,
 }
 
@@ -167,6 +176,7 @@ pub struct CaptureProvenanceDetail {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AssetDetail {
     pub asset_id: AssetId,
+    pub revision_id: RevisionId,
     pub role: AssetRole,
     pub logical_path: String,
     pub sha256: String,
@@ -174,15 +184,19 @@ pub struct AssetDetail {
     pub media_type: Option<String>,
     pub original_filename: Option<String>,
     pub state: RawState,
+    pub created_at: UtcTimestamp,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RelationDetail {
+    pub relation_id: babata_domain::RelationId,
     pub kind: RelationKind,
     pub from_item_id: ItemId,
     pub from_revision_id: Option<RevisionId>,
     pub to_item_id: ItemId,
     pub to_revision_id: Option<RevisionId>,
+    pub metadata: Metadata,
+    pub created_at: UtcTimestamp,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

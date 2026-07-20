@@ -38,66 +38,25 @@ impl SqliteDerivedRepository {
 }
 
 impl DerivedRepositoryPort for SqliteDerivedRepository {
-    fn create_run(&self, run: &ProcessRun) -> Result<(), ApplicationError> {
-        let connection = self.lock()?;
-        insert_run(&connection, run)
-    }
-
-    fn update_run(&self, run: &ProcessRun) -> Result<(), ApplicationError> {
+    fn invalidate_run(
+        &self,
+        run_id: &RunId,
+        invalidated_at: &UtcTimestamp,
+        reason: &str,
+    ) -> Result<(), ApplicationError> {
         let connection = self.lock()?;
         let changed = connection
             .execute(
-                "UPDATE process_runs SET
-                    pipeline_id = ?2,
-                    input_revision_id = ?3,
-                    input_item_id = ?4,
-                    input_sha256 = ?5,
-                    target_kind = ?6,
-                    input_asset_id = ?7,
-                    state = ?8,
-                    provider = ?9,
-                    tool_or_model = ?10,
-                    tool_version = ?11,
-                    attempt = ?12,
-                    retry_of_run_id = ?13,
-                    error_code = ?14,
-                    error_message = ?15,
-                    params_json = ?16,
-                    usage_json = ?17,
-                    loss_notes = ?18,
-                    started_at = ?19,
-                    finished_at = ?20,
-                    invalidated_at = ?21,
-                    invalidation_reason = ?22
-                 WHERE run_id = ?1",
-                params![
-                    run.id.to_string(),
-                    run.pipeline_id.as_str(),
-                    run.input_revision_id.to_string(),
-                    run.input_item_id.as_ref().map(ToString::to_string),
-                    run.input_sha256.as_str(),
-                    run.target_kind.map(derivative_kind),
-                    run.input_asset_id.as_ref().map(ToString::to_string),
-                    processing_state(run.state),
-                    run.provider,
-                    run.tool_or_model,
-                    run.tool_version,
-                    i64::from(run.attempt),
-                    run.retry_of_run_id.as_ref().map(ToString::to_string),
-                    run.error_code,
-                    run.error_message,
-                    run.params.to_json(),
-                    run.usage.to_json(),
-                    run.loss_notes,
-                    run.started_at.as_ref().map(|t| t.as_str().to_owned()),
-                    run.finished_at.as_ref().map(|t| t.as_str().to_owned()),
-                    run.invalidated_at.as_ref().map(|t| t.as_str().to_owned()),
-                    run.invalidation_reason,
-                ],
+                "UPDATE process_runs
+                 SET invalidated_at = ?2, invalidation_reason = ?3
+                 WHERE run_id = ?1 AND state = 'succeeded' AND invalidated_at IS NULL",
+                params![run_id.to_string(), invalidated_at.as_str(), reason,],
             )
             .map_err(storage)?;
         if changed == 0 {
-            return Err(ApplicationError::NotFound(format!("run {}", run.id)));
+            return Err(ApplicationError::Conflict(format!(
+                "run {run_id} cannot be invalidated"
+            )));
         }
         Ok(())
     }
@@ -146,11 +105,6 @@ impl DerivedRepositoryPort for SqliteDerivedRepository {
             out.push(row.map_err(storage)?);
         }
         Ok(out)
-    }
-
-    fn add_derivative(&self, derivative: &DerivativeRef) -> Result<(), ApplicationError> {
-        let connection = self.lock()?;
-        insert_derivative(&connection, derivative)
     }
 
     fn get_derivative(

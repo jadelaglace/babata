@@ -447,6 +447,7 @@ where
                     source_identity_key: Some(identity),
                     content_type,
                     source_published_at,
+                    source_updated_at: None,
                     first_captured_at: now.clone(),
                     metadata: metadata.clone(),
                 },
@@ -1054,10 +1055,14 @@ pub(crate) mod tests {
                 source_id: source.id.clone(),
                 source_kind: source.kind,
                 provider: source.provider.clone(),
+                source_account_or_workspace: source.account_or_workspace.clone(),
                 content_type: item.content_type,
                 source_native_id: item.source_native_id.clone(),
                 source_locator: item.source_locator.clone(),
                 source_identity_key: item.source_identity_key.clone(),
+                source_published_at: item.source_published_at.clone(),
+                source_updated_at: item.source_updated_at.clone(),
+                first_captured_at: item.first_captured_at.clone(),
                 metadata: item.metadata.clone(),
                 collections: Vec::new(),
                 revisions: state
@@ -1080,6 +1085,7 @@ pub(crate) mod tests {
                             .iter()
                             .find(|(id, _)| id == &revision.id)
                             .map_or(RawState::Pending, |(_, state)| *state),
+                        created_at: revision.captured_at.clone(),
                         provenance: state
                             .operations
                             .iter()
@@ -1109,6 +1115,7 @@ pub(crate) mod tests {
                     })
                     .map(|asset| crate::AssetDetail {
                         asset_id: asset.id.clone(),
+                        revision_id: asset.revision_id.clone(),
                         role: asset.role,
                         logical_path: asset.logical_path.clone(),
                         sha256: asset.sha256.to_string(),
@@ -1120,6 +1127,14 @@ pub(crate) mod tests {
                             .iter()
                             .find(|(id, _)| id == &asset.revision_id)
                             .map_or(RawState::Pending, |(_, state)| *state),
+                        created_at: state
+                            .revisions
+                            .iter()
+                            .find(|revision| revision.id == asset.revision_id)
+                            .map_or_else(
+                                || item.first_captured_at.clone(),
+                                |revision| revision.captured_at.clone(),
+                            ),
                     })
                     .collect(),
                 relations: state
@@ -1129,11 +1144,14 @@ pub(crate) mod tests {
                         &relation.from_item_id == item_id || &relation.to_item_id == item_id
                     })
                     .map(|relation| crate::RelationDetail {
+                        relation_id: relation.id.clone(),
                         kind: relation.kind,
                         from_item_id: relation.from_item_id.clone(),
                         from_revision_id: relation.from_revision_id.clone(),
                         to_item_id: relation.to_item_id.clone(),
                         to_revision_id: relation.to_revision_id.clone(),
+                        metadata: relation.metadata.clone(),
+                        created_at: relation.created_at.clone(),
                     })
                     .collect(),
             })

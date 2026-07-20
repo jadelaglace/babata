@@ -571,6 +571,7 @@ fn process_retry_rejects_a_succeeded_parent() {
         .clone();
     let runs: Value = serde_json::from_slice(&runs).unwrap();
     assert_eq!(runs.as_array().unwrap().len(), 1);
+    assert_eq!(runs[0]["input_item_id"], capture["item_id"]);
 }
 
 #[test]

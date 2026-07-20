@@ -1,7 +1,7 @@
 use babata_domain::{
-    AssetId, AssetRole, CollectionId, ContentType, ItemId, Metadata, RawState, RelationKind,
-    RevisionId, RevisionKind, RouteCoverage, RouteEvidence, Sha256, SourceId, SourceKind,
-    UtcTimestamp,
+    AssetId, AssetRole, CollectionId, ContentType, ItemId, Metadata, RawState, RelationId,
+    RelationKind, RevisionId, RevisionKind, RouteCoverage, RouteEvidence, Sha256, SourceId,
+    SourceKind, UtcTimestamp,
 };
 
 use crate::{ApplicationError, RecordDetail};
@@ -24,6 +24,7 @@ pub struct NewItem {
     pub source_identity_key: Option<String>,
     pub content_type: ContentType,
     pub source_published_at: Option<UtcTimestamp>,
+    pub source_updated_at: Option<UtcTimestamp>,
     pub first_captured_at: UtcTimestamp,
     pub metadata: Metadata,
 }
@@ -80,11 +81,14 @@ pub struct NewAsset {
 
 #[derive(Debug, Clone)]
 pub struct NewRelation {
+    pub id: RelationId,
     pub kind: RelationKind,
     pub from_item_id: ItemId,
     pub from_revision_id: Option<RevisionId>,
     pub to_item_id: ItemId,
     pub to_revision_id: Option<RevisionId>,
+    pub metadata: Metadata,
+    pub created_at: UtcTimestamp,
 }
 
 #[derive(Debug, Clone)]
