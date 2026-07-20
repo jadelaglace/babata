@@ -26,8 +26,8 @@ pub use process_provider::{
     ProcessProviderPort, ProviderExecutionOutcome, ProviderExecutionRequest, ProviderIdentity,
 };
 pub use raw_repository::{
-    KnowledgeRepositoryPort, NewAsset, NewCaptureOperation, NewCollection, NewItem, NewRelation,
-    NewRevision, NewRouteEvidence, NewSource, PersistGraph, RawRepositoryPort,
+    NewAsset, NewCaptureOperation, NewCollection, NewItem, NewRelation, NewRevision,
+    NewRouteEvidence, NewSource, PersistGraph, RawRepositoryPort,
 };
 pub use read_projection::ReadProjectionPort;
 pub use source_adapter::SourceAdapterPort;

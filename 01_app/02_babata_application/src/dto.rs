@@ -1,10 +1,9 @@
 use babata_domain::{
     AssetId, AssetRole, BuildTarget, CandidateEnvelope, CandidateSummary, CollectionId,
     CollectionSessionId, ContentType, DerivativeId, DerivativeKind, DerivativeRef, HealthState,
-    ItemId, KnowledgeId, KnowledgeRecord, LogicalPath, Metadata, PageCursor, PipelineId,
-    ProcessJob, ProcessRun, ProcessingState, QueryFilter, RawState, RecordSummary, RelationKind,
-    RevisionId, RouteCoverage, RunId, Sha256, SnapshotRef, SourceId, SourceKind, SourceRouteId,
-    UtcTimestamp, ViewDescriptor, ViewId,
+    ItemId, LogicalPath, Metadata, PageCursor, PipelineId, ProcessJob, ProcessRun, ProcessingState,
+    QueryFilter, RawState, RecordSummary, RelationKind, RevisionId, RouteCoverage, RunId, Sha256,
+    SnapshotRef, SourceId, SourceKind, SourceRouteId, UtcTimestamp, ViewDescriptor, ViewId,
 };
 use serde::{Deserialize, Serialize};
 
@@ -352,34 +351,11 @@ pub struct ShowProcessRunOutcome {
     pub derivatives: Vec<DerivativeRef>,
 }
 
-#[derive(Debug, Clone)]
-pub struct CreateKnowledgeCommand {
-    pub source_revision_id: RevisionId,
-    pub title: String,
-    pub body: String,
-    pub author: String,
-}
-
-#[derive(Debug, Clone)]
-pub struct ReviseKnowledgeCommand {
-    pub knowledge_id: KnowledgeId,
-    pub title: String,
-    pub body: String,
-    pub note: Option<String>,
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KnowledgeReviewContext {
     pub target: RecordDetail,
     pub target_revision_id: RevisionId,
     pub process_runs: Vec<ShowProcessRunOutcome>,
-    pub knowledge_records: Vec<KnowledgeRecord>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct KnowledgeDetail {
-    pub record: KnowledgeRecord,
-    pub first_party: RecordDetail,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

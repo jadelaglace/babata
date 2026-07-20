@@ -1,38 +1,27 @@
-use babata_domain::{
-    DerivativeRef, ItemId, KnowledgeId, KnowledgeKind, KnowledgeRecord, KnowledgeVersion, Metadata,
-    ProcessingState, RevisionId, Sha256,
-};
+use babata_domain::{DerivativeRef, ItemId, ProcessingState, RevisionId, Sha256};
 
 use crate::{
-    ApplicationError, CreateKnowledgeCommand, CreateNoteCommand, KnowledgeDetail,
-    KnowledgeReviewContext, ReviseCommand, ReviseKnowledgeCommand, ShowProcessRunOutcome,
-    WorkspaceService,
-    ports::{
-        AssetStorePort, ClockPort, DerivedRepositoryPort, KnowledgeRepositoryPort,
-        RawRepositoryPort,
-    },
+    ApplicationError, KnowledgeReviewContext, ShowProcessRunOutcome,
+    ports::{AssetStorePort, DerivedRepositoryPort, RawRepositoryPort},
 };
 
-pub struct KnowledgeService<R, D, A, C> {
+pub struct KnowledgeService<R, D, A> {
     raw: R,
     derived: D,
     assets: A,
-    clock: C,
 }
 
-impl<R, D, A, C> KnowledgeService<R, D, A, C>
+impl<R, D, A> KnowledgeService<R, D, A>
 where
-    R: RawRepositoryPort + KnowledgeRepositoryPort + Clone,
+    R: RawRepositoryPort,
     D: DerivedRepositoryPort,
-    A: AssetStorePort + Clone,
-    C: ClockPort + Clone,
+    A: AssetStorePort,
 {
-    pub fn new(raw: R, derived: D, assets: A, clock: C) -> Self {
+    pub fn new(raw: R, derived: D, assets: A) -> Self {
         Self {
             raw,
             derived,
             assets,
-            clock,
         }
     }
 
@@ -59,95 +48,11 @@ where
                 Ok(ShowProcessRunOutcome { run, derivatives })
             })
             .collect::<Result<Vec<_>, ApplicationError>>()?;
-        let knowledge_records = self.raw.list_knowledge_for_source_revision(revision_id)?;
         Ok(KnowledgeReviewContext {
             target,
             target_revision_id: revision_id.clone(),
             process_runs,
-            knowledge_records,
         })
-    }
-
-    pub fn create(
-        &self,
-        command: CreateKnowledgeCommand,
-    ) -> Result<KnowledgeDetail, ApplicationError> {
-        validate_label("knowledge title", &command.title)?;
-        validate_label("knowledge author", &command.author)?;
-        let source = self.ready_revision(&command.source_revision_id)?;
-        let knowledge_id = KnowledgeId::new();
-        let metadata =
-            knowledge_metadata(&knowledge_id, &command.source_revision_id, &command.title)?;
-        let first_party =
-            WorkspaceService::new(self.raw.clone(), self.assets.clone(), self.clock.clone())
-                .create(CreateNoteCommand {
-                    text: command.body,
-                    path: None,
-                    context: Some("knowledge".to_owned()),
-                    metadata,
-                })?;
-        let first_party_revision = self.ready_revision(&first_party.revision_id)?;
-        let record = KnowledgeRecord {
-            id: knowledge_id,
-            kind: KnowledgeKind::Knowledge,
-            author: command.author,
-            first_party_item_id: first_party.item_id,
-            source_item_id: source.item_id,
-            source_revision_id: command.source_revision_id,
-            created_at: first_party_revision.captured_at.clone(),
-            versions: vec![KnowledgeVersion {
-                ordinal: 1,
-                first_party_revision_id: first_party_revision.id,
-                title: command.title,
-                created_at: first_party_revision.captured_at,
-            }],
-        };
-        self.raw.create_knowledge(&record)?;
-        self.detail(record)
-    }
-
-    pub fn revise(
-        &self,
-        command: ReviseKnowledgeCommand,
-    ) -> Result<KnowledgeDetail, ApplicationError> {
-        validate_label("knowledge title", &command.title)?;
-        let record = self
-            .raw
-            .get_knowledge(&command.knowledge_id)?
-            .ok_or_else(|| ApplicationError::NotFound(command.knowledge_id.to_string()))?;
-        let latest = record.versions.last().ok_or_else(|| {
-            ApplicationError::Integrity(format!(
-                "knowledge {} has no first-party version",
-                record.id
-            ))
-        })?;
-        let metadata = knowledge_metadata(&record.id, &record.source_revision_id, &command.title)?;
-        let outcome =
-            WorkspaceService::new(self.raw.clone(), self.assets.clone(), self.clock.clone())
-                .revise(ReviseCommand {
-                    parent: latest.first_party_revision_id.clone(),
-                    text: command.body,
-                    path: None,
-                    note: command.note,
-                    metadata,
-                })?;
-        let revision = self.ready_revision(&outcome.revision_id)?;
-        let version = KnowledgeVersion {
-            ordinal: latest.ordinal + 1,
-            first_party_revision_id: revision.id,
-            title: command.title,
-            created_at: revision.captured_at,
-        };
-        self.raw.append_knowledge_version(&record.id, &version)?;
-        self.show(&record.id)
-    }
-
-    pub fn show(&self, knowledge_id: &KnowledgeId) -> Result<KnowledgeDetail, ApplicationError> {
-        let record = self
-            .raw
-            .get_knowledge(knowledge_id)?
-            .ok_or_else(|| ApplicationError::NotFound(knowledge_id.to_string()))?;
-        self.detail(record)
     }
 
     fn ready_revision(
@@ -164,14 +69,6 @@ where
             )));
         }
         Ok(revision)
-    }
-
-    fn detail(&self, record: KnowledgeRecord) -> Result<KnowledgeDetail, ApplicationError> {
-        let first_party = self.raw.load_detail(&record.first_party_item_id)?;
-        Ok(KnowledgeDetail {
-            record,
-            first_party,
-        })
     }
 
     fn validate_process_evidence(
@@ -265,30 +162,4 @@ where
         }
         Ok(())
     }
-}
-
-fn validate_label(field: &'static str, value: &str) -> Result<(), ApplicationError> {
-    if value.trim().is_empty() {
-        return Err(ApplicationError::Integrity(format!(
-            "{field} must not be empty"
-        )));
-    }
-    Ok(())
-}
-
-fn knowledge_metadata(
-    knowledge_id: &KnowledgeId,
-    source_revision_id: &RevisionId,
-    title: &str,
-) -> Result<Metadata, ApplicationError> {
-    Metadata::parse(
-        &serde_json::json!({
-            "babata_semantic_kind": "knowledge",
-            "knowledge_id": knowledge_id,
-            "source_revision_id": source_revision_id,
-            "title": title,
-        })
-        .to_string(),
-    )
-    .map_err(ApplicationError::from)
 }

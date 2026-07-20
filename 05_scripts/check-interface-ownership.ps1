@@ -24,17 +24,6 @@ foreach ($name in $traits.Keys) {
     }
 }
 
-$knowledgePortPath = '02_babata_application/src/ports/raw_repository.rs'
-$knowledgePortMatches = @(rg --files-with-matches 'pub trait KnowledgeRepositoryPort' $app -g '*.rs')
-if ($knowledgePortMatches.Count -ne 1 -or -not $knowledgePortMatches[0].Replace('\', '/').EndsWith($knowledgePortPath)) {
-    throw "KnowledgeRepositoryPort must have exactly one owner: $knowledgePortPath"
-}
-foreach ($method in @('create_knowledge', 'append_knowledge_version', 'get_knowledge', 'list_knowledge_for_source_revision')) {
-    if (-not (Select-String -Path (Join-Path $app $knowledgePortPath) -Pattern "fn $method\b" -Quiet)) {
-        throw "KnowledgeRepositoryPort is missing required P6.1 method: $method"
-    }
-}
-
 $portMethodCounts = @{
     RawRepositoryPort = 8
     AssetStorePort = 6
@@ -99,8 +88,8 @@ $serviceMethods = @{
 if (($serviceMethods.Values | ForEach-Object { $_.Count } | Measure-Object -Sum).Sum -ne 46) {
     throw 'P2 service method baseline must total 46'
 }
-# P6.1 replaces the placeholder Knowledge surface without rewriting the frozen P2 baseline.
-$serviceMethods.KnowledgeService = @('review', 'create', 'revise', 'show')
+# P6.1 activates review preparation without freezing the corrected semantic write model.
+$serviceMethods.KnowledgeService = @('review')
 foreach ($name in $serviceMethods.Keys) {
     $path = Join-Path $app "02_babata_application/src/$($services[$name])"
     foreach ($method in $serviceMethods[$name]) {
@@ -130,4 +119,4 @@ foreach ($symbol in @('pub fn build', 'pub fn run', 'pub fn claim_once', 'pub fn
         throw "Missing worker lifecycle symbol: $symbol"
     }
 }
-Write-Output 'Interface ownership check passed: 13 P2 ports plus the P6.1 Knowledge port, 12 services with the active Knowledge surface, 13 CLI modules, local API owners, and worker lifecycle.'
+Write-Output 'Interface ownership check passed: 13 P2 ports, 12 services with P6.1 review preparation, 13 CLI modules, local API owners, and worker lifecycle.'

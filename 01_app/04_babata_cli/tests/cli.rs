@@ -1468,7 +1468,7 @@ fn process_delete_result_rejects_failed_run() {
 
 #[test]
 #[allow(clippy::too_many_lines)]
-fn knowledge_review_create_revise_show_keeps_c0_c1_and_versions_distinct() {
+fn knowledge_review_prepares_c0_c1_without_manual_semantic_writes() {
     let temp = tempdir().unwrap();
     let capture = capture_text(&temp, "source evidence for P6.1");
     let item = capture["item_id"].as_str().unwrap();
@@ -1527,81 +1527,7 @@ fn knowledge_review_create_revise_show_keeps_c0_c1_and_versions_distinct() {
         review["process_runs"][0]["derivatives"][0]["content_text"],
         "machine summary"
     );
-    assert!(review["knowledge_records"].as_array().unwrap().is_empty());
-
-    let created = babata(&temp)
-        .args([
-            "--json",
-            "knowledge",
-            "create",
-            "--source-revision",
-            revision,
-            "--author",
-            "user",
-            "--title",
-            "Evidence becomes knowledge",
-            "--text",
-            "First-party interpretation v1",
-        ])
-        .assert()
-        .success()
-        .get_output()
-        .stdout
-        .clone();
-    let created: Value = serde_json::from_slice(&created).unwrap();
-    let knowledge_id = created["record"]["id"].as_str().unwrap();
-    assert_eq!(created["record"]["kind"], "knowledge");
-    assert_eq!(created["record"]["source_item_id"], item);
-    assert_eq!(created["record"]["source_revision_id"], revision);
-    assert_eq!(created["first_party"]["source_kind"], "first_party");
-    assert_eq!(
-        created["first_party"]["revisions"][0]["raw_text"],
-        "First-party interpretation v1"
-    );
-
-    let revised = babata(&temp)
-        .args([
-            "--json",
-            "knowledge",
-            "revise",
-            "--knowledge",
-            knowledge_id,
-            "--title",
-            "Evidence becomes durable knowledge",
-            "--text",
-            "First-party interpretation v2",
-            "--note",
-            "clarified wording",
-        ])
-        .assert()
-        .success()
-        .get_output()
-        .stdout
-        .clone();
-    let revised: Value = serde_json::from_slice(&revised).unwrap();
-    assert_eq!(revised["record"]["versions"].as_array().unwrap().len(), 2);
-    assert_eq!(
-        revised["first_party"]["revisions"][0]["raw_text"],
-        "First-party interpretation v1"
-    );
-    assert_eq!(
-        revised["first_party"]["revisions"][1]["raw_text"],
-        "First-party interpretation v2"
-    );
-    assert_eq!(
-        revised["first_party"]["revisions"][1]["parent_revision_id"],
-        revised["first_party"]["revisions"][0]["revision_id"]
-    );
-
-    let shown = babata(&temp)
-        .args(["--json", "knowledge", "show", "--knowledge", knowledge_id])
-        .assert()
-        .success()
-        .get_output()
-        .stdout
-        .clone();
-    let shown: Value = serde_json::from_slice(&shown).unwrap();
-    assert_eq!(shown["record"]["versions"].as_array().unwrap().len(), 2);
+    assert!(review.get("knowledge_records").is_none());
 
     let other = capture_text(&temp, "unrelated item");
     babata(&temp)
@@ -1616,23 +1542,6 @@ fn knowledge_review_create_revise_show_keeps_c0_c1_and_versions_distinct() {
         ])
         .assert()
         .failure();
-    let review = babata(&temp)
-        .args([
-            "--json",
-            "knowledge",
-            "review",
-            "--item",
-            item,
-            "--revision",
-            revision,
-        ])
-        .assert()
-        .success()
-        .get_output()
-        .stdout
-        .clone();
-    let review: Value = serde_json::from_slice(&review).unwrap();
-    assert_eq!(review["knowledge_records"].as_array().unwrap().len(), 1);
 
     let managed_output = review["process_runs"][0]["derivatives"][0]["logical_path"]
         .as_str()
@@ -1660,4 +1569,18 @@ fn knowledge_review_create_revise_show_keeps_c0_c1_and_versions_distinct() {
             .unwrap()
             .contains("output no longer matches its hash")
     );
+
+    for retired in ["create", "revise", "show"] {
+        let output = babata(&temp)
+            .args(["knowledge", retired])
+            .assert()
+            .failure()
+            .get_output()
+            .stderr
+            .clone();
+        assert!(
+            String::from_utf8_lossy(&output).contains("unrecognized subcommand"),
+            "{retired} must not remain a Knowledge subcommand"
+        );
+    }
 }
