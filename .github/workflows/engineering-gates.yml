@@ -58,3 +58,9 @@ jobs:
       - name: Test document traceability checker
         shell: pwsh
         run: ./05_scripts/test-doc-traceability.ps1
+      - name: Check P6 document provenance
+        shell: pwsh
+        run: ./05_scripts/check-doc-provenance.ps1
+      - name: Test P6 document provenance checker
+        shell: pwsh
+        run: ./05_scripts/test-doc-provenance.ps1
