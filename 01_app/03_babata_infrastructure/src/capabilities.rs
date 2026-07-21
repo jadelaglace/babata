@@ -51,7 +51,16 @@ pub fn all_descriptors() -> Vec<CapabilityDescriptor> {
             status: CapabilityStatus::Enabled,
             activation_phase: "P6.1".to_owned(),
             reason: Some(
-                "C0/C1 review preparation and active evidence hash validation are enabled; semantic admission remains unavailable"
+                "C0/C1 review preparation and active evidence hash validation are enabled"
+                    .to_owned(),
+            ),
+        },
+        CapabilityDescriptor {
+            id: CapabilityId::new("knowledge.semantic_core"),
+            status: CapabilityStatus::Enabled,
+            activation_phase: "P6.1".to_owned(),
+            reason: Some(
+                "Machine C1 candidates and first-party Log/Insight records enter the same validated semantic core"
                     .to_owned(),
             ),
         },
@@ -63,6 +72,9 @@ pub fn all_descriptors() -> Vec<CapabilityDescriptor> {
         CapabilityDescriptor::unavailable("ops.backup", "P8"),
     ];
     descriptors.extend(crate::processing::registry::processing_descriptors());
+    descriptors.push(
+        crate::processing::semantic_digest::BailianSemanticDigestProvider::detect().describe(),
+    );
     descriptors
 }
 

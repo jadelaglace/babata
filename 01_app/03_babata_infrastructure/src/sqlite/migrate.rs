@@ -38,6 +38,10 @@ const KNOWLEDGE_MIGRATIONS: &[(&str, &str)] = &[
             "../../../../03_migrations/05_knowledge/0002_deprecate_manual_knowledge_loop.sql"
         ),
     ),
+    (
+        "0003_p6_semantic_core.sql",
+        include_str!("../../../../03_migrations/05_knowledge/0003_p6_semantic_core.sql"),
+    ),
 ];
 
 pub fn migrate_raw(connection: &Connection) -> Result<(), ApplicationError> {
@@ -327,7 +331,7 @@ mod tests {
                     |row| row.get::<_, i64>(0)
                 )
                 .unwrap(),
-            2
+            3
         );
     }
 

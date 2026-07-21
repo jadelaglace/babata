@@ -1,8 +1,13 @@
+use babata_application::ports::ClockPort;
 use babata_application::{
-    ApplicationError, CapabilityService, CaptureService, KnowledgeService, ProcessService,
-    WorkspaceService,
+    ApplicationError, CapabilityService, CaptureService, CreateScoreProfileCommand,
+    KnowledgeService, ProcessService, RecordRelevanceScoreCommand, RecordSuggestionReviewCommand,
+    RegisterFirstPartySemanticCommand, SemanticDigestService, WorkspaceService,
 };
-use babata_domain::{ItemId, PipelineId, RevisionId, RunId};
+use babata_domain::{
+    DerivativeId, FirstPartySemanticDefinition, ItemId, PipelineId, RelevanceComponents,
+    RevisionId, RunId, ScoreProfile, ScoreProfileId,
+};
 use babata_infrastructure::{
     AppConfig, FileAssetStore, StaticCapabilityRegistry, SystemClock, load_config,
     open_derived_database, open_job_database, open_knowledge_review_database, open_raw_database,
@@ -77,6 +82,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+#[allow(clippy::too_many_lines)]
 fn execute_knowledge(
     command: crate::commands::KnowledgeCommand,
     config: &AppConfig,
@@ -84,13 +90,123 @@ fn execute_knowledge(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let raw = open_knowledge_review_database(&config.paths(), config.sqlite.busy_timeout_ms)?;
     let derived = open_derived_database(&config.paths(), config.sqlite.busy_timeout_ms)?;
-    let service = KnowledgeService::new(raw, derived, FileAssetStore::new(config.paths()));
+    let assets = FileAssetStore::new(config.paths());
+    let service = KnowledgeService::new(raw.clone(), derived.clone(), assets.clone());
     match command {
         crate::commands::KnowledgeCommand::Review { item, revision } => {
             render_value(
                 &service.review(&ItemId::parse(item)?, &RevisionId::parse(revision)?)?,
                 json,
             )?;
+        }
+        crate::commands::KnowledgeCommand::Digest { item, revision } => {
+            let digest = SemanticDigestService::new(
+                raw,
+                derived,
+                assets,
+                babata_infrastructure::processing::semantic_digest::BailianSemanticDigestProvider::detect(),
+                SystemClock,
+            );
+            render_value(
+                &digest.digest(&ItemId::parse(item)?, &RevisionId::parse(revision)?)?,
+                json,
+            )?;
+        }
+        crate::commands::KnowledgeCommand::Ingest { derivative } => {
+            render_value(
+                &service.ingest_derivative(&DerivativeId::parse(derivative)?)?,
+                json,
+            )?;
+        }
+        crate::commands::KnowledgeCommand::RegisterFirstParty {
+            item,
+            revision,
+            definition,
+        } => {
+            let definition: FirstPartySemanticDefinition =
+                serde_json::from_str(&std::fs::read_to_string(definition)?)?;
+            render_value(
+                &service.register_first_party(&RegisterFirstPartySemanticCommand {
+                    item_id: ItemId::parse(item)?,
+                    revision_id: RevisionId::parse(revision)?,
+                    definition,
+                    author: "user".to_owned(),
+                    created_at: SystemClock.now(),
+                })?,
+                json,
+            )?;
+        }
+        crate::commands::KnowledgeCommand::ShowEntry { semantic } => {
+            render_value(&service.show_entry(&semantic)?, json)?;
+        }
+        crate::commands::KnowledgeCommand::Score {
+            semantic,
+            interest,
+            strategy,
+            consensus,
+            rationale,
+        } => {
+            render_value(
+                &service.record_score(&RecordRelevanceScoreCommand {
+                    semantic_id: semantic,
+                    components: RelevanceComponents {
+                        interest,
+                        strategy,
+                        consensus,
+                        rationale,
+                    },
+                    author_kind: "first_party".to_owned(),
+                    author: "user".to_owned(),
+                    created_at: SystemClock.now(),
+                })?,
+                json,
+            )?;
+        }
+        crate::commands::KnowledgeCommand::Show { suggestion } => {
+            render_value(&service.show_semantic(&suggestion)?, json)?;
+        }
+        crate::commands::KnowledgeCommand::ReviewSuggestion {
+            suggestion,
+            decision,
+            reason,
+            first_party_item,
+            first_party_revision,
+        } => {
+            let command = RecordSuggestionReviewCommand {
+                suggestion_id: suggestion,
+                decision: decision.into(),
+                reason,
+                first_party_item_id: first_party_item.map(ItemId::parse).transpose()?,
+                first_party_revision_id: first_party_revision.map(RevisionId::parse).transpose()?,
+                reviewer: "user".to_owned(),
+                created_at: SystemClock.now(),
+            };
+            render_value(&service.review_suggestion(&command)?, json)?;
+        }
+        crate::commands::KnowledgeCommand::ListProfiles => {
+            render_value(&service.score_profiles()?, json)?;
+        }
+        crate::commands::KnowledgeCommand::CreateProfile {
+            interest,
+            strategy,
+            consensus,
+            rationale,
+        } => {
+            let ordinal = u32::try_from(service.score_profiles()?.len())? + 1;
+            let command = CreateScoreProfileCommand {
+                profile: ScoreProfile {
+                    profile_id: ScoreProfileId::new().to_string(),
+                    ordinal,
+                    interest_weight: interest,
+                    strategy_weight: strategy,
+                    consensus_weight: consensus,
+                    rationale,
+                    created_at: SystemClock.now(),
+                },
+                author_kind: "first_party".to_owned(),
+                author: "user".to_owned(),
+            };
+            render_value(&service.create_score_profile(&command)?, json)?;
         }
     }
     Ok(())

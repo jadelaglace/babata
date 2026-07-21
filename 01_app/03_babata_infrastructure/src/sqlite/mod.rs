@@ -1,6 +1,7 @@
 pub mod derived_migrate;
 pub mod derived_repository;
 pub mod job_repository;
+mod knowledge_core_repository;
 mod migrate;
 mod raw_repository;
 pub mod read_projection;
@@ -347,7 +348,7 @@ mod tests {
                     |row| row.get::<_, i64>(0)
                 )
                 .unwrap(),
-            2
+            3
         );
     }
 

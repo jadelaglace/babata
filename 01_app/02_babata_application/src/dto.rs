@@ -1,9 +1,11 @@
 use babata_domain::{
     AssetId, AssetRole, BuildTarget, CandidateEnvelope, CandidateSummary, CollectionId,
-    CollectionSessionId, ContentType, DerivativeId, DerivativeKind, DerivativeRef, HealthState,
-    ItemId, LogicalPath, Metadata, PageCursor, PipelineId, ProcessJob, ProcessRun, ProcessingState,
-    QueryFilter, RawState, RecordSummary, RelationKind, RevisionId, RouteCoverage, RunId, Sha256,
-    SnapshotRef, SourceId, SourceKind, SourceRouteId, UtcTimestamp, ViewDescriptor, ViewId,
+    CollectionSessionId, ContentType, DerivativeId, DerivativeKind, DerivativeRef,
+    FirstPartySemanticDefinition, HealthState, ItemId, LogicalPath, Metadata, PageCursor,
+    PipelineId, ProcessJob, ProcessRun, ProcessingState, QueryFilter, RawState, RecordSummary,
+    RelationKind, RevisionId, RouteCoverage, RunId, ScoreProfile, SemanticCandidatePackage,
+    SemanticPayload, Sha256, SnapshotRef, SourceId, SourceKind, SourceRouteId,
+    SuggestionDecisionKind, UtcTimestamp, ViewDescriptor, ViewId,
 };
 use serde::{Deserialize, Serialize};
 
@@ -356,6 +358,164 @@ pub struct KnowledgeReviewContext {
     pub target: RecordDetail,
     pub target_revision_id: RevisionId,
     pub process_runs: Vec<ShowProcessRunOutcome>,
+}
+
+#[derive(Debug, Clone)]
+pub struct IngestSemanticCandidateCommand {
+    pub source_derivative_id: DerivativeId,
+    pub source_output_sha256: Sha256,
+    pub package: SemanticCandidatePackage,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SemanticIngestOutcome {
+    pub suggestion_id: String,
+    pub semantic_ids: Vec<String>,
+    pub map_node_ids: Vec<String>,
+    pub profile_id: String,
+    pub review_state: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SemanticDigestAndIngestOutcome {
+    pub run_id: RunId,
+    pub derivative_id: DerivativeId,
+    pub ingest: SemanticIngestOutcome,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ModelSuggestionDetail {
+    pub suggestion_id: String,
+    pub source_item_id: ItemId,
+    pub source_revision_id: RevisionId,
+    pub source_derivative_id: DerivativeId,
+    pub source_output_sha256: Sha256,
+    pub provider: String,
+    pub model: String,
+    pub model_version: String,
+    pub prompt_version: String,
+    pub generated_at: UtcTimestamp,
+    pub evidence_derivatives: Vec<babata_domain::DerivativeEvidence>,
+    pub limitations: Vec<String>,
+    pub review_state: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SemanticEntryDetail {
+    pub semantic_id: String,
+    pub kind: babata_domain::KnowledgeKind,
+    pub realm: babata_domain::KnowledgeRealm,
+    pub origin_kind: String,
+    pub author: String,
+    pub title: String,
+    pub payload: SemanticPayload,
+    pub map_nodes: Vec<MapNodeDetail>,
+    pub tags: Vec<String>,
+    pub dense_expressions: Vec<DenseExpressionDetail>,
+    pub scores: Vec<RelevanceScoreDetail>,
+    pub outgoing_relations: Vec<SemanticRelationDetail>,
+    pub incoming_relations: Vec<SemanticRelationDetail>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MapNodeDetail {
+    pub map_node_id: String,
+    pub level: babata_domain::MapNodeLevel,
+    pub canonical_key: String,
+    pub name: String,
+    pub parent_node_ids: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DenseExpressionDetail {
+    pub expression_id: String,
+    pub kind: babata_domain::DenseExpressionKind,
+    pub content: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RelevanceScoreDetail {
+    pub score_id: String,
+    pub profile_id: String,
+    pub interest: u8,
+    pub strategy: u8,
+    pub consensus: u8,
+    pub weighted_score: u16,
+    pub rationale: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SemanticRelationDetail {
+    pub relation_id: String,
+    pub from_semantic_id: String,
+    pub kind: String,
+    pub to_semantic_id: String,
+    pub evidence: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SuggestionReviewDetail {
+    pub review_id: String,
+    pub decision: SuggestionDecisionKind,
+    pub reason: Option<String>,
+    pub first_party_item_id: Option<ItemId>,
+    pub first_party_revision_id: Option<RevisionId>,
+    pub reviewer: String,
+    pub created_at: UtcTimestamp,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SemanticCoreSnapshot {
+    pub suggestion: ModelSuggestionDetail,
+    pub entries: Vec<SemanticEntryDetail>,
+    pub relations: Vec<SemanticRelationDetail>,
+    pub reviews: Vec<SuggestionReviewDetail>,
+}
+
+#[derive(Debug, Clone)]
+pub struct RecordSuggestionReviewCommand {
+    pub suggestion_id: String,
+    pub decision: SuggestionDecisionKind,
+    pub reason: Option<String>,
+    pub first_party_item_id: Option<ItemId>,
+    pub first_party_revision_id: Option<RevisionId>,
+    pub reviewer: String,
+    pub created_at: UtcTimestamp,
+}
+
+#[derive(Debug, Clone)]
+pub struct CreateScoreProfileCommand {
+    pub profile: ScoreProfile,
+    pub author_kind: String,
+    pub author: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct RegisterFirstPartySemanticCommand {
+    pub item_id: ItemId,
+    pub revision_id: RevisionId,
+    pub definition: FirstPartySemanticDefinition,
+    pub author: String,
+    pub created_at: UtcTimestamp,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FirstPartySemanticOutcome {
+    pub semantic_id: String,
+    pub kind: babata_domain::KnowledgeKind,
+    pub realm: babata_domain::KnowledgeRealm,
+    pub origin_kind: String,
+    pub first_party_item_id: ItemId,
+    pub first_party_revision_id: RevisionId,
+}
+
+#[derive(Debug, Clone)]
+pub struct RecordRelevanceScoreCommand {
+    pub semantic_id: String,
+    pub components: babata_domain::RelevanceComponents,
+    pub author_kind: String,
+    pub author: String,
+    pub created_at: UtcTimestamp,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

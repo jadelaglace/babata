@@ -223,6 +223,23 @@ active hash 校验。其 Knowledge create/revise/show 两版夹具后来被 Issu
 Issue #63 已验证纠偏 migration 不丢失潜在旧行、真实库业务表行数不变且 review 继续成功；
 该证据只证明兼容迁移与审阅准备，不证明语义候选已经进入 P6 核心。
 
+2026-07-21，Issue #65 已补上第一条真实自动语义证据。真实微信 C0/C1 在用户零回复的
+情况下由 `qwen-plus` 形成 suggestion `suggestion_01KY2A6TKXYG1HF3NWRWB3JNSZ`，以
+machine/unreviewed 身份进入核心；读回包含 Map/Direction、Knowledge、Case、动态学科/
+分支、多重归属、标签、3 条关系、默认 `40/35/25` 评分与 Mermaid/流程/提纲，C1 derivative
+ID/hash 和 evidence ID/hash 均可追溯，源 item 仍只有 1 个 revision。临时数据根另外覆盖
+first-party Log/Insight、Knowledge/Case 双向关系、第二个 profile 和旧/新评分并存，以及
+accepted/modified/rejected 追加审阅；workspace 既有测试继续覆盖独立 annotation、附件、
+Agent C1 再分析和少数真实 revision 的边界。
+
+同一纵向测试还锁定四个负向边界：重复 ingest 被拒绝且不产生第二套语义记录；总和不为
+`100` 的 profile 被拒绝且不留下新配置；外部来源 C0 不能登记成 first-party Log；
+Log/Insight JSON 正文与真实 first-party C0 原文不一致时拒绝写入。
+
+因此 TC-05 的“真实自动消化进入核心”不再缺失，TC-06 的事件语义已有机制证据；但本轮没有
+代替用户制造真实评论、Log、Insight 或审阅决定，也尚未完成可选 C2 视图的删除重建证据。
+在这些剩余步骤及全部仓库门禁完成前，TC-05、TC-06 和 P6.1 仍不写成整体通过。
+
 ### TC-07：检索、关系导航与子库
 
 关联：AC-07，阶段 P6.2/P6.3。

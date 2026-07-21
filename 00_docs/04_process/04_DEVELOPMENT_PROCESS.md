@@ -6,7 +6,7 @@
 
 ## 1. 当前状态
 
-**更新时间：2026-07-20**
+**更新时间：2026-07-21**
 
 ```text
 P0  冻结旧版本                                    已完成
@@ -15,7 +15,7 @@ P2  全系统模块、目录、代码与工具骨架                 已完成
 P3  C0 原始资料与第一方版本底座                     已完成
 P4  飞书与浏览器首批真实收集路径                     已完成
 P5  C1 多模态清洗与百炼处理                         已完成
-P6  核心沉淀、检索、子库与输出                      未开始
+P6  核心沉淀、检索、子库与输出                      进行中
 P7  扩展来源、正式 Skill 与受控 Agent               未开始
 P8  备份、恢复、运维与长期加固                      未开始
 ```
@@ -119,7 +119,7 @@ P8  备份、恢复、运维与长期加固                      未开始
              -> 只形成已知公众号 URL 的重复取得；收藏自动遍历和聊天未形成长期能力
 
 P5 已收尾，下一阶段
-  P6         核心沉淀、检索、子库与输出（尚未开始）
+  P6         核心沉淀、检索、子库与输出（进行中）
 
 转入 P7 扩展来源，不是 P4 完成证据
   微信聊天/收藏其他类型（官方 PC 微信 UI，后续 Agent 带着走）
@@ -553,6 +553,31 @@ versions 均为 0 行；Rust 应用 v2 后将旧表无损隔离为 `deprecated_m
 revisions、assets、relations、capture operations、collections 和 route evidence 行数不变，
 SQLite `quick_check=ok`，同一真实微信 C0/C1 仍通过 `knowledge review`。备份位于外部数据根
 `verification/p6-1-correction-20260720-233608/snapshot`，不进入 Git。
+
+2026-07-21，Issue #65 开始 P6.1 正式主流程，并形成第一条无需用户回复的真实纵向证据：
+
+1. migration 0003 在同一 `raw.sqlite` 建立三大界、三级地图、多重归属、标签、显式关系、
+   高密度文本、评分/profile、ModelSuggestion/SuggestionReview 和 first-party Log/Insight
+   语义登记；旧 0001/0002 checksum 不变；
+2. `knowledge digest` 聚合 C0 与 active C1，真实调用已鉴权 `bl 1.10.0` / `qwen-plus`，将
+   `p6-semantic-candidate/v1` 先登记为 `structured_result` C1，再由核心校验 derivative
+   ID/output hash 和全部 evidence ID/hash 后事务化规范写入；
+3. 真实微信样本 `item_01KXWDRSPMZ8GZMB14SYTQH2H2` /
+   `rev_01KXWDRSPMR023M5038FNK2DBG` 形成 suggestion
+   `suggestion_01KY2A6TKXYG1HF3NWRWB3JNSZ`：3 个机器语义条目（Knowledge、Case、
+   Map/Direction）、5 个动态地图节点、11 个归属、10 个标签归属、3 个关系、3 个高密度
+   表达和 3 个默认 profile 评分，状态保持 unreviewed；
+4. 迁移前 SQLite 在线备份位于外部数据根
+   `verification/p6-1-semantic-core-20260721-202350/snapshot`；迁移前后原有
+   `27 items / 30 revisions / 7 assets / 1 relation` 不变，真实微信仍只有 1 个 revision，
+   两库 `quick_check=ok`，raw foreign key check 为 0；
+5. 临时数据根测试覆盖 Knowledge/Case 双向关系、跨两个基石的多重归属、Log/Insight
+   first-party C0 正文一致性、默认与新 profile 的评分历史、accepted/modified/rejected
+   追加审阅，以及评论/新 C0 不会制造来源资料 `v2`。
+
+该证据证明自动语义候选已真实进入核心，不再只是 review 准备；但不得把模型输出冒充用户
+确认。P6.1 在 TC-05/TC-06 的全部真实事件与视图删除重建证据、文档门禁和 PR 合并前仍是
+进行中，P6.2/P6.3 尚未开始。
 
 ### P6.2 检索与关系导航
 

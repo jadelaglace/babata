@@ -71,6 +71,15 @@ opaque_id!(ViewId, "view_");
 opaque_id!(SnapshotId, "snapshot_");
 opaque_id!(CollectionSessionId, "session_");
 opaque_id!(KnowledgeId, "knowledge_");
+opaque_id!(MapNodeId, "mapnode_");
+opaque_id!(SemanticId, "semantic_");
+opaque_id!(SuggestionId, "suggestion_");
+opaque_id!(SuggestionReviewId, "suggestion_review_");
+opaque_id!(ScoreProfileId, "score_profile_");
+opaque_id!(ScoreId, "score_");
+opaque_id!(TagId, "tag_");
+opaque_id!(SemanticRelationId, "semantic_relation_");
+opaque_id!(DenseExpressionId, "expression_");
 opaque_id!(SublibraryId, "sublibrary_");
 opaque_id!(OutputId, "output_");
 

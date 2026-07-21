@@ -1570,7 +1570,7 @@ fn knowledge_review_prepares_c0_c1_without_manual_semantic_writes() {
             .contains("output no longer matches its hash")
     );
 
-    for retired in ["create", "revise", "show"] {
+    for retired in ["create", "revise"] {
         let output = babata(&temp)
             .args(["knowledge", retired])
             .assert()
@@ -1583,4 +1583,509 @@ fn knowledge_review_prepares_c0_c1_without_manual_semantic_writes() {
             "{retired} must not remain a Knowledge subcommand"
         );
     }
+}
+
+#[test]
+#[allow(clippy::too_many_lines)]
+fn p6_semantic_candidate_enters_three_realm_core_without_source_v2() {
+    let temp = tempdir().unwrap();
+    let capture = capture_text(
+        &temp,
+        "crawler engineering source with a concrete repository case",
+    );
+    let item = capture["item_id"].as_str().unwrap();
+    let revision = capture["revision_id"].as_str().unwrap();
+    let input_sha = capture["record"]["revisions"][0]["text_sha256"]
+        .as_str()
+        .unwrap();
+    let summary_text = "machine summary evidence";
+    let summary = babata(&temp)
+        .args([
+            "--json",
+            "process",
+            "register",
+            "--pipeline",
+            "agent_import",
+            "--revision",
+            revision,
+            "--kind",
+            "summary",
+            "--provider",
+            "fixture",
+            "--model",
+            "fixture-model",
+            "--tool-version",
+            "1.0.0",
+            "--input-sha256",
+            input_sha,
+            "--text",
+            summary_text,
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let summary: Value = serde_json::from_slice(&summary).unwrap();
+    let summary_derivative = summary["derivative_id"].as_str().unwrap();
+    let package = serde_json::json!({
+        "schema_version": "p6-semantic-candidate/v1",
+        "source_item_id": item,
+        "source_revision_id": revision,
+        "evidence_derivatives": [{
+            "derivative_id": summary_derivative,
+            "output_sha256": sha256_hex(summary_text.as_bytes())
+        }],
+        "provider": "fixture",
+        "model": "fixture-semantic-model",
+        "model_version": "1.0.0",
+        "prompt_version": "p6-semantic-v1",
+        "generated_at": "2026-07-21T00:00:00Z",
+        "map_nodes": [
+            {
+                "local_ref": "node:software-engineering",
+                "level": "discipline",
+                "name": "软件工程",
+                "parent_refs": ["foundation:matter", "foundation:consciousness"]
+            },
+            {
+                "local_ref": "node:web-collection",
+                "level": "branch",
+                "name": "网络数据采集",
+                "parent_refs": ["node:software-engineering"]
+            }
+        ],
+        "entries": [
+            {
+                "local_ref": "entry:knowledge",
+                "title": "爬虫工程的降维策略",
+                "payload": {
+                    "kind": "knowledge",
+                    "statement": "优先复用成熟工具链，再补最窄缺口。",
+                    "details": "仓库案例共同表明，发现、认证、下载和结构化应分别选择成熟能力。"
+                },
+                "map_node_refs": ["foundation:matter", "foundation:consciousness", "node:web-collection"],
+                "tags": ["爬虫", "工具复用"],
+                "dense_expressions": [{
+                    "kind": "outline",
+                    "content": "1. 发现候选\n2. 复用工具\n3. 仅补缺口\n4. 保留证据"
+                }],
+                "relevance": {"interest": 80, "strategy": 60, "consensus": 40, "rationale": "当前采集工作直接相关"}
+            },
+            {
+                "local_ref": "entry:case",
+                "title": "二十个爬虫仓库的工具组合案例",
+                "payload": {
+                    "kind": "case",
+                    "scenario": "为多平台资料收集选择实现路线",
+                    "process": "比较二十个仓库的发现、认证和下载能力",
+                    "result": "形成优先复用成熟工具的路线",
+                    "analysis": "单站点重复开发的维护成本更高"
+                },
+                "map_node_refs": ["node:web-collection"],
+                "tags": ["爬虫", "案例"],
+                "dense_expressions": [],
+                "relevance": {"interest": 70, "strategy": 65, "consensus": 35, "rationale": "提供实践证据"}
+            }
+        ],
+        "relations": [
+            {"from_ref": "entry:case", "kind": "validates", "to_ref": "entry:knowledge", "evidence": "仓库比较支持该工程策略"},
+            {"from_ref": "entry:knowledge", "kind": "applied_by", "to_ref": "entry:case", "evidence": "案例应用了该策略"}
+        ],
+        "limitations": ["fixture only"]
+    });
+    let package_path = temp.path().join("semantic-package.json");
+    std::fs::write(&package_path, package.to_string()).unwrap();
+    let registered = babata(&temp)
+        .args([
+            "--json",
+            "process",
+            "register",
+            "--pipeline",
+            "agent_import",
+            "--revision",
+            revision,
+            "--kind",
+            "structured_result",
+            "--provider",
+            "fixture",
+            "--model",
+            "fixture-semantic-model",
+            "--tool-version",
+            "1.0.0",
+            "--input-sha256",
+            input_sha,
+            "--json-file",
+            package_path.to_str().unwrap(),
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let registered: Value = serde_json::from_slice(&registered).unwrap();
+    let semantic_derivative = registered["derivative_id"].as_str().unwrap();
+    let ingested = babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "ingest",
+            "--derivative",
+            semantic_derivative,
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let ingested: Value = serde_json::from_slice(&ingested).unwrap();
+    assert_eq!(ingested["review_state"], "unreviewed");
+    assert_eq!(ingested["semantic_ids"].as_array().unwrap().len(), 2);
+    assert!(ingested["map_node_ids"].as_array().unwrap().len() >= 4);
+    let suggestion = ingested["suggestion_id"].as_str().unwrap();
+
+    babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "ingest",
+            "--derivative",
+            semantic_derivative,
+        ])
+        .assert()
+        .failure();
+
+    let show = || {
+        let bytes = babata(&temp)
+            .args(["--json", "knowledge", "show", "--suggestion", suggestion])
+            .assert()
+            .success()
+            .get_output()
+            .stdout
+            .clone();
+        serde_json::from_slice::<Value>(&bytes).unwrap()
+    };
+    let snapshot = show();
+    assert_eq!(snapshot["suggestion"]["review_state"], "unreviewed");
+    assert_eq!(snapshot["entries"].as_array().unwrap().len(), 2);
+    assert_eq!(snapshot["relations"].as_array().unwrap().len(), 2);
+    assert!(snapshot["entries"].as_array().unwrap().iter().any(|entry| {
+        entry["kind"] == "knowledge"
+            && entry["realm"] == "knowledge_and_cases"
+            && entry["dense_expressions"].as_array().unwrap().len() == 1
+            && entry["scores"][0]["weighted_score"] == 6300
+    }));
+
+    let profiles = babata(&temp)
+        .args(["--json", "knowledge", "list-profiles"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let profiles: Value = serde_json::from_slice(&profiles).unwrap();
+    assert_eq!(profiles[0]["interest_weight"], 40);
+    babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "create-profile",
+            "--interest",
+            "50",
+            "--strategy",
+            "30",
+            "--consensus",
+            "30",
+            "--rationale",
+            "invalid total must roll back",
+        ])
+        .assert()
+        .failure();
+    let profiles_after_rejection = babata(&temp)
+        .args(["--json", "knowledge", "list-profiles"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let profiles_after_rejection: Value =
+        serde_json::from_slice(&profiles_after_rejection).unwrap();
+    assert_eq!(profiles_after_rejection.as_array().unwrap().len(), 1);
+    babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "create-profile",
+            "--interest",
+            "50",
+            "--strategy",
+            "30",
+            "--consensus",
+            "20",
+            "--rationale",
+            "new focus",
+        ])
+        .assert()
+        .success();
+    let rescored = babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "score",
+            "--semantic",
+            ingested["semantic_ids"][0].as_str().unwrap(),
+            "--interest",
+            "90",
+            "--strategy",
+            "80",
+            "--consensus",
+            "70",
+            "--rationale",
+            "reviewed under the new focus profile",
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let rescored: Value = serde_json::from_slice(&rescored).unwrap();
+    assert_eq!(rescored["weighted_score"], 8300);
+    let score_history = babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "show-entry",
+            "--semantic",
+            ingested["semantic_ids"][0].as_str().unwrap(),
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let score_history: Value = serde_json::from_slice(&score_history).unwrap();
+    assert_eq!(score_history["scores"].as_array().unwrap().len(), 2);
+    assert_ne!(
+        score_history["scores"][0]["profile_id"],
+        score_history["scores"][1]["profile_id"]
+    );
+
+    babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "review-suggestion",
+            "--suggestion",
+            suggestion,
+            "--decision",
+            "accept",
+        ])
+        .assert()
+        .success();
+    let first_party = babata(&temp)
+        .args([
+            "--json",
+            "create",
+            "--text",
+            "我的独立感悟，不是来源资料 v2。",
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let first_party: Value = serde_json::from_slice(&first_party).unwrap();
+    let insight_definition = serde_json::json!({
+        "title": "关于工具复用的个人感悟",
+        "payload": {
+            "kind": "insight",
+            "maturity": "spark",
+            "body": "我的独立感悟，不是来源资料 v2。"
+        },
+        "map_node_refs": ["foundation:consciousness"],
+        "tags": ["个人感悟"],
+        "dense_expressions": [],
+        "relevance": {"interest": 90, "strategy": 70, "consensus": 20, "rationale": "刚形成的个人判断"},
+        "relations": [{
+            "kind": "reflects_on",
+            "to_semantic_id": ingested["semantic_ids"][0].as_str().unwrap(),
+            "evidence": "这条感悟由该知识候选触发"
+        }]
+    });
+    let insight_path = temp.path().join("insight-definition.json");
+    std::fs::write(&insight_path, insight_definition.to_string()).unwrap();
+
+    let external_log_definition = serde_json::json!({
+        "title": "不能伪装成第一方日志的外部资料",
+        "payload": {
+            "kind": "log",
+            "scale": "realtime",
+            "occurred_at": "2026-07-21T00:00:00Z",
+            "body": "crawler engineering source with a concrete repository case"
+        },
+        "map_node_refs": ["foundation:time"],
+        "tags": [],
+        "dense_expressions": [],
+        "relevance": {"interest": 1, "strategy": 1, "consensus": 1, "rationale": "negative boundary"},
+        "relations": []
+    });
+    let external_log_path = temp.path().join("external-log-definition.json");
+    std::fs::write(&external_log_path, external_log_definition.to_string()).unwrap();
+    babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "register-first-party",
+            "--item",
+            item,
+            "--revision",
+            revision,
+            "--definition",
+            external_log_path.to_str().unwrap(),
+        ])
+        .assert()
+        .failure();
+
+    let mut mismatched_insight = insight_definition.clone();
+    mismatched_insight["payload"]["body"] = Value::String("模型替用户改过的正文".to_owned());
+    let mismatched_insight_path = temp.path().join("mismatched-insight-definition.json");
+    std::fs::write(&mismatched_insight_path, mismatched_insight.to_string()).unwrap();
+    babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "register-first-party",
+            "--item",
+            first_party["item_id"].as_str().unwrap(),
+            "--revision",
+            first_party["revision_id"].as_str().unwrap(),
+            "--definition",
+            mismatched_insight_path.to_str().unwrap(),
+        ])
+        .assert()
+        .failure();
+
+    let insight = babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "register-first-party",
+            "--item",
+            first_party["item_id"].as_str().unwrap(),
+            "--revision",
+            first_party["revision_id"].as_str().unwrap(),
+            "--definition",
+            insight_path.to_str().unwrap(),
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let insight: Value = serde_json::from_slice(&insight).unwrap();
+    assert_eq!(insight["kind"], "insight");
+    assert_eq!(insight["realm"], "cognitive_trail");
+    assert_eq!(insight["origin_kind"], "first_party");
+
+    let log_c0 = babata(&temp)
+        .args([
+            "--json",
+            "create",
+            "--text",
+            "今天完成 P6 语义核心首轮验证。",
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let log_c0: Value = serde_json::from_slice(&log_c0).unwrap();
+    let log_definition = serde_json::json!({
+        "title": "P6 实时日志",
+        "payload": {
+            "kind": "log",
+            "scale": "realtime",
+            "occurred_at": "2026-07-21T00:00:00Z",
+            "body": "今天完成 P6 语义核心首轮验证。"
+        },
+        "map_node_refs": ["foundation:time", "foundation:consciousness"],
+        "tags": ["P6"],
+        "dense_expressions": [],
+        "relevance": {"interest": 85, "strategy": 80, "consensus": 30, "rationale": "当前阶段日志"},
+        "relations": []
+    });
+    let log_path = temp.path().join("log-definition.json");
+    std::fs::write(&log_path, log_definition.to_string()).unwrap();
+    let log = babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "register-first-party",
+            "--item",
+            log_c0["item_id"].as_str().unwrap(),
+            "--revision",
+            log_c0["revision_id"].as_str().unwrap(),
+            "--definition",
+            log_path.to_str().unwrap(),
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let log: Value = serde_json::from_slice(&log).unwrap();
+    assert_eq!(log["kind"], "log");
+    assert_eq!(log["realm"], "cognitive_trail");
+
+    babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "review-suggestion",
+            "--suggestion",
+            suggestion,
+            "--decision",
+            "modify",
+            "--first-party-item",
+            first_party["item_id"].as_str().unwrap(),
+            "--first-party-revision",
+            first_party["revision_id"].as_str().unwrap(),
+        ])
+        .assert()
+        .success();
+    babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "review-suggestion",
+            "--suggestion",
+            suggestion,
+            "--decision",
+            "reject",
+            "--reason",
+            "later evidence contradicted it",
+        ])
+        .assert()
+        .success();
+    let reviewed = show();
+    assert_eq!(reviewed["suggestion"]["review_state"], "rejected");
+    assert_eq!(reviewed["reviews"].as_array().unwrap().len(), 3);
+
+    let source = babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "review",
+            "--item",
+            item,
+            "--revision",
+            revision,
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let source: Value = serde_json::from_slice(&source).unwrap();
+    assert_eq!(source["target"]["revisions"].as_array().unwrap().len(), 1);
 }
