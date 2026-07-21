@@ -1,6 +1,6 @@
 use babata_domain::{
-    AssetRole, ContentType, ItemId, Metadata, RawState, RelationKind, RevisionId, RevisionKind,
-    SourceId, SourceKind, TextPayload, UtcTimestamp,
+    AssetRole, CommonSourceMetadata, ContentType, ItemId, Metadata, RawState, RelationKind,
+    RevisionId, RevisionKind, SourceId, SourceKind, TextPayload, UtcTimestamp,
 };
 
 use crate::{
@@ -182,6 +182,7 @@ where
             source_updated_at: None,
             first_captured_at: now.clone(),
             metadata: command.metadata,
+            common_metadata: CommonSourceMetadata::default(),
         };
         let collection = collection_from_context(&source, command.context, now.clone())?;
         self.write_note(
@@ -293,6 +294,7 @@ where
             source_updated_at: None,
             first_captured_at: now.clone(),
             metadata: command.metadata,
+            common_metadata: CommonSourceMetadata::default(),
         };
         let relation = NewRelation {
             id: babata_domain::RelationId::new(),
@@ -451,6 +453,7 @@ where
                 revision,
                 assets,
                 all_relations,
+                None,
                 staged.iter().cloned().collect(),
                 duplicate,
                 false,

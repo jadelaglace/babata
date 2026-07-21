@@ -4,7 +4,7 @@ use babata_domain::{
     RecollectionOutcome, RevisionId, UtcTimestamp,
 };
 
-use crate::ApplicationError;
+use crate::{ApplicationError, ports::NewSourceObservation};
 
 pub trait CollectionRepositoryPort {
     fn create_session(&self, session: &CollectionSession) -> Result<(), ApplicationError>;
@@ -69,5 +69,9 @@ pub trait CollectionRepositoryPort {
         &self,
         item_id: &ItemId,
     ) -> Result<Option<(CollectionSessionId, String)>, ApplicationError>;
-    fn record_recollection(&self, outcome: &RecollectionOutcome) -> Result<(), ApplicationError>;
+    fn record_recollection(
+        &self,
+        outcome: &RecollectionOutcome,
+        observation: Option<&NewSourceObservation>,
+    ) -> Result<(), ApplicationError>;
 }

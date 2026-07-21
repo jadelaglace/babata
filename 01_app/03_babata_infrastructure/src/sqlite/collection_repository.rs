@@ -1,8 +1,12 @@
-use babata_application::{ApplicationError, ports::CollectionRepositoryPort};
+use babata_application::{
+    ApplicationError,
+    ports::{CollectionRepositoryPort, NewSourceObservation},
+};
 use babata_domain::{
     CandidateEnvelope, CandidateSummary, CollectionItemState, CollectionItemStatus,
     CollectionSelection, CollectionSession, CollectionSessionId, CollectionSessionState,
-    ContentType, ItemId, RecollectionOutcome, RevisionId, SourceRouteId, UtcTimestamp,
+    CommonSourceMetadata, ContentType, ItemId, RecollectionOutcome, RevisionId, SourceRouteId,
+    UtcTimestamp,
 };
 use rusqlite::{OptionalExtension, Row, params};
 
@@ -79,6 +83,8 @@ impl CollectionRepositoryPort for SqliteRawRepository {
         let mut connection = self.lock()?;
         let transaction = connection.transaction().map_err(storage)?;
         for (candidate, prefetched) in candidates {
+            let common_metadata = candidate.effective_common_metadata();
+            common_metadata.validate()?;
             let prefetched = prefetched
                 .as_ref()
                 .map(serde_json::to_string)
@@ -89,8 +95,9 @@ impl CollectionRepositoryPort for SqliteRawRepository {
                     "INSERT INTO collection_candidates
                  (session_id, candidate_id, route_id, source_native_id, title, source_location,
                   hierarchy_json, content_type, source_updated_at, attachment_available,
-                  limitations_json, selection_capabilities_json, prefetched_envelope_json)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)",
+                  limitations_json, selection_capabilities_json, prefetched_envelope_json,
+                  common_metadata_json)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)",
                     params![
                         candidate.session_id.to_string(),
                         candidate.candidate_id,
@@ -108,6 +115,7 @@ impl CollectionRepositoryPort for SqliteRawRepository {
                         serde_json::to_string(&candidate.limitations).map_err(json)?,
                         serde_json::to_string(&candidate.selection_capabilities).map_err(json)?,
                         prefetched,
+                        serde_json::to_string(&common_metadata).map_err(json)?,
                     ],
                 )
                 .map_err(storage)?;
@@ -124,7 +132,8 @@ impl CollectionRepositoryPort for SqliteRawRepository {
             .prepare(
                 "SELECT session_id, candidate_id, route_id, source_native_id, title,
                         source_location, hierarchy_json, content_type, source_updated_at,
-                        attachment_available, limitations_json, selection_capabilities_json
+                        attachment_available, limitations_json, selection_capabilities_json,
+                        common_metadata_json
                  FROM collection_candidates WHERE session_id = ?1 ORDER BY candidate_id",
             )
             .map_err(storage)?;
@@ -145,13 +154,13 @@ impl CollectionRepositoryPort for SqliteRawRepository {
                 "SELECT session_id, candidate_id, route_id, source_native_id, title,
                         source_location, hierarchy_json, content_type, source_updated_at,
                         attachment_available, limitations_json, selection_capabilities_json,
-                        prefetched_envelope_json
+                        common_metadata_json, prefetched_envelope_json
                  FROM collection_candidates WHERE session_id = ?1 AND candidate_id = ?2",
                 params![session_id.to_string(), candidate_id],
                 |row| {
                     let candidate = candidate_from_row(row)?;
                     let envelope = row
-                        .get::<_, Option<String>>(12)?
+                        .get::<_, Option<String>>(13)?
                         .map(|value| serde_json::from_str(&value).map_err(to_sql_error))
                         .transpose()?;
                     Ok((candidate, envelope))
@@ -377,8 +386,16 @@ impl CollectionRepositoryPort for SqliteRawRepository {
             .map_err(storage)
     }
 
-    fn record_recollection(&self, outcome: &RecollectionOutcome) -> Result<(), ApplicationError> {
-        self.lock()?
+    fn record_recollection(
+        &self,
+        outcome: &RecollectionOutcome,
+        observation: Option<&NewSourceObservation>,
+    ) -> Result<(), ApplicationError> {
+        let mut connection = self.lock()?;
+        let transaction = connection
+            .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)
+            .map_err(storage)?;
+        transaction
             .execute(
                 "INSERT INTO collection_recollection_checks
              (check_id, item_id, state, previous_revision_id, new_revision_id, reason, checked_at)
@@ -393,7 +410,18 @@ impl CollectionRepositoryPort for SqliteRawRepository {
                 ],
             )
             .map_err(storage)?;
-        Ok(())
+        if let Some(observation) = observation {
+            if observation.item_id != outcome.item_id
+                || observation.revision_id != outcome.previous_revision_id
+                || observation.recollection_state != Some(outcome.state)
+            {
+                return Err(ApplicationError::Integrity(
+                    "recollection observation does not match its outcome".to_owned(),
+                ));
+            }
+            super::raw_repository::insert_source_observation(&transaction, observation)?;
+        }
+        transaction.commit().map_err(storage)
     }
 }
 
@@ -429,7 +457,10 @@ fn candidate_from_row(row: &Row<'_>) -> rusqlite::Result<CandidateSummary> {
         limitations: serde_json::from_str(&row.get::<_, String>(10)?).map_err(to_sql_error)?,
         selection_capabilities: serde_json::from_str(&row.get::<_, String>(11)?)
             .map_err(to_sql_error)?,
-    })
+        common_metadata: serde_json::from_str::<CommonSourceMetadata>(&row.get::<_, String>(12)?)
+            .map_err(to_sql_error)?,
+    }
+    .with_common_from_legacy())
 }
 
 fn item_status_from_row(row: &Row<'_>) -> rusqlite::Result<CollectionItemStatus> {
@@ -571,7 +602,7 @@ mod tests {
         AcquisitionOutcome, ApplicationError, CancelCollectionCommand, CaptureImportAsset,
         CollectorSessionService, DiscoveredCandidate, RetryCollectionItemCommand,
         StartCollectionCommand,
-        ports::{CollectionRepositoryPort, SourceAdapterPort},
+        ports::{CollectionRepositoryPort, RawRepositoryPort, SourceAdapterPort},
     };
     use babata_domain::{
         AssetRole, CandidateEnvelope, CandidatePayload, CandidateSummary, CapabilityStatus,
@@ -579,6 +610,7 @@ mod tests {
         ContentType, ItemId, Metadata, RecollectionState, RouteCoverage, Sha256,
         SourceRouteDescriptor, SourceRouteId, UtcTimestamp,
     };
+    use rusqlite::params;
     use tempfile::tempdir;
 
     use crate::{
@@ -631,6 +663,7 @@ mod tests {
                         attachment_available: Some(self.attachment_path.is_some()),
                         limitations: Vec::new(),
                         selection_capabilities: vec!["single".to_owned()],
+                        common_metadata: babata_domain::CommonSourceMetadata::default(),
                     },
                     prefetched: None,
                 })
@@ -719,7 +752,12 @@ mod tests {
         let outcomes = Arc::new(Mutex::new(HashMap::from([
             (
                 "a".to_owned(),
-                found_with_fingerprint("a", "version one", "content-one"),
+                found_with_common_metadata(
+                    "a",
+                    "version one",
+                    "content-one",
+                    "first observed title",
+                ),
             ),
             (
                 "b".to_owned(),
@@ -751,6 +789,13 @@ mod tests {
                 authorisation_id: "fixture-authorisation".to_owned(),
             })
             .unwrap();
+        let discovered = service.candidates(&session.session_id).unwrap();
+        let candidate_a = discovered
+            .iter()
+            .find(|candidate| candidate.candidate_id == "a")
+            .unwrap();
+        assert_eq!(candidate_a.common_metadata.title.as_deref(), Some("a"));
+        assert_eq!(candidate_a.common_metadata.hierarchy[0].name, "Fixture");
         assert_eq!(table_count(&repository, "items"), 0);
         assert!(
             service
@@ -907,7 +952,7 @@ mod tests {
     ) {
         outcomes.lock().unwrap().insert(
             "a".to_owned(),
-            found_with_fingerprint("a", "version two", "content-two"),
+            found_with_common_metadata("a", "version two", "content-two", "later observed title"),
         );
         assert_eq!(
             service.recollect(item_id).unwrap().state,
@@ -944,9 +989,48 @@ mod tests {
         );
         assert_eq!(table_count(repository, "revisions"), 3);
         assert_eq!(table_count(repository, "collection_recollection_checks"), 4);
+        assert_eq!(table_count(repository, "source_observations"), 6);
+        assert_eq!(
+            table_count(repository, "capture_operations"),
+            table_count(repository, "source_observations") - 3
+        );
         assert_eq!(
             recollection_states(repository),
             ["changed", "unchanged", "inaccessible", "removed"]
+        );
+        let detail = repository.load_detail(item_id).unwrap();
+        assert_eq!(
+            detail.common_metadata.title.as_deref(),
+            Some("first observed title")
+        );
+        assert_eq!(detail.source_observations.len(), 5);
+        assert!(detail.source_observations.iter().any(|observation| {
+            observation.common_metadata.title.as_deref() == Some("later observed title")
+        }));
+        assert_eq!(
+            detail
+                .source_observations
+                .iter()
+                .filter(|observation| observation.recollection_state.is_some())
+                .count(),
+            3
+        );
+        let connection = repository.lock().unwrap();
+        assert!(
+            connection
+                .execute(
+                    "UPDATE source_observations SET reason = 'tampered' WHERE item_id = ?1",
+                    params![item_id.to_string()],
+                )
+                .is_err()
+        );
+        assert!(
+            connection
+                .execute(
+                    "DELETE FROM source_observations WHERE item_id = ?1",
+                    params![item_id.to_string()],
+                )
+                .is_err()
         );
     }
 
@@ -1047,9 +1131,23 @@ mod tests {
         )
     }
 
+    fn found_with_common_metadata(
+        native_id: &str,
+        text: &str,
+        content_fingerprint: &str,
+        title: &str,
+    ) -> AcquisitionOutcome {
+        let mut outcome = found_with_fingerprint(native_id, text, content_fingerprint);
+        let AcquisitionOutcome::Found { candidate, .. } = &mut outcome else {
+            unreachable!("fixture always returns a found acquisition");
+        };
+        candidate.common_metadata.title = Some(title.to_owned());
+        outcome
+    }
+
     fn found_with_metadata(native_id: &str, text: &str, metadata: &str) -> AcquisitionOutcome {
         AcquisitionOutcome::Found {
-            candidate: CandidateEnvelope {
+            candidate: Box::new(CandidateEnvelope {
                 protocol_version: "1".to_owned(),
                 route_id: SourceRouteId("source.kimi".to_owned()),
                 source_reference: format!("https://example.test/{native_id}"),
@@ -1061,7 +1159,8 @@ mod tests {
                 },
                 context: Some("fixture".to_owned()),
                 native_id: Some(native_id.to_owned()),
-            },
+                common_metadata: babata_domain::CommonSourceMetadata::default(),
+            }),
             assets: Vec::new(),
         }
     }
@@ -1077,7 +1176,12 @@ mod tests {
     fn table_count(repository: &SqliteRawRepository, table: &str) -> i64 {
         assert!(matches!(
             table,
-            "items" | "revisions" | "assets" | "collection_recollection_checks"
+            "items"
+                | "revisions"
+                | "assets"
+                | "capture_operations"
+                | "source_observations"
+                | "collection_recollection_checks"
         ));
         repository
             .lock()

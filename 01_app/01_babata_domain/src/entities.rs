@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    AssetId, AssetRole, ContentType, ItemId, LogicalPath, Metadata, RawState, RelationId,
-    RelationKind, RevisionId, RevisionKind, Sha256, SourceId, SourceKind, UtcTimestamp,
+    AssetId, AssetRole, CommonSourceMetadata, ContentType, ItemId, LogicalPath, Metadata, RawState,
+    RelationId, RelationKind, RevisionId, RevisionKind, Sha256, SourceId, SourceKind, UtcTimestamp,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -29,6 +29,7 @@ pub struct RawItem {
     pub source_updated_at: Option<UtcTimestamp>,
     pub first_captured_at: UtcTimestamp,
     pub metadata: Metadata,
+    pub common_metadata: CommonSourceMetadata,
     pub created_at: UtcTimestamp,
 }
 
@@ -93,6 +94,7 @@ mod tests {
             source_updated_at: None,
             first_captured_at: UtcTimestamp::parse("2026-01-01T00:00:00Z").unwrap(),
             metadata: Metadata::empty(),
+            common_metadata: CommonSourceMetadata::default(),
             created_at: UtcTimestamp::parse("2026-01-01T00:00:00Z").unwrap(),
         };
         assert!(item.source_identity_key.is_none());

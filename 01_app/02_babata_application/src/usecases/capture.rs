@@ -1,7 +1,8 @@
 use babata_domain::{
-    AssetAttachmentId, AssetRole, CandidateEnvelope, CandidatePayload, CollectionId, ContentType,
-    ItemId, Metadata, RawState, RevisionId, RevisionKind, Sha256, SourceId, SourceKind,
-    TextPayload, UtcTimestamp,
+    AssetAttachmentId, AssetRole, CandidateEnvelope, CandidatePayload, CollectionId,
+    CommonSourceMetadata, ContentType, ItemId, Metadata, RawState, RevisionId, RevisionKind,
+    Sha256, SourceId, SourceKind, SourceObservationId, SourceObservationKind, TextPayload,
+    UtcTimestamp,
 };
 
 use crate::{
@@ -9,8 +10,8 @@ use crate::{
     CaptureImportCommand, CaptureOutcome, CaptureTextCommand,
     ports::{
         AssetStorePort, ClockPort, FinalizeAssetOutcome, NewAsset, NewAssetAttachmentOperation,
-        NewCaptureOperation, NewCollection, NewItem, NewRevision, NewSource, PersistGraph,
-        RawRepositoryPort, StagedAsset,
+        NewCaptureOperation, NewCollection, NewItem, NewRevision, NewSource, NewSourceObservation,
+        PersistGraph, RawRepositoryPort, StagedAsset,
     },
 };
 
@@ -46,6 +47,10 @@ where
             .or_else(|| command.native_id.as_ref().map(|id| format!("native:{id}")))
             .unwrap_or_else(|| format!("text:{}", hash.as_str()));
         let operation_id = new_operation_id();
+        let common_metadata = CommonSourceMetadata {
+            source_published_at: command.source_published_at.clone(),
+            ..CommonSourceMetadata::default()
+        };
         self.capture_external(
             operation_id.clone(),
             command.provider,
@@ -55,7 +60,9 @@ where
             identity,
             ContentType::Text,
             command.metadata,
-            command.source_published_at,
+            common_metadata,
+            None,
+            None,
             Some(text.as_str().to_owned()),
             Some(hash),
             Vec::new(),
@@ -85,6 +92,12 @@ where
         validate_provider(&command.provider)?;
         let text = TextPayload::new(command.text)?;
         let route_evidence = command.route_evidence.clone();
+        let mut common_metadata = command.common_metadata;
+        if common_metadata.source_published_at.is_none() {
+            common_metadata
+                .source_published_at
+                .clone_from(&command.source_published_at);
+        }
         let operation_id = new_operation_id();
         let staged_assets = self.stage_import_assets(&command.assets, &operation_id)?;
         let identity = command
@@ -100,7 +113,9 @@ where
             identity,
             command.content_type,
             command.metadata,
-            command.source_published_at,
+            common_metadata,
+            None,
+            None,
             Some(text.as_str().to_owned()),
             Some(text.hash()),
             staged_assets.clone(),
@@ -222,11 +237,15 @@ where
         &self,
         command: CandidateCaptureCommand,
     ) -> Result<CaptureOutcome, ApplicationError> {
-        let assets = command.assets;
-        let candidate = command.candidate;
+        let CandidateCaptureCommand {
+            candidate,
+            assets,
+            route_evidence,
+            collection_session_id,
+            candidate_id,
+        } = command;
         validate_candidate(&candidate)?;
-        if command
-            .route_evidence
+        if route_evidence
             .as_ref()
             .is_some_and(|evidence| evidence.route_id != candidate.route_id)
         {
@@ -247,7 +266,6 @@ where
             .strip_prefix("source.")
             .unwrap_or(&candidate.route_id.0)
             .to_owned();
-        let route_evidence = command.route_evidence;
         let operation_id = new_operation_id();
         let mut staged_assets = Vec::with_capacity(assets.len());
         for asset in &assets {
@@ -271,7 +289,9 @@ where
             format!("{provider}:{}", candidate.source_reference),
             candidate.content_type,
             candidate.metadata,
-            None,
+            candidate.common_metadata,
+            collection_session_id,
+            candidate_id,
             Some(payload.as_str().to_owned()),
             Some(payload.hash()),
             staged_assets.clone(),
@@ -327,6 +347,10 @@ where
             .or_else(|| command.native_id.as_ref().map(|id| format!("native:{id}")))
             .unwrap_or_else(|| format!("file:{}", staged.sha256.as_str()));
         let content_type = content_type_for(&command.path);
+        let common_metadata = CommonSourceMetadata {
+            source_published_at: command.source_published_at.clone(),
+            ..CommonSourceMetadata::default()
+        };
         let result = self.capture_external(
             operation_id.clone(),
             command.provider,
@@ -336,7 +360,9 @@ where
             identity,
             content_type,
             command.metadata,
-            command.source_published_at,
+            common_metadata,
+            None,
+            None,
             None,
             None,
             vec![staged.clone()],
@@ -350,6 +376,7 @@ where
     }
 
     #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_lines)]
     fn capture_external(
         &self,
         operation_id: String,
@@ -360,16 +387,29 @@ where
         identity: String,
         content_type: ContentType,
         metadata: Metadata,
-        source_published_at: Option<UtcTimestamp>,
+        mut common_metadata: CommonSourceMetadata,
+        collection_session_id: Option<babata_domain::CollectionSessionId>,
+        candidate_id: Option<String>,
         raw_text: Option<String>,
         text_sha256: Option<Sha256>,
         staged_assets: Vec<StagedAsset>,
         new_kind: RevisionKind,
     ) -> Result<CaptureOutcome, ApplicationError> {
+        if common_metadata.context.is_none() {
+            common_metadata.context = context
+                .as_deref()
+                .filter(|value| !value.trim().is_empty())
+                .map(str::to_owned);
+        }
+        if common_metadata.access_state == babata_domain::SourceAccessState::Unknown {
+            common_metadata.access_state = babata_domain::SourceAccessState::Accessible;
+        }
+        common_metadata.validate()?;
         let now = self.clock.now();
         let operation_native_id = native_id.clone();
         let operation_locator = locator.clone();
-        let operation_published_at = source_published_at.clone();
+        let observation_context = context.clone();
+        let operation_published_at = common_metadata.source_published_at.clone();
         let source = match self
             .repository
             .find_source(SourceKind::External, &provider, None)?
@@ -399,10 +439,11 @@ where
                     source_locator: locator,
                     source_identity_key: Some(identity),
                     content_type,
-                    source_published_at,
-                    source_updated_at: None,
+                    source_published_at: common_metadata.source_published_at.clone(),
+                    source_updated_at: common_metadata.source_updated_at.clone(),
                     first_captured_at: now.clone(),
                     metadata: metadata.clone(),
+                    common_metadata: common_metadata.clone(),
                 },
                 None,
                 new_kind,
@@ -432,11 +473,28 @@ where
             operation_id: operation_id.clone(),
             item_id: item.id.clone(),
             revision_id: revision.id.clone(),
+            source_native_id: operation_native_id.clone(),
+            source_locator: operation_locator.clone(),
+            source_published_at: operation_published_at,
+            metadata: metadata.clone(),
+            started_at: now.clone(),
+        };
+        let observation = NewSourceObservation {
+            id: SourceObservationId::new(),
+            item_id: item.id.clone(),
+            revision_id: revision.id.clone(),
+            capture_operation_id: Some(operation_id.clone()),
+            collection_session_id,
+            candidate_id,
+            kind: SourceObservationKind::Capture,
+            recollection_state: None,
             source_native_id: operation_native_id,
             source_locator: operation_locator,
-            source_published_at: operation_published_at,
-            metadata,
-            started_at: now,
+            context: observation_context,
+            common_metadata,
+            provider_metadata: metadata,
+            reason: None,
+            observed_at: now,
         };
         let assets = staged_assets
             .iter()
@@ -460,6 +518,7 @@ where
             revision,
             assets,
             Vec::new(),
+            Some(observation),
             staged_assets,
             duplicate_of,
             reimported,
@@ -477,6 +536,7 @@ where
         revision: NewRevision,
         assets: Vec<NewAsset>,
         relations: Vec<crate::ports::NewRelation>,
+        observation: Option<NewSourceObservation>,
         staged_assets: Vec<StagedAsset>,
         duplicate_of: Option<RevisionId>,
         reimported: bool,
@@ -490,6 +550,7 @@ where
             revision: revision.clone(),
             assets,
             relations,
+            observation,
         };
         if let Err(error) = self.repository.insert_capture_graph(&graph) {
             for asset in &staged_assets {
@@ -776,6 +837,7 @@ fn validate_candidate(candidate: &CandidateEnvelope) -> Result<(), ApplicationEr
             },
         ));
     }
+    candidate.common_metadata.validate()?;
     Ok(())
 }
 
@@ -1282,6 +1344,8 @@ pub(crate) mod tests {
                 source_updated_at: item.source_updated_at.clone(),
                 first_captured_at: item.first_captured_at.clone(),
                 metadata: item.metadata.clone(),
+                common_metadata: item.common_metadata.clone(),
+                source_observations: Vec::new(),
                 collections: Vec::new(),
                 revisions: state
                     .revisions
@@ -1657,6 +1721,25 @@ pub(crate) mod tests {
             "ready"
         );
     }
+
+    #[test]
+    fn legacy_capture_context_enters_the_common_metadata_contract() {
+        let repository = MockRepository::default();
+        let service = CaptureService::new(repository.clone(), MockAssets::default(), FixedClock);
+        let mut command = text("fixture", "hello");
+        command.context = Some("Saved / Reading".to_owned());
+
+        service.capture_text(command).unwrap();
+
+        assert_eq!(
+            repository.state.lock().unwrap().items[0]
+                .common_metadata
+                .context
+                .as_deref(),
+            Some("Saved / Reading")
+        );
+    }
+
     #[test]
     fn identical_reimport_is_linked_not_suppressed() {
         let repository = MockRepository::default();
@@ -1801,6 +1884,8 @@ pub(crate) mod tests {
         let service = CaptureService::new(repository.clone(), MockAssets::default(), FixedClock);
         let payload = "candidate body";
         let result = service.capture_candidate(CandidateCaptureCommand {
+            collection_session_id: None,
+            candidate_id: None,
             route_evidence: Some(crate::RouteEvidenceCommand {
                 route_id: SourceRouteId("source.feishu".to_owned()),
                 authorization_id: "fixture-auth".to_owned(),
@@ -1824,6 +1909,7 @@ pub(crate) mod tests {
                 },
                 context: None,
                 native_id: Some("chat-a".to_owned()),
+                common_metadata: CommonSourceMetadata::default(),
             },
             assets: Vec::new(),
         });
@@ -1837,6 +1923,8 @@ pub(crate) mod tests {
         let service = CaptureService::new(repository.clone(), MockAssets::default(), FixedClock);
         let payload = "Example bookmark\nhttps://example.test/bookmark";
         let result = service.capture_candidate(CandidateCaptureCommand {
+            collection_session_id: None,
+            candidate_id: None,
             route_evidence: None,
             candidate: CandidateEnvelope {
                 protocol_version: "1".to_owned(),
@@ -1850,6 +1938,7 @@ pub(crate) mod tests {
                 },
                 context: Some("Bookmarks / Test".to_owned()),
                 native_id: Some("bookmark-1".to_owned()),
+                common_metadata: CommonSourceMetadata::default(),
             },
             assets: Vec::new(),
         });
@@ -1863,6 +1952,8 @@ pub(crate) mod tests {
         let service = CaptureService::new(repository.clone(), MockAssets::default(), FixedClock);
         let payload = "WeChat article body";
         let result = service.capture_candidate(CandidateCaptureCommand {
+            collection_session_id: None,
+            candidate_id: None,
             route_evidence: None,
             candidate: CandidateEnvelope {
                 protocol_version: "1".to_owned(),
@@ -1876,6 +1967,7 @@ pub(crate) mod tests {
                 },
                 context: Some("WeChat / Favorites".to_owned()),
                 native_id: Some("article".to_owned()),
+                common_metadata: CommonSourceMetadata::default(),
             },
             assets: Vec::new(),
         });
@@ -1889,6 +1981,8 @@ pub(crate) mod tests {
         let service = CaptureService::new(repository.clone(), MockAssets::default(), FixedClock);
         let payload = "Example page";
         let result = service.capture_candidate(CandidateCaptureCommand {
+            collection_session_id: None,
+            candidate_id: None,
             route_evidence: None,
             candidate: CandidateEnvelope {
                 protocol_version: "1".to_owned(),
@@ -1902,6 +1996,7 @@ pub(crate) mod tests {
                 },
                 context: Some("visible page text".to_owned()),
                 native_id: None,
+                common_metadata: CommonSourceMetadata::default(),
             },
             assets: Vec::new(),
         });

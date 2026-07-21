@@ -12,8 +12,8 @@ use babata_application::{
 };
 use babata_domain::{
     AssetRole, CandidateEnvelope, CandidatePayload, CandidateSummary, CapabilityStatus,
-    CollectionSessionId, ContentType, Metadata, RouteCoverage, Sha256, SourceRouteDescriptor,
-    SourceRouteId,
+    CollectionSessionId, ContentType, Metadata, RouteCoverage, Sha256, SourceAccessState,
+    SourceAuthor, SourceLimitation, SourceRouteDescriptor, SourceRouteId, UtcTimestamp,
 };
 use serde_json::{Value, json};
 
@@ -117,7 +117,9 @@ impl SourceAdapterPort for WechatArticleOpenCliAdapter {
                     "this route retrieves one already selected public article URL".to_owned(),
                 ],
                 selection_capabilities: vec!["single".to_owned(), "known_url".to_owned()],
-            },
+                common_metadata: babata_domain::CommonSourceMetadata::default(),
+            }
+            .with_common_from_legacy(),
             prefetched: None,
         }])
     }
@@ -311,8 +313,32 @@ fn acquisition(
         })
         .to_string(),
     )?;
+    let mut common_metadata = candidate.effective_common_metadata();
+    common_metadata.title = Some(article.title.clone());
+    common_metadata.authors = article
+        .author
+        .as_ref()
+        .map(|author| SourceAuthor {
+            display_name: author.clone(),
+            native_id: None,
+            locator: None,
+        })
+        .into_iter()
+        .collect();
+    common_metadata.source_published_at = article
+        .publish_time
+        .as_deref()
+        .and_then(|value| UtcTimestamp::parse(value).ok());
+    if article.publish_time.is_some() && common_metadata.source_published_at.is_none() {
+        common_metadata.limitations.push(SourceLimitation {
+            code: "source_time_missing_year_or_timezone".to_owned(),
+            detail: "provider publish_time is retained verbatim because it lacks a reliable year or UTC timezone"
+                .to_owned(),
+        });
+    }
+    common_metadata.access_state = SourceAccessState::Accessible;
     Ok(AcquisitionOutcome::Found {
-        candidate: CandidateEnvelope {
+        candidate: Box::new(CandidateEnvelope {
             protocol_version: "1".to_owned(),
             route_id: SourceRouteId(ROUTE_ID.to_owned()),
             source_reference: url.to_owned(),
@@ -322,7 +348,8 @@ fn acquisition(
             payload: CandidatePayload::Text { text: payload },
             context: Some("WeChat / Favorites / Official account article".to_owned()),
             native_id: Some(native_id.to_owned()),
-        },
+            common_metadata,
+        }),
         assets: article.assets,
     })
 }
@@ -502,6 +529,7 @@ mod tests {
             attachment_available: Some(true),
             limitations: Vec::new(),
             selection_capabilities: vec!["single".to_owned()],
+            common_metadata: babata_domain::CommonSourceMetadata::default(),
         };
         let AcquisitionOutcome::Found { candidate, assets } = acquisition(
             &candidate,
@@ -529,5 +557,18 @@ mod tests {
                 .count(),
             1
         );
+        assert_eq!(candidate.common_metadata.title.as_deref(), Some("Title"));
+        assert_eq!(candidate.common_metadata.authors[0].display_name, "Account");
+        assert!(candidate.common_metadata.source_published_at.is_none());
+        assert!(
+            candidate
+                .common_metadata
+                .limitations
+                .iter()
+                .any(|limitation| { limitation.code == "source_time_missing_year_or_timezone" })
+        );
+        let provider_metadata: serde_json::Value =
+            serde_json::from_str(&candidate.metadata.to_json()).unwrap();
+        assert_eq!(provider_metadata["publish_time"], "6月2日 08:56");
     }
 }

@@ -164,7 +164,9 @@ impl SourceAdapterPort for XiaohongshuOpenCliAdapter {
                             "visible_set".to_owned(),
                             "saved_count".to_owned(),
                         ],
-                    },
+                        common_metadata: babata_domain::CommonSourceMetadata::default(),
+                    }
+                    .with_common_from_legacy(),
                     prefetched: None,
                 })
             })
@@ -297,7 +299,7 @@ fn acquisition_from_detail(
         .to_string(),
     )?;
     Ok(AcquisitionOutcome::Found {
-        candidate: CandidateEnvelope {
+        candidate: Box::new(CandidateEnvelope {
             protocol_version: "1".to_owned(),
             route_id: SourceRouteId(ROUTE_ID.to_owned()),
             source_reference: source_url.to_owned(),
@@ -307,7 +309,8 @@ fn acquisition_from_detail(
             payload: CandidatePayload::Text { text: payload },
             context: Some(candidate.hierarchy.join(" / ")),
             native_id: Some(note_id.to_owned()),
-        },
+            common_metadata: candidate.effective_common_metadata(),
+        }),
         assets,
     })
 }

@@ -152,7 +152,9 @@ impl SourceAdapterPort for BilibiliOpenCliAdapter {
                         "single".to_owned(), "visible_set".to_owned(),
                         "history_count".to_owned(), "media_download".to_owned(),
                     ],
-                },
+                    common_metadata: babata_domain::CommonSourceMetadata::default(),
+                }
+                .with_common_from_legacy(),
                 prefetched: None,
             })
         }).collect()
@@ -240,7 +242,7 @@ impl SourceAdapterPort for BilibiliOpenCliAdapter {
             .to_string(),
         )?;
         Ok(AcquisitionOutcome::Found {
-            candidate: CandidateEnvelope {
+            candidate: Box::new(CandidateEnvelope {
                 protocol_version: "1".to_owned(),
                 route_id: SourceRouteId(ROUTE_ID.to_owned()),
                 source_reference: candidate
@@ -253,7 +255,8 @@ impl SourceAdapterPort for BilibiliOpenCliAdapter {
                 payload: CandidatePayload::Text { text: payload },
                 context: Some("Bilibili / Watch history".to_owned()),
                 native_id: Some(bvid.to_owned()),
-            },
+                common_metadata: candidate.effective_common_metadata(),
+            }),
             assets,
         })
     }

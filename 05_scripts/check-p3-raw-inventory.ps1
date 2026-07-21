@@ -46,7 +46,10 @@ foreach ($migration in $p3Migrations) {
         throw "Missing P3 raw migration: $migration"
     }
 }
-$postP3RawExtensions = @('0005_asset_attachment_operations.sql')
+$postP3RawExtensions = @(
+    '0005_asset_attachment_operations.sql',
+    '0006_source_observations.sql'
+)
 foreach ($migration in $postP3RawExtensions) {
     if (-not (Test-Path -LiteralPath (Join-Path $repo "03_migrations/01_raw/$migration"))) {
         throw "Missing post-P3 raw migration: $migration"

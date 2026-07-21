@@ -71,6 +71,7 @@ opaque_id!(DerivativeId, "derivative_");
 opaque_id!(ViewId, "view_");
 opaque_id!(SnapshotId, "snapshot_");
 opaque_id!(CollectionSessionId, "session_");
+opaque_id!(SourceObservationId, "observation_");
 opaque_id!(KnowledgeId, "knowledge_");
 opaque_id!(MapNodeId, "mapnode_");
 opaque_id!(SemanticId, "semantic_");

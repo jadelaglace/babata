@@ -3,14 +3,16 @@ use std::collections::HashSet;
 use babata_domain::{
     CandidatePayload, CandidateSummary, CollectionItemState, CollectionItemStatus,
     CollectionSelection, CollectionSession, CollectionSessionId, CollectionSessionState, ItemId,
-    RawState, RecollectionOutcome, RecollectionState, SourceRouteId,
+    Metadata, RawState, RecollectionOutcome, RecollectionState, SourceAccessState,
+    SourceLimitation, SourceObservationId, SourceObservationKind, SourceRouteId,
 };
 
 use crate::{
     AcquisitionOutcome, ApplicationError, CancelCollectionCommand, CandidateCaptureCommand,
     CaptureService, RetryCollectionItemCommand, RouteEvidenceCommand, StartCollectionCommand,
     ports::{
-        AssetStorePort, ClockPort, CollectionRepositoryPort, RawRepositoryPort, SourceAdapterPort,
+        AssetStorePort, ClockPort, CollectionRepositoryPort, NewSourceObservation,
+        RawRepositoryPort, SourceAdapterPort,
     },
 };
 
@@ -207,6 +209,7 @@ where
             .cancel_session(&command.session_id, &command.reason, &self.clock.now())
     }
 
+    #[allow(clippy::too_many_lines)]
     pub fn recollect(&self, item_id: &ItemId) -> Result<RecollectionOutcome, ApplicationError> {
         let (session_id, candidate_id) = self
             .repository
@@ -214,7 +217,7 @@ where
             .ok_or_else(|| ApplicationError::NotFound(format!("collected item: {item_id}")))?;
         let session = self.session(&session_id)?;
         let adapter = self.adapter(&session.route_id)?;
-        let (candidate, prefetched) = self
+        let (summary, prefetched) = self
             .repository
             .candidate(&session_id, &candidate_id)?
             .ok_or_else(|| ApplicationError::NotFound(format!("candidate: {candidate_id}")))?;
@@ -233,10 +236,10 @@ where
                 ApplicationError::Integrity("collected item has no ready revision".to_owned())
             })?;
         let checked_at = self.clock.now();
-        let outcome =
-            match adapter.collect(&candidate, prefetched.as_ref(), requested_attachments)? {
+        let (outcome, observation) =
+            match adapter.collect(&summary, prefetched.as_ref(), requested_attachments)? {
                 AcquisitionOutcome::Found { candidate, assets } => {
-                    let envelope = candidate;
+                    let envelope = *candidate;
                     let CandidatePayload::Text { ref text } = envelope.payload;
                     let hash = babata_domain::Sha256::of_bytes(text.as_bytes());
                     let content_unchanged = match (
@@ -247,46 +250,81 @@ where
                         _ => previous.text_sha256.as_deref() == Some(hash.as_str()),
                     };
                     if content_unchanged {
-                        RecollectionOutcome {
+                        let mut common_metadata = envelope.common_metadata.clone();
+                        common_metadata.access_state = SourceAccessState::Accessible;
+                        let outcome = RecollectionOutcome {
                             item_id: item_id.clone(),
                             state: RecollectionState::Unchanged,
                             previous_revision_id: previous.revision_id.clone(),
                             new_revision_id: None,
                             reason: None,
-                            checked_at,
-                        }
-                    } else {
-                        let capture =
-                            self.capture_candidate(&session, adapter, envelope, assets)?;
-                        RecollectionOutcome {
+                            checked_at: checked_at.clone(),
+                        };
+                        let observation = NewSourceObservation {
+                            id: SourceObservationId::new(),
                             item_id: item_id.clone(),
-                            state: RecollectionState::Changed,
-                            previous_revision_id: previous.revision_id.clone(),
-                            new_revision_id: Some(capture.revision_id),
+                            revision_id: previous.revision_id.clone(),
+                            capture_operation_id: None,
+                            collection_session_id: Some(session_id.clone()),
+                            candidate_id: Some(candidate_id.clone()),
+                            kind: SourceObservationKind::Recollection,
+                            recollection_state: Some(RecollectionState::Unchanged),
+                            source_native_id: envelope.native_id,
+                            source_locator: Some(envelope.source_reference),
+                            context: envelope.context,
+                            common_metadata,
+                            provider_metadata: envelope.metadata,
                             reason: None,
-                            checked_at,
-                        }
+                            observed_at: checked_at,
+                        };
+                        (outcome, Some(observation))
+                    } else {
+                        let capture = self.capture_candidate(
+                            &session,
+                            &candidate_id,
+                            adapter,
+                            envelope,
+                            assets,
+                        )?;
+                        (
+                            RecollectionOutcome {
+                                item_id: item_id.clone(),
+                                state: RecollectionState::Changed,
+                                previous_revision_id: previous.revision_id.clone(),
+                                new_revision_id: Some(capture.revision_id),
+                                reason: None,
+                                checked_at,
+                            },
+                            None,
+                        )
                     }
                 }
                 AcquisitionOutcome::Inaccessible { reason }
-                | AcquisitionOutcome::Skipped { reason } => RecollectionOutcome {
-                    item_id: item_id.clone(),
-                    state: RecollectionState::Inaccessible,
-                    previous_revision_id: previous.revision_id.clone(),
-                    new_revision_id: None,
-                    reason: Some(reason),
+                | AcquisitionOutcome::Skipped { reason } => recollection_without_content(
+                    item_id,
+                    &previous.revision_id,
+                    &session_id,
+                    &candidate_id,
+                    &summary,
+                    RecollectionState::Inaccessible,
+                    SourceAccessState::Inaccessible,
+                    reason,
                     checked_at,
-                },
-                AcquisitionOutcome::Removed { reason } => RecollectionOutcome {
-                    item_id: item_id.clone(),
-                    state: RecollectionState::Removed,
-                    previous_revision_id: previous.revision_id.clone(),
-                    new_revision_id: None,
-                    reason: Some(reason),
+                ),
+                AcquisitionOutcome::Removed { reason } => recollection_without_content(
+                    item_id,
+                    &previous.revision_id,
+                    &session_id,
+                    &candidate_id,
+                    &summary,
+                    RecollectionState::Removed,
+                    SourceAccessState::Removed,
+                    reason,
                     checked_at,
-                },
+                ),
             };
-        self.repository.record_recollection(&outcome)?;
+        self.repository
+            .record_recollection(&outcome, observation.as_ref())?;
         Ok(outcome)
     }
 
@@ -335,7 +373,7 @@ where
             };
         match acquisition {
             AcquisitionOutcome::Found { candidate, assets } => {
-                match self.capture_candidate(&session, adapter, candidate, assets) {
+                match self.capture_candidate(&session, candidate_id, adapter, *candidate, assets) {
                     Ok(outcome) => self.repository.transition_item(
                         session_id,
                         candidate_id,
@@ -390,6 +428,7 @@ where
     fn capture_candidate(
         &self,
         session: &CollectionSession,
+        candidate_id: &str,
         adapter: &dyn SourceAdapterPort,
         candidate: babata_domain::CandidateEnvelope,
         assets: Vec<crate::CaptureImportAsset>,
@@ -409,6 +448,8 @@ where
             }),
             candidate,
             assets,
+            collection_session_id: Some(session.session_id.clone()),
+            candidate_id: Some(candidate_id.to_owned()),
         })
     }
 
@@ -444,6 +485,57 @@ where
             .map(Box::as_ref)
             .ok_or_else(|| ApplicationError::capability_unavailable(route_id.0.clone(), "P4"))
     }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn recollection_without_content(
+    item_id: &ItemId,
+    revision_id: &babata_domain::RevisionId,
+    session_id: &CollectionSessionId,
+    candidate_id: &str,
+    summary: &CandidateSummary,
+    state: RecollectionState,
+    access_state: SourceAccessState,
+    reason: String,
+    checked_at: babata_domain::UtcTimestamp,
+) -> (RecollectionOutcome, Option<NewSourceObservation>) {
+    let mut common_metadata = summary.effective_common_metadata();
+    common_metadata.access_state = access_state;
+    common_metadata.limitations.push(SourceLimitation {
+        code: match state {
+            RecollectionState::Inaccessible => "recollection_inaccessible",
+            RecollectionState::Removed => "recollection_removed",
+            RecollectionState::Changed | RecollectionState::Unchanged => "recollection_state",
+        }
+        .to_owned(),
+        detail: reason.clone(),
+    });
+    let outcome = RecollectionOutcome {
+        item_id: item_id.clone(),
+        state,
+        previous_revision_id: revision_id.clone(),
+        new_revision_id: None,
+        reason: Some(reason.clone()),
+        checked_at: checked_at.clone(),
+    };
+    let observation = NewSourceObservation {
+        id: SourceObservationId::new(),
+        item_id: item_id.clone(),
+        revision_id: revision_id.clone(),
+        capture_operation_id: None,
+        collection_session_id: Some(session_id.clone()),
+        candidate_id: Some(candidate_id.to_owned()),
+        kind: SourceObservationKind::Recollection,
+        recollection_state: Some(state),
+        source_native_id: summary.source_native_id.clone(),
+        source_locator: summary.source_location.clone(),
+        context: common_metadata.context.clone(),
+        common_metadata,
+        provider_metadata: Metadata::empty(),
+        reason: Some(reason),
+        observed_at: checked_at,
+    };
+    (outcome, Some(observation))
 }
 
 fn content_fingerprint(metadata: &babata_domain::Metadata) -> Option<String> {

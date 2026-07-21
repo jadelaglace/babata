@@ -12,8 +12,8 @@ use babata_application::{
 };
 use babata_domain::{
     AssetRole, CandidateEnvelope, CandidatePayload, CandidateSummary, CapabilityStatus,
-    CollectionSessionId, ContentType, Metadata, RouteCoverage, Sha256, SourceRouteDescriptor,
-    SourceRouteId, UtcTimestamp,
+    CollectionSessionId, CommonSourceMetadata, ContentType, Metadata, RouteCoverage, Sha256,
+    SourceAccessState, SourceMediaEntry, SourceRouteDescriptor, SourceRouteId, UtcTimestamp,
 };
 use quick_xml::{Reader, events::Event};
 use serde_json::Value;
@@ -196,9 +196,12 @@ impl SourceAdapterPort for FeishuCliAdapter {
         } else {
             Vec::new()
         };
+        let mut provider_document_metadata = document.clone();
+        provider_document_metadata.remove("content");
+        let common_metadata = common_metadata_for_document(candidate, document, &media)?;
         let metadata = Metadata::parse(
             &serde_json::json!({
-                "title": candidate.title,
+                "title": common_metadata.title,
                 "hierarchy": candidate.hierarchy,
                 "feishu_revision_id": revision,
                 "contains_media": !media.is_empty(),
@@ -207,11 +210,12 @@ impl SourceAdapterPort for FeishuCliAdapter {
                 "downloaded_asset_count": assets.len(),
                 "content_fingerprint": content_fingerprint.as_str(),
                 "adapter_version": ADAPTER_VERSION,
+                "provider_document_metadata": provider_document_metadata,
             })
             .to_string(),
         )?;
         Ok(AcquisitionOutcome::Found {
-            candidate: CandidateEnvelope {
+            candidate: Box::new(CandidateEnvelope {
                 protocol_version: "1".to_owned(),
                 route_id: SourceRouteId(ROUTE_ID.to_owned()),
                 source_reference: source.to_owned(),
@@ -221,7 +225,8 @@ impl SourceAdapterPort for FeishuCliAdapter {
                 payload: CandidatePayload::Text { text },
                 context: Some(candidate.hierarchy.join(" / ")),
                 native_id,
-            },
+                common_metadata,
+            }),
             assets,
         })
     }
@@ -246,6 +251,50 @@ enum FeishuMediaKind {
     Image,
     File,
     Whiteboard,
+}
+
+impl FeishuMediaKind {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Image => "image",
+            Self::File => "file",
+            Self::Whiteboard => "whiteboard",
+        }
+    }
+}
+
+fn common_metadata_for_document(
+    candidate: &CandidateSummary,
+    document: &serde_json::Map<String, Value>,
+    media: &[FeishuMediaReference],
+) -> Result<CommonSourceMetadata, ApplicationError> {
+    let mut common = candidate.effective_common_metadata();
+    if let Some(title) = document
+        .get("title")
+        .and_then(Value::as_str)
+        .filter(|value| !value.trim().is_empty())
+    {
+        common.title = Some(title.to_owned());
+    }
+    if let Some(updated_at) = document.get("update_time_iso").and_then(Value::as_str) {
+        common.source_updated_at = Some(to_utc_timestamp(updated_at)?);
+    }
+    if let Some(published_at) = document.get("create_time_iso").and_then(Value::as_str) {
+        common.source_published_at = Some(to_utc_timestamp(published_at)?);
+    }
+    common.access_state = SourceAccessState::Accessible;
+    common.media.entries = media
+        .iter()
+        .map(|reference| SourceMediaEntry {
+            kind: reference.kind.as_str().to_owned(),
+            media_type: None,
+            duration_ms: None,
+            width: None,
+            height: None,
+            page_count: None,
+        })
+        .collect();
+    Ok(common)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
@@ -442,7 +491,9 @@ fn discover_wiki(
                             .to_owned(),
                     ],
                     selection_capabilities: vec!["single".to_owned(), "visible_set".to_owned()],
-                },
+                    common_metadata: CommonSourceMetadata::default(),
+                }
+                .with_common_from_legacy(),
                 prefetched: None,
             })
         })
@@ -533,7 +584,9 @@ fn discover_drive(
                         "visible_set".to_owned(),
                         "explicit_search_scope".to_owned(),
                     ],
-                },
+                    common_metadata: CommonSourceMetadata::default(),
+                }
+                .with_common_from_legacy(),
                 prefetched: None,
             });
         }
@@ -579,7 +632,9 @@ fn discover_document(
                     .to_owned(),
             ],
             selection_capabilities: vec!["single".to_owned()],
-        },
+            common_metadata: CommonSourceMetadata::default(),
+        }
+        .with_common_from_legacy(),
         prefetched: None,
     }])
 }
@@ -741,6 +796,58 @@ mod tests {
                 .as_str(),
             "2026-07-17T13:09:42Z"
         );
+    }
+
+    #[test]
+    fn explicit_document_discovery_emits_typed_hierarchy_and_limitations() {
+        let candidates = discover_document(
+            &CollectionSessionId::new(),
+            "https://my.feishu.cn/docx/document-token",
+        )
+        .unwrap();
+        let common = &candidates[0].summary.common_metadata;
+        assert_eq!(common.hierarchy[0].name, "Explicit Feishu document");
+        assert_eq!(common.limitations[0].code, "provider_reported");
+        assert_eq!(common.context.as_deref(), Some("Explicit Feishu document"));
+    }
+
+    #[test]
+    fn collected_document_can_correct_title_and_supply_typed_source_times() {
+        let candidate = discover_document(
+            &CollectionSessionId::new(),
+            "https://my.feishu.cn/docx/document-token",
+        )
+        .unwrap()
+        .remove(0)
+        .summary;
+        let document = serde_json::json!({
+            "title": "Canonical Feishu title",
+            "create_time_iso": "2026-07-17T20:00:00+08:00",
+            "update_time_iso": "2026-07-17T21:09:42+08:00"
+        });
+        let common = common_metadata_for_document(
+            &candidate,
+            document.as_object().unwrap(),
+            &[FeishuMediaReference {
+                kind: FeishuMediaKind::Image,
+                token: "image-token".to_owned(),
+                name: None,
+            }],
+        )
+        .unwrap();
+        assert_eq!(common.title.as_deref(), Some("Canonical Feishu title"));
+        assert_eq!(
+            common
+                .source_published_at
+                .as_ref()
+                .map(UtcTimestamp::as_str),
+            Some("2026-07-17T12:00:00Z")
+        );
+        assert_eq!(
+            common.source_updated_at.as_ref().map(UtcTimestamp::as_str),
+            Some("2026-07-17T13:09:42Z")
+        );
+        assert_eq!(common.media.entries[0].kind, "image");
     }
 
     #[test]

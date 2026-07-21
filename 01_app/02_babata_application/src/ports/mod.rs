@@ -32,7 +32,8 @@ pub use process_provider::{
 };
 pub use raw_repository::{
     NewAsset, NewAssetAttachmentOperation, NewCaptureOperation, NewCollection, NewItem,
-    NewRelation, NewRevision, NewRouteEvidence, NewSource, PersistGraph, RawRepositoryPort,
+    NewRelation, NewRevision, NewRouteEvidence, NewSource, NewSourceObservation, PersistGraph,
+    RawRepositoryPort,
 };
 pub use read_projection::ReadProjectionPort;
 pub use semantic_digest_provider::{

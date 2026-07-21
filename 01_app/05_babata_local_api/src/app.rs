@@ -554,6 +554,7 @@ mod tests {
             payload: CandidatePayload::Text { text },
             context: Some("visible test page".to_owned()),
             native_id: None,
+            common_metadata: babata_domain::CommonSourceMetadata::default(),
         }
     }
 }

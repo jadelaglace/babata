@@ -1,7 +1,8 @@
 use babata_domain::{
-    AssetAttachmentId, AssetId, AssetRole, CollectionId, ContentType, ItemId, Metadata, RawState,
-    RelationId, RelationKind, RevisionId, RevisionKind, RouteCoverage, RouteEvidence, Sha256,
-    SourceId, SourceKind, UtcTimestamp,
+    AssetAttachmentId, AssetId, AssetRole, CollectionId, CollectionSessionId, CommonSourceMetadata,
+    ContentType, ItemId, Metadata, RawState, RecollectionState, RelationId, RelationKind,
+    RevisionId, RevisionKind, RouteCoverage, RouteEvidence, Sha256, SourceId, SourceKind,
+    SourceObservationId, SourceObservationKind, UtcTimestamp,
 };
 
 use crate::{ApplicationError, RecordDetail};
@@ -27,6 +28,26 @@ pub struct NewItem {
     pub source_updated_at: Option<UtcTimestamp>,
     pub first_captured_at: UtcTimestamp,
     pub metadata: Metadata,
+    pub common_metadata: CommonSourceMetadata,
+}
+
+#[derive(Debug, Clone)]
+pub struct NewSourceObservation {
+    pub id: SourceObservationId,
+    pub item_id: ItemId,
+    pub revision_id: RevisionId,
+    pub capture_operation_id: Option<String>,
+    pub collection_session_id: Option<CollectionSessionId>,
+    pub candidate_id: Option<String>,
+    pub kind: SourceObservationKind,
+    pub recollection_state: Option<RecollectionState>,
+    pub source_native_id: Option<String>,
+    pub source_locator: Option<String>,
+    pub context: Option<String>,
+    pub common_metadata: CommonSourceMetadata,
+    pub provider_metadata: Metadata,
+    pub reason: Option<String>,
+    pub observed_at: UtcTimestamp,
 }
 
 #[derive(Debug, Clone)]
@@ -109,6 +130,7 @@ pub struct PersistGraph {
     pub revision: NewRevision,
     pub assets: Vec<NewAsset>,
     pub relations: Vec<NewRelation>,
+    pub observation: Option<NewSourceObservation>,
 }
 
 #[derive(Debug, Clone)]

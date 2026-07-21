@@ -20,6 +20,10 @@ const MIGRATIONS: &[(&str, &str)] = &[
         "0004_reference_bindings.sql",
         include_str!("../../../../03_migrations/02_collection/0004_reference_bindings.sql"),
     ),
+    (
+        "0005_candidate_common_metadata.sql",
+        include_str!("../../../../03_migrations/02_collection/0005_candidate_common_metadata.sql"),
+    ),
 ];
 
 pub fn migrate_collection(connection: &Connection) -> Result<(), ApplicationError> {
@@ -154,7 +158,7 @@ mod tests {
                     |row| row.get::<_, i64>(0),
                 )
                 .unwrap(),
-            4
+            5
         );
     }
 
@@ -163,12 +167,124 @@ mod tests {
         let connection = Connection::open_in_memory().unwrap();
         crate::sqlite::migrate_raw(&connection).unwrap();
         migrate_collection(&connection).unwrap();
-        connection.execute("INSERT INTO collection_schema_migrations (version, name, applied_at, checksum_sha256) VALUES (5, 'future.sql', '2026-01-01T00:00:00Z', 'future')", []).unwrap();
+        connection.execute("INSERT INTO collection_schema_migrations (version, name, applied_at, checksum_sha256) VALUES (6, 'future.sql', '2026-01-01T00:00:00Z', 'future')", []).unwrap();
         assert!(
             migrate_collection(&connection)
                 .unwrap_err()
                 .to_string()
                 .contains("newer than this binary supports")
+        );
+    }
+
+    #[test]
+    fn collection_v4_to_v5_preserves_candidates_and_backfills_common_metadata() {
+        let connection = Connection::open_in_memory().unwrap();
+        crate::sqlite::migrate_raw(&connection).unwrap();
+        connection
+            .execute_batch(
+                "CREATE TABLE collection_schema_migrations (
+                    version INTEGER PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    applied_at TEXT NOT NULL,
+                    checksum_sha256 TEXT NOT NULL
+                );",
+            )
+            .unwrap();
+        for (index, (name, sql)) in MIGRATIONS.iter().take(4).enumerate() {
+            connection.execute_batch(sql).unwrap();
+            connection
+                .execute(
+                    "INSERT INTO collection_schema_migrations
+                     (version, name, applied_at, checksum_sha256)
+                     VALUES (?1, ?2, '2026-07-21T00:00:00Z', ?3)",
+                    params![
+                        (index + 1) as i64,
+                        name,
+                        super::super::migration_checksum(sql)
+                    ],
+                )
+                .unwrap();
+        }
+        connection
+            .execute_batch(
+                "INSERT INTO collection_sessions
+                    (session_id, route_id, source_reference, scope_description,
+                     authorisation_id, state, created_at, updated_at)
+                 VALUES ('session_existing', 'source.fixture', 'fixture', 'fixture scope',
+                         'authorised', 'awaiting_selection', '2026-07-21T00:00:00Z',
+                         '2026-07-21T00:00:00Z');
+                 INSERT INTO collection_candidates
+                    (session_id, candidate_id, route_id, title, hierarchy_json,
+                     content_type, limitations_json, selection_capabilities_json)
+                 VALUES ('session_existing', 'candidate_existing', 'source.fixture',
+                         'Existing title', '[\"Folder\"]', 'document', '[]', '[\"single\"]');",
+            )
+            .unwrap();
+
+        migrate_collection(&connection).unwrap();
+        migrate_collection(&connection).unwrap();
+
+        assert_eq!(
+            connection
+                .query_row("SELECT COUNT(*) FROM collection_candidates", [], |row| {
+                    row.get::<_, i64>(0)
+                })
+                .unwrap(),
+            1
+        );
+        assert_eq!(
+            connection
+                .query_row(
+                    "SELECT title FROM collection_candidates
+                     WHERE candidate_id = 'candidate_existing'",
+                    [],
+                    |row| row.get::<_, String>(0),
+                )
+                .unwrap(),
+            "Existing title"
+        );
+        assert_eq!(
+            connection
+                .query_row(
+                    "SELECT hierarchy_json FROM collection_candidates
+                     WHERE candidate_id = 'candidate_existing'",
+                    [],
+                    |row| row.get::<_, String>(0),
+                )
+                .unwrap(),
+            "[\"Folder\"]"
+        );
+        let common: String = connection
+            .query_row(
+                "SELECT common_metadata_json FROM collection_candidates
+                 WHERE candidate_id = 'candidate_existing'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(&common).unwrap()["schema"],
+            "babata.c0.common/v1"
+        );
+    }
+
+    #[test]
+    fn changed_collection_migration_checksum_is_rejected() {
+        let connection = Connection::open_in_memory().unwrap();
+        crate::sqlite::migrate_raw(&connection).unwrap();
+        migrate_collection(&connection).unwrap();
+        connection
+            .execute(
+                "UPDATE collection_schema_migrations
+                 SET checksum_sha256 = 'tampered' WHERE version = 5",
+                [],
+            )
+            .unwrap();
+        assert!(
+            migrate_collection(&connection)
+                .unwrap_err()
+                .to_string()
+                .contains("migration checksum changed")
         );
     }
 

@@ -131,7 +131,9 @@ impl SourceAdapterPort for BrowserCandidateAdapter {
                             "visible_set".to_owned(),
                             "explicit_browser_scope".to_owned(),
                         ],
-                    },
+                        common_metadata: babata_domain::CommonSourceMetadata::default(),
+                    }
+                    .with_common_from_legacy(),
                     prefetched: Some(candidate.clone()),
                 })
             })
@@ -155,7 +157,7 @@ impl SourceAdapterPort for BrowserCandidateAdapter {
             })?;
         validate_browser_candidate(envelope, &self.route_id)?;
         Ok(AcquisitionOutcome::Found {
-            candidate: envelope.clone(),
+            candidate: Box::new(envelope.clone()),
             assets: Vec::new(),
         })
     }
