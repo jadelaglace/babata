@@ -22,15 +22,23 @@ pub use collection::{
 pub use entities::{AssetRef, RawItem, RawRevision, Relation, SourceRef};
 pub use error::DomainError;
 pub use ids::{
-    AssetId, CollectionId, CollectionSessionId, DerivativeId, ItemId, JobId, KnowledgeId, OutputId,
-    RelationId, RevisionId, RunId, SnapshotId, SourceId, SublibraryId, ViewId,
+    AssetAttachmentId, AssetId, CollectionId, CollectionSessionId, DenseExpressionId, DerivativeId,
+    ItemId, JobId, KnowledgeId, MapEdgeEventId, MapNodeEventId, MapNodeId, MapTagEventId, OutputId,
+    RelationId, RevisionId, RunId, ScoreId, ScoreProfileId, SemanticId, SemanticMapEventId,
+    SemanticRelationId, SnapshotId, SourceId, SublibraryId, SuggestionId, SuggestionReviewId,
+    TagId, ViewId,
 };
 pub use kinds::{
     AssetRole, ContentType, DerivativeKind, ProcessingState, RawState, RelationKind, RevisionKind,
     SourceKind,
 };
 pub use knowledge::{
-    KnowledgeKind, KnowledgeRealm, ModelSuggestion, SuggestionDecision, SuggestionDecisionKind,
+    CandidateRelation, DenseExpressionCandidate, DenseExpressionKind, DerivativeEvidence,
+    FirstPartySemanticDefinition, FirstPartySemanticRelation, InsightMaturity, KnowledgeKind,
+    KnowledgeRealm, LogScale, MapNodeCandidate, MapNodeLevel, MapNodeLifecycle,
+    RelevanceComponents, RelevanceTargetKind, SEMANTIC_CANDIDATE_SCHEMA_V1, ScoreProfile,
+    SemanticCandidate, SemanticCandidateBody, SemanticCandidatePackage, SemanticPayload,
+    SuggestionDecision, SuggestionDecisionKind,
 };
 pub use ops::{BackupClass, HealthState, RestoreState, SnapshotRef};
 pub use output::{OutputBuild, OutputKind, OutputManifestRef, OutputScope, OutputState};

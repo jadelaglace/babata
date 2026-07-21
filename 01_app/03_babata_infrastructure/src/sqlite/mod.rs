@@ -1,6 +1,7 @@
 pub mod derived_migrate;
 pub mod derived_repository;
 pub mod job_repository;
+mod knowledge_core_repository;
 mod migrate;
 mod raw_repository;
 pub mod read_projection;
@@ -51,6 +52,8 @@ pub struct RawStatus {
     pub quarantined_revisions: usize,
     pub pending_operations: usize,
     pub quarantined_operations: usize,
+    pub pending_asset_attachments: usize,
+    pub quarantined_asset_attachments: usize,
 }
 
 pub(crate) fn open_connection(
@@ -150,6 +153,8 @@ pub fn raw_status(
             quarantined_revisions: 0,
             pending_operations: 0,
             quarantined_operations: 0,
+            pending_asset_attachments: 0,
+            quarantined_asset_attachments: 0,
         });
     }
     let connection = open_connection(&database, busy_timeout_ms)?;
@@ -181,6 +186,36 @@ pub fn raw_status(
             |row| row.get::<_, i64>(0),
         )
         .unwrap_or(0) as usize;
+    let has_asset_attachments = connection
+        .query_row(
+            "SELECT 1 FROM sqlite_master
+             WHERE type = 'table' AND name = 'asset_attachment_operations'",
+            [],
+            |_| Ok(()),
+        )
+        .is_ok();
+    let pending_asset_attachments = if has_asset_attachments {
+        connection
+            .query_row(
+                "SELECT COUNT(*) FROM asset_attachment_operations WHERE state = 'pending'",
+                [],
+                |row| row.get::<_, i64>(0),
+            )
+            .unwrap_or(0) as usize
+    } else {
+        0
+    };
+    let quarantined_asset_attachments = if has_asset_attachments {
+        connection
+            .query_row(
+                "SELECT COUNT(*) FROM asset_attachment_operations WHERE state = 'quarantined'",
+                [],
+                |row| row.get::<_, i64>(0),
+            )
+            .unwrap_or(0) as usize
+    } else {
+        0
+    };
     Ok(RawStatus {
         reachable: true,
         schema_version,
@@ -189,6 +224,8 @@ pub fn raw_status(
         quarantined_revisions,
         pending_operations,
         quarantined_operations,
+        pending_asset_attachments,
+        quarantined_asset_attachments,
     })
 }
 
@@ -311,14 +348,44 @@ mod tests {
         assert_eq!(before.pending_journals, 1);
         assert_eq!(before.orphans, 1);
         super::open_raw_database(&paths, 100).unwrap();
+        let connection = rusqlite::Connection::open(paths.raw_database()).unwrap();
+        connection
+            .execute_batch(
+                "INSERT INTO sources
+                    (source_id, source_kind, provider, created_at)
+                 VALUES ('source_status', 'external', 'fixture', '2026-01-01T00:00:00Z');
+                 INSERT INTO items
+                    (item_id, source_id, content_type, first_captured_at, created_at)
+                 VALUES ('item_status', 'source_status', 'text',
+                         '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z');
+                 INSERT INTO revisions
+                    (revision_id, item_id, revision_kind, ordinal, captured_at,
+                     state, created_at)
+                 VALUES ('revision_status', 'item_status', 'capture', 1,
+                         '2026-01-01T00:00:00Z', 'ready', '2026-01-01T00:00:00Z');
+                 INSERT INTO asset_attachment_operations
+                    (operation_id, revision_id, reason, state, started_at)
+                 VALUES ('asset_attachment_pending', 'revision_status', 'pending fixture',
+                         'pending', '2026-01-01T00:00:00Z');
+                 INSERT INTO asset_attachment_operations
+                    (operation_id, revision_id, reason, state, failure_code,
+                     started_at, completed_at)
+                 VALUES ('asset_attachment_quarantined', 'revision_status',
+                         'quarantined fixture', 'quarantined', 'io_failed',
+                         '2026-01-01T00:00:00Z', '2026-01-01T00:01:00Z');",
+            )
+            .unwrap();
+        drop(connection);
         let after = super::raw_status(&paths, 100).unwrap();
         assert!(after.reachable);
-        assert_eq!(after.schema_version, 4);
+        assert_eq!(after.schema_version, 5);
         assert_eq!(after.pending_journals, 1);
         assert_eq!(after.orphans, 1);
         assert_eq!(after.quarantined_revisions, 0);
         assert_eq!(after.pending_operations, 0);
         assert_eq!(after.quarantined_operations, 0);
+        assert_eq!(after.pending_asset_attachments, 1);
+        assert_eq!(after.quarantined_asset_attachments, 1);
     }
 
     #[test]
@@ -347,7 +414,7 @@ mod tests {
                     |row| row.get::<_, i64>(0)
                 )
                 .unwrap(),
-            2
+            5
         );
     }
 
@@ -387,5 +454,7 @@ mod tests {
         assert_eq!(status.schema_version, 3);
         assert_eq!(status.pending_operations, 0);
         assert_eq!(status.quarantined_operations, 0);
+        assert_eq!(status.pending_asset_attachments, 0);
+        assert_eq!(status.quarantined_asset_attachments, 0);
     }
 }

@@ -20,6 +20,10 @@ const MIGRATIONS: &[(&str, &str)] = &[
         "0004_capture_operations.sql",
         include_str!("../../../../03_migrations/01_raw/0004_capture_operations.sql"),
     ),
+    (
+        "0005_asset_attachment_operations.sql",
+        include_str!("../../../../03_migrations/01_raw/0005_asset_attachment_operations.sql"),
+    ),
 ];
 
 const INTEGRITY_MIGRATIONS: &[(&str, &str)] = &[(
@@ -36,6 +40,20 @@ const KNOWLEDGE_MIGRATIONS: &[(&str, &str)] = &[
         "0002_deprecate_manual_knowledge_loop.sql",
         include_str!(
             "../../../../03_migrations/05_knowledge/0002_deprecate_manual_knowledge_loop.sql"
+        ),
+    ),
+    (
+        "0003_p6_semantic_core.sql",
+        include_str!("../../../../03_migrations/05_knowledge/0003_p6_semantic_core.sql"),
+    ),
+    (
+        "0004_p6_map_evolution.sql",
+        include_str!("../../../../03_migrations/05_knowledge/0004_p6_map_evolution.sql"),
+    ),
+    (
+        "0005_lock_baseline_foundation_transition.sql",
+        include_str!(
+            "../../../../03_migrations/05_knowledge/0005_lock_baseline_foundation_transition.sql"
         ),
     ),
 ];
@@ -261,7 +279,7 @@ mod tests {
                 .query_row("SELECT COUNT(*) FROM schema_migrations", [], |row| row
                     .get::<_, i64>(0))
                 .unwrap(),
-            4
+            5
         );
         assert!(
             connection
@@ -286,7 +304,7 @@ mod tests {
                     0
                 ))
                 .unwrap(),
-            4
+            5
         );
     }
 
@@ -298,7 +316,7 @@ mod tests {
             .execute(
                 "INSERT INTO schema_migrations
                  (version, name, applied_at, checksum_sha256)
-                 VALUES (5, 'future.sql', '2026-01-01T00:00:00Z', 'future')",
+                 VALUES (6, 'future.sql', '2026-01-01T00:00:00Z', 'future')",
                 [],
             )
             .unwrap();
@@ -327,7 +345,87 @@ mod tests {
                     |row| row.get::<_, i64>(0)
                 )
                 .unwrap(),
-            2
+            5
+        );
+    }
+
+    #[test]
+    fn map_evolution_migration_backfills_history_and_locks_foundations() {
+        let connection = Connection::open_in_memory().unwrap();
+        connection
+            .pragma_update(None, "foreign_keys", "ON")
+            .unwrap();
+        migrate_raw(&connection).unwrap();
+        migrate_knowledge(&connection).unwrap();
+
+        assert_eq!(
+            connection
+                .query_row(
+                    "SELECT COUNT(*) FROM knowledge_map_node_events
+                     WHERE event_kind = 'created' AND provenance_kind = 'system'",
+                    [],
+                    |row| row.get::<_, i64>(0),
+                )
+                .unwrap(),
+            4
+        );
+        assert!(
+            connection
+                .execute(
+                    "UPDATE knowledge_map_nodes SET name = 'changed'
+                     WHERE map_node_id = 'mapnode_p6_time'",
+                    [],
+                )
+                .unwrap_err()
+                .to_string()
+                .contains("foundation nodes are immutable")
+        );
+        assert!(
+            connection
+                .execute(
+                    "INSERT INTO knowledge_map_nodes
+                     (map_node_id, map_version_id, node_level, canonical_key, name,
+                      provenance_kind, suggestion_id, created_at, lifecycle_state)
+                     VALUES ('mapnode_extra_foundation', 'map_version_p6_baseline', 'foundation',
+                             'foundation:extra', 'extra', 'first_party', NULL,
+                             '2026-07-21T00:00:00Z', 'active')",
+                    [],
+                )
+                .unwrap_err()
+                .to_string()
+                .contains("foundation nodes are fixed")
+        );
+
+        connection
+            .execute(
+                "INSERT INTO worldview_map_versions
+                 (map_version_id, ordinal, rationale, author_kind, author, created_at)
+                 VALUES ('map_version_transition_probe', 2, 'negative migration test',
+                         'system', 'test', '2026-07-21T00:00:00Z')",
+                [],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO knowledge_map_nodes
+                 (map_node_id, map_version_id, node_level, canonical_key, name,
+                  provenance_kind, suggestion_id, created_at, lifecycle_state)
+                 VALUES ('mapnode_transition_probe', 'map_version_transition_probe',
+                         'foundation', 'foundation:transition-probe', 'transition probe',
+                         'system', NULL, '2026-07-21T00:00:00Z', 'active')",
+                [],
+            )
+            .unwrap();
+        assert!(
+            connection
+                .execute(
+                    "UPDATE knowledge_map_nodes SET map_version_id = 'map_version_p6_baseline'
+                     WHERE map_node_id = 'mapnode_transition_probe'",
+                    [],
+                )
+                .unwrap_err()
+                .to_string()
+                .contains("foundation nodes are immutable")
         );
     }
 
@@ -416,6 +514,57 @@ mod tests {
         assert!(
             connection
                 .execute("INSERT INTO capture_operations (operation_id, item_id, revision_id, state, started_at) VALUES ('operation_bad', 'item_b', 'revision_a', 'ready', '2026-01-01T00:00:00Z')", [])
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn asset_attachment_trigger_rejects_cross_revision_membership() {
+        let connection = Connection::open_in_memory().unwrap();
+        connection
+            .pragma_update(None, "foreign_keys", "ON")
+            .unwrap();
+        migrate_raw(&connection).unwrap();
+        connection
+            .execute_batch(
+                "INSERT INTO sources
+                    (source_id, source_kind, provider, created_at)
+                 VALUES ('source_a', 'external', 'fixture', '2026-01-01T00:00:00Z');
+                 INSERT INTO items
+                    (item_id, source_id, content_type, first_captured_at, created_at)
+                 VALUES
+                    ('item_a', 'source_a', 'text', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'),
+                    ('item_b', 'source_a', 'text', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z');
+                 INSERT INTO revisions
+                    (revision_id, item_id, revision_kind, ordinal, captured_at,
+                     state, created_at)
+                 VALUES
+                    ('revision_a', 'item_a', 'capture', 1, '2026-01-01T00:00:00Z',
+                     'ready', '2026-01-01T00:00:00Z'),
+                    ('revision_b', 'item_b', 'capture', 1, '2026-01-01T00:00:00Z',
+                     'ready', '2026-01-01T00:00:00Z');
+                 INSERT INTO assets
+                    (asset_id, revision_id, asset_role, logical_path, sha256,
+                     byte_size, state, created_at)
+                 VALUES
+                    ('asset_b', 'revision_b', 'original', '01_raw/asset-b',
+                     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+                     1, 'pending', '2026-01-01T00:00:00Z');
+                 INSERT INTO asset_attachment_operations
+                    (operation_id, revision_id, reason, state, started_at)
+                 VALUES
+                    ('asset_attachment_a', 'revision_a', 'fixture', 'pending',
+                     '2026-01-01T00:00:00Z');",
+            )
+            .unwrap();
+
+        assert!(
+            connection
+                .execute(
+                    "INSERT INTO asset_attachment_members (operation_id, asset_id)
+                     VALUES ('asset_attachment_a', 'asset_b')",
+                    [],
+                )
                 .is_err()
         );
     }

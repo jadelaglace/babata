@@ -6,7 +6,7 @@
 
 ## 1. 当前状态
 
-**更新时间：2026-07-20**
+**更新时间：2026-07-21**
 
 ```text
 P0  冻结旧版本                                    已完成
@@ -15,7 +15,7 @@ P2  全系统模块、目录、代码与工具骨架                 已完成
 P3  C0 原始资料与第一方版本底座                     已完成
 P4  飞书与浏览器首批真实收集路径                     已完成
 P5  C1 多模态清洗与百炼处理                         已完成
-P6  核心沉淀、检索、子库与输出                      未开始
+P6  核心沉淀、检索、子库与输出                      进行中
 P7  扩展来源、正式 Skill 与受控 Agent               未开始
 P8  备份、恢复、运维与长期加固                      未开始
 ```
@@ -119,7 +119,7 @@ P8  备份、恢复、运维与长期加固                      未开始
              -> 只形成已知公众号 URL 的重复取得；收藏自动遍历和聊天未形成长期能力
 
 P5 已收尾，下一阶段
-  P6         核心沉淀、检索、子库与输出（尚未开始）
+  P6         核心沉淀、检索、子库与输出（进行中）
 
 转入 P7 扩展来源，不是 P4 完成证据
   微信聊天/收藏其他类型（官方 PC 微信 UI，后续 Agent 带着走）
@@ -510,8 +510,9 @@ P5 主要交付 AC-03 的 C0/C1 子责任、AC-04、TC-03A 和 TC-04。P6 交付
 ## 9. P6：核心沉淀、检索、子库与输出
 
 2026-07-20 已从 1.0 原始归档恢复 P6 的“个人知识宇宙”产品基线，并由
-`09_P6_PERSONAL_KNOWLEDGE_UNIVERSE_BLUEPRINT.md` 集中说明。P6.1 已开始首个纵向切片；
-P6 整体和 P6.1 均未完成，不能把首批命令或数据库表当作阶段验收。
+`09_P6_PERSONAL_KNOWLEDGE_UNIVERSE_BLUEPRINT.md` 集中说明。P6.1 正在 Issue #65 / Draft
+PR #66 完成纵向闭环；P6 整体仍未完成，P6.1 只有在完整门禁和 PR 合并后才改变阶段状态，
+不能把首批命令或数据库表当作阶段验收。
 
 P6 必须按核心价值顺序进行，不能直接跳到 Datasette/Obsidian，也不能用简单文件夹分类
 或全文搜索代替核心：
@@ -553,6 +554,69 @@ versions 均为 0 行；Rust 应用 v2 后将旧表无损隔离为 `deprecated_m
 revisions、assets、relations、capture operations、collections 和 route evidence 行数不变，
 SQLite `quick_check=ok`，同一真实微信 C0/C1 仍通过 `knowledge review`。备份位于外部数据根
 `verification/p6-1-correction-20260720-233608/snapshot`，不进入 Git。
+
+2026-07-21，Issue #65 开始 P6.1 正式主流程，并形成第一条无需用户回复的真实纵向证据：
+
+1. migration 0003 在同一 `raw.sqlite` 建立三大界、三级地图、多重归属、标签、显式关系、
+   高密度文本、评分/profile、ModelSuggestion/SuggestionReview 和 first-party Log/Insight
+   语义登记；旧 0001/0002 checksum 不变；
+2. `knowledge digest` 聚合 C0 与 active C1，真实调用已鉴权 `bl 1.10.0` / `qwen-plus`，将
+   `p6-semantic-candidate/v1` 先登记为 `structured_result` C1，再由核心校验 derivative
+   ID/output hash 和全部 evidence ID/hash 后事务化规范写入；
+3. 真实微信样本 `item_01KXWDRSPMZ8GZMB14SYTQH2H2` /
+   `rev_01KXWDRSPMR023M5038FNK2DBG` 形成 suggestion
+   `suggestion_01KY2A6TKXYG1HF3NWRWB3JNSZ`：3 个机器语义条目（Knowledge、Case、
+   Map/Direction）、5 个动态地图节点、11 个归属、10 个标签归属、3 个关系、3 个高密度
+   表达和 3 个默认 profile 评分，状态保持 unreviewed；
+4. 迁移前 SQLite 在线备份位于外部数据根
+   `verification/p6-1-semantic-core-20260721-202350/snapshot`；迁移前后原有
+   `27 items / 30 revisions / 7 assets / 1 relation` 不变，真实微信仍只有 1 个 revision，
+   两库 `quick_check=ok`，raw foreign key check 为 0；
+5. 临时数据根测试覆盖 Knowledge/Case 双向关系、跨两个基石的多重归属、Log/Insight
+   first-party C0 正文一致性、默认与新 profile 的评分历史、accepted/modified/rejected
+   追加审阅，以及评论/新 C0 不会制造来源资料 `v2`。
+
+同日，Issue #65 后续切片补齐地图演进和窄 C2 证据：
+
+1. knowledge migration 0004 为地图节点增加 active/inactive/merged 生命周期，并为节点、
+   父边、内容归属和地图标签建立追加式事件；应用层提供学科/分支新增、改名、停用、合并、
+   父级调整、内容多重归属和节点标签操作，数据库 trigger 锁住 P6 baseline 四基石；
+2. 节点和内容共用评分入口；读回包含 target、profile、分量、综合分、依据、作者身份和时间。
+   未审阅 suggestion 明确可进入后续候选，但 `human_judgment=false`、
+   `confirmed_fact=false`；rejected/modified 原建议保留历史但不再进入主动候选；
+3. 高密度表达可生成受控 `03_views/p6_dense/<semantic_id>/preview.md` 与 manifest；临时纵向
+   测试覆盖篡改拒绝、重建、删除和再次重建，删除视图后核心文本仍完整；
+4. 临时 CLI 纵向测试还覆盖动态学科/分支双父级、改名、父级迁移、标签增删、内容归属、
+   节点评分、分支合并及历史读回，并验证同一 C0 的第二次 Agent 分析形成新 C1
+   suggestion，源 item 不产生 `v2`；四基石修改被拒绝；
+5. 应用真实库前创建在线 SQLite 快照
+   `verification/p6-1-map-evolution-20260721-213222/snapshot`。Rust 入口完成 knowledge
+   `v3 -> v4` 后，原有 `5 sources / 27 items / 30 revisions / 7 assets / 1 relation`、
+   `1 suggestion / 3 semantic entries / 9 map nodes / 6 edges / 11 assignments` 均不变，
+   回填 `9/6/11` 条节点/父边/内容归属事件，`quick_check=ok`、foreign key 异常为 0；
+6. 同一真实机器 Knowledge 完成 C2 build/verify/delete/rebuild/verify，删除后目录确实不存在，
+   核心高密度表达仍为 1 项；完整证据位于外部数据根同目录的
+   `P6_1_MAP_EVOLUTION_E2E.md`，不进入 Git。
+7. 最终审查发现 0004 的 update trigger 尚可被“先在其他 map version 创建 foundation，再
+   更新进入 baseline”绕过。已保持进入真实库的 0004 不变，新增 0005 同时检查 UPDATE 的
+   旧、新 map version；负向迁移测试证明该路径也被数据库层拒绝。真实库 v4 -> v5 前另建
+   在线快照并重新核对业务行数、migration checksum、`quick_check` 与 foreign key；证据位于
+   `verification/p6-1-foundation-guard-20260721-220641/P6_1_FOUNDATION_GUARD_E2E.md`。
+8. AC-06 反向审计发现旧 `capture attach-assets` 会为只补附件复制正文并增加 revision，
+   `workspace revise` 也接受正文完全相同的请求，均与本轮明确纠偏冲突。现已新增 raw
+   migration 0005：补附件作为独立 operation 追加到既有 ready revision，保留 reason、metadata、
+   asset membership、状态和失败；finalise、校验或 ready transition 失败只隔离本次附件，
+   原正文仍为 ready。临时应用/CLI/SQLite 测试证明 revision 数量不变、相同正文修订被拒绝、
+   跨 revision 挂附件被拒绝。真实 raw 库通过 Babata Rust 入口从 v4 升到 v5，迁移前在线
+   快照后原有 `5 sources / 27 items / 30 revisions / 7 assets` 及全部知识业务行数不变，
+   新表为空，checksum 匹配、`quick_check=ok`、foreign key 异常为 0；未为验证制造真实附件。
+   证据位于 `verification/p6-1-attachment-semantics-20260721-223511/`
+   `P6_1_ATTACHMENT_SEMANTICS_E2E.md`。
+
+该证据证明自动语义候选已真实进入核心，不再只是 review 准备；但不得把模型输出冒充用户
+确认，也没有替用户制造真实评论、Log、Insight 或审阅决定。旧 P5 附件登记事实保留为历史
+操作证据，不再作为规范语义；后续补附件不制造正文版本。P6.1 的运行时、真实迁移与 C2
+证据已经补齐，当前只待完整仓库门禁和 PR #66 合并后关闭；P6.2/P6.3 尚未开始。
 
 ### P6.2 检索与关系导航
 

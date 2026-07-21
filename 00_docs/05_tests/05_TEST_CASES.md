@@ -223,6 +223,54 @@ active hash 校验。其 Knowledge create/revise/show 两版夹具后来被 Issu
 Issue #63 已验证纠偏 migration 不丢失潜在旧行、真实库业务表行数不变且 review 继续成功；
 该证据只证明兼容迁移与审阅准备，不证明语义候选已经进入 P6 核心。
 
+2026-07-21，Issue #65 已补上第一条真实自动语义证据。真实微信 C0/C1 在用户零回复的
+情况下由 `qwen-plus` 形成 suggestion `suggestion_01KY2A6TKXYG1HF3NWRWB3JNSZ`，以
+machine/unreviewed 身份进入核心；读回包含 Map/Direction、Knowledge、Case、动态学科/
+分支、多重归属、标签、3 条关系、默认 `40/35/25` 评分与 Mermaid/流程/提纲，C1 derivative
+ID/hash 和 evidence ID/hash 均可追溯，源 item 仍只有 1 个 revision。临时数据根另外覆盖
+first-party Log/Insight、Knowledge/Case 双向关系、第二个 profile 和旧/新评分并存，以及
+accepted/modified/rejected 追加审阅；workspace 测试继续覆盖独立 annotation、Agent C1
+再分析和少数真实 revision 的边界。
+
+同一纵向测试还锁定四个负向边界：重复 ingest 被拒绝且不产生第二套语义记录；总和不为
+`100` 的 profile 被拒绝且不留下新配置；外部来源 C0 不能登记成 first-party Log；
+Log/Insight JSON 正文与真实 first-party C0 原文不一致时拒绝写入。
+
+因此 TC-05 的“真实自动消化进入核心”不再缺失，TC-06 的事件语义已有机制证据；但本轮没有
+代替用户制造真实评论、Log、Insight 或审阅决定。
+
+Issue #65 后续切片在同一临时 CLI 纵向测试中补齐学科/分支新增、双父级、改名、父级迁移、
+标签增删、内容归属、节点评分、分支合并及全部历史读回；四基石修改被应用层和数据库层
+拒绝。同一 C0 的第二次 Agent 结构化分析形成新的 C1 run/suggestion，源 item 始终只有
+一个 revision。未审阅建议读回允许 search/surfacing/relation/sublibrary/output candidate，
+同时明确 `human_judgment=false` 和 `confirmed_fact=false`；拒绝不删除历史。
+
+高密度文本的窄 C2 Markdown 预览完成 build/verify、注入篡改拒绝、rebuild、delete 和再次
+rebuild；删除后核心表达仍完整。真实库 knowledge `v3 -> v4` 前在线快照，迁移后原业务
+行数不变、`quick_check=ok`、foreign key 异常为 0，并对已有机器 Knowledge 完成真实 C2
+删除重建。证据：`BABATA_DATA_HOME/verification/p6-1-map-evolution-20260721-213222/`
+`P6_1_MAP_EVOLUTION_E2E.md`。
+
+最终数据库审查另覆盖一条 0004 未封死的负向路径：不能先在其他 map version 创建
+foundation，再通过 UPDATE 搬入 P6 baseline。0005 保持 0004 不变并收紧该 trigger；临时
+迁移测试与真实库 `v4 -> v5` 前快照、行数、checksum、`quick_check`、foreign key 复核共同
+作为数据库级四基石保护证据。真实证据位于 `BABATA_DATA_HOME/verification/`
+`p6-1-foundation-guard-20260721-220641/P6_1_FOUNDATION_GUARD_E2E.md`。
+
+AC-06 反向审计没有沿用旧“补附件就复制正文 revision”的测试。新的应用与 CLI 测试确认：
+补原件/预览返回原 revision ID、`reimported=false`、revision 数量保持 1，独立附件 operation
+读回 reason、metadata、membership 和 ready 状态；finalise、哈希校验和 ready transition
+三类失败只隔离附件 operation/assets，原 revision 仍为 ready；相同正文的 first-party revise
+被拒绝，数据库拒绝跨 revision membership。真实 raw v4 -> v5 前在线快照，迁移后原有
+`5 sources / 27 items / 30 revisions / 7 assets` 及知识业务行数不变，新表为空，checksum
+匹配、`quick_check=ok`、foreign key 异常为 0。没有在真实库制造附件；证据位于
+`BABATA_DATA_HOME/verification/p6-1-attachment-semantics-20260721-223511/`
+`P6_1_ATTACHMENT_SEMANTICS_E2E.md`。
+
+这批证据没有冒充真实用户评论、Log、Insight 或审阅决定；这些能力由 first-party C0 临时
+纵向测试证明。TC-05、TC-06 和 P6.1 只在本变更全部仓库门禁通过并由 PR #66 合并后写成
+整体通过/完成，P6.2/P6.3 的正式搜索、浮现、子库和输出验收不被提前宣称。
+
 ### TC-07：检索、关系导航与子库
 
 关联：AC-07，阶段 P6.2/P6.3。

@@ -1,17 +1,17 @@
 use std::sync::{Arc, Mutex};
 
 use babata_application::{
-    ApplicationError, AssetDetail, CaptureProvenanceDetail, CollectionDetail, RecordDetail,
-    RelationDetail, RevisionDetail,
+    ApplicationError, AssetAttachmentDetail, AssetDetail, CaptureProvenanceDetail,
+    CollectionDetail, RecordDetail, RelationDetail, RevisionDetail,
     ports::{
-        NewAsset, NewCaptureOperation, NewCollection, NewItem, NewRelation, NewRevision,
-        NewRouteEvidence, NewSource, PersistGraph, RawRepositoryPort,
+        NewAsset, NewAssetAttachmentOperation, NewCaptureOperation, NewCollection, NewItem,
+        NewRelation, NewRevision, NewRouteEvidence, NewSource, PersistGraph, RawRepositoryPort,
     },
 };
 use babata_domain::{
-    AssetId, AssetRole, CollectionId, ContentType, ItemId, Metadata, RawState, RelationId,
-    RelationKind, RevisionId, RevisionKind, RouteCoverage, RouteEvidence, Sha256, SourceId,
-    SourceKind, SourceRouteId, UtcTimestamp,
+    AssetAttachmentId, AssetId, AssetRole, CollectionId, ContentType, ItemId, Metadata, RawState,
+    RelationId, RelationKind, RevisionId, RevisionKind, RouteCoverage, RouteEvidence, Sha256,
+    SourceId, SourceKind, SourceRouteId, UtcTimestamp,
 };
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
 
@@ -165,6 +165,158 @@ impl RawRepositoryPort for SqliteRawRepository {
         transaction.commit().map_err(storage)
     }
 
+    fn insert_asset_attachment(
+        &self,
+        operation: &NewAssetAttachmentOperation,
+        assets: &[NewAsset],
+    ) -> Result<(), ApplicationError> {
+        if assets.is_empty()
+            || operation.reason.trim().is_empty()
+            || assets
+                .iter()
+                .any(|asset| asset.revision_id != operation.revision_id)
+        {
+            return Err(ApplicationError::Integrity(
+                "asset attachment operation is incomplete or revision-mismatched".to_owned(),
+            ));
+        }
+        let mut connection = self.lock()?;
+        let transaction = connection
+            .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)
+            .map_err(storage)?;
+        let revision_ready = transaction
+            .query_row(
+                "SELECT 1 FROM revisions WHERE revision_id = ?1 AND state = 'ready'",
+                params![operation.revision_id.to_string()],
+                |_| Ok(()),
+            )
+            .optional()
+            .map_err(storage)?
+            .is_some();
+        if !revision_ready {
+            return Err(ApplicationError::Conflict(
+                "assets can be attached only to a ready revision".to_owned(),
+            ));
+        }
+        transaction
+            .execute(
+                "INSERT INTO asset_attachment_operations
+                 (operation_id, revision_id, reason, metadata_json, state, failure_code,
+                  started_at, completed_at)
+                 VALUES (?1, ?2, ?3, ?4, 'pending', NULL, ?5, NULL)",
+                params![
+                    operation.id.to_string(),
+                    operation.revision_id.to_string(),
+                    operation.reason.trim(),
+                    operation.metadata.to_json(),
+                    operation.started_at.as_str(),
+                ],
+            )
+            .map_err(storage)?;
+        for asset in assets {
+            insert_asset(&transaction, asset)?;
+            transaction
+                .execute(
+                    "INSERT INTO asset_attachment_members (operation_id, asset_id)
+                     VALUES (?1, ?2)",
+                    params![operation.id.to_string(), asset.id.to_string()],
+                )
+                .map_err(storage)?;
+        }
+        transaction.commit().map_err(storage)
+    }
+
+    fn mark_asset_attachment_ready(
+        &self,
+        operation_id: &AssetAttachmentId,
+    ) -> Result<(), ApplicationError> {
+        let mut connection = self.lock()?;
+        let transaction = connection
+            .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)
+            .map_err(storage)?;
+        let (member_count, invalid_count): (i64, i64) = transaction
+            .query_row(
+                "SELECT COUNT(*), COALESCE(SUM(CASE WHEN asset.state = 'pending' THEN 0 ELSE 1 END), 0)
+                 FROM asset_attachment_members member
+                 JOIN assets asset ON asset.asset_id = member.asset_id
+                 WHERE member.operation_id = ?1",
+                params![operation_id.to_string()],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .map_err(storage)?;
+        if member_count == 0 || invalid_count != 0 {
+            return Err(ApplicationError::Integrity(
+                "attachment assets are missing or are not all pending".to_owned(),
+            ));
+        }
+        let assets_changed = transaction
+            .execute(
+                "UPDATE assets SET state = 'ready'
+                 WHERE state = 'pending' AND asset_id IN (
+                     SELECT asset_id FROM asset_attachment_members WHERE operation_id = ?1
+                 )",
+                params![operation_id.to_string()],
+            )
+            .map_err(storage)?;
+        if i64::try_from(assets_changed).map_err(|_| {
+            ApplicationError::Integrity("attachment asset count overflow".to_owned())
+        })? != member_count
+        {
+            return Err(ApplicationError::Integrity(
+                "not all attachment assets reached ready".to_owned(),
+            ));
+        }
+        let operation_changed = transaction
+            .execute(
+                "UPDATE asset_attachment_operations
+                 SET state = 'ready', completed_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+                 WHERE operation_id = ?1 AND state = 'pending'",
+                params![operation_id.to_string()],
+            )
+            .map_err(storage)?;
+        if operation_changed != 1 {
+            return Err(ApplicationError::Integrity(
+                "asset attachment operation is missing or is not pending".to_owned(),
+            ));
+        }
+        transaction.commit().map_err(storage)
+    }
+
+    fn quarantine_asset_attachment(
+        &self,
+        operation_id: &AssetAttachmentId,
+        failure_code: &str,
+    ) -> Result<(), ApplicationError> {
+        let mut connection = self.lock()?;
+        let transaction = connection
+            .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)
+            .map_err(storage)?;
+        transaction
+            .execute(
+                "UPDATE assets SET state = 'quarantined'
+                 WHERE state = 'pending' AND asset_id IN (
+                     SELECT asset_id FROM asset_attachment_members WHERE operation_id = ?1
+                 )",
+                params![operation_id.to_string()],
+            )
+            .map_err(storage)?;
+        let changed = transaction
+            .execute(
+                "UPDATE asset_attachment_operations
+                 SET state = 'quarantined', failure_code = ?2,
+                     completed_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+                 WHERE operation_id = ?1 AND state = 'pending'",
+                params![operation_id.to_string(), failure_code],
+            )
+            .map_err(storage)?;
+        if changed != 1 {
+            return Err(ApplicationError::Integrity(
+                "asset attachment operation cannot be quarantined".to_owned(),
+            ));
+        }
+        transaction.commit().map_err(storage)
+    }
+
     fn mark_ready(&self, revision_id: &RevisionId) -> Result<(), ApplicationError> {
         let mut connection = self.lock()?;
         let transaction = connection
@@ -273,6 +425,7 @@ impl RawRepositoryPort for SqliteRawRepository {
             collections: load_collections(&connection, item_id)?,
             revisions: load_revisions(&connection, item_id)?,
             assets: load_assets(&connection, item_id)?,
+            asset_attachments: load_asset_attachments(&connection, item_id)?,
             relations: load_relations(&connection, item_id)?,
         })
     }
@@ -508,6 +661,85 @@ fn load_assets(
         })
         .map_err(storage)?;
     rows.map(|row| row.map_err(storage)).collect()
+}
+
+fn load_asset_attachments(
+    connection: &Connection,
+    item_id: &ItemId,
+) -> Result<Vec<AssetAttachmentDetail>, ApplicationError> {
+    let operations = {
+        let mut statement = connection
+            .prepare(
+                "SELECT operation.operation_id, operation.revision_id, operation.reason,
+                        operation.metadata_json, operation.state, operation.failure_code,
+                        operation.started_at, operation.completed_at
+                 FROM asset_attachment_operations operation
+                 JOIN revisions revision ON revision.revision_id = operation.revision_id
+                 WHERE revision.item_id = ?1
+                 ORDER BY operation.started_at, operation.operation_id",
+            )
+            .map_err(storage)?;
+        let rows = statement
+            .query_map(params![item_id.to_string()], |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                    row.get::<_, String>(4)?,
+                    row.get::<_, Option<String>>(5)?,
+                    row.get::<_, String>(6)?,
+                    row.get::<_, Option<String>>(7)?,
+                ))
+            })
+            .map_err(storage)?;
+        rows.collect::<Result<Vec<_>, _>>().map_err(storage)?
+    };
+    operations
+        .into_iter()
+        .map(
+            |(
+                operation_id,
+                revision_id,
+                reason,
+                metadata,
+                state,
+                failure_code,
+                started_at,
+                completed_at,
+            )| {
+                let mut statement = connection
+                    .prepare(
+                        "SELECT asset_id FROM asset_attachment_members
+                         WHERE operation_id = ?1 ORDER BY asset_id",
+                    )
+                    .map_err(storage)?;
+                let rows = statement
+                    .query_map(params![operation_id], |row| row.get::<_, String>(0))
+                    .map_err(storage)?;
+                let asset_ids = rows
+                    .map(|row| {
+                        AssetId::parse(row.map_err(storage)?).map_err(ApplicationError::from)
+                    })
+                    .collect::<Result<Vec<_>, _>>()?;
+                Ok(AssetAttachmentDetail {
+                    operation_id: AssetAttachmentId::parse(operation_id)
+                        .map_err(ApplicationError::from)?,
+                    revision_id: RevisionId::parse(revision_id).map_err(ApplicationError::from)?,
+                    asset_ids,
+                    reason,
+                    metadata: Metadata::parse(&metadata).map_err(ApplicationError::from)?,
+                    state: parse_raw_state(&state)?,
+                    failure_code,
+                    started_at: UtcTimestamp::parse(started_at).map_err(ApplicationError::from)?,
+                    completed_at: completed_at
+                        .map(UtcTimestamp::parse)
+                        .transpose()
+                        .map_err(ApplicationError::from)?,
+                })
+            },
+        )
+        .collect()
 }
 
 fn load_relations(

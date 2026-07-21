@@ -64,6 +64,32 @@ mod tests {
         assert_eq!(child.parent_revision_id, Some(original.revision_id));
         assert_eq!(child.ordinal, 2);
     }
+
+    #[test]
+    fn identical_first_party_text_is_not_a_new_revision() {
+        let repository = MockRepository::default();
+        let service = WorkspaceService::new(repository.clone(), MockAssets::default(), FixedClock);
+        let original = service
+            .create(CreateNoteCommand {
+                text: "unchanged".to_owned(),
+                path: None,
+                context: None,
+                metadata: Metadata::empty(),
+            })
+            .unwrap();
+
+        assert!(matches!(
+            service.revise(ReviseCommand {
+                parent: original.revision_id,
+                text: "unchanged".to_owned(),
+                path: None,
+                note: Some("metadata alone is not a revision".to_owned()),
+                metadata: Metadata::empty(),
+            }),
+            Err(ApplicationError::Conflict(_))
+        ));
+        assert_eq!(repository.state.lock().unwrap().revisions.len(), 1);
+    }
     #[test]
     fn annotation_creates_a_separate_item_relation() {
         let repository = MockRepository::default();
@@ -200,13 +226,20 @@ where
                 "external material must be annotated, not revised as first-party".to_owned(),
             ));
         }
+        let revised_text = TextPayload::new(command.text)?;
+        if parent.text_sha256.as_ref() == Some(&revised_text.hash()) {
+            return Err(ApplicationError::Conflict(
+                "unchanged first-party text is not a new revision; attach assets or metadata without revising the work"
+                    .to_owned(),
+            ));
+        }
         self.write_note(
             source,
             None,
             item,
             Some(parent.id),
             RevisionKind::Edit,
-            command.text,
+            revised_text.as_str().to_owned(),
             command.path,
             command.note,
             command.metadata,

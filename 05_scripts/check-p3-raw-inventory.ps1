@@ -40,14 +40,21 @@ foreach ($relative in $required) {
         throw "Missing P3 raw file: $relative"
     }
 }
-foreach ($migration in @('0001_raw_schema.sql', '0002_raw_indexes.sql', '0003_raw_fts.sql', '0004_capture_operations.sql')) {
+$p3Migrations = @('0001_raw_schema.sql', '0002_raw_indexes.sql', '0003_raw_fts.sql', '0004_capture_operations.sql')
+foreach ($migration in $p3Migrations) {
     if (-not (Test-Path -LiteralPath (Join-Path $repo "03_migrations/01_raw/$migration"))) {
         throw "Missing P3 raw migration: $migration"
     }
 }
+$postP3RawExtensions = @('0005_asset_attachment_operations.sql')
+foreach ($migration in $postP3RawExtensions) {
+    if (-not (Test-Path -LiteralPath (Join-Path $repo "03_migrations/01_raw/$migration"))) {
+        throw "Missing post-P3 raw migration: $migration"
+    }
+}
 $rawMigrations = @(Get-ChildItem -File -LiteralPath (Join-Path $repo '03_migrations/01_raw') -Filter '*.sql')
-if ($rawMigrations.Count -ne 4) {
-    throw "P3 raw migration set must contain exactly 4 migrations, found $($rawMigrations.Count)"
+if ($rawMigrations.Count -ne ($p3Migrations.Count + $postP3RawExtensions.Count)) {
+    throw "Current raw migration set is not the P3 baseline plus registered later extensions: found $($rawMigrations.Count)"
 }
 $collectionMigration = Join-Path $repo '03_migrations/02_collection/0001_route_evidence.sql'
 if (-not (Test-Path -LiteralPath $collectionMigration)) {
