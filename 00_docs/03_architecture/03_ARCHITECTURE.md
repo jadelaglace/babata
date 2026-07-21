@@ -149,6 +149,28 @@ C0 + C1 + 可重建读模型
 - 人工判断的修订创建新版本；人工关系、分类、模型和评分的变化保留历史。
 - 物理资产按内容哈希保留，去重只共享不可变资产，不删除收集事件和来源差异。
 
+### 4.1.1 来源公共字段、观测与版本边界
+
+P6.2 preflight 使用独立版本合同 `babata.c0.common/v1` 保存各来源共同可表达的 title、
+authors、language、可靠 UTC 来源时间、类型化 hierarchy/context、structured limitations、
+access state，以及 `babata.c0.media/v1` 媒体子结构。provider 原始 metadata 继续独立保存；
+公共字段只提取可证明的值，未知 provider key 不因标准化而丢失。缺少年份或时区的来源时间
+只保留原值和 limitation，不猜成 UTC。
+
+四类记录承担不同责任：
+
+| 记录 | 责任 | 更新规则 |
+| --- | --- | --- |
+| item | 稳定来源身份和首次观测事实 | 创建后不因复采静默覆盖 |
+| source observation | 每次成功 capture/recollection 所见的公共字段、provider metadata、访问结果和观测时间 | 只追加；禁止更新和删除 |
+| revision | 来源正文或原件的真实变化 | 仅 changed 或新的明确采集内容增加 |
+| C2 current projection | P6.2 从 observations 计算当前 title/作者/时间/访问状态等查询值 | 可删除重建，不反写 C0 |
+
+`unchanged`、`inaccessible`、`removed` 只追加 observation 和 recollection check，不制造
+revision；`changed` 只创建一个新 revision，并由同一次 capture observation 表达新快照。
+旧 item、candidate 和缺少公共字段的旧 CandidateEnvelope 通过默认值与 legacy fallback
+继续读取。
+
 ### 4.2 溯源最小集
 
 每个 C0/C1 结果在实际可得范围内保留：
@@ -186,9 +208,9 @@ C0 + C1 + 可重建读模型
 应用层的最小内部请求/结果概念如下，名称可以随实现演化，但责任不能越界：
 
 ```text
-CandidateSummary       展示候选所需的来源上下文和限制
+CandidateSummary       展示候选所需的来源上下文、公共字段和限制
 CollectionSelection    用户明确选择的范围与授权
-AcquisitionPackage     原件、附件、来源、上下文、限制和适配器身份
+AcquisitionPackage     原件、附件、公共/原始 metadata、上下文、限制和适配器身份
 CollectionResult       逐条 queued/running/saved/skipped/failed 及引用
 RecollectionResult     changed/unchanged/inaccessible/removed 及旧新关系
 ProcessRequest/Result  输入版本、pipeline、授权范围、运行和 C1 引用

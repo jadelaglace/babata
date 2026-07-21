@@ -16,8 +16,11 @@ pub mod view;
 
 pub use capability::{CapabilityDescriptor, CapabilityId, CapabilityStatus};
 pub use collection::{
-    CandidateSummary, CollectionItemState, CollectionItemStatus, CollectionSelection,
-    CollectionSession, CollectionSessionState, RecollectionOutcome, RecollectionState,
+    COMMON_SOURCE_METADATA_SCHEMA_V1, CandidateSummary, CollectionItemState, CollectionItemStatus,
+    CollectionSelection, CollectionSession, CollectionSessionState, CommonSourceMetadata,
+    RecollectionOutcome, RecollectionState, SOURCE_MEDIA_METADATA_SCHEMA_V1, SourceAccessState,
+    SourceAuthor, SourceHierarchyNode, SourceLimitation, SourceMediaEntry, SourceMediaMetadata,
+    SourceObservationKind,
 };
 pub use entities::{AssetRef, RawItem, RawRevision, Relation, SourceRef};
 pub use error::DomainError;
@@ -25,8 +28,8 @@ pub use ids::{
     AssetAttachmentId, AssetId, CollectionId, CollectionSessionId, DenseExpressionId, DerivativeId,
     ItemId, JobId, KnowledgeId, MapEdgeEventId, MapNodeEventId, MapNodeId, MapTagEventId, OutputId,
     RelationId, RevisionId, RunId, ScoreId, ScoreProfileId, SemanticId, SemanticMapEventId,
-    SemanticRelationId, SnapshotId, SourceId, SublibraryId, SuggestionId, SuggestionReviewId,
-    TagId, ViewId,
+    SemanticRelationId, SnapshotId, SourceId, SourceObservationId, SublibraryId, SuggestionId,
+    SuggestionReviewId, TagId, ViewId,
 };
 pub use kinds::{
     AssetRole, ContentType, DerivativeKind, ProcessingState, RawState, RelationKind, RevisionKind,

@@ -1,11 +1,12 @@
 use babata_domain::{
     AssetAttachmentId, AssetId, AssetRole, BuildTarget, CandidateEnvelope, CandidateSummary,
-    CollectionId, CollectionSessionId, ContentType, DerivativeId, DerivativeKind, DerivativeRef,
-    FirstPartySemanticDefinition, HealthState, ItemId, LogicalPath, Metadata, PageCursor,
-    PipelineId, ProcessJob, ProcessRun, ProcessingState, QueryFilter, RawState, RecordSummary,
-    RelationKind, RevisionId, RouteCoverage, RunId, ScoreProfile, SemanticCandidatePackage,
-    SemanticPayload, Sha256, SnapshotRef, SourceId, SourceKind, SourceRouteId,
-    SuggestionDecisionKind, UtcTimestamp, ViewDescriptor, ViewId,
+    CollectionId, CollectionSessionId, CommonSourceMetadata, ContentType, DerivativeId,
+    DerivativeKind, DerivativeRef, FirstPartySemanticDefinition, HealthState, ItemId, LogicalPath,
+    Metadata, PageCursor, PipelineId, ProcessJob, ProcessRun, ProcessingState, QueryFilter,
+    RawState, RecollectionState, RecordSummary, RelationKind, RevisionId, RouteCoverage, RunId,
+    ScoreProfile, SemanticCandidatePackage, SemanticPayload, Sha256, SnapshotRef, SourceId,
+    SourceKind, SourceObservationId, SourceObservationKind, SourceRouteId, SuggestionDecisionKind,
+    UtcTimestamp, ViewDescriptor, ViewId,
 };
 use serde::{Deserialize, Serialize};
 
@@ -57,6 +58,7 @@ pub struct CaptureImportCommand {
     pub identity: Option<String>,
     pub content_type: ContentType,
     pub metadata: Metadata,
+    pub common_metadata: CommonSourceMetadata,
     pub source_published_at: Option<UtcTimestamp>,
     pub assets: Vec<CaptureImportAsset>,
     pub route_evidence: Option<RouteEvidenceCommand>,
@@ -128,11 +130,31 @@ pub struct RecordDetail {
     pub source_updated_at: Option<UtcTimestamp>,
     pub first_captured_at: UtcTimestamp,
     pub metadata: Metadata,
+    pub common_metadata: CommonSourceMetadata,
+    pub source_observations: Vec<SourceObservationDetail>,
     pub collections: Vec<CollectionDetail>,
     pub revisions: Vec<RevisionDetail>,
     pub assets: Vec<AssetDetail>,
     pub asset_attachments: Vec<AssetAttachmentDetail>,
     pub relations: Vec<RelationDetail>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SourceObservationDetail {
+    pub observation_id: SourceObservationId,
+    pub revision_id: RevisionId,
+    pub capture_operation_id: Option<String>,
+    pub collection_session_id: Option<CollectionSessionId>,
+    pub candidate_id: Option<String>,
+    pub kind: SourceObservationKind,
+    pub recollection_state: Option<RecollectionState>,
+    pub source_native_id: Option<String>,
+    pub source_locator: Option<String>,
+    pub context: Option<String>,
+    pub common_metadata: CommonSourceMetadata,
+    pub provider_metadata: Metadata,
+    pub reason: Option<String>,
+    pub observed_at: UtcTimestamp,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -256,6 +278,8 @@ pub struct CandidateCaptureCommand {
     pub candidate: CandidateEnvelope,
     pub assets: Vec<CaptureImportAsset>,
     pub route_evidence: Option<RouteEvidenceCommand>,
+    pub collection_session_id: Option<CollectionSessionId>,
+    pub candidate_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -287,7 +311,7 @@ pub struct DiscoveredCandidate {
 #[derive(Debug, Clone)]
 pub enum AcquisitionOutcome {
     Found {
-        candidate: CandidateEnvelope,
+        candidate: Box<CandidateEnvelope>,
         assets: Vec<CaptureImportAsset>,
     },
     Skipped {

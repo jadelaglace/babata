@@ -24,6 +24,10 @@ const MIGRATIONS: &[(&str, &str)] = &[
         "0005_asset_attachment_operations.sql",
         include_str!("../../../../03_migrations/01_raw/0005_asset_attachment_operations.sql"),
     ),
+    (
+        "0006_source_observations.sql",
+        include_str!("../../../../03_migrations/01_raw/0006_source_observations.sql"),
+    ),
 ];
 
 const INTEGRITY_MIGRATIONS: &[(&str, &str)] = &[(
@@ -279,7 +283,7 @@ mod tests {
                 .query_row("SELECT COUNT(*) FROM schema_migrations", [], |row| row
                     .get::<_, i64>(0))
                 .unwrap(),
-            5
+            6
         );
         assert!(
             connection
@@ -304,7 +308,7 @@ mod tests {
                     0
                 ))
                 .unwrap(),
-            5
+            6
         );
     }
 
@@ -316,7 +320,7 @@ mod tests {
             .execute(
                 "INSERT INTO schema_migrations
                  (version, name, applied_at, checksum_sha256)
-                 VALUES (6, 'future.sql', '2026-01-01T00:00:00Z', 'future')",
+                 VALUES (7, 'future.sql', '2026-01-01T00:00:00Z', 'future')",
                 [],
             )
             .unwrap();
@@ -325,6 +329,103 @@ mod tests {
                 .unwrap_err()
                 .to_string()
                 .contains("newer than this binary supports")
+        );
+    }
+
+    #[test]
+    fn raw_v5_to_v6_preserves_existing_rows_and_backfills_common_metadata() {
+        let connection = Connection::open_in_memory().unwrap();
+        for (index, (name, sql)) in MIGRATIONS.iter().take(5).enumerate() {
+            connection.execute_batch(sql).unwrap();
+            connection
+                .execute(
+                    "INSERT INTO schema_migrations
+                     (version, name, applied_at, checksum_sha256)
+                     VALUES (?1, ?2, '2026-07-21T00:00:00Z', ?3)",
+                    params![
+                        (index + 1) as i64,
+                        name,
+                        super::super::migration_checksum(sql)
+                    ],
+                )
+                .unwrap();
+        }
+        connection
+            .execute_batch(
+                "INSERT INTO sources
+                    (source_id, source_kind, provider, created_at)
+                 VALUES ('source_existing', 'external', 'fixture', '2026-07-21T00:00:00Z');
+                 INSERT INTO items
+                    (item_id, source_id, source_native_id, content_type,
+                     first_captured_at, metadata_json, created_at)
+                 VALUES ('item_existing', 'source_existing', 'native-1', 'document',
+                         '2026-07-21T00:00:00Z', '{\"provider_unknown\":true}',
+                         '2026-07-21T00:00:00Z');
+                 INSERT INTO revisions
+                    (revision_id, item_id, revision_kind, ordinal, captured_at,
+                     raw_text, text_sha256, metadata_json, state, created_at)
+                 VALUES ('revision_existing', 'item_existing', 'capture', 1,
+                         '2026-07-21T00:00:00Z', 'existing',
+                         'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+                         '{\"provider_unknown\":true}', 'ready', '2026-07-21T00:00:00Z');",
+            )
+            .unwrap();
+
+        migrate_raw(&connection).unwrap();
+        migrate_raw(&connection).unwrap();
+
+        assert_eq!(
+            connection
+                .query_row("SELECT COUNT(*) FROM items", [], |row| row.get::<_, i64>(0))
+                .unwrap(),
+            1
+        );
+        assert_eq!(
+            connection
+                .query_row("SELECT COUNT(*) FROM revisions", [], |row| row
+                    .get::<_, i64>(0))
+                .unwrap(),
+            1
+        );
+        assert_eq!(
+            connection
+                .query_row(
+                    "SELECT metadata_json FROM items WHERE item_id = 'item_existing'",
+                    [],
+                    |row| row.get::<_, String>(0),
+                )
+                .unwrap(),
+            "{\"provider_unknown\":true}"
+        );
+        assert_eq!(
+            connection
+                .query_row(
+                    "SELECT metadata_json FROM revisions
+                     WHERE revision_id = 'revision_existing'",
+                    [],
+                    |row| row.get::<_, String>(0),
+                )
+                .unwrap(),
+            "{\"provider_unknown\":true}"
+        );
+        let common: String = connection
+            .query_row(
+                "SELECT common_metadata_json FROM items WHERE item_id = 'item_existing'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(&common).unwrap()["schema"],
+            "babata.c0.common/v1"
+        );
+        assert_eq!(
+            connection
+                .query_row("SELECT COUNT(*) FROM source_observations", [], |row| {
+                    row.get::<_, i64>(0)
+                })
+                .unwrap(),
+            0
         );
     }
 

@@ -4,8 +4,9 @@ use babata_application::{
     CreateNoteCommand, ReviseCommand, RouteEvidenceCommand, WorkspaceService,
 };
 use babata_domain::{
-    AssetRole, CandidateEnvelope, ContentType, ItemId, Metadata, RevisionId, RouteCoverage,
-    SourceRouteId, UtcTimestamp,
+    AssetRole, CandidateEnvelope, CommonSourceMetadata, ContentType, ItemId, Metadata, RevisionId,
+    RouteCoverage, SourceAccessState, SourceHierarchyNode, SourceLimitation, SourceRouteId,
+    UtcTimestamp,
 };
 use babata_infrastructure::{
     FileAssetStore, SqliteRawRepository, SystemClock,
@@ -67,10 +68,33 @@ pub fn execute(
                 candidate: read_candidate(&input.path)?,
                 assets: Vec::new(),
                 route_evidence: None,
+                collection_session_id: None,
+                candidate_id: None,
             })
             .map(single),
         RootCommand::Capture(CaptureCommand::FeishuExport(input)) => {
             let export = feishu::read_markdown_export(&input.path)?;
+            let common_metadata = CommonSourceMetadata {
+                title: Some(export.title.clone()),
+                context: input.context.clone(),
+                hierarchy: input
+                    .context
+                    .iter()
+                    .map(|name| SourceHierarchyNode {
+                        kind: Some("import_context".to_owned()),
+                        name: name.clone(),
+                        native_id: None,
+                        locator: None,
+                    })
+                    .collect(),
+                limitations: vec![SourceLimitation {
+                    code: "explicit_export_fallback".to_owned(),
+                    detail: "metadata is limited to the explicitly supplied Feishu Markdown export"
+                        .to_owned(),
+                }],
+                access_state: SourceAccessState::Accessible,
+                ..CommonSourceMetadata::default()
+            };
             capture
                 .capture_import(CaptureImportCommand {
                     provider: "feishu".to_owned(),
@@ -94,6 +118,7 @@ pub fn execute(
                             ),
                         ],
                     )?,
+                    common_metadata,
                     source_published_at: None,
                     assets: std::iter::once(CaptureImportAsset {
                         path: input.path.to_string_lossy().to_string(),
@@ -131,6 +156,26 @@ pub fn execute(
                 .map(|bookmark| {
                     let context =
                         (!bookmark.folder_path.is_empty()).then_some(bookmark.folder_path.clone());
+                    let common_metadata = CommonSourceMetadata {
+                        title: Some(bookmark.title.clone()),
+                        context: context.clone(),
+                        hierarchy: context
+                            .iter()
+                            .map(|name| SourceHierarchyNode {
+                                kind: Some("bookmark_folder".to_owned()),
+                                name: name.clone(),
+                                native_id: None,
+                                locator: None,
+                            })
+                            .collect(),
+                        limitations: vec![SourceLimitation {
+                            code: "locator_only_export".to_owned(),
+                            detail: "Netscape bookmark export contains title and locator but not page body"
+                                .to_owned(),
+                        }],
+                        access_state: SourceAccessState::Accessible,
+                        ..CommonSourceMetadata::default()
+                    };
                     capture.capture_import(CaptureImportCommand {
                         provider: "browser".to_owned(),
                         text: format!("{}\n{}", bookmark.title, bookmark.url),
@@ -153,6 +198,7 @@ pub fn execute(
                                 ),
                             ],
                         )?,
+                        common_metadata,
                         source_published_at: None,
                         assets: vec![CaptureImportAsset {
                             path: original_export.clone(),

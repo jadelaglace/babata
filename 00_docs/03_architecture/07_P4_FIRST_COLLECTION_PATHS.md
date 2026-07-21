@@ -265,6 +265,19 @@ CollectorSession 的实时队列和进度属于 C3；终态收集结果、来源
 其余 `queued` 项全部变为 `skipped`，session 保持 `cancelled`，不会被批次收尾覆盖为
 `completed`。无范围、重复候选、授权上下文不匹配和未确认都在入队前失败，C0 保持 0。
 
+### 6.1 P6.2 preflight 的来源观测合同
+
+Issue #60 在既有 P4 状态机下补充 `babata.c0.common/v1` 和 append-only
+`source_observations`。discovery summary 先保存当时可得的 typed title、hierarchy、updated
+time 和 limitations；成功 collect 的 CandidateEnvelope 是本次观测权威，可用正文详情补充
+authors、published/updated time、access state 和媒体字段。provider 原始 metadata 与公共
+合同分开保存。
+
+item 固定首次观测事实；复采的当前值不回写 item。changed 通过一个真实新 revision 和对应
+capture observation 保存；unchanged/inaccessible/removed 只追加 recollection observation，
+不创建 revision。P6.2 后续从这些 observations 建可重建 C2 查询投影；本 preflight 不实现
+搜索、排序或关系导航。
+
 ## 7. 能力状态与真实证据
 
 来源能力从 `scaffolded/disabled` 进入 `available` 必须同时有：

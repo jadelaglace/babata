@@ -2,16 +2,18 @@ use std::sync::{Arc, Mutex};
 
 use babata_application::{
     ApplicationError, AssetAttachmentDetail, AssetDetail, CaptureProvenanceDetail,
-    CollectionDetail, RecordDetail, RelationDetail, RevisionDetail,
+    CollectionDetail, RecordDetail, RelationDetail, RevisionDetail, SourceObservationDetail,
     ports::{
         NewAsset, NewAssetAttachmentOperation, NewCaptureOperation, NewCollection, NewItem,
-        NewRelation, NewRevision, NewRouteEvidence, NewSource, PersistGraph, RawRepositoryPort,
+        NewRelation, NewRevision, NewRouteEvidence, NewSource, NewSourceObservation, PersistGraph,
+        RawRepositoryPort,
     },
 };
 use babata_domain::{
-    AssetAttachmentId, AssetId, AssetRole, CollectionId, ContentType, ItemId, Metadata, RawState,
-    RelationId, RelationKind, RevisionId, RevisionKind, RouteCoverage, RouteEvidence, Sha256,
-    SourceId, SourceKind, SourceRouteId, UtcTimestamp,
+    AssetAttachmentId, AssetId, AssetRole, CollectionId, CollectionSessionId, CommonSourceMetadata,
+    ContentType, ItemId, Metadata, RawState, RecollectionState, RelationId, RelationKind,
+    RevisionId, RevisionKind, RouteCoverage, RouteEvidence, Sha256, SourceId, SourceKind,
+    SourceObservationId, SourceObservationKind, SourceRouteId, UtcTimestamp,
 };
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
 
@@ -52,7 +54,7 @@ impl RawRepositoryPort for SqliteRawRepository {
 
     fn find_item(&self, item_id: &ItemId) -> Result<Option<NewItem>, ApplicationError> {
         let connection = self.lock()?;
-        connection.query_row("SELECT item_id, source_id, source_native_id, source_locator, source_identity_key, content_type, source_published_at, source_updated_at, first_captured_at, metadata_json FROM items WHERE item_id = ?1", params![item_id.to_string()], item_from_row).optional().map_err(storage)
+        connection.query_row("SELECT item_id, source_id, source_native_id, source_locator, source_identity_key, content_type, source_published_at, source_updated_at, first_captured_at, metadata_json, common_metadata_json FROM items WHERE item_id = ?1", params![item_id.to_string()], item_from_row).optional().map_err(storage)
     }
 
     fn find_revision(
@@ -114,7 +116,7 @@ impl RawRepositoryPort for SqliteRawRepository {
         identity: &str,
     ) -> Result<Option<(NewItem, NewRevision)>, ApplicationError> {
         let connection = self.lock()?;
-        let item = connection.query_row("SELECT item_id, source_id, source_native_id, source_locator, source_identity_key, content_type, source_published_at, source_updated_at, first_captured_at, metadata_json FROM items WHERE source_id = ?1 AND source_identity_key = ?2", params![source_id.to_string(), identity], item_from_row).optional().map_err(storage)?;
+        let item = connection.query_row("SELECT item_id, source_id, source_native_id, source_locator, source_identity_key, content_type, source_published_at, source_updated_at, first_captured_at, metadata_json, common_metadata_json FROM items WHERE source_id = ?1 AND source_identity_key = ?2", params![source_id.to_string(), identity], item_from_row).optional().map_err(storage)?;
         item.map(|item| {
             let revision = connection.query_row("SELECT revision_id, item_id, parent_revision_id, revision_kind, ordinal, captured_at, authored_at, revision_note, raw_text, text_sha256, metadata_json FROM revisions WHERE item_id = ?1 ORDER BY ordinal DESC LIMIT 1", params![item.id.to_string()], revision_from_row).map_err(storage)?;
             Ok((item, revision))
@@ -162,6 +164,9 @@ impl RawRepositoryPort for SqliteRawRepository {
             insert_relation(&transaction, relation)?;
         }
         insert_capture_operation(&transaction, &graph.operation)?;
+        if let Some(observation) = &graph.observation {
+            insert_source_observation(&transaction, observation)?;
+        }
         transaction.commit().map_err(storage)
     }
 
@@ -422,6 +427,8 @@ impl RawRepositoryPort for SqliteRawRepository {
             source_updated_at: header.source_updated_at,
             first_captured_at: header.first_captured_at,
             metadata: header.metadata,
+            common_metadata: header.common_metadata,
+            source_observations: load_source_observations(&connection, item_id)?,
             collections: load_collections(&connection, item_id)?,
             revisions: load_revisions(&connection, item_id)?,
             assets: load_assets(&connection, item_id)?,
@@ -503,6 +510,7 @@ struct ItemHeader {
     source_updated_at: Option<UtcTimestamp>,
     first_captured_at: UtcTimestamp,
     metadata: Metadata,
+    common_metadata: CommonSourceMetadata,
 }
 
 fn load_item_header(
@@ -513,7 +521,8 @@ fn load_item_header(
         .query_row(
             "SELECT s.source_id, s.source_kind, s.provider, s.account_or_workspace, i.content_type,
                     i.source_native_id, i.source_locator, i.source_identity_key,
-                    i.source_published_at, i.source_updated_at, i.first_captured_at, i.metadata_json
+                    i.source_published_at, i.source_updated_at, i.first_captured_at, i.metadata_json,
+                    i.common_metadata_json
              FROM items i JOIN sources s ON s.source_id = i.source_id
              WHERE i.item_id = ?1",
             params![item_id.to_string()],
@@ -540,6 +549,8 @@ fn load_item_header(
                     first_captured_at: UtcTimestamp::parse(row.get::<_, String>(10)?)
                         .map_err(to_sql)?,
                     metadata: Metadata::parse(&row.get::<_, String>(11)?).map_err(to_sql)?,
+                    common_metadata: serde_json::from_str(&row.get::<_, String>(12)?)
+                        .map_err(to_sql)?,
                 })
             },
         )
@@ -567,6 +578,54 @@ fn load_collections(
                 metadata: Metadata::parse(&row.get::<_, String>(6)?).map_err(to_sql)?,
                 observed_at: UtcTimestamp::parse(row.get::<_, String>(7)?).map_err(to_sql)?,
                 created_at: UtcTimestamp::parse(row.get::<_, String>(8)?).map_err(to_sql)?,
+            })
+        })
+        .map_err(storage)?;
+    rows.map(|row| row.map_err(storage)).collect()
+}
+
+fn load_source_observations(
+    connection: &Connection,
+    item_id: &ItemId,
+) -> Result<Vec<SourceObservationDetail>, ApplicationError> {
+    let mut statement = connection
+        .prepare(
+            "SELECT observation_id, revision_id, capture_operation_id,
+                    collection_session_id, candidate_id, observation_kind,
+                    recollection_state, source_native_id, source_locator, context,
+                    common_metadata_json, provider_metadata_json, reason, observed_at
+             FROM source_observations
+             WHERE item_id = ?1
+             ORDER BY observed_at, observation_id",
+        )
+        .map_err(storage)?;
+    let rows = statement
+        .query_map(params![item_id.to_string()], |row| {
+            Ok(SourceObservationDetail {
+                observation_id: SourceObservationId::parse(row.get::<_, String>(0)?)
+                    .map_err(to_sql)?,
+                revision_id: RevisionId::parse(row.get::<_, String>(1)?).map_err(to_sql)?,
+                capture_operation_id: row.get(2)?,
+                collection_session_id: row
+                    .get::<_, Option<String>>(3)?
+                    .map(CollectionSessionId::parse)
+                    .transpose()
+                    .map_err(to_sql)?,
+                candidate_id: row.get(4)?,
+                kind: parse_observation_kind(&row.get::<_, String>(5)?).map_err(to_sql)?,
+                recollection_state: row
+                    .get::<_, Option<String>>(6)?
+                    .map(|value| parse_recollection_state(&value))
+                    .transpose()
+                    .map_err(to_sql)?,
+                source_native_id: row.get(7)?,
+                source_locator: row.get(8)?,
+                context: row.get(9)?,
+                common_metadata: serde_json::from_str(&row.get::<_, String>(10)?)
+                    .map_err(to_sql)?,
+                provider_metadata: Metadata::parse(&row.get::<_, String>(11)?).map_err(to_sql)?,
+                reason: row.get(12)?,
+                observed_at: UtcTimestamp::parse(row.get::<_, String>(13)?).map_err(to_sql)?,
             })
         })
         .map_err(storage)?;
@@ -781,7 +840,8 @@ fn insert_source(
 }
 
 fn insert_item(transaction: &Transaction<'_>, item: &NewItem) -> Result<(), ApplicationError> {
-    transaction.execute("INSERT OR IGNORE INTO items (item_id, source_id, source_native_id, source_locator, source_identity_key, content_type, source_published_at, source_updated_at, first_captured_at, metadata_json, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?9)", params![item.id.to_string(), item.source_id.to_string(), item.source_native_id, item.source_locator, item.source_identity_key, content_type(item.content_type), item.source_published_at.as_ref().map(UtcTimestamp::as_str), item.source_updated_at.as_ref().map(UtcTimestamp::as_str), item.first_captured_at.as_str(), item.metadata.to_json()]).map_err(storage)?;
+    item.common_metadata.validate()?;
+    transaction.execute("INSERT OR IGNORE INTO items (item_id, source_id, source_native_id, source_locator, source_identity_key, content_type, source_published_at, source_updated_at, first_captured_at, metadata_json, common_metadata_json, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?9)", params![item.id.to_string(), item.source_id.to_string(), item.source_native_id, item.source_locator, item.source_identity_key, content_type(item.content_type), item.source_published_at.as_ref().map(UtcTimestamp::as_str), item.source_updated_at.as_ref().map(UtcTimestamp::as_str), item.first_captured_at.as_str(), item.metadata.to_json(), serde_json::to_string(&item.common_metadata).map_err(json)?]).map_err(storage)?;
     Ok(())
 }
 
@@ -876,6 +936,44 @@ fn insert_capture_operation(
     Ok(())
 }
 
+pub(crate) fn insert_source_observation(
+    transaction: &Transaction<'_>,
+    observation: &NewSourceObservation,
+) -> Result<(), ApplicationError> {
+    observation.common_metadata.validate()?;
+    transaction
+        .execute(
+            "INSERT INTO source_observations
+             (observation_id, item_id, revision_id, capture_operation_id,
+              collection_session_id, candidate_id, observation_kind, recollection_state,
+              source_native_id, source_locator, context, common_metadata_json,
+              provider_metadata_json, reason, observed_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)",
+            params![
+                observation.id.to_string(),
+                observation.item_id.to_string(),
+                observation.revision_id.to_string(),
+                observation.capture_operation_id,
+                observation
+                    .collection_session_id
+                    .as_ref()
+                    .map(ToString::to_string),
+                observation.candidate_id,
+                observation_kind(observation.kind),
+                observation.recollection_state.map(recollection_state),
+                observation.source_native_id,
+                observation.source_locator,
+                observation.context,
+                serde_json::to_string(&observation.common_metadata).map_err(json)?,
+                observation.provider_metadata.to_json(),
+                observation.reason,
+                observation.observed_at.as_str(),
+            ],
+        )
+        .map_err(storage)?;
+    Ok(())
+}
+
 fn source_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<NewSource> {
     Ok(NewSource {
         id: SourceId::parse(row.get::<_, String>(0)?).map_err(to_sql)?,
@@ -905,6 +1003,7 @@ fn item_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<NewItem> {
             .map_err(to_sql)?,
         first_captured_at: UtcTimestamp::parse(row.get::<_, String>(8)?).map_err(to_sql)?,
         metadata: Metadata::parse(&row.get::<_, String>(9)?).map_err(to_sql)?,
+        common_metadata: serde_json::from_str(&row.get::<_, String>(10)?).map_err(to_sql)?,
     })
 }
 fn revision_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<NewRevision> {
@@ -940,6 +1039,9 @@ fn parse_revision(value: String) -> Result<RevisionId, ApplicationError> {
 }
 fn storage(error: rusqlite::Error) -> ApplicationError {
     ApplicationError::Storage(error.to_string())
+}
+fn json(error: serde_json::Error) -> ApplicationError {
+    ApplicationError::Integrity(error.to_string())
 }
 fn to_sql<E>(error: E) -> rusqlite::Error
 where
@@ -993,6 +1095,20 @@ fn relation_kind(value: RelationKind) -> &'static str {
         RelationKind::RelatedTo => "related_to",
     }
 }
+fn observation_kind(value: SourceObservationKind) -> &'static str {
+    match value {
+        SourceObservationKind::Capture => "capture",
+        SourceObservationKind::Recollection => "recollection",
+    }
+}
+fn recollection_state(value: RecollectionState) -> &'static str {
+    match value {
+        RecollectionState::Changed => "changed",
+        RecollectionState::Unchanged => "unchanged",
+        RecollectionState::Inaccessible => "inaccessible",
+        RecollectionState::Removed => "removed",
+    }
+}
 fn parse_source_kind(value: &str) -> Result<SourceKind, ApplicationError> {
     match value {
         "external" => Ok(SourceKind::External),
@@ -1036,6 +1152,26 @@ fn parse_raw_state(value: &str) -> Result<RawState, ApplicationError> {
         "quarantined" => Ok(RawState::Quarantined),
         _ => Err(ApplicationError::Integrity(format!(
             "unknown raw state: {value}"
+        ))),
+    }
+}
+fn parse_observation_kind(value: &str) -> Result<SourceObservationKind, ApplicationError> {
+    match value {
+        "capture" => Ok(SourceObservationKind::Capture),
+        "recollection" => Ok(SourceObservationKind::Recollection),
+        _ => Err(ApplicationError::Integrity(format!(
+            "unknown source observation kind: {value}"
+        ))),
+    }
+}
+fn parse_recollection_state(value: &str) -> Result<RecollectionState, ApplicationError> {
+    match value {
+        "changed" => Ok(RecollectionState::Changed),
+        "unchanged" => Ok(RecollectionState::Unchanged),
+        "inaccessible" => Ok(RecollectionState::Inaccessible),
+        "removed" => Ok(RecollectionState::Removed),
+        _ => Err(ApplicationError::Integrity(format!(
+            "unknown recollection state: {value}"
         ))),
     }
 }
@@ -1200,6 +1336,7 @@ mod tests {
             source_updated_at: Some(now.clone()),
             first_captured_at: now.clone(),
             metadata: Metadata::empty(),
+            common_metadata: CommonSourceMetadata::default(),
         };
         let revision = NewRevision {
             id: RevisionId::new(),
@@ -1232,6 +1369,7 @@ mod tests {
                 revision: revision.clone(),
                 assets: Vec::new(),
                 relations: Vec::new(),
+                observation: None,
             })
             .unwrap();
         repository.mark_ready(&revision.id).unwrap();
@@ -1266,6 +1404,7 @@ mod tests {
             source_updated_at: None,
             first_captured_at: now.clone(),
             metadata: Metadata::empty(),
+            common_metadata: CommonSourceMetadata::default(),
         };
         let revision = NewRevision {
             id: RevisionId::new(),
@@ -1306,6 +1445,7 @@ mod tests {
                 metadata: Metadata::empty(),
                 created_at: now.clone(),
             }],
+            observation: None,
         };
         assert!(repository.insert_capture_graph(&graph).is_err());
         assert!(
@@ -1350,6 +1490,7 @@ mod tests {
             source_updated_at: None,
             first_captured_at: now.clone(),
             metadata: Metadata::empty(),
+            common_metadata: CommonSourceMetadata::default(),
         };
         let revision = NewRevision {
             id: RevisionId::new(),
@@ -1382,6 +1523,7 @@ mod tests {
                 revision,
                 assets: Vec::new(),
                 relations: Vec::new(),
+                observation: None,
             })
             .unwrap();
         let connection = Connection::open(paths.raw_database()).unwrap();

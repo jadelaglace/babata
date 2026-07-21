@@ -249,7 +249,7 @@ fn raw_cli_flow_keeps_assets_and_first_party_lineage() {
     );
 
     let status = json_success(&temp, &["--json", "data", "status"]);
-    assert_eq!(status["raw_schema_version"], 5);
+    assert_eq!(status["raw_schema_version"], 6);
     assert_eq!(status["pending_journals"], 0);
     assert_eq!(status["orphans"], 0);
     assert_eq!(status["quarantined_revisions"], 0);

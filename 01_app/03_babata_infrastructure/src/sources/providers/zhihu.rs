@@ -12,10 +12,11 @@ use babata_application::{
 };
 use babata_domain::{
     AssetRole, CandidateEnvelope, CandidatePayload, CandidateSummary, CapabilityStatus,
-    CollectionSessionId, ContentType, Metadata, RouteCoverage, Sha256, SourceRouteDescriptor,
-    SourceRouteId,
+    CollectionSessionId, ContentType, Metadata, RouteCoverage, Sha256, SourceAccessState,
+    SourceAuthor, SourceMediaEntry, SourceRouteDescriptor, SourceRouteId, UtcTimestamp,
 };
 use serde_json::Value;
+use time::{OffsetDateTime, format_description::well_known::Rfc3339};
 
 const ROUTE_ID: &str = "source.zhihu";
 const ADAPTER_VERSION: &str = "opencli-zhihu/1";
@@ -181,7 +182,9 @@ impl SourceAdapterPort for ZhihuOpenCliAdapter {
                             "visible_set".to_owned(),
                             "collection_count".to_owned(),
                         ],
-                    },
+                        common_metadata: babata_domain::CommonSourceMetadata::default(),
+                    }
+                    .with_common_from_legacy(),
                     prefetched: None,
                 })
             })
@@ -251,6 +254,7 @@ impl SourceAdapterPort for ZhihuOpenCliAdapter {
     }
 }
 
+#[allow(clippy::too_many_lines)]
 fn acquisition_from_detail(
     adapter: &ZhihuOpenCliAdapter,
     candidate: &CandidateSummary,
@@ -302,6 +306,12 @@ fn acquisition_from_detail(
         .to_string()
         .as_bytes(),
     );
+    let mut provider_detail_metadata = row.as_object().cloned().ok_or_else(|| {
+        ApplicationError::Integrity("Zhihu detail row is not an object".to_owned())
+    })?;
+    provider_detail_metadata.remove("ContentText");
+    provider_detail_metadata.remove("ContentHtml");
+    provider_detail_metadata.remove("Images");
     let metadata = Metadata::parse(
         &serde_json::json!({
             "title": candidate.title,
@@ -315,11 +325,33 @@ fn acquisition_from_detail(
             "attachments_covered": requested_attachments && assets.len() == images.len(),
             "content_fingerprint": content_fingerprint.as_str(),
             "adapter_version": ADAPTER_VERSION,
+            "provider_detail_metadata": provider_detail_metadata,
         })
         .to_string(),
     )?;
+    let mut common_metadata = candidate.effective_common_metadata();
+    if let Some(title) = optional_string(row, "QuestionTitle") {
+        common_metadata.title = Some(title);
+    }
+    if let Some(author) = source_author(row.get("Author")) {
+        common_metadata.authors = vec![author];
+    }
+    common_metadata.source_published_at = source_timestamp(row.get("CreatedAt"));
+    common_metadata.source_updated_at = source_timestamp(row.get("UpdatedAt"));
+    common_metadata.access_state = SourceAccessState::Accessible;
+    common_metadata.media.entries = images
+        .iter()
+        .map(|_| SourceMediaEntry {
+            kind: "image".to_owned(),
+            media_type: None,
+            duration_ms: None,
+            width: None,
+            height: None,
+            page_count: None,
+        })
+        .collect();
     Ok(AcquisitionOutcome::Found {
-        candidate: CandidateEnvelope {
+        candidate: Box::new(CandidateEnvelope {
             protocol_version: "1".to_owned(),
             route_id: SourceRouteId(ROUTE_ID.to_owned()),
             source_reference: source.to_owned(),
@@ -329,9 +361,49 @@ fn acquisition_from_detail(
             payload: CandidatePayload::Text { text: payload },
             context: Some(candidate.hierarchy.join(" / ")),
             native_id: Some(answer_id.to_owned()),
-        },
+            common_metadata,
+        }),
         assets,
     })
+}
+
+fn source_author(value: Option<&Value>) -> Option<SourceAuthor> {
+    let value = value?;
+    let display_name = value.as_str().map(str::to_owned).or_else(|| {
+        ["Name", "DisplayName", "name"]
+            .into_iter()
+            .find_map(|field| optional_string(value, field))
+    })?;
+    let native_id = ["Id", "AuthorId", "id"]
+        .into_iter()
+        .find_map(|field| optional_string(value, field));
+    let locator = ["Url", "url"]
+        .into_iter()
+        .find_map(|field| optional_string(value, field));
+    Some(SourceAuthor {
+        display_name,
+        native_id,
+        locator,
+    })
+}
+
+fn source_timestamp(value: Option<&Value>) -> Option<UtcTimestamp> {
+    let value = value?;
+    if let Some(text) = value.as_str() {
+        if let Ok(timestamp) = UtcTimestamp::parse(text) {
+            return Some(timestamp);
+        }
+        return text.parse::<i64>().ok().and_then(unix_timestamp);
+    }
+    value.as_i64().and_then(unix_timestamp)
+}
+
+fn unix_timestamp(seconds: i64) -> Option<UtcTimestamp> {
+    let canonical = OffsetDateTime::from_unix_timestamp(seconds)
+        .ok()?
+        .format(&Rfc3339)
+        .ok()?;
+    UtcTimestamp::parse(canonical).ok()
 }
 
 fn parse_collection_scope(value: &str) -> Result<(&str, usize), ApplicationError> {
@@ -414,6 +486,14 @@ fn required_string(value: &Value, key: &str) -> Result<String, ApplicationError>
         .ok_or_else(|| ApplicationError::Integrity(format!("Zhihu result has no {key}")))
 }
 
+fn optional_string(value: &Value, key: &str) -> Option<String> {
+    value
+        .get(key)
+        .and_then(Value::as_str)
+        .filter(|text| !text.trim().is_empty())
+        .map(str::to_owned)
+}
+
 fn numeric_tail(value: &str) -> Option<String> {
     value
         .split(['/', '?', '#'])
@@ -430,6 +510,7 @@ fn is_zhihu_image_url(value: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::tempdir;
 
     #[test]
     fn collection_scope_is_explicit_and_bounded() {
@@ -447,5 +528,86 @@ mod tests {
             "https://picx.zhimg.com/v2-example_r.jpg?source=x"
         ));
         assert!(!is_zhihu_image_url("https://example.com/image.jpg"));
+    }
+
+    #[test]
+    fn detail_maps_typed_author_and_times_without_losing_unknown_metadata() {
+        let temporary = tempdir().unwrap();
+        let adapter = ZhihuOpenCliAdapter::new(temporary.path().to_path_buf());
+        let candidate = CandidateSummary {
+            candidate_id: "zhihu_answer_42".to_owned(),
+            session_id: CollectionSessionId::new(),
+            route_id: SourceRouteId(ROUTE_ID.to_owned()),
+            source_native_id: Some("42".to_owned()),
+            title: Some("Listing title".to_owned()),
+            source_location: Some("https://www.zhihu.com/question/1/answer/42".to_owned()),
+            hierarchy: vec!["Zhihu".to_owned(), "Collection 1".to_owned()],
+            content_type: ContentType::Document,
+            source_updated_at: None,
+            attachment_available: Some(false),
+            limitations: Vec::new(),
+            selection_capabilities: vec!["single".to_owned()],
+            common_metadata: babata_domain::CommonSourceMetadata::default(),
+        }
+        .with_common_from_legacy();
+        let output = serde_json::json!([{
+            "QuestionId": "1",
+            "QuestionTitle": "Canonical question title",
+            "Author": {
+                "Name": "Alice",
+                "Id": "author-7",
+                "Url": "https://www.zhihu.com/people/alice"
+            },
+            "CreatedAt": 1_700_000_000,
+            "UpdatedAt": "2026-07-20T12:34:56Z",
+            "ContentText": "Answer body",
+            "ContentHtml": "<p>Answer body</p>",
+            "Images": [],
+            "ProviderFutureField": {"kept": true}
+        }]);
+
+        let AcquisitionOutcome::Found { candidate, .. } = acquisition_from_detail(
+            &adapter,
+            &candidate,
+            "42",
+            "https://www.zhihu.com/question/1/answer/42",
+            false,
+            &output,
+        )
+        .unwrap() else {
+            panic!("expected a found Zhihu acquisition");
+        };
+
+        assert_eq!(
+            candidate.common_metadata.title.as_deref(),
+            Some("Canonical question title")
+        );
+        assert_eq!(candidate.common_metadata.authors[0].display_name, "Alice");
+        assert_eq!(
+            candidate
+                .common_metadata
+                .source_published_at
+                .as_ref()
+                .map(UtcTimestamp::as_str),
+            Some("2023-11-14T22:13:20Z")
+        );
+        assert_eq!(
+            candidate
+                .common_metadata
+                .source_updated_at
+                .as_ref()
+                .map(UtcTimestamp::as_str),
+            Some("2026-07-20T12:34:56Z")
+        );
+        let provider_metadata: Value = serde_json::from_str(&candidate.metadata.to_json()).unwrap();
+        assert_eq!(
+            provider_metadata["provider_detail_metadata"]["ProviderFutureField"]["kept"],
+            true
+        );
+    }
+
+    #[test]
+    fn ambiguous_source_time_is_not_promoted_to_utc() {
+        assert!(source_timestamp(Some(&Value::String("6月2日 08:56".to_owned()))).is_none());
     }
 }

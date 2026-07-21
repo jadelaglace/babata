@@ -65,7 +65,9 @@ impl SourceAdapterPort for DoubaoOpenCliAdapter {
                         "history metadata does not declare message attachments".to_owned(),
                     ],
                         selection_capabilities: vec!["single".to_owned(), "explicit_id".to_owned()],
-                    },
+                        common_metadata: babata_domain::CommonSourceMetadata::default(),
+                    }
+                    .with_common_from_legacy(),
                     prefetched: None,
                 }]);
             }
@@ -119,7 +121,9 @@ impl SourceAdapterPort for DoubaoOpenCliAdapter {
                             "visible_set".to_owned(),
                             "recent_count".to_owned(),
                         ],
-                    },
+                        common_metadata: babata_domain::CommonSourceMetadata::default(),
+                    }
+                    .with_common_from_legacy(),
                     prefetched: None,
                 })
             })
@@ -205,7 +209,7 @@ impl SourceAdapterPort for DoubaoOpenCliAdapter {
             .to_string(),
         )?;
         Ok(AcquisitionOutcome::Found {
-            candidate: CandidateEnvelope {
+            candidate: Box::new(CandidateEnvelope {
                 protocol_version: "1".to_owned(),
                 route_id: SourceRouteId(ROUTE_ID.to_owned()),
                 source_reference: candidate
@@ -218,7 +222,8 @@ impl SourceAdapterPort for DoubaoOpenCliAdapter {
                 payload: CandidatePayload::Text { text: payload },
                 context: Some("Doubao / Recent conversations".to_owned()),
                 native_id: Some(conversation_id.to_owned()),
-            },
+                common_metadata: candidate.effective_common_metadata(),
+            }),
             assets: Vec::new(),
         })
     }
