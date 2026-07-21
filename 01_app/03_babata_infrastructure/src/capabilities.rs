@@ -64,6 +64,24 @@ pub fn all_descriptors() -> Vec<CapabilityDescriptor> {
                     .to_owned(),
             ),
         },
+        CapabilityDescriptor {
+            id: CapabilityId::new("knowledge.map_evolution"),
+            status: CapabilityStatus::Enabled,
+            activation_phase: "P6.1".to_owned(),
+            reason: Some(
+                "Disciplines, branches, parents, assignments, tags and map-node scores have append-only history while the baseline foundations are locked"
+                    .to_owned(),
+            ),
+        },
+        CapabilityDescriptor {
+            id: CapabilityId::new("knowledge.dense_preview"),
+            status: CapabilityStatus::Enabled,
+            activation_phase: "P6.1".to_owned(),
+            reason: Some(
+                "High-density core text can build, verify, delete and rebuild a controlled C2 Markdown preview"
+                    .to_owned(),
+            ),
+        },
         CapabilityDescriptor::unavailable("knowledge", "P6.1"),
         CapabilityDescriptor::unavailable("explore", "P6"),
         CapabilityDescriptor::unavailable("sublibraries", "P6"),

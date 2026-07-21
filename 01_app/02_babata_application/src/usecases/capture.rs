@@ -1,15 +1,16 @@
 use babata_domain::{
-    AssetRole, CandidateEnvelope, CandidatePayload, CollectionId, ContentType, ItemId, Metadata,
-    RawState, RevisionId, RevisionKind, Sha256, SourceId, SourceKind, TextPayload, UtcTimestamp,
+    AssetAttachmentId, AssetRole, CandidateEnvelope, CandidatePayload, CollectionId, ContentType,
+    ItemId, Metadata, RawState, RevisionId, RevisionKind, Sha256, SourceId, SourceKind,
+    TextPayload, UtcTimestamp,
 };
 
 use crate::{
     ApplicationError, AttachRecoveredAssetsCommand, CandidateCaptureCommand, CaptureFileCommand,
     CaptureImportCommand, CaptureOutcome, CaptureTextCommand,
     ports::{
-        AssetStorePort, ClockPort, FinalizeAssetOutcome, NewAsset, NewCaptureOperation,
-        NewCollection, NewItem, NewRevision, NewSource, PersistGraph, RawRepositoryPort,
-        StagedAsset,
+        AssetStorePort, ClockPort, FinalizeAssetOutcome, NewAsset, NewAssetAttachmentOperation,
+        NewCaptureOperation, NewCollection, NewItem, NewRevision, NewSource, PersistGraph,
+        RawRepositoryPort, StagedAsset,
     },
 };
 
@@ -135,8 +136,9 @@ where
         Ok(outcome)
     }
 
-    /// Append recovered source/preview assets as a new C0 revision. The parent
-    /// revision and all existing bytes remain immutable.
+    /// Append recovered source/preview assets to the existing C0 revision.
+    /// The attachment operation is independently traceable and never invents
+    /// a duplicate content revision.
     pub fn attach_recovered_assets(
         &self,
         command: AttachRecoveredAssetsCommand,
@@ -169,42 +171,13 @@ where
                 command.revision_id
             )));
         }
-        let item = self
-            .repository
-            .find_item(&parent.item_id)?
-            .ok_or_else(|| ApplicationError::NotFound(format!("item {}", parent.item_id)))?;
-        let source = self
-            .repository
-            .find_source_by_id(&item.source_id)?
-            .ok_or_else(|| ApplicationError::NotFound(format!("source {}", item.source_id)))?;
-
-        // Resolve every fallible repository value before staging files so an
-        // early database failure cannot leave an untracked staging operation.
-        let ordinal = self.repository.next_ordinal(&item.id)?;
-        let operation_id = new_operation_id();
-        let staged_assets = self.stage_import_assets(&command.assets, &operation_id)?;
-
+        let operation_id = AssetAttachmentId::new();
+        let staged_assets = self.stage_import_assets(&command.assets, operation_id.as_str())?;
         let now = self.clock.now();
-        let revision = NewRevision {
-            id: RevisionId::new(),
-            item_id: item.id.clone(),
-            parent_revision_id: Some(parent.id.clone()),
-            kind: RevisionKind::Import,
-            ordinal,
-            captured_at: now.clone(),
-            authored_at: parent.authored_at,
-            revision_note: Some(command.reason.trim().to_owned()),
-            raw_text: parent.raw_text,
-            text_sha256: parent.text_sha256.clone(),
-            metadata: parent.metadata,
-        };
-        let operation = NewCaptureOperation {
-            operation_id: operation_id.clone(),
-            item_id: item.id.clone(),
-            revision_id: revision.id.clone(),
-            source_native_id: item.source_native_id.clone(),
-            source_locator: item.source_locator.clone(),
-            source_published_at: item.source_published_at.clone(),
+        let operation = NewAssetAttachmentOperation {
+            id: operation_id,
+            revision_id: parent.id.clone(),
+            reason: command.reason.trim().to_owned(),
             metadata: command.metadata,
             started_at: now,
         };
@@ -212,7 +185,7 @@ where
             .iter()
             .map(|asset| NewAsset {
                 id: asset.asset_id.clone(),
-                revision_id: revision.id.clone(),
+                revision_id: parent.id.clone(),
                 role: asset.role,
                 logical_path: asset.logical_path.as_str().to_owned(),
                 sha256: asset.sha256.clone(),
@@ -221,27 +194,7 @@ where
                 original_filename: asset.original_filename.clone(),
             })
             .collect();
-        let duplicate_of = revision.text_sha256.as_ref().map(|_| parent.id);
-        let result = self.persist_and_finalize(
-            operation_id.clone(),
-            operation,
-            source,
-            None,
-            item,
-            revision,
-            assets,
-            Vec::new(),
-            staged_assets.clone(),
-            duplicate_of,
-            true,
-        );
-        if result.is_err() {
-            for asset in &staged_assets {
-                let _ = self.assets.discard_stage(asset);
-            }
-            let _ = self.assets.complete_operation(&operation_id);
-        }
-        result.map_err(|error| error.with_operation(operation_id))
+        self.persist_asset_attachment(operation, parent.item_id, assets, staged_assets)
     }
 
     fn stage_import_assets(
@@ -615,6 +568,121 @@ where
         })
     }
 
+    fn persist_asset_attachment(
+        &self,
+        operation: NewAssetAttachmentOperation,
+        item_id: ItemId,
+        assets: Vec<NewAsset>,
+        staged_assets: Vec<StagedAsset>,
+    ) -> Result<CaptureOutcome, ApplicationError> {
+        let operation_id = operation.id.to_string();
+        self.assets.begin_operation(&operation_id)?;
+        if let Err(error) = self.repository.insert_asset_attachment(&operation, &assets) {
+            for asset in &staged_assets {
+                let _ = self.assets.discard_stage(asset);
+            }
+            let _ = self.assets.complete_operation(&operation_id);
+            return Err(error.with_operation(operation_id));
+        }
+        let mut finalized = Vec::with_capacity(staged_assets.len());
+        for asset in &staged_assets {
+            match self.assets.finalize(asset) {
+                Ok(outcome) => finalized.push((asset.clone(), outcome)),
+                Err(error) => {
+                    self.preserve_failed_asset_attachment(&operation, &finalized, &error);
+                    return Err(error.with_operation(operation_id));
+                }
+            }
+        }
+        for asset in &staged_assets {
+            match self.assets.verify(asset) {
+                Ok(true) => {}
+                Ok(false) => {
+                    let error = ApplicationError::Integrity(
+                        "finalized attachment asset failed hash verification".to_owned(),
+                    );
+                    self.preserve_failed_asset_attachment(&operation, &finalized, &error);
+                    return Err(error.with_operation(operation_id));
+                }
+                Err(error) => {
+                    self.preserve_failed_asset_attachment(&operation, &finalized, &error);
+                    return Err(error.with_operation(operation_id));
+                }
+            }
+        }
+        if let Err(error) = self.repository.mark_asset_attachment_ready(&operation.id) {
+            self.preserve_failed_asset_attachment(&operation, &finalized, &error);
+            return Err(error.with_operation(operation_id));
+        }
+        let mut warnings = Vec::new();
+        for asset in &staged_assets {
+            if self.assets.discard_stage(asset).is_err() {
+                warnings.push("recovery staging cleanup is pending".to_owned());
+                break;
+            }
+        }
+        if self.assets.complete_operation(&operation_id).is_err() {
+            warnings.push("recovery journal cleanup is pending".to_owned());
+        }
+        let detail = self
+            .repository
+            .load_detail(&item_id)
+            .ok()
+            .and_then(|detail| {
+                if validate_ready_asset_attachment_readback(
+                    &detail,
+                    &operation.id,
+                    &operation.revision_id,
+                    &staged_assets,
+                )
+                .is_ok()
+                {
+                    Some(detail)
+                } else {
+                    None
+                }
+            });
+        if detail.is_none() {
+            warnings.push("ready attachment committed but repository read-back failed".to_owned());
+        }
+        Ok(CaptureOutcome {
+            operation_id,
+            item_id,
+            revision_id: operation.revision_id,
+            asset_ids: staged_assets
+                .into_iter()
+                .map(|asset| asset.asset_id)
+                .collect(),
+            status: "ready".to_owned(),
+            duplicate_of: None,
+            reimported: false,
+            warnings,
+            record: detail,
+        })
+    }
+
+    fn preserve_failed_asset_attachment(
+        &self,
+        operation: &NewAssetAttachmentOperation,
+        finalized: &[(StagedAsset, FinalizeAssetOutcome)],
+        error: &ApplicationError,
+    ) {
+        let operation_id = operation.id.to_string();
+        let _ = self.assets.preserve_operation(
+            &operation_id,
+            &operation.revision_id.to_string(),
+            error.code(),
+        );
+        for (asset, outcome) in finalized {
+            let _ = self
+                .assets
+                .quarantine_finalized(asset, &operation_id, *outcome);
+        }
+        let _ = self
+            .repository
+            .quarantine_asset_attachment(&operation.id, error.code());
+    }
+
     fn preserve_failed_capture(
         &self,
         operation_id: &str,
@@ -756,6 +824,33 @@ fn validate_ready_readback(
     Ok(())
 }
 
+fn validate_ready_asset_attachment_readback(
+    detail: &crate::RecordDetail,
+    operation_id: &AssetAttachmentId,
+    revision_id: &RevisionId,
+    staged_assets: &[StagedAsset],
+) -> Result<(), ApplicationError> {
+    validate_ready_readback(detail, revision_id, staged_assets)?;
+    let operation = detail
+        .asset_attachments
+        .iter()
+        .find(|operation| &operation.operation_id == operation_id)
+        .ok_or_else(|| {
+            ApplicationError::Integrity("ready asset attachment did not read back".to_owned())
+        })?;
+    if operation.state != RawState::Ready
+        || &operation.revision_id != revision_id
+        || staged_assets
+            .iter()
+            .any(|asset| !operation.asset_ids.contains(&asset.asset_id))
+    {
+        return Err(ApplicationError::Integrity(
+            "asset attachment read back with wrong state or membership".to_owned(),
+        ));
+    }
+    Ok(())
+}
+
 pub(crate) fn collection_from_context(
     source: &NewSource,
     context: Option<String>,
@@ -824,8 +919,18 @@ pub(crate) mod tests {
     pub(crate) struct MockRepository {
         pub(crate) state: Arc<Mutex<State>>,
         pub(crate) fail_mark_ready: bool,
+        pub(crate) fail_mark_attachment_ready: bool,
         pub(crate) fail_next_ordinal: bool,
     }
+
+    #[derive(Clone)]
+    pub(crate) struct MockAssetAttachment {
+        pub(crate) operation: NewAssetAttachmentOperation,
+        pub(crate) asset_ids: Vec<AssetId>,
+        pub(crate) state: RawState,
+        pub(crate) failure_code: Option<String>,
+    }
+
     #[derive(Default)]
     pub(crate) struct State {
         pub(crate) sources: Vec<NewSource>,
@@ -833,6 +938,8 @@ pub(crate) mod tests {
         pub(crate) revisions: Vec<NewRevision>,
         pub(crate) operations: Vec<NewCaptureOperation>,
         pub(crate) assets: Vec<NewAsset>,
+        pub(crate) asset_states: Vec<(AssetId, RawState)>,
+        pub(crate) asset_attachments: Vec<MockAssetAttachment>,
         pub(crate) relations: Vec<NewRelation>,
         pub(crate) quarantined: Vec<RevisionId>,
         pub(crate) states: Vec<(RevisionId, RawState)>,
@@ -996,10 +1103,96 @@ pub(crate) mod tests {
             state.revisions.push(graph.revision.clone());
             state.operations.push(graph.operation.clone());
             state.assets.extend(graph.assets.clone());
+            state.asset_states.extend(
+                graph
+                    .assets
+                    .iter()
+                    .map(|asset| (asset.id.clone(), RawState::Pending)),
+            );
             state.relations.extend(graph.relations.clone());
             state
                 .states
                 .push((graph.revision.id.clone(), RawState::Pending));
+            Ok(())
+        }
+        fn insert_asset_attachment(
+            &self,
+            operation: &NewAssetAttachmentOperation,
+            assets: &[NewAsset],
+        ) -> Result<(), ApplicationError> {
+            let mut state = self.state.lock().unwrap();
+            if state
+                .states
+                .iter()
+                .find(|(revision_id, _)| revision_id == &operation.revision_id)
+                .is_none_or(|(_, state)| *state != RawState::Ready)
+            {
+                return Err(ApplicationError::Conflict(
+                    "assets can be attached only to a ready revision".to_owned(),
+                ));
+            }
+            let asset_ids = assets.iter().map(|asset| asset.id.clone()).collect();
+            state.assets.extend_from_slice(assets);
+            state.asset_states.extend(
+                assets
+                    .iter()
+                    .map(|asset| (asset.id.clone(), RawState::Pending)),
+            );
+            state.asset_attachments.push(MockAssetAttachment {
+                operation: operation.clone(),
+                asset_ids,
+                state: RawState::Pending,
+                failure_code: None,
+            });
+            Ok(())
+        }
+        fn mark_asset_attachment_ready(
+            &self,
+            operation_id: &AssetAttachmentId,
+        ) -> Result<(), ApplicationError> {
+            if self.fail_mark_attachment_ready {
+                return Err(ApplicationError::Storage(
+                    "attachment ready transition failed".to_owned(),
+                ));
+            }
+            let mut state = self.state.lock().unwrap();
+            let asset_ids = {
+                let attachment = state
+                    .asset_attachments
+                    .iter_mut()
+                    .find(|attachment| &attachment.operation.id == operation_id)
+                    .ok_or_else(|| ApplicationError::NotFound(operation_id.to_string()))?;
+                attachment.state = RawState::Ready;
+                attachment.asset_ids.clone()
+            };
+            for (asset_id, asset_state) in &mut state.asset_states {
+                if asset_ids.contains(asset_id) {
+                    *asset_state = RawState::Ready;
+                }
+            }
+            Ok(())
+        }
+        fn quarantine_asset_attachment(
+            &self,
+            operation_id: &AssetAttachmentId,
+            failure_code: &str,
+        ) -> Result<(), ApplicationError> {
+            let mut state = self.state.lock().unwrap();
+            let asset_ids = {
+                let attachment = state
+                    .asset_attachments
+                    .iter_mut()
+                    .find(|attachment| &attachment.operation.id == operation_id)
+                    .ok_or_else(|| ApplicationError::NotFound(operation_id.to_string()))?;
+                attachment.state = RawState::Quarantined;
+                attachment.failure_code = Some(failure_code.to_owned());
+                attachment.asset_ids.clone()
+            };
+            for (asset_id, asset_state) in &mut state.asset_states {
+                if asset_ids.contains(asset_id) {
+                    *asset_state = RawState::Quarantined;
+                }
+            }
             Ok(())
         }
         fn mark_ready(&self, revision_id: &RevisionId) -> Result<(), ApplicationError> {
@@ -1018,6 +1211,18 @@ pub(crate) mod tests {
             {
                 *state = RawState::Ready;
             }
+            let mut state = self.state.lock().unwrap();
+            let asset_ids: Vec<_> = state
+                .assets
+                .iter()
+                .filter(|asset| &asset.revision_id == revision_id)
+                .map(|asset| asset.id.clone())
+                .collect();
+            for (asset_id, asset_state) in &mut state.asset_states {
+                if asset_ids.contains(asset_id) {
+                    *asset_state = RawState::Ready;
+                }
+            }
             Ok(())
         }
         fn quarantine(&self, revision_id: &RevisionId, _: &str) -> Result<(), ApplicationError> {
@@ -1035,6 +1240,18 @@ pub(crate) mod tests {
                 .find(|(id, _)| id == revision_id)
             {
                 *state = RawState::Quarantined;
+            }
+            let mut state = self.state.lock().unwrap();
+            let asset_ids: Vec<_> = state
+                .assets
+                .iter()
+                .filter(|asset| &asset.revision_id == revision_id)
+                .map(|asset| asset.id.clone())
+                .collect();
+            for (asset_id, asset_state) in &mut state.asset_states {
+                if asset_ids.contains(asset_id) {
+                    *asset_state = RawState::Quarantined;
+                }
             }
             Ok(())
         }
@@ -1124,9 +1341,9 @@ pub(crate) mod tests {
                         media_type: asset.media_type.clone(),
                         original_filename: asset.original_filename.clone(),
                         state: state
-                            .states
+                            .asset_states
                             .iter()
-                            .find(|(id, _)| id == &asset.revision_id)
+                            .find(|(id, _)| id == &asset.id)
                             .map_or(RawState::Pending, |(_, state)| *state),
                         created_at: state
                             .revisions
@@ -1136,6 +1353,28 @@ pub(crate) mod tests {
                                 || item.first_captured_at.clone(),
                                 |revision| revision.captured_at.clone(),
                             ),
+                    })
+                    .collect(),
+                asset_attachments: state
+                    .asset_attachments
+                    .iter()
+                    .filter(|attachment| {
+                        state.revisions.iter().any(|revision| {
+                            revision.item_id == *item_id
+                                && revision.id == attachment.operation.revision_id
+                        })
+                    })
+                    .map(|attachment| crate::AssetAttachmentDetail {
+                        operation_id: attachment.operation.id.clone(),
+                        revision_id: attachment.operation.revision_id.clone(),
+                        asset_ids: attachment.asset_ids.clone(),
+                        reason: attachment.operation.reason.clone(),
+                        metadata: attachment.operation.metadata.clone(),
+                        state: attachment.state,
+                        failure_code: attachment.failure_code.clone(),
+                        started_at: attachment.operation.started_at.clone(),
+                        completed_at: (attachment.state != RawState::Pending)
+                            .then(|| attachment.operation.started_at.clone()),
                     })
                     .collect(),
                 relations: state
@@ -1285,33 +1524,125 @@ pub(crate) mod tests {
     }
 
     #[test]
-    fn attach_assets_resolves_ordinal_before_staging() {
+    fn attach_assets_does_not_allocate_a_content_revision() {
         let repository = MockRepository::default();
         let assets = MockAssets::default();
         let parent = CaptureService::new(repository.clone(), assets.clone(), FixedClock)
             .capture_text(text("fixture", "existing source text"))
             .unwrap();
-        let failing_repository = MockRepository {
+        let attachment_repository = MockRepository {
             state: repository.state.clone(),
             fail_next_ordinal: true,
             ..Default::default()
         };
-        let service = CaptureService::new(failing_repository, assets.clone(), FixedClock);
+        let service = CaptureService::new(attachment_repository, assets.clone(), FixedClock);
 
-        let error = service
+        let outcome = service
             .attach_recovered_assets(AttachRecoveredAssetsCommand {
-                revision_id: parent.revision_id,
+                revision_id: parent.revision_id.clone(),
                 assets: vec![crate::CaptureImportAsset {
                     path: "source.docx".to_owned(),
                     role: AssetRole::Original,
                 }],
                 reason: "recover source".to_owned(),
-                metadata: Metadata::empty(),
+                metadata: Metadata::parse(r#"{"route":"fixture"}"#).unwrap(),
             })
-            .unwrap_err();
+            .unwrap();
 
-        assert!(error.to_string().contains("next ordinal failed"));
-        assert_eq!(*assets.staged.lock().unwrap(), 0);
+        assert_eq!(outcome.revision_id, parent.revision_id);
+        assert!(!outcome.reimported);
+        assert_eq!(*assets.staged.lock().unwrap(), 1);
+        let state = repository.state.lock().unwrap();
+        assert_eq!(state.revisions.len(), 1);
+        assert_eq!(state.states[0].1, RawState::Ready);
+        assert_eq!(state.asset_attachments.len(), 1);
+        assert_eq!(state.asset_attachments[0].state, RawState::Ready);
+        assert_eq!(state.asset_states[0].1, RawState::Ready);
+        let attachment = &outcome.record.unwrap().asset_attachments[0];
+        assert_eq!(attachment.reason, "recover source");
+        assert_eq!(attachment.metadata.to_json(), r#"{"route":"fixture"}"#);
+    }
+
+    #[test]
+    fn failed_attachment_finalization_quarantines_only_the_attachment() {
+        assert_attachment_failure_preserves_parent(
+            MockRepository::default(),
+            MockAssets {
+                fail_finalize: true,
+                ..Default::default()
+            },
+            "io_failed",
+            0,
+        );
+    }
+
+    #[test]
+    fn failed_attachment_verification_quarantines_only_the_attachment() {
+        assert_attachment_failure_preserves_parent(
+            MockRepository::default(),
+            MockAssets {
+                fail_verify: true,
+                ..Default::default()
+            },
+            "integrity_failed",
+            1,
+        );
+    }
+
+    #[test]
+    fn failed_attachment_ready_transition_quarantines_only_the_attachment() {
+        assert_attachment_failure_preserves_parent(
+            MockRepository {
+                fail_mark_attachment_ready: true,
+                ..Default::default()
+            },
+            MockAssets::default(),
+            "io_failed",
+            1,
+        );
+    }
+
+    fn assert_attachment_failure_preserves_parent(
+        repository: MockRepository,
+        assets: MockAssets,
+        expected_failure_code: &str,
+        expected_recovery_markers: u32,
+    ) {
+        let parent = CaptureService::new(repository.clone(), MockAssets::default(), FixedClock)
+            .capture_text(text("fixture", "existing source text"))
+            .unwrap();
+        let service = CaptureService::new(repository.clone(), assets.clone(), FixedClock);
+
+        assert!(
+            service
+                .attach_recovered_assets(AttachRecoveredAssetsCommand {
+                    revision_id: parent.revision_id.clone(),
+                    assets: vec![crate::CaptureImportAsset {
+                        path: "source.docx".to_owned(),
+                        role: AssetRole::Original,
+                    }],
+                    reason: "recover source".to_owned(),
+                    metadata: Metadata::empty(),
+                })
+                .is_err()
+        );
+
+        let state = repository.state.lock().unwrap();
+        assert_eq!(state.revisions.len(), 1);
+        assert_eq!(state.revisions[0].id, parent.revision_id);
+        assert_eq!(state.states[0].1, RawState::Ready);
+        assert!(state.quarantined.is_empty());
+        assert_eq!(state.asset_attachments.len(), 1);
+        assert_eq!(state.asset_attachments[0].state, RawState::Quarantined);
+        assert_eq!(
+            state.asset_attachments[0].failure_code.as_deref(),
+            Some(expected_failure_code)
+        );
+        assert_eq!(state.asset_states[0].1, RawState::Quarantined);
+        assert_eq!(
+            *assets.recovery_markers.lock().unwrap(),
+            expected_recovery_markers
+        );
     }
 
     #[test]

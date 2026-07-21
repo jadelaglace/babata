@@ -4,6 +4,7 @@ pub mod candidate_runner;
 pub mod capability_registry;
 pub mod clock;
 pub mod collection_repository;
+pub mod dense_expression_preview;
 pub mod derived_repository;
 pub mod job_repository;
 pub mod knowledge_core_repository;
@@ -21,6 +22,7 @@ pub use candidate_runner::CandidateRunnerPort;
 pub use capability_registry::CapabilityRegistryPort;
 pub use clock::ClockPort;
 pub use collection_repository::CollectionRepositoryPort;
+pub use dense_expression_preview::DenseExpressionPreviewPort;
 pub use derived_repository::{DerivedRepositoryPort, ProcessCommit};
 pub use job_repository::JobRepositoryPort;
 pub use knowledge_core_repository::KnowledgeCoreRepositoryPort;
@@ -29,8 +31,8 @@ pub use process_provider::{
     ProcessProviderPort, ProviderExecutionOutcome, ProviderExecutionRequest, ProviderIdentity,
 };
 pub use raw_repository::{
-    NewAsset, NewCaptureOperation, NewCollection, NewItem, NewRelation, NewRevision,
-    NewRouteEvidence, NewSource, PersistGraph, RawRepositoryPort,
+    NewAsset, NewAssetAttachmentOperation, NewCaptureOperation, NewCollection, NewItem,
+    NewRelation, NewRevision, NewRouteEvidence, NewSource, PersistGraph, RawRepositoryPort,
 };
 pub use read_projection::ReadProjectionPort;
 pub use semantic_digest_provider::{

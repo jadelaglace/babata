@@ -42,6 +42,21 @@ pub enum MapNodeLevel {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+pub enum MapNodeLifecycle {
+    Active,
+    Inactive,
+    Merged,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RelevanceTargetKind {
+    MapNode,
+    Semantic,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum LogScale {
     LongTerm,
     MediumTerm,
@@ -178,6 +193,8 @@ pub struct ScoreProfile {
     pub strategy_weight: u8,
     pub consensus_weight: u8,
     pub rationale: String,
+    pub author_kind: String,
+    pub author: String,
     pub created_at: UtcTimestamp,
 }
 
@@ -198,7 +215,17 @@ impl ScoreProfile {
             });
         }
         non_blank(&self.profile_id, "profile id")?;
-        non_blank(&self.rationale, "profile rationale")
+        non_blank(&self.rationale, "profile rationale")?;
+        if !matches!(
+            self.author_kind.as_str(),
+            "system" | "machine" | "first_party"
+        ) {
+            return Err(DomainError::Invalid {
+                field: "profile author kind",
+                value: self.author_kind.clone(),
+            });
+        }
+        non_blank(&self.author, "profile author")
     }
 }
 
@@ -322,45 +349,27 @@ impl SemanticCandidatePackage {
         ] {
             non_blank(value, field)?;
         }
+        if self.evidence_derivatives.is_empty() {
+            return Err(DomainError::Empty {
+                field: "semantic evidence derivatives",
+            });
+        }
+        let mut evidence_ids = std::collections::BTreeSet::new();
+        for evidence in &self.evidence_derivatives {
+            if !evidence_ids.insert(evidence.derivative_id.to_string()) {
+                return Err(DomainError::Invalid {
+                    field: "semantic evidence derivatives",
+                    value: evidence.derivative_id.to_string(),
+                });
+            }
+        }
         if self.entries.is_empty() {
             return Err(DomainError::Empty {
                 field: "semantic entries",
             });
         }
 
-        let mut refs = std::collections::BTreeSet::new();
-        for root in [
-            "foundation:time",
-            "foundation:space",
-            "foundation:matter",
-            "foundation:consciousness",
-        ] {
-            refs.insert(root.to_owned());
-        }
-        for node in &self.map_nodes {
-            if node.level == MapNodeLevel::Foundation {
-                return Err(DomainError::Invalid {
-                    field: "candidate map node level",
-                    value: "foundation roots are fixed by the worldview map".to_owned(),
-                });
-            }
-            non_blank(&node.local_ref, "map node local_ref")?;
-            non_blank(&node.name, "map node name")?;
-            if node.parent_refs.is_empty() || !refs.insert(node.local_ref.clone()) {
-                return Err(DomainError::Invalid {
-                    field: "map node local_ref",
-                    value: node.local_ref.clone(),
-                });
-            }
-        }
-        for node in &self.map_nodes {
-            if node.parent_refs.iter().any(|parent| !refs.contains(parent)) {
-                return Err(DomainError::Invalid {
-                    field: "map node parent_refs",
-                    value: node.local_ref.clone(),
-                });
-            }
-        }
+        let refs = self.validated_map_refs()?;
 
         let mut entry_refs = std::collections::BTreeSet::new();
         for entry in &self.entries {
@@ -398,6 +407,55 @@ impl SemanticCandidatePackage {
             non_blank(&relation.evidence, "relation evidence")?;
         }
         Ok(())
+    }
+
+    fn validated_map_refs(&self) -> Result<std::collections::BTreeSet<String>, DomainError> {
+        let mut refs = std::collections::BTreeSet::new();
+        let mut map_levels = std::collections::BTreeMap::new();
+        for root in [
+            "foundation:time",
+            "foundation:space",
+            "foundation:matter",
+            "foundation:consciousness",
+        ] {
+            refs.insert(root.to_owned());
+            map_levels.insert(root.to_owned(), MapNodeLevel::Foundation);
+        }
+        for node in &self.map_nodes {
+            if node.level == MapNodeLevel::Foundation {
+                return Err(DomainError::Invalid {
+                    field: "candidate map node level",
+                    value: "foundation roots are fixed by the worldview map".to_owned(),
+                });
+            }
+            non_blank(&node.local_ref, "map node local_ref")?;
+            non_blank(&node.name, "map node name")?;
+            if node.parent_refs.is_empty() || !refs.insert(node.local_ref.clone()) {
+                return Err(DomainError::Invalid {
+                    field: "map node local_ref",
+                    value: node.local_ref.clone(),
+                });
+            }
+            map_levels.insert(node.local_ref.clone(), node.level);
+        }
+        for node in &self.map_nodes {
+            let invalid_parent = node.parent_refs.iter().find(|parent| {
+                map_levels.get(*parent).is_none_or(|parent_level| {
+                    !matches!(
+                        (*parent_level, node.level),
+                        (MapNodeLevel::Foundation, MapNodeLevel::Discipline)
+                            | (MapNodeLevel::Discipline, MapNodeLevel::Branch)
+                    )
+                })
+            });
+            if let Some(invalid_parent) = invalid_parent {
+                return Err(DomainError::Invalid {
+                    field: "map node parent_refs",
+                    value: format!("{} -> {}", invalid_parent, node.local_ref),
+                });
+            }
+        }
+        Ok(refs)
     }
 }
 
@@ -459,6 +517,8 @@ mod tests {
             strategy_weight: 35,
             consensus_weight: 25,
             rationale: "P6 baseline".to_owned(),
+            author_kind: "system".to_owned(),
+            author: "babata".to_owned(),
             created_at: UtcTimestamp::parse("2026-01-01T00:00:00Z").unwrap(),
         };
         profile.validate().unwrap();
@@ -469,5 +529,50 @@ mod tests {
             rationale: "fixture".to_owned(),
         };
         assert_eq!(score.weighted_score(&profile), 6300);
+    }
+
+    #[test]
+    fn semantic_package_rejects_a_branch_attached_directly_to_a_foundation() {
+        let package = SemanticCandidatePackage {
+            schema_version: SEMANTIC_CANDIDATE_SCHEMA_V1.to_owned(),
+            source_item_id: ItemId::new(),
+            source_revision_id: RevisionId::new(),
+            evidence_derivatives: vec![DerivativeEvidence {
+                derivative_id: DerivativeId::new(),
+                output_sha256: crate::Sha256::of_bytes(b"evidence"),
+            }],
+            provider: "fixture".to_owned(),
+            model: "fixture".to_owned(),
+            model_version: "1".to_owned(),
+            prompt_version: "1".to_owned(),
+            generated_at: UtcTimestamp::parse("2026-07-21T00:00:00Z").unwrap(),
+            map_nodes: vec![MapNodeCandidate {
+                local_ref: "node:invalid-branch".to_owned(),
+                level: MapNodeLevel::Branch,
+                name: "invalid branch".to_owned(),
+                parent_refs: vec!["foundation:time".to_owned()],
+            }],
+            entries: vec![SemanticCandidate {
+                local_ref: "entry:knowledge".to_owned(),
+                title: "knowledge".to_owned(),
+                payload: SemanticPayload::Knowledge {
+                    statement: "statement".to_owned(),
+                    details: "details".to_owned(),
+                },
+                map_node_refs: vec!["foundation:time".to_owned()],
+                tags: Vec::new(),
+                dense_expressions: Vec::new(),
+                relevance: RelevanceComponents {
+                    interest: 1,
+                    strategy: 1,
+                    consensus: 1,
+                    rationale: "fixture".to_owned(),
+                },
+            }],
+            relations: Vec::new(),
+            limitations: Vec::new(),
+        };
+
+        assert!(package.validate().is_err());
     }
 }

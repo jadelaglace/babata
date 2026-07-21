@@ -3,8 +3,10 @@ use babata_domain::{
 };
 
 use crate::{
-    ApplicationError, CreateScoreProfileCommand, FirstPartySemanticOutcome,
-    IngestSemanticCandidateCommand, KnowledgeReviewContext, RecordRelevanceScoreCommand,
+    ApplicationError, ChangeMapNodeTagCommand, ChangeMapParentCommand,
+    ChangeSemanticMapAssignmentCommand, CreateMapNodeCommand, CreateScoreProfileCommand,
+    EvolveMapNodeCommand, FirstPartySemanticOutcome, IngestSemanticCandidateCommand,
+    KnowledgeReviewContext, MapNodeDetail, RecordRelevanceScoreCommand,
     RecordSuggestionReviewCommand, RegisterFirstPartySemanticCommand, RelevanceScoreDetail,
     SemanticCoreSnapshot, SemanticEntryDetail, SemanticIngestOutcome, ShowProcessRunOutcome,
     ports::{
@@ -164,6 +166,45 @@ where
 
     pub fn show_entry(&self, semantic_id: &str) -> Result<SemanticEntryDetail, ApplicationError> {
         self.raw.load_semantic_entry(semantic_id)
+    }
+
+    pub fn create_map_node(
+        &self,
+        command: &CreateMapNodeCommand,
+    ) -> Result<MapNodeDetail, ApplicationError> {
+        self.raw.create_map_node(command)
+    }
+
+    pub fn evolve_map_node(
+        &self,
+        command: &EvolveMapNodeCommand,
+    ) -> Result<MapNodeDetail, ApplicationError> {
+        self.raw.evolve_map_node(command)
+    }
+
+    pub fn change_map_parent(
+        &self,
+        command: &ChangeMapParentCommand,
+    ) -> Result<MapNodeDetail, ApplicationError> {
+        self.raw.change_map_parent(command)
+    }
+
+    pub fn change_map_assignment(
+        &self,
+        command: &ChangeSemanticMapAssignmentCommand,
+    ) -> Result<MapNodeDetail, ApplicationError> {
+        self.raw.change_semantic_map_assignment(command)
+    }
+
+    pub fn change_map_tag(
+        &self,
+        command: &ChangeMapNodeTagCommand,
+    ) -> Result<MapNodeDetail, ApplicationError> {
+        self.raw.change_map_node_tag(command)
+    }
+
+    pub fn show_map_node(&self, map_node_id: &str) -> Result<MapNodeDetail, ApplicationError> {
+        self.raw.load_map_node(map_node_id)
     }
 
     pub fn record_score(

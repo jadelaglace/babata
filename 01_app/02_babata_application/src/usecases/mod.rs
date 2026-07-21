@@ -1,6 +1,7 @@
 mod capabilities;
 mod capture;
 mod collector;
+mod dense_expression_preview;
 mod explore;
 mod knowledge;
 mod ops;
@@ -15,6 +16,7 @@ mod workspace;
 pub use capabilities::CapabilityService;
 pub use capture::CaptureService;
 pub use collector::CollectorSessionService;
+pub use dense_expression_preview::DenseExpressionPreviewService;
 pub use explore::ExploreService;
 pub use knowledge::KnowledgeService;
 pub use ops::OpsService;

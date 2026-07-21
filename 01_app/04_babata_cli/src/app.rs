@@ -1,17 +1,20 @@
 use babata_application::ports::ClockPort;
 use babata_application::{
-    ApplicationError, CapabilityService, CaptureService, CreateScoreProfileCommand,
-    KnowledgeService, ProcessService, RecordRelevanceScoreCommand, RecordSuggestionReviewCommand,
-    RegisterFirstPartySemanticCommand, SemanticDigestService, WorkspaceService,
+    ApplicationError, CapabilityService, CaptureService, ChangeMapNodeTagCommand,
+    ChangeMapParentCommand, ChangeSemanticMapAssignmentCommand, CreateMapNodeCommand,
+    CreateScoreProfileCommand, DenseExpressionPreviewService, EvolveMapNodeAction,
+    EvolveMapNodeCommand, KnowledgeService, ProcessService, RecordRelevanceScoreCommand,
+    RecordSuggestionReviewCommand, RegisterFirstPartySemanticCommand, SemanticDigestService,
+    WorkspaceService,
 };
 use babata_domain::{
     DerivativeId, FirstPartySemanticDefinition, ItemId, PipelineId, RelevanceComponents,
-    RevisionId, RunId, ScoreProfile, ScoreProfileId,
+    RelevanceTargetKind, RevisionId, RunId, ScoreProfile, ScoreProfileId,
 };
 use babata_infrastructure::{
-    AppConfig, FileAssetStore, StaticCapabilityRegistry, SystemClock, load_config,
-    open_derived_database, open_job_database, open_knowledge_review_database, open_raw_database,
-    processing::registry::ProcessProviderRouter, raw_status,
+    AppConfig, DenseExpressionViewStore, FileAssetStore, StaticCapabilityRegistry, SystemClock,
+    load_config, open_derived_database, open_job_database, open_knowledge_review_database,
+    open_raw_database, processing::registry::ProcessProviderRouter, raw_status,
 };
 use clap::Parser;
 
@@ -92,6 +95,10 @@ fn execute_knowledge(
     let derived = open_derived_database(&config.paths(), config.sqlite.busy_timeout_ms)?;
     let assets = FileAssetStore::new(config.paths());
     let service = KnowledgeService::new(raw.clone(), derived.clone(), assets.clone());
+    let preview_service = DenseExpressionPreviewService::new(
+        raw.clone(),
+        DenseExpressionViewStore::new(config.paths()),
+    );
     match command {
         crate::commands::KnowledgeCommand::Review { item, revision } => {
             render_value(
@@ -139,16 +146,170 @@ fn execute_knowledge(
         crate::commands::KnowledgeCommand::ShowEntry { semantic } => {
             render_value(&service.show_entry(&semantic)?, json)?;
         }
+        crate::commands::KnowledgeCommand::CreateMapNode {
+            level,
+            name,
+            parents,
+            tags,
+            rationale,
+        } => {
+            render_value(
+                &service.create_map_node(&CreateMapNodeCommand {
+                    level: level.into(),
+                    name,
+                    parent_node_ids: parents,
+                    tags,
+                    rationale,
+                    author_kind: "first_party".to_owned(),
+                    author: "user".to_owned(),
+                    created_at: SystemClock.now(),
+                })?,
+                json,
+            )?;
+        }
+        crate::commands::KnowledgeCommand::RenameMapNode {
+            map_node,
+            name,
+            rationale,
+        } => {
+            render_value(
+                &service.evolve_map_node(&EvolveMapNodeCommand {
+                    map_node_id: map_node,
+                    action: EvolveMapNodeAction::Rename { name },
+                    rationale,
+                    author_kind: "first_party".to_owned(),
+                    author: "user".to_owned(),
+                    created_at: SystemClock.now(),
+                })?,
+                json,
+            )?;
+        }
+        crate::commands::KnowledgeCommand::DeactivateMapNode {
+            map_node,
+            rationale,
+        } => {
+            render_value(
+                &service.evolve_map_node(&EvolveMapNodeCommand {
+                    map_node_id: map_node,
+                    action: EvolveMapNodeAction::Deactivate,
+                    rationale,
+                    author_kind: "first_party".to_owned(),
+                    author: "user".to_owned(),
+                    created_at: SystemClock.now(),
+                })?,
+                json,
+            )?;
+        }
+        crate::commands::KnowledgeCommand::MergeMapNode {
+            map_node,
+            target,
+            rationale,
+        } => {
+            render_value(
+                &service.evolve_map_node(&EvolveMapNodeCommand {
+                    map_node_id: map_node,
+                    action: EvolveMapNodeAction::Merge {
+                        target_map_node_id: target,
+                    },
+                    rationale,
+                    author_kind: "first_party".to_owned(),
+                    author: "user".to_owned(),
+                    created_at: SystemClock.now(),
+                })?,
+                json,
+            )?;
+        }
+        crate::commands::KnowledgeCommand::ChangeMapParent {
+            parent,
+            child,
+            change,
+            rationale,
+        } => {
+            render_value(
+                &service.change_map_parent(&ChangeMapParentCommand {
+                    parent_map_node_id: parent,
+                    child_map_node_id: child,
+                    change: change.into(),
+                    rationale,
+                    author_kind: "first_party".to_owned(),
+                    author: "user".to_owned(),
+                    created_at: SystemClock.now(),
+                })?,
+                json,
+            )?;
+        }
+        crate::commands::KnowledgeCommand::ChangeMapAssignment {
+            semantic,
+            map_node,
+            change,
+            rationale,
+        } => {
+            render_value(
+                &service.change_map_assignment(&ChangeSemanticMapAssignmentCommand {
+                    semantic_id: semantic,
+                    map_node_id: map_node,
+                    change: change.into(),
+                    rationale,
+                    author_kind: "first_party".to_owned(),
+                    author: "user".to_owned(),
+                    created_at: SystemClock.now(),
+                })?,
+                json,
+            )?;
+        }
+        crate::commands::KnowledgeCommand::TagMapNode {
+            map_node,
+            tag,
+            change,
+            rationale,
+        } => {
+            render_value(
+                &service.change_map_tag(&ChangeMapNodeTagCommand {
+                    map_node_id: map_node,
+                    tag,
+                    change: change.into(),
+                    rationale,
+                    author_kind: "first_party".to_owned(),
+                    author: "user".to_owned(),
+                    created_at: SystemClock.now(),
+                })?,
+                json,
+            )?;
+        }
+        crate::commands::KnowledgeCommand::ShowMapNode { map_node } => {
+            render_value(&service.show_map_node(&map_node)?, json)?;
+        }
+        crate::commands::KnowledgeCommand::BuildDensePreview { semantic } => {
+            render_value(&preview_service.build(&semantic)?, json)?;
+        }
+        crate::commands::KnowledgeCommand::VerifyDensePreview { semantic } => {
+            render_value(&preview_service.verify(&semantic)?, json)?;
+        }
+        crate::commands::KnowledgeCommand::DeleteDensePreview { semantic } => {
+            render_value(&preview_service.delete(&semantic)?, json)?;
+        }
         crate::commands::KnowledgeCommand::Score {
             semantic,
+            map_node,
             interest,
             strategy,
             consensus,
             rationale,
         } => {
+            let (target_kind, target_id) = match (semantic, map_node) {
+                (Some(semantic), None) => (RelevanceTargetKind::Semantic, semantic),
+                (None, Some(map_node)) => (RelevanceTargetKind::MapNode, map_node),
+                _ => {
+                    return Err(ApplicationError::Integrity(
+                        "score requires exactly one --semantic or --map-node".to_owned(),
+                    )
+                    .into());
+                }
+            };
             render_value(
                 &service.record_score(&RecordRelevanceScoreCommand {
-                    semantic_id: semantic,
+                    target_kind,
+                    target_id,
                     components: RelevanceComponents {
                         interest,
                         strategy,
@@ -201,10 +362,10 @@ fn execute_knowledge(
                     strategy_weight: strategy,
                     consensus_weight: consensus,
                     rationale,
+                    author_kind: "first_party".to_owned(),
+                    author: "user".to_owned(),
                     created_at: SystemClock.now(),
                 },
-                author_kind: "first_party".to_owned(),
-                author: "user".to_owned(),
             };
             render_value(&service.create_score_profile(&command)?, json)?;
         }

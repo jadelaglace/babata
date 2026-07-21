@@ -1,7 +1,7 @@
 use babata_domain::{
-    AssetId, AssetRole, CollectionId, ContentType, ItemId, Metadata, RawState, RelationId,
-    RelationKind, RevisionId, RevisionKind, RouteCoverage, RouteEvidence, Sha256, SourceId,
-    SourceKind, UtcTimestamp,
+    AssetAttachmentId, AssetId, AssetRole, CollectionId, ContentType, ItemId, Metadata, RawState,
+    RelationId, RelationKind, RevisionId, RevisionKind, RouteCoverage, RouteEvidence, Sha256,
+    SourceId, SourceKind, UtcTimestamp,
 };
 
 use crate::{ApplicationError, RecordDetail};
@@ -80,6 +80,15 @@ pub struct NewAsset {
 }
 
 #[derive(Debug, Clone)]
+pub struct NewAssetAttachmentOperation {
+    pub id: AssetAttachmentId,
+    pub revision_id: RevisionId,
+    pub reason: String,
+    pub metadata: Metadata,
+    pub started_at: UtcTimestamp,
+}
+
+#[derive(Debug, Clone)]
 pub struct NewRelation {
     pub id: RelationId,
     pub kind: RelationKind,
@@ -151,6 +160,20 @@ pub trait RawRepositoryPort {
         hash: &Sha256,
     ) -> Result<Option<RevisionId>, ApplicationError>;
     fn insert_capture_graph(&self, graph: &PersistGraph) -> Result<(), ApplicationError>;
+    fn insert_asset_attachment(
+        &self,
+        operation: &NewAssetAttachmentOperation,
+        assets: &[NewAsset],
+    ) -> Result<(), ApplicationError>;
+    fn mark_asset_attachment_ready(
+        &self,
+        operation_id: &AssetAttachmentId,
+    ) -> Result<(), ApplicationError>;
+    fn quarantine_asset_attachment(
+        &self,
+        operation_id: &AssetAttachmentId,
+        failure_code: &str,
+    ) -> Result<(), ApplicationError>;
     fn mark_ready(&self, revision_id: &RevisionId) -> Result<(), ApplicationError>;
     fn quarantine(
         &self,

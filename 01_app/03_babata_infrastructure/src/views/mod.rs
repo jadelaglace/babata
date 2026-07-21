@@ -1,9 +1,12 @@
 pub mod datasette;
+mod dense_expression;
 pub mod exports;
 pub mod manifest;
 pub mod obsidian;
 pub mod output;
 pub mod sublibrary;
+
+pub use dense_expression::DenseExpressionViewStore;
 
 use babata_domain::{CapabilityStatus, ViewDescriptor, ViewId, ViewKind};
 

@@ -192,15 +192,10 @@ fn attach_assets_appends_original_and_preview_without_mutating_parent() {
     let output: Value = serde_json::from_slice(&output).unwrap();
 
     assert_eq!(output["item_id"], item_id);
-    assert_ne!(output["revision_id"], parent_revision);
-    assert_eq!(output["reimported"], true);
-    assert_eq!(output["record"]["revisions"].as_array().unwrap().len(), 2);
-    assert_eq!(
-        output["record"]["revisions"][1]["parent_revision_id"],
-        parent_revision
-    );
+    assert_eq!(output["revision_id"], parent_revision);
+    assert_eq!(output["reimported"], false);
+    assert_eq!(output["record"]["revisions"].as_array().unwrap().len(), 1);
     assert_eq!(output["record"]["revisions"][0]["text_sha256"], parent_hash);
-    assert_eq!(output["record"]["revisions"][1]["text_sha256"], parent_hash);
     let assets = output["record"]["assets"].as_array().unwrap();
     assert_eq!(assets.len(), 2);
     assert!(assets.iter().any(|asset| {
@@ -210,12 +205,24 @@ fn attach_assets_appends_original_and_preview_without_mutating_parent() {
         asset["role"] == "preview" && asset["sha256"] == sha256_hex(b"preview-pdf-bytes")
     }));
     for asset in assets {
+        assert_eq!(asset["revision_id"], parent_revision);
+        assert_eq!(asset["state"], "ready");
         assert!(
             temp.path()
                 .join(asset["logical_path"].as_str().unwrap())
                 .exists()
         );
     }
+    let attachments = output["record"]["asset_attachments"].as_array().unwrap();
+    assert_eq!(attachments.len(), 1);
+    assert_eq!(attachments[0]["revision_id"], parent_revision);
+    assert_eq!(
+        attachments[0]["reason"],
+        "recover source file and distinguish platform preview"
+    );
+    assert_eq!(attachments[0]["metadata"]["recovery"], "fixture");
+    assert_eq!(attachments[0]["state"], "ready");
+    assert_eq!(attachments[0]["asset_ids"].as_array().unwrap().len(), 2);
 }
 
 #[test]
@@ -1767,6 +1774,17 @@ fn p6_semantic_candidate_enters_three_realm_core_without_source_v2() {
     };
     let snapshot = show();
     assert_eq!(snapshot["suggestion"]["review_state"], "unreviewed");
+    assert!(
+        snapshot["suggestion"]["downstream_eligibility"]["eligible_uses"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|value| value == "search")
+    );
+    assert_eq!(
+        snapshot["suggestion"]["downstream_eligibility"]["human_judgment"],
+        false
+    );
     assert_eq!(snapshot["entries"].as_array().unwrap().len(), 2);
     assert_eq!(snapshot["relations"].as_array().unwrap().len(), 2);
     assert!(snapshot["entries"].as_array().unwrap().iter().any(|entry| {
@@ -1775,6 +1793,389 @@ fn p6_semantic_candidate_enters_three_realm_core_without_source_v2() {
             && entry["dense_expressions"].as_array().unwrap().len() == 1
             && entry["scores"][0]["weighted_score"] == 6300
     }));
+    let dense_semantic = snapshot["entries"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|entry| !entry["dense_expressions"].as_array().unwrap().is_empty())
+        .unwrap()["semantic_id"]
+        .as_str()
+        .unwrap();
+    let built_preview = babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "build-dense-preview",
+            "--semantic",
+            dense_semantic,
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let built_preview: Value = serde_json::from_slice(&built_preview).unwrap();
+    assert_eq!(built_preview["status"], "built");
+    assert!(built_preview["source_sha256"].is_string());
+    assert!(built_preview["output_sha256"].is_string());
+    let preview_directory = temp.path().join("03_views/p6_dense").join(dense_semantic);
+    let preview_path = preview_directory.join("preview.md");
+    assert!(preview_path.exists());
+    babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "verify-dense-preview",
+            "--semantic",
+            dense_semantic,
+        ])
+        .assert()
+        .success();
+    std::fs::write(&preview_path, "tampered optional view").unwrap();
+    babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "verify-dense-preview",
+            "--semantic",
+            dense_semantic,
+        ])
+        .assert()
+        .failure();
+    let rebuilt_preview = babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "build-dense-preview",
+            "--semantic",
+            dense_semantic,
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let rebuilt_preview: Value = serde_json::from_slice(&rebuilt_preview).unwrap();
+    assert_eq!(rebuilt_preview["status"], "rebuilt");
+    babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "delete-dense-preview",
+            "--semantic",
+            dense_semantic,
+        ])
+        .assert()
+        .success();
+    assert!(!preview_directory.exists());
+    let entry_after_delete = babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "show-entry",
+            "--semantic",
+            dense_semantic,
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let entry_after_delete: Value = serde_json::from_slice(&entry_after_delete).unwrap();
+    assert!(
+        !entry_after_delete["dense_expressions"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+    babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "build-dense-preview",
+            "--semantic",
+            dense_semantic,
+        ])
+        .assert()
+        .success();
+    assert!(preview_path.exists());
+
+    let create_map_node = |level: &str, name: &str, parents: &[&str], tags: &[&str]| {
+        let mut args = vec![
+            "--json",
+            "knowledge",
+            "create-map-node",
+            "--level",
+            level,
+            "--name",
+            name,
+            "--rationale",
+            "temporary P6 map evolution proof",
+        ];
+        for parent in parents {
+            args.extend(["--parent", parent]);
+        }
+        for tag in tags {
+            args.extend(["--tag", tag]);
+        }
+        let bytes = babata(&temp)
+            .args(args)
+            .assert()
+            .success()
+            .get_output()
+            .stdout
+            .clone();
+        serde_json::from_slice::<Value>(&bytes).unwrap()
+    };
+    let discipline_a = create_map_node(
+        "discipline",
+        "系统研究",
+        &["mapnode_p6_matter", "mapnode_p6_consciousness"],
+        &["系统"],
+    );
+    assert_eq!(discipline_a["parent_node_ids"].as_array().unwrap().len(), 2);
+    assert_eq!(discipline_a["node_events"][0]["kind"], "created");
+    assert_eq!(discipline_a["edge_events"].as_array().unwrap().len(), 2);
+    assert_eq!(discipline_a["tag_events"][0]["kind"], "assigned");
+    let systems_discipline_id = discipline_a["map_node_id"].as_str().unwrap();
+    let discipline_b = create_map_node("discipline", "知识工程", &["mapnode_p6_matter"], &[]);
+    let knowledge_discipline_id = discipline_b["map_node_id"].as_str().unwrap();
+    let branch = create_map_node("branch", "语义流水线", &[systems_discipline_id], &["P6"]);
+    let branch_id = branch["map_node_id"].as_str().unwrap();
+    let target_branch = create_map_node("branch", "知识流水线", &[knowledge_discipline_id], &[]);
+    let target_branch_id = target_branch["map_node_id"].as_str().unwrap();
+
+    let node_score = babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "score",
+            "--map-node",
+            branch_id,
+            "--interest",
+            "75",
+            "--strategy",
+            "85",
+            "--consensus",
+            "45",
+            "--rationale",
+            "map node relevance proof",
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let node_score: Value = serde_json::from_slice(&node_score).unwrap();
+    assert_eq!(node_score["target_kind"], "map_node");
+    assert_eq!(node_score["author"], "user");
+    assert_eq!(node_score["provenance_kind"], "first_party");
+    assert!(node_score["created_at"].is_string());
+
+    babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "rename-map-node",
+            "--map-node",
+            branch_id,
+            "--name",
+            "语义沉淀流水线",
+            "--rationale",
+            "name now reflects the actual scope",
+        ])
+        .assert()
+        .success();
+    babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "change-map-parent",
+            "--parent",
+            knowledge_discipline_id,
+            "--child",
+            branch_id,
+            "--change",
+            "assign",
+            "--rationale",
+            "branch now spans two disciplines",
+        ])
+        .assert()
+        .success();
+    babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "change-map-parent",
+            "--parent",
+            systems_discipline_id,
+            "--child",
+            branch_id,
+            "--change",
+            "unassign",
+            "--rationale",
+            "move the branch without losing history",
+        ])
+        .assert()
+        .success();
+    babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "change-map-assignment",
+            "--semantic",
+            ingested["semantic_ids"][0].as_str().unwrap(),
+            "--map-node",
+            branch_id,
+            "--change",
+            "assign",
+            "--rationale",
+            "explicit first-party map placement",
+        ])
+        .assert()
+        .success();
+    babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "tag-map-node",
+            "--map-node",
+            branch_id,
+            "--tag",
+            "P6",
+            "--change",
+            "unassign",
+            "--rationale",
+            "replace a temporary map tag",
+        ])
+        .assert()
+        .success();
+    babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "merge-map-node",
+            "--map-node",
+            branch_id,
+            "--into",
+            target_branch_id,
+            "--rationale",
+            "two branches now represent the same concept",
+        ])
+        .assert()
+        .success();
+    let merged = babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "show-map-node",
+            "--map-node",
+            branch_id,
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let merged: Value = serde_json::from_slice(&merged).unwrap();
+    assert_eq!(merged["lifecycle"], "merged");
+    assert!(
+        merged["node_events"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|event| {
+                event["kind"] == "renamed"
+                    && event["previous_name"] == "语义流水线"
+                    && event["current_name"] == "语义沉淀流水线"
+            })
+    );
+    assert!(
+        merged["node_events"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|event| {
+                event["kind"] == "merged" && event["merged_into_map_node_id"] == target_branch_id
+            })
+    );
+    assert!(
+        merged["edge_events"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|event| {
+                event["kind"] == "unassigned" && event["parent_node_id"] == systems_discipline_id
+            })
+    );
+    let merge_target = babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "show-map-node",
+            "--map-node",
+            target_branch_id,
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let merge_target: Value = serde_json::from_slice(&merge_target).unwrap();
+    assert!(
+        merge_target["semantic_ids"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|id| id.as_str() == ingested["semantic_ids"][0].as_str())
+    );
+    assert!(
+        merge_target["assignment_events"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|event| event["kind"] == "assigned")
+    );
+
+    babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "deactivate-map-node",
+            "--map-node",
+            knowledge_discipline_id,
+            "--rationale",
+            "active children must block deactivation",
+        ])
+        .assert()
+        .failure();
+
+    babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "deactivate-map-node",
+            "--map-node",
+            systems_discipline_id,
+            "--rationale",
+            "discipline is no longer current",
+        ])
+        .assert()
+        .success();
+    babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "rename-map-node",
+            "--map-node",
+            "mapnode_p6_time",
+            "--name",
+            "时间轴",
+            "--rationale",
+            "foundation mutation must fail",
+        ])
+        .assert()
+        .failure();
 
     let profiles = babata(&temp)
         .args(["--json", "knowledge", "list-profiles"])
@@ -2070,6 +2471,101 @@ fn p6_semantic_candidate_enters_three_realm_core_without_source_v2() {
     let reviewed = show();
     assert_eq!(reviewed["suggestion"]["review_state"], "rejected");
     assert_eq!(reviewed["reviews"].as_array().unwrap().len(), 3);
+    assert!(
+        !reviewed["suggestion"]["downstream_eligibility"]["eligible_uses"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|value| value == "output_candidate")
+    );
+    assert!(
+        reviewed["suggestion"]["downstream_eligibility"]["eligible_uses"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|value| value == "search")
+    );
+
+    let mut reanalysis_package = package.clone();
+    reanalysis_package["model"] = Value::String("fixture-reanalysis-model".to_owned());
+    reanalysis_package["model_version"] = Value::String("2.0.0".to_owned());
+    reanalysis_package["generated_at"] = Value::String("2026-07-21T01:00:00Z".to_owned());
+    reanalysis_package["entries"][0]["title"] =
+        Value::String("新增证据后的爬虫工程策略".to_owned());
+    reanalysis_package["entries"][1]["title"] =
+        Value::String("新增证据后的工具组合案例".to_owned());
+    reanalysis_package["limitations"] = serde_json::json!(["second fixture analysis"]);
+    let reanalysis_path = temp.path().join("semantic-reanalysis-package.json");
+    std::fs::write(&reanalysis_path, reanalysis_package.to_string()).unwrap();
+    let reanalysis_derivative = babata(&temp)
+        .args([
+            "--json",
+            "process",
+            "register",
+            "--pipeline",
+            "agent_import",
+            "--revision",
+            revision,
+            "--kind",
+            "structured_result",
+            "--provider",
+            "fixture",
+            "--model",
+            "fixture-reanalysis-model",
+            "--tool-version",
+            "2.0.0",
+            "--input-sha256",
+            input_sha,
+            "--json-file",
+            reanalysis_path.to_str().unwrap(),
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let reanalysis_derivative: Value = serde_json::from_slice(&reanalysis_derivative).unwrap();
+    let reanalysis = babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "ingest",
+            "--derivative",
+            reanalysis_derivative["derivative_id"].as_str().unwrap(),
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let reanalysis: Value = serde_json::from_slice(&reanalysis).unwrap();
+    assert_ne!(reanalysis["suggestion_id"], suggestion);
+    assert_eq!(reanalysis["review_state"], "unreviewed");
+    let reanalysis_snapshot = babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "show",
+            "--suggestion",
+            reanalysis["suggestion_id"].as_str().unwrap(),
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let reanalysis_snapshot: Value = serde_json::from_slice(&reanalysis_snapshot).unwrap();
+    assert_eq!(
+        reanalysis_snapshot["suggestion"]["review_state"],
+        "unreviewed"
+    );
+    assert!(
+        reanalysis_snapshot["suggestion"]["downstream_eligibility"]["eligible_uses"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|value| value == "output_candidate")
+    );
 
     let source = babata(&temp)
         .args([
