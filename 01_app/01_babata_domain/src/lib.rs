@@ -48,7 +48,12 @@ pub use output::{OutputBuild, OutputKind, OutputManifestRef, OutputScope, Output
 pub use processing::{
     DerivativeRef, JobRef, PipelineId, ProcessJob, ProcessJobState, ProcessRun, ProviderTaskRef,
 };
-pub use query::{PageCursor, QueryFilter, RecordSummary};
+pub use query::{
+    JudgmentStatus, PageCursor, ProjectionStatus, QueryFilter, RecordSummary, SearchAssetRef,
+    SearchDerivativeRef, SearchMapRef, SearchRecordDetail, SearchRecordKind, SearchRecordMarker,
+    SearchRelationRef, SearchRevisionRef, SearchScoreRef, SearchSort, SurfacingReason,
+    SurfacingReasonKind,
+};
 pub use route::{
     CandidateEnvelope, CandidatePayload, RouteCoverage, RouteEvidence, SourceRouteDescriptor,
     SourceRouteId,

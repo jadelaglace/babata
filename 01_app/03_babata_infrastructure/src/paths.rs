@@ -29,6 +29,12 @@ impl DataPaths {
     pub fn runtime_index(&self) -> PathBuf {
         self.root.join("04_runtime/index")
     }
+    pub fn search_projection_database(&self) -> PathBuf {
+        self.root.join("03_views/search/index/search.sqlite")
+    }
+    pub fn search_projection_index(&self) -> PathBuf {
+        self.root.join("03_views/search/index")
+    }
     pub fn raw_assets(&self) -> PathBuf {
         self.root.join("01_raw/assets/sha256")
     }
@@ -60,6 +66,7 @@ pub fn ensure_layout(paths: &DataPaths) -> Result<(), std::io::Error> {
         paths.raw_assets(),
         paths.derived_index(),
         paths.runtime_index(),
+        paths.search_projection_index(),
         paths.staging(".keep"),
         paths.journal(),
         paths.orphan(),

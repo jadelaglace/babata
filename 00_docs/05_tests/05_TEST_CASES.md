@@ -295,8 +295,9 @@ Issue #60 的测试是 AC-07/TC-07 前置机制证据，不是检索产品验收
   null。外部证据位于
   `BABATA_DATA_HOME/verification/p6-2-c0-metadata-20260721-003825/`。
 
-这些测试没有构建搜索 projection，没有执行正文/人物/时间多条件检索、评分排序、关系导航
-或内容浮现，因此 AC-07、TC-07 和 P6.2 均未通过。
+这些前置测试当时没有构建搜索 projection，也没有执行正文/人物/时间多条件检索、评分排序、
+关系导航或内容浮现，因此不能单独作为 AC-07、TC-07 或 P6.2 的通过证据；正式 P6.2 状态
+见下方 TC-07 执行记录。
 
 ### TC-07：检索、关系导航与子库
 
@@ -318,6 +319,26 @@ Issue #60 的测试是 AC-07/TC-07 前置机制证据，不是检索产品验收
 
 预期：各类资料均可发现；浮现可解释且不产生隐藏写入；断链显示明确状态；子库人工
 定义/版本不随物化删除；重建不复制第二套权威资料，也不改变 C0/C1、评分历史或建议状态。
+
+执行状态（2026-07-22）：P6.2 已通过步骤 1–4，并通过步骤 6 的搜索/浮现投影删除重建部分；
+步骤 5 和步骤 6 的子库物化部分属于 P6.3，尚未通过，因此 TC-07 整体仍未通过。
+
+- 隔离 fixture 覆盖正文与结构化组合检索、媒体-only、附件-only、受限、缺失、removed、
+  first-party/machine、unreviewed/accepted/rejected、多 profile 评分、raw/semantic 关系、
+  show/traverse、四类浮现原因、rejected/modified 主动浮现排除、删除重建，以及 CLI/API
+  共用应用服务。
+- 真实数据根在在线快照后构建 `03_views/search/index/search.sqlite`：投影包含 27 个 raw
+  record、3 个 semantic record 和 14 条导航关系；正文 `AI` 返回 23 项，真实未审阅
+  Knowledge/profile 组合查询返回 1 项，媒体-only 返回 2 项。真实库没有 attachment-only
+  或受限记录，未为验收制造。
+- 真实详情读回 1 个 revision、4 个 derivatives、2 个地图归属、评分历史和 3 条未断关系；
+  traverse 可达原始 item、Case 与 Map/Direction。surface 只返回 3 个有资格的 semantic
+  entry，每项均说明 direction、relevance、time、relation，且机器未审阅身份仍为
+  `human_judgment=false`、`confirmed_fact=false`。
+- 删除后投影文件消失；重建后 fingerprint 与行数一致。构建前后 46 张 raw/knowledge 表和
+  4 张 derived 表摘要完全相同，实时库 `quick_check=ok`、foreign key 异常为 0。证据位于
+  `BABATA_DATA_HOME/verification/p6-2-discovery-20260722-235222/`
+  `P6_2_DISCOVERY_E2E.md`。
 
 ### TC-08：可追溯输出与只读边界
 

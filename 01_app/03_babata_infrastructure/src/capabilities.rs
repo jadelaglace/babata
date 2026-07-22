@@ -83,7 +83,15 @@ pub fn all_descriptors() -> Vec<CapabilityDescriptor> {
             ),
         },
         CapabilityDescriptor::unavailable("knowledge", "P6.1"),
-        CapabilityDescriptor::unavailable("explore", "P6"),
+        CapabilityDescriptor {
+            id: CapabilityId::new("explore"),
+            status: CapabilityStatus::Enabled,
+            activation_phase: "P6.2".to_owned(),
+            reason: Some(
+                "Rebuildable C0/C1 projection, structured search, score ranking, relation navigation and explainable surfacing are enabled"
+                    .to_owned(),
+            ),
+        },
         CapabilityDescriptor::unavailable("sublibraries", "P6"),
         CapabilityDescriptor::unavailable("views", "P6"),
         CapabilityDescriptor::unavailable("outputs", "P6"),

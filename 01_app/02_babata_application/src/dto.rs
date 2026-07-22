@@ -2,11 +2,11 @@ use babata_domain::{
     AssetAttachmentId, AssetId, AssetRole, BuildTarget, CandidateEnvelope, CandidateSummary,
     CollectionId, CollectionSessionId, CommonSourceMetadata, ContentType, DerivativeId,
     DerivativeKind, DerivativeRef, FirstPartySemanticDefinition, HealthState, ItemId, LogicalPath,
-    Metadata, PageCursor, PipelineId, ProcessJob, ProcessRun, ProcessingState, QueryFilter,
-    RawState, RecollectionState, RecordSummary, RelationKind, RevisionId, RouteCoverage, RunId,
-    ScoreProfile, SemanticCandidatePackage, SemanticPayload, Sha256, SnapshotRef, SourceId,
-    SourceKind, SourceObservationId, SourceObservationKind, SourceRouteId, SuggestionDecisionKind,
-    UtcTimestamp, ViewDescriptor, ViewId,
+    Metadata, PageCursor, PipelineId, ProcessJob, ProcessRun, ProcessingState, ProjectionStatus,
+    QueryFilter, RawState, RecollectionState, RecordSummary, RelationKind, RevisionId,
+    RouteCoverage, RunId, ScoreProfile, SemanticCandidatePackage, SemanticPayload, Sha256,
+    SnapshotRef, SourceId, SourceKind, SourceObservationId, SourceObservationKind, SourceRouteId,
+    SuggestionDecisionKind, UtcTimestamp, ViewDescriptor, ViewId,
 };
 use serde::{Deserialize, Serialize};
 
@@ -253,6 +253,21 @@ pub struct SearchQuery {
 pub struct SearchPage {
     pub records: Vec<RecordSummary>,
     pub next_cursor: Option<PageCursor>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SurfaceQuery {
+    pub profile_id: Option<String>,
+    pub map_node: Option<String>,
+    pub related_to: Option<String>,
+    pub since: Option<UtcTimestamp>,
+    pub limit: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProjectionOperationOutcome {
+    pub operation: String,
+    pub status: ProjectionStatus,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -132,6 +132,95 @@ fn capture_text_emits_a_parseable_json_envelope() {
 }
 
 #[test]
+fn explore_cli_rebuilds_searches_navigates_deletes_and_rebuilds_projection() {
+    let temp = tempdir().unwrap();
+    let capture = capture_text(
+        &temp,
+        "searchable personal knowledge remains in the authoritative raw record",
+    );
+    let item_id = capture["item_id"].as_str().unwrap();
+
+    let rebuilt: Value = serde_json::from_slice(
+        &babata(&temp)
+            .args(["--json", "explore", "rebuild"])
+            .assert()
+            .success()
+            .get_output()
+            .stdout,
+    )
+    .unwrap();
+    assert_eq!(rebuilt["status"]["state"], "ready");
+    assert_eq!(rebuilt["status"]["raw_items"], 1);
+
+    let searched: Value = serde_json::from_slice(
+        &babata(&temp)
+            .args([
+                "--json",
+                "explore",
+                "search",
+                "searchable",
+                "--provider",
+                "fixture",
+                "--state",
+                "ready",
+            ])
+            .assert()
+            .success()
+            .get_output()
+            .stdout,
+    )
+    .unwrap();
+    assert_eq!(searched["records"].as_array().unwrap().len(), 1);
+    assert_eq!(searched["records"][0]["item_id"], item_id);
+    assert_eq!(searched["records"][0]["record_kind"], "raw_item");
+    assert!(
+        !searched["records"][0]["reasons"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+
+    let record_id = format!("item:{item_id}");
+    let shown: Value = serde_json::from_slice(
+        &babata(&temp)
+            .args(["--json", "explore", "show", &record_id])
+            .assert()
+            .success()
+            .get_output()
+            .stdout,
+    )
+    .unwrap();
+    assert_eq!(shown["record"]["record_id"], record_id);
+    assert_eq!(shown["revisions"].as_array().unwrap().len(), 1);
+
+    let deleted: Value = serde_json::from_slice(
+        &babata(&temp)
+            .args(["--json", "explore", "delete"])
+            .assert()
+            .success()
+            .get_output()
+            .stdout,
+    )
+    .unwrap();
+    assert_eq!(deleted["status"]["state"], "missing");
+    assert!(capture["record"]["revisions"][0]["raw_text"].is_string());
+
+    let rebuilt_again: Value = serde_json::from_slice(
+        &babata(&temp)
+            .args(["--json", "explore", "rebuild"])
+            .assert()
+            .success()
+            .get_output()
+            .stdout,
+    )
+    .unwrap();
+    assert_eq!(
+        rebuilt_again["status"]["source_fingerprint"],
+        rebuilt["status"]["source_fingerprint"]
+    );
+}
+
+#[test]
 fn invalid_text_emits_a_json_error_envelope() {
     let temp = tempdir().unwrap();
     let output = babata(&temp)
