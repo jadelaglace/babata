@@ -312,12 +312,38 @@ domain <- application <- infrastructure
   关系和子库定义；
 - `derived.sqlite`：C1 处理运行、派生物和模型建议；
 - `runtime.sqlite` 或等价运行存储：C3 队列、租约、会话和能力运行状态；
-- C2 索引/文件：可从 C0/C1 与生成配置重建。
+- `03_views/search/index/search.sqlite`：P6.2 搜索/浮现 C2，由 `SqliteReadProjection` 从
+  `raw.sqlite` 与 `derived.sqlite` 重建；
+- 其他 C2 索引/文件：可从 C0/C1 与生成配置重建。
 
 数据库记录只保存相对数据根的逻辑资产键。移动或隔离恢复数据根不需要批量改写
 权威行内容。
 
-### 7.1 写入与故障边界
+### 7.1 P6.2 搜索投影
+
+搜索投影统一投影 `raw_item` 与 `semantic_entry`：前者保留来源、当前观测、版本、资产和
+C1 派生物导航，后者保留三大界、五类语义、地图/标签、评分 profile 与历史、建议来源和
+审阅身份。投影只读附加权威 raw/derived 数据库；clear、populate、文件缺失标记、FTS 和
+metadata 写入在同一事务中完成，失败时保留上一个完整投影。delete 只删除该 SQLite 及其
+WAL/SHM，不改变 C0/C1 或知识核心。
+
+投影 metadata 保存 schema、构建时间、raw/semantic/relation 行数和 source fingerprint。
+fingerprint 覆盖 item、revision、asset、source observation、semantic/map/assignment、score/
+profile/review、raw/semantic relation、process run 与 derivative 内容，用于核对重建输入；它
+不是新的权威版本号。
+
+`ExploreService` 统一提供 search、show、traverse 与 surface。search 支持正文、来源/provider、
+时间、类型、状态/access state、人物、地图、标签、关系、处理状态、origin/review、媒体/
+附件/受限/缺失、profile 和三维/综合分条件及排序；结果携带来源定位、版本、资产、派生物、
+地图、标签、评分历史、限制、关系状态和 provenance。surface 只主动返回有合格评分的
+semantic entry，并为每项返回 direction、relevance、time、relation 四类解释；rejected 或
+modified 的原建议仍可搜索和回看，但不再主动浮现。CLI 的 `explore rebuild/delete/status/
+search/show/traverse/surface` 与本地 API `POST /v1/explore/search` 调用同一应用服务。
+
+该投影只完成 P6.2 的发现、检索和导航，不包含 P6.3 的 SublibraryDefinition、子库物化或
+通用输出 builder。
+
+### 7.2 写入与故障边界
 
 一次 C0/C1 提交遵循：
 

@@ -61,7 +61,7 @@ pub enum RootCommand {
     #[command(subcommand)]
     Process(Box<ProcessCommand>),
     #[command(subcommand)]
-    Explore(ExploreCommand),
+    Explore(Box<ExploreCommand>),
     #[command(subcommand)]
     Sublibraries(SublibrariesCommand),
     #[command(subcommand)]

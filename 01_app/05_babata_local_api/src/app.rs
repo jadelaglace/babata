@@ -1,13 +1,13 @@
 use std::{io::Read, net::SocketAddr};
 
 use babata_application::{
-    CancelCollectionCommand, CollectorSessionService, RetryCollectionItemCommand,
-    StartCollectionCommand,
+    CancelCollectionCommand, CollectorSessionService, ExploreService, RetryCollectionItemCommand,
+    SearchQuery, StartCollectionCommand,
 };
 use babata_domain::{CollectionSelection, CollectionSessionId, ItemId, SourceRouteId};
 use babata_infrastructure::{
-    AppConfig, FileAssetStore, SqliteRawRepository, SystemClock, open_collection_database,
-    sources::providers::browser::BrowserCandidateAdapter,
+    AppConfig, FileAssetStore, SqliteRawRepository, SqliteReadProjection, SystemClock,
+    open_collection_database, sources::providers::browser::BrowserCandidateAdapter,
 };
 use serde::de::DeserializeOwned;
 use serde_json::json;
@@ -120,6 +120,7 @@ fn dispatch(
                 "maxCandidates": MAX_BROWSER_CANDIDATES,
             }),
         ),
+        ("POST", "/v1/explore/search") => (200, search_projection(&config.app, body)?),
         ("POST", "/v1/collector/sessions") => {
             let request: BrowserSessionRequest = decode(body)?;
             validate_browser_start(&request)?;
@@ -198,6 +199,15 @@ fn dispatch(
         }
     };
     DispatchResponse::json(status, &ApiResponse { data: value })
+}
+
+fn search_projection(app: &AppConfig, body: &[u8]) -> Result<serde_json::Value, ApiError> {
+    let request: SearchQuery = decode(body)?;
+    let service = ExploreService::new(SqliteReadProjection::new(
+        app.paths(),
+        app.sqlite.busy_timeout_ms,
+    ));
+    serde_json::to_value(service.search(request)?).map_err(json_error)
 }
 
 type BrowserService = CollectorSessionService<SqliteRawRepository, FileAssetStore, SystemClock>;
@@ -438,6 +448,31 @@ mod tests {
         assert!(verify_origin(None).is_ok());
         assert!(verify_origin(Some("chrome-extension://abcdefghijklmnop")).is_ok());
         assert!(verify_origin(Some("https://example.test")).is_err());
+    }
+
+    #[test]
+    fn explore_api_uses_the_same_rebuildable_projection_contract() {
+        let temporary = tempdir().unwrap();
+        let app = test_config(temporary.path());
+        ExploreService::new(SqliteReadProjection::new(
+            app.paths(),
+            app.sqlite.busy_timeout_ms,
+        ))
+        .rebuild()
+        .unwrap();
+        let config =
+            ServerConfig::new(app, "127.0.0.1:43873".parse().unwrap(), TOKEN.to_owned()).unwrap();
+        let response = dispatch(
+            &config,
+            "POST",
+            "/v1/explore/search",
+            Some(TOKEN),
+            br#"{"filter":{"text":"anything","limit":10}}"#,
+        )
+        .unwrap();
+        assert_eq!(response.status, 200);
+        let response: Value = serde_json::from_slice(&response.body).unwrap();
+        assert_eq!(response["data"]["records"].as_array().unwrap().len(), 0);
     }
 
     #[test]

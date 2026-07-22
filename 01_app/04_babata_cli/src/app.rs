@@ -3,18 +3,20 @@ use babata_application::{
     ApplicationError, CapabilityService, CaptureService, ChangeMapNodeTagCommand,
     ChangeMapParentCommand, ChangeSemanticMapAssignmentCommand, CreateMapNodeCommand,
     CreateScoreProfileCommand, DenseExpressionPreviewService, EvolveMapNodeAction,
-    EvolveMapNodeCommand, KnowledgeService, ProcessService, RecordRelevanceScoreCommand,
-    RecordSuggestionReviewCommand, RegisterFirstPartySemanticCommand, SemanticDigestService,
-    WorkspaceService,
+    EvolveMapNodeCommand, ExploreService, KnowledgeService, ProcessService,
+    RecordRelevanceScoreCommand, RecordSuggestionReviewCommand, RegisterFirstPartySemanticCommand,
+    SearchQuery, SemanticDigestService, SurfaceQuery, WorkspaceService,
 };
 use babata_domain::{
-    DerivativeId, FirstPartySemanticDefinition, ItemId, PipelineId, RelevanceComponents,
-    RelevanceTargetKind, RevisionId, RunId, ScoreProfile, ScoreProfileId,
+    DerivativeId, FirstPartySemanticDefinition, ItemId, PageCursor, PipelineId, QueryFilter,
+    RelevanceComponents, RelevanceTargetKind, RevisionId, RunId, ScoreProfile, ScoreProfileId,
+    UtcTimestamp,
 };
 use babata_infrastructure::{
-    AppConfig, DenseExpressionViewStore, FileAssetStore, StaticCapabilityRegistry, SystemClock,
-    load_config, open_derived_database, open_job_database, open_knowledge_review_database,
-    open_raw_database, processing::registry::ProcessProviderRouter, raw_status,
+    AppConfig, DenseExpressionViewStore, FileAssetStore, SqliteReadProjection,
+    StaticCapabilityRegistry, SystemClock, load_config, open_derived_database, open_job_database,
+    open_knowledge_review_database, open_raw_database, processing::registry::ProcessProviderRouter,
+    raw_status,
 };
 use clap::Parser;
 
@@ -75,7 +77,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         RootCommand::Capture(_) => return Err(unavailable("capture.provider", "P4")),
         RootCommand::Knowledge(command) => execute_knowledge(command, &config, cli.json)?,
         RootCommand::Process(command) => execute_process(*command, &config, cli.json)?,
-        RootCommand::Explore(_) => return Err(unavailable("explore", "P6")),
+        RootCommand::Explore(command) => execute_explore(*command, &config, cli.json)?,
         RootCommand::Sublibraries(_) => return Err(unavailable("sublibraries", "P6")),
         RootCommand::Views(_) => return Err(unavailable("views", "P6")),
         RootCommand::Outputs(_) => return Err(unavailable("outputs", "P6")),
@@ -83,6 +85,90 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         RootCommand::Ops(_) => return Err(unavailable("ops.backup", "P8")),
     }
     Ok(())
+}
+
+fn execute_explore(
+    command: crate::commands::ExploreCommand,
+    config: &AppConfig,
+    json: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let service = ExploreService::new(SqliteReadProjection::new(
+        config.paths(),
+        config.sqlite.busy_timeout_ms,
+    ));
+    match command {
+        crate::commands::ExploreCommand::Rebuild => {
+            render_value(&service.rebuild()?, json)?;
+        }
+        crate::commands::ExploreCommand::Delete => {
+            render_value(&service.delete()?, json)?;
+        }
+        crate::commands::ExploreCommand::Status => {
+            render_value(&service.status()?, json)?;
+        }
+        crate::commands::ExploreCommand::Show { record } => {
+            render_value(&service.show(&record)?, json)?;
+        }
+        crate::commands::ExploreCommand::Traverse { record } => {
+            render_value(&service.traverse(&record)?, json)?;
+        }
+        crate::commands::ExploreCommand::Search(args) => {
+            let query = SearchQuery {
+                filter: QueryFilter {
+                    text: args.query,
+                    source_kind: args.source_kind.as_deref().map(parse_wire).transpose()?,
+                    provider: args.provider,
+                    content_type: args.content_type.as_deref().map(parse_wire).transpose()?,
+                    captured_from: args.from.as_deref().map(UtcTimestamp::parse).transpose()?,
+                    captured_to: args.to.as_deref().map(UtcTimestamp::parse).transpose()?,
+                    semantic_kind: args.semantic_kind.as_deref().map(parse_wire).transpose()?,
+                    realm: args.realm.as_deref().map(parse_wire).transpose()?,
+                    state: args.state,
+                    access_state: args.access_state,
+                    person: args.person,
+                    map_node: args.map_node,
+                    tag: args.tag,
+                    relation_kind: args.relation_kind,
+                    related_to: args.related_to,
+                    processing_state: args.processing_state,
+                    origin_kind: args.origin_kind,
+                    review_state: args.review_state,
+                    restricted: args.restricted,
+                    missing: args.missing,
+                    media_only: args.media_only,
+                    attachment_only: args.attachment_only,
+                    profile_id: args.profile,
+                    min_interest: args.min_interest,
+                    min_strategy: args.min_strategy,
+                    min_consensus: args.min_consensus,
+                    min_weighted_score: args.min_weighted_score,
+                    sort: parse_wire(&args.sort)?,
+                    limit: args.limit,
+                },
+                cursor: args.cursor.map(PageCursor),
+            };
+            render_value(&service.search(query)?, json)?;
+        }
+        crate::commands::ExploreCommand::Surface(args) => {
+            render_value(
+                &service.surface(SurfaceQuery {
+                    profile_id: args.profile,
+                    map_node: args.map_node,
+                    related_to: args.related_to,
+                    since: args.since.as_deref().map(UtcTimestamp::parse).transpose()?,
+                    limit: args.limit,
+                })?,
+                json,
+            )?;
+        }
+    }
+    Ok(())
+}
+
+fn parse_wire<T: serde::de::DeserializeOwned>(value: &str) -> Result<T, ApplicationError> {
+    serde_json::from_value(serde_json::Value::String(value.to_owned())).map_err(|error| {
+        ApplicationError::Integrity(format!("invalid command value {value}: {error}"))
+    })
 }
 
 #[allow(clippy::too_many_lines)]
