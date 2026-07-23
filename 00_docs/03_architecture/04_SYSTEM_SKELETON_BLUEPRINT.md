@@ -63,7 +63,9 @@ Babata/
 ```
 
 真实原件、第一方资料、数据库、派生物、视图、缓存、日志、凭据和运行状态全部位于
-外部 `BABATA_DATA_HOME` 或受保护本地配置位置。
+外部 `BABATA_DATA_HOME` 的编号分区或受保护本地配置位置。开发/验收证据位于独立
+`BABATA_EVIDENCE_HOME`，尚未由核心接管的来源恢复材料位于独立
+`BABATA_RECOVERY_HOME`；两者都在 Git 和活动数据根之外，也不构成第二权威。
 
 ## 4. Rust workspace 目标：6 个 crate、137 个源文件
 

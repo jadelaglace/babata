@@ -1,6 +1,7 @@
 # Agent 清洗结果登记到 C1
 
-`generated/` 只是可清理工作区。正式 C1 必须由 `babata process register` 写入，并能回到真实 C0 输入。
+`04_runtime/staging/model-workspaces/` 只是可清理工作区。正式 C1 必须由
+`babata process register` 写入，并能回到真实 C0 输入。
 
 ## 登记前证据
 
@@ -99,7 +100,7 @@ babata --json process register \
 
 禁止：
 
-- 用 `--logical-path generated/...` 登记可清理 staging。
+- 用 `--logical-path 04_runtime/staging/model-workspaces/...` 登记可清理 staging。
 - 同时提供内容不同的 `--text-file` / `--json-file` / `--output-file`。
 - 把任意 data-root 路径当作正式 C1。
 

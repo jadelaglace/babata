@@ -419,7 +419,7 @@ fixture 覆盖两版定义、人工纳入/排除、组织规则、unreviewed 纳
 篡改、删除重建和未实现类型。真实数据使用现有 1 条 machine/unreviewed Knowledge 形成
 明确范围子库和两类输出，保持 `human_judgment=false`、`confirmed_fact=false`；C2 操作
 前后 46 张 raw/knowledge 表和 4 张 derived 表摘要不变。证据位于
-`BABATA_DATA_HOME/verification/p6-3-sublibrary-output-20260723-200352/`。
+`BABATA_EVIDENCE_HOME/runs/p6-3-sublibrary-output-20260723-200352/`。
 
 通过 AC-03 的 C2 子责任、AC-07/AC-08、TC-03B/TC-07/TC-08 后才完成。
 

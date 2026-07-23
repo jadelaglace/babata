@@ -14,7 +14,8 @@ description: >
 # Babata × 百炼多模态清洗（引导型）
 
 > 仓库位置：`02_skills/babata-bailian-clean/`（P5 已完成；后续仍可复用和扩展）。
-> **清洗 + 正式 C1 登记** 一体引导：staging 写 `BABATA_DATA_HOME/generated/`，正式入库走
+> **清洗 + 正式 C1 登记** 一体引导：staging 写
+> `BABATA_DATA_HOME/04_runtime/staging/model-workspaces/`，正式入库走
 > `babata process register --pipeline agent_import`（见 [references/c1-register.md](references/c1-register.md)）。
 
 面向 **Agent 决策与执行**，不是固定批处理脚本。  
@@ -75,7 +76,7 @@ Windows 上 `subprocess` 找不到 `bl` 时，用：
 
 输出根目录默认（staging）：
 
-`<BABATA_DATA_HOME 或 C:\Users\<user>\BabataData>\generated\<任务名>-bailian-clean\`
+`<BABATA_DATA_HOME 或 C:\Users\<user>\BabataData>\04_runtime\staging\model-workspaces\<任务名>-bailian-clean\`
 
 子目录建议：
 
@@ -150,7 +151,8 @@ babata --json process register \
 - pipeline 固定优先 **`agent_import`**（Agent 按本 skill 完成清洗）。
 - 文件派生结果必须传 `--input-asset-id`，`--input-sha256` 必须是该 C0 asset 的哈希；不能改用 staging/规范化文件哈希。
 - 同一来源同时取得上传原文件和平台预览时，先用 `capture attach-assets --original ... --preview ...` 追加 C0 revision；后续清洗绑定 `original` asset，预览件不冒充源文件。
-- `--output-file` 把结果复制到受控 `02_derived/files/sha256/`；不得把 `generated/...` 作为 `--logical-path`。
+- `--output-file` 把结果复制到受控 `02_derived/files/sha256/`；不得把
+  `04_runtime/staging/model-workspaces/...` 作为 `--logical-path`。
 - 同时传 `--text-file`/`--json-file` 与 `--output-file` 时必须指向完全相同的字节，否则登记失败。
 - Provider JSON 中的临时签名 URL、token、鉴权头和账号凭据必须先删除或替换；在 `--params-json` 的 `sanitization` 记录动作。完整响应如确需保留，只能进入明确受限、不会被普通检索/输出消费的证据区。
 - 只有 failed run 可用 `--retry-of`；revision、item、asset、input hash、pipeline、kind 必须与父 run 一致。
@@ -212,7 +214,7 @@ babata --json process register \
 1. 原件 / C0 是否还在原处且只读
 2. 本地做了哪些规范化
 3. 百炼实际调用了什么（模型/能力）
-4. staging 派生物路径（generated/...）
+4. staging 派生物路径（`04_runtime/staging/model-workspaces/...`）
 5. 是否已 process register（run_id / derivative_id / kind）；未登记要明说
 6. C0 revision / asset / 原件哈希和正式 `02_derived` 文件是否一致
 7. 哪些能力原生具备 / 哪些是后处理
@@ -238,5 +240,5 @@ babata --json process register \
 - 未鉴权就连续重试烧时间
 - 伪造 revision_id 去 register
 - 把抽取 WAV、压缩视频、截图或 staging 文本哈希当成 C0 原件哈希
-- 把 `generated/...` 登记成正式 `logical_path`
+- 把 `04_runtime/staging/model-workspaces/...` 登记成正式 `logical_path`
 - 失败登记不写目标 kind，或把 OCR 失败重试成 summary

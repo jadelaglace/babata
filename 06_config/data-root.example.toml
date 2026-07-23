@@ -3,6 +3,12 @@
 [data]
 root = "C:\\Users\\Aiano\\BabataData"
 
+# Development evidence and not-yet-captured recovery material use separate,
+# Git-external roots. The migration/verification scripts read these environment
+# variables; they are not additional Babata persistence authorities.
+# BABATA_EVIDENCE_HOME=C:\\Users\\Aiano\\BabataEvidence
+# BABATA_RECOVERY_HOME=C:\\Users\\Aiano\\BabataRecovery
+
 # No production credentials belong in this repository or this template.
 [providers.bailian]
 enabled = false
