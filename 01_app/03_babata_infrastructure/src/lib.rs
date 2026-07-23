@@ -22,4 +22,4 @@ pub use sqlite::{
     SqliteReadProjection, open_collection_database, open_derived_database, open_job_database,
     open_knowledge_review_database, open_raw_database, raw_status,
 };
-pub use views::DenseExpressionViewStore;
+pub use views::{DenseExpressionViewStore, OutputViewStore, SublibraryViewStore};

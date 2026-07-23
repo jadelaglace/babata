@@ -4,6 +4,7 @@ pub mod explore;
 pub mod health;
 pub mod outputs;
 pub mod process;
+pub mod sublibraries;
 pub mod workspace;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -21,6 +22,7 @@ pub fn all() -> Vec<Endpoint> {
     endpoints.extend(workspace::ENDPOINTS);
     endpoints.extend(process::ENDPOINTS);
     endpoints.extend(explore::ENDPOINTS);
+    endpoints.extend(sublibraries::ENDPOINTS);
     endpoints.extend(outputs::ENDPOINTS);
     endpoints.extend(health::ENDPOINTS);
     endpoints

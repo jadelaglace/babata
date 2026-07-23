@@ -1,4 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    collections::BTreeMap,
+    sync::{Arc, Mutex},
+};
 
 use babata_application::{
     ApplicationError, AssetAttachmentDetail, AssetDetail, CaptureProvenanceDetail,
@@ -6,14 +9,15 @@ use babata_application::{
     ports::{
         NewAsset, NewAssetAttachmentOperation, NewCaptureOperation, NewCollection, NewItem,
         NewRelation, NewRevision, NewRouteEvidence, NewSource, NewSourceObservation, PersistGraph,
-        RawRepositoryPort,
+        RawRepositoryPort, SublibraryDefinitionPort,
     },
 };
 use babata_domain::{
     AssetAttachmentId, AssetId, AssetRole, CollectionId, CollectionSessionId, CommonSourceMetadata,
     ContentType, ItemId, Metadata, RawState, RecollectionState, RelationId, RelationKind,
     RevisionId, RevisionKind, RouteCoverage, RouteEvidence, Sha256, SourceId, SourceKind,
-    SourceObservationId, SourceObservationKind, SourceRouteId, UtcTimestamp,
+    SourceObservationId, SourceObservationKind, SourceRouteId, SublibraryAuthorityRef,
+    SublibraryDefinition, SublibraryId, UtcTimestamp,
 };
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
 
@@ -30,6 +34,107 @@ impl SqliteRawRepository {
         self.connection
             .lock()
             .map_err(|_| ApplicationError::Storage("SQLite connection lock poisoned".to_owned()))
+    }
+
+    fn load_sublibrary_definitions(
+        &self,
+        sublibrary_id: Option<&SublibraryId>,
+        version: Option<u32>,
+    ) -> Result<Vec<SublibraryDefinition>, ApplicationError> {
+        let connection = self.lock()?;
+        let mut statement = connection
+            .prepare(
+                "SELECT revision.raw_text, revision.item_id, revision.revision_id,
+                        revision.text_sha256
+                 FROM revisions revision
+                 JOIN items item ON item.item_id = revision.item_id
+                 JOIN sources source ON source.source_id = item.source_id
+                 WHERE revision.state = 'ready'
+                   AND source.source_kind = 'first_party'
+                   AND source.provider = 'babata'
+                   AND CASE WHEN json_valid(revision.raw_text)
+                       THEN json_extract(revision.raw_text, '$.schema_version') = 'babata.sublibrary/v1'
+                       ELSE 0
+                   END
+                   AND (?1 IS NULL OR json_extract(revision.raw_text, '$.id') = ?1)
+                   AND (?2 IS NULL OR CAST(json_extract(revision.raw_text, '$.version') AS INTEGER) = ?2)
+                 ORDER BY json_extract(revision.raw_text, '$.id'),
+                          CAST(json_extract(revision.raw_text, '$.version') AS INTEGER)",
+            )
+            .map_err(storage)?;
+        let rows = statement
+            .query_map(
+                params![
+                    sublibrary_id.map(ToString::to_string),
+                    version.map(i64::from)
+                ],
+                |row| {
+                    Ok((
+                        row.get::<_, String>(0)?,
+                        row.get::<_, String>(1)?,
+                        row.get::<_, String>(2)?,
+                        row.get::<_, String>(3)?,
+                    ))
+                },
+            )
+            .map_err(storage)?;
+        let mut definitions = Vec::new();
+        for row in rows {
+            let (raw_text, item_id, revision_id, recorded_hash) = row.map_err(storage)?;
+            let actual_hash = Sha256::of_bytes(raw_text.as_bytes());
+            let recorded_hash = Sha256::parse(recorded_hash).map_err(ApplicationError::from)?;
+            if actual_hash != recorded_hash {
+                return Err(ApplicationError::Integrity(format!(
+                    "sublibrary definition revision {revision_id} does not match its C0 hash"
+                )));
+            }
+            let mut definition: SublibraryDefinition = serde_json::from_str(&raw_text)
+                .map_err(|error| ApplicationError::Integrity(error.to_string()))?;
+            definition.validate()?;
+            definition.authority = Some(SublibraryAuthorityRef {
+                item_id: ItemId::parse(item_id).map_err(ApplicationError::from)?,
+                revision_id: RevisionId::parse(revision_id).map_err(ApplicationError::from)?,
+                text_sha256: recorded_hash,
+            });
+            definitions.push(definition);
+        }
+        Ok(definitions)
+    }
+}
+
+impl SublibraryDefinitionPort for SqliteRawRepository {
+    fn list_latest(&self) -> Result<Vec<SublibraryDefinition>, ApplicationError> {
+        let mut latest = BTreeMap::new();
+        for definition in self.load_sublibrary_definitions(None, None)? {
+            let key = definition.id.to_string();
+            if latest
+                .get(&key)
+                .is_none_or(|current: &SublibraryDefinition| current.version < definition.version)
+            {
+                latest.insert(key, definition);
+            }
+        }
+        Ok(latest.into_values().collect())
+    }
+
+    fn list_versions(
+        &self,
+        sublibrary_id: &SublibraryId,
+    ) -> Result<Vec<SublibraryDefinition>, ApplicationError> {
+        self.load_sublibrary_definitions(Some(sublibrary_id), None)
+    }
+
+    fn find(
+        &self,
+        sublibrary_id: &SublibraryId,
+        version: Option<u32>,
+    ) -> Result<Option<SublibraryDefinition>, ApplicationError> {
+        let mut definitions = self.load_sublibrary_definitions(Some(sublibrary_id), version)?;
+        if version.is_none() {
+            Ok(definitions.pop())
+        } else {
+            Ok(definitions.into_iter().next())
+        }
     }
 }
 

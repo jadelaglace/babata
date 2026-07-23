@@ -35,6 +35,12 @@ impl DataPaths {
     pub fn search_projection_index(&self) -> PathBuf {
         self.root.join("03_views/search/index")
     }
+    pub fn sublibrary_views(&self) -> PathBuf {
+        self.root.join("03_views/sublibraries")
+    }
+    pub fn output_views(&self) -> PathBuf {
+        self.root.join("03_views/outputs")
+    }
     pub fn raw_assets(&self) -> PathBuf {
         self.root.join("01_raw/assets/sha256")
     }
@@ -67,6 +73,8 @@ pub fn ensure_layout(paths: &DataPaths) -> Result<(), std::io::Error> {
         paths.derived_index(),
         paths.runtime_index(),
         paths.search_projection_index(),
+        paths.sublibrary_views(),
+        paths.output_views(),
         paths.staging(".keep"),
         paths.journal(),
         paths.orphan(),

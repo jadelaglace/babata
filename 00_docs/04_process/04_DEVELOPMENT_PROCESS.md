@@ -6,7 +6,7 @@
 
 ## 1. 当前状态
 
-**更新时间：2026-07-22**
+**更新时间：2026-07-23**
 
 ```text
 P0  冻结旧版本                                    已完成
@@ -15,10 +15,10 @@ P2  全系统模块、目录、代码与工具骨架                 已完成
 P3  C0 原始资料与第一方版本底座                     已完成
 P4  飞书与浏览器首批真实收集路径                     已完成
 P5  C1 多模态清洗与百炼处理                         已完成
-P6  核心沉淀、检索、子库与输出                      进行中
+P6  核心沉淀、检索、子库与输出                      已完成
   P6.1 核心知识沉淀                                 已完成
   P6.2 发现、检索与关系导航                         已完成
-  P6.3 子库与输出                                   未开始
+  P6.3 子库与输出                                   已完成
 P7  扩展来源、正式 Skill 与受控 Agent               未开始
 P8  备份、恢复、运维与长期加固                      未开始
 ```
@@ -26,10 +26,11 @@ P8  备份、恢复、运维与长期加固                      未开始
 <!-- P2: completed; P2-G1..P2-G7: passed -->
 <!-- P3: completed; P3-G1..P3-G6: passed -->
 <!-- P4: completed; P4-G1..P4-G6 and TC-01..TC-02 passed; representative small real loops proven; incomplete routes remain disabled -->
-<!-- P5: completed; TC-03A and TC-04 passed; AC-04 passed; full AC-03/TC-03 awaits P6 TC-03B -->
+<!-- P5: completed; TC-03A and TC-04 passed; AC-04 passed; P6.3 later completed TC-03B and the full AC-03/TC-03 -->
 <!-- P6.1: completed; AC-05..AC-06 and TC-05..TC-06 passed -->
 <!-- P6.2 preflight: Issue #60 common C0 metadata/observations implemented -->
-<!-- P6.2: completed; AC-07 items 1..4,7 and TC-07 steps 1..4 plus search projection rebuild passed; full AC-07/TC-07 await P6.3 sublibrary work -->
+<!-- P6.2: completed; AC-07 items 1..4,7 and TC-07 steps 1..4 plus search projection rebuild passed; P6.3 later completed the full AC-07/TC-07 -->
+<!-- P6.3: completed; AC-03, AC-07, AC-08 and TC-03, TC-07, TC-08 passed -->
 
 当前真实情况：
 
@@ -78,11 +79,11 @@ P8  备份、恢复、运维与长期加固                      未开始
   证据；飞书官方 `lark-cli` 的 Wiki -> Docx -> 媒体 -> C0 路径已有独立真实证据。
   P4 migration 已与 P3 raw migration 分开；未完整覆盖的 route/capability 继续 disabled。
 
-- P5 已完成：百炼 CLI（`bl`）的真实多类型试跑、引导 Skill、真实 PDF/图片/视频 C0→C1、受控 C1 文件、删除重建、受限样本和原件/预览边界共同通过 TC-03A。合并后的 `main` 又以真实微信 C0 完成 local extract 和一次 `qwen-plus` 摘要，保留注入的 provider 失败与成功 retry、实际 task/usage/output hash、unavailable 分支，并复核 C0 正文/asset 哈希不变，TC-04 与 AC-04 通过。完整 AC-03/TC-03 仍需 P6 TC-03B；清洗派生物、C1、队列和证据只进 `BABATA_DATA_HOME`，不进 Git。
+- P5 已完成：百炼 CLI（`bl`）的真实多类型试跑、引导 Skill、真实 PDF/图片/视频 C0→C1、受控 C1 文件、删除重建、受限样本和原件/预览边界共同通过 TC-03A。合并后的 `main` 又以真实微信 C0 完成 local extract 和一次 `qwen-plus` 摘要，保留注入的 provider 失败与成功 retry、实际 task/usage/output hash、unavailable 分支，并复核 C0 正文/asset 哈希不变，TC-04 与 AC-04 通过。P5 收尾时完整 AC-03/TC-03 仍需 P6 TC-03B，现已由 P6.3 补齐；清洗派生物、C1、队列和证据只进 `BABATA_DATA_HOME`，不进 Git。
 - P6.1 已完成：真实 C0/C1 可在用户零回复时由 Agent 消化为机器/未审阅的三大界核心，
   三级地图、五类语义、关系、三维评分、地图演进、高密度文本和窄 C2 均可追溯；评论、
   Log、Insight、附件、Agent 再分析和真实作品改写保持不同语义。AC-05、AC-06、TC-05、
-  TC-06 已通过；P6.2 检索/浮现现已完成，P6.3 子库/输出尚未开始。
+  TC-06 已通过；P6.2 检索/浮现与 P6.3 子库/输出现均已完成。
 - Issue #60 已完成 P6.2 preflight 实现：新增 `babata.c0.common/v1`、
   `babata.c0.media/v1` 和追加式 source observation，raw schema 升为 v6、collection schema
   升为 v5。首次 item 事实与后续观测分离，changed/unchanged/inaccessible/removed 不再因
@@ -92,8 +93,14 @@ P8  备份、恢复、运维与长期加固                      未开始
 - P6.2 已完成：独立 C2 搜索投影统一发现 raw item 与 semantic entry，支持全文与结构化组合
   检索、三维评分筛选/排序、详情回看、关系遍历和带 direction/relevance/time/relation 原因的
   主动浮现。真实数据根完成构建、搜索、导航、删除、重建和权威库不变审计；AC-07 第 1–4、
-  7 项与 TC-07 第 1–4 步及搜索投影重建部分已通过。子库定义/物化仍属 P6.3，因此 AC-07、
-  TC-07 整体仍未通过。
+  7 项与 TC-07 第 1–4 步及搜索投影重建部分已通过。子库定义/物化当时仍属 P6.3；P6.3
+  已补齐剩余子库责任，因此 AC-07、TC-07 现已整体通过。
+- P6.3 已完成：版本化 `SublibraryDefinition` 通过 first-party C0 revision 链保存，raw schema
+  升为 v7 并在数据库层保护定义来源、版本连续性和不可原地改写。子库物化、Markdown 人读
+  输出和结构化 JSON 输出均带 manifest、输入 hash/版本、机器/人工与审阅身份、builder/
+  template/profile、状态和限制；CLI/local API 调用同一 application service。真实 machine/
+  unreviewed Knowledge 形成 1 项成员的子库和两类输出，篡改检测、delete/rebuild 与只读审计
+  通过；Web/Obsidian 保持 unavailable。AC-03、AC-07、AC-08 与 TC-03、TC-07、TC-08 通过。
 
 项目阶段只使用 P0–P8；C0–C3 是数据权威级别，不是项目阶段。
 
@@ -139,8 +146,8 @@ P8  备份、恢复、运维与长期加固                      未开始
              -> 1 条资料/1 个版本/2 个导出原件 -> 重采没变化
              -> 只形成已知公众号 URL 的重复取得；收藏自动遍历和聊天未形成长期能力
 
-P5 已收尾，下一阶段
-  P6         核心沉淀、检索、子库与输出（进行中）
+P5 已收尾；P6 现已完成
+  P6         核心沉淀、检索、子库与输出（已完成）
 
 转入 P7 扩展来源，不是 P4 完成证据
   微信聊天/收藏其他类型（官方 PC 微信 UI，后续 Agent 带着走）
@@ -526,14 +533,15 @@ P5 已完成以下责任：
 它们冒充为 P5 已有自动能力，也不把未启用能力反向变成 P5 阻塞项。
 
 P5 主要交付 AC-03 的 C0/C1 子责任、AC-04、TC-03A 和 TC-04。P6 交付 AC-03 的 C2
-子责任与 TC-03B。AC-03 和 TC-03 整体尚未通过；C1 不覆盖 C0，模型输出不自动成为人工判断。
+子责任与 TC-03B。P5 收尾时 AC-03 和 TC-03 尚未整体通过；P6.3 完成后两者已整体通过。
+C1 不覆盖 C0，模型输出不自动成为人工判断。
 
 ## 9. P6：核心沉淀、检索、子库与输出
 
 2026-07-20 已从 1.0 原始归档恢复 P6 的“个人知识宇宙”产品基线，并由
 `09_P6_PERSONAL_KNOWLEDGE_UNIVERSE_BLUEPRINT.md` 集中说明。2026-07-21，Issue #65 / PR #66
 完成 P6.1 纵向闭环并通过完整门禁。2026-07-22，Issue #74 完成 P6.2 发现、检索与关系
-导航；P6 整体仍未完成，P6.3 子库与通用输出尚未开始。
+导航。2026-07-23，Issue #76 完成 P6.3 版本化子库、可重建物化和可追溯输出，P6 整体完成。
 
 P6 必须按核心价值顺序进行，不能直接跳到 Datasette/Obsidian，也不能用简单文件夹分类
 或全文搜索代替核心：
@@ -698,8 +706,7 @@ Issue #74 的 P6.2 实现与证据：
    `BABATA_DATA_HOME/verification/p6-2-discovery-20260722-235222/`。
 
 P6.2 已完成；AC-07 第 1–4、7 项和 TC-07 第 1–4 步及步骤 6 的搜索投影部分已通过。
-AC-07 第 5–6 项、TC-07 第 5 步及步骤 6 的子库物化部分仍待 P6.3，因此两项整体保持
-未通过。
+P6.3 已补齐 AC-07 第 5–6 项、TC-07 第 5 步及步骤 6 的子库物化部分，因此两项整体通过。
 
 ### P6.3 子库与输出
 
@@ -710,6 +717,31 @@ AC-07 第 5–6 项、TC-07 第 5 步及步骤 6 的子库物化部分仍待 P6.
 - Obsidian、网页、报告等在真实用途出现后逐项启用。
 
 交付 AC-03 的 C2 子责任、AC-07、AC-08 和 TC-03B、TC-07、TC-08。
+
+Issue #76 的 P6.3 实现与证据：
+
+1. `babata.sublibrary/v1` 保存用途、组合选择规则、人工纳入/排除、组织规则和未审阅策略；
+   create/revise 走现有 Workspace first-party C0 写入，raw v7 将 definition version 与 revision
+   ordinal/parent 绑定，并拒绝正文 UPDATE/DELETE。fixture 覆盖两版完整读回与旧版保护；
+2. `SublibraryViewStore` 在 `03_views/sublibraries/<id>/v<version>/` 生成 materialization 与
+   manifest；成员保留纳入依据、权威引用、输入 hash、机器/人工和审阅身份。人工 exclude
+   优先，unreviewed 是否纳入由定义显式控制；
+3. `OutputViewStore` 对显式记录集合或固定子库版本生成 Markdown 与结构化 JSON；manifest
+   保存 scope、输入 ID/version/hash、来源、builder/template/profile、时间、状态、限制、
+   output hash、generation 和重建差异。Web/Obsidian 仍返回 unavailable；
+4. fixture 纵向测试从真实 Rust CLI 完成 create/revise/list/show、materialize/verify/delete/
+   rebuild、两类 output、外部篡改、CLI/API 同服务和 raw DB 负向保护；unreviewed 纳入/排除
+   另有应用层正反测试；
+5. 主真实库先在线快照再由 raw v6 升至 v7；46 张 raw 表仅 `schema_migrations` 变化，业务
+   表不变，`quick_check=ok`、foreign key 异常为 0。随后用已有 1 条 machine/unreviewed
+   Knowledge 生成真实子库和两类输出，身份仍为 `human_judgment=false`、
+   `confirmed_fact=false`；
+6. 子库物化篡改使 verify 失败；人读输出篡改返回 `valid=false`。delete/rebuild 后再次 verify
+   通过。C2 操作前后 46 张 raw/knowledge 表和 4 张 derived 表逐表摘要完全相同。证据位于
+   `BABATA_DATA_HOME/verification/p6-3-sublibrary-output-20260723-200352/`。
+
+P6.3 与 P6 整体完成。该结论只启用实际验证的子库、Markdown 和 JSON 能力，不把 P7 的
+正式 Skill/Agent、P8 的备份恢复或未实现的 Web/Obsidian 输出提前写成完成。
 
 ## 10. P7：扩展来源、正式 Skill 与受控 Agent
 

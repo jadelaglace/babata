@@ -28,6 +28,10 @@ const MIGRATIONS: &[(&str, &str)] = &[
         "0006_source_observations.sql",
         include_str!("../../../../03_migrations/01_raw/0006_source_observations.sql"),
     ),
+    (
+        "0007_sublibrary_definitions.sql",
+        include_str!("../../../../03_migrations/01_raw/0007_sublibrary_definitions.sql"),
+    ),
 ];
 
 const INTEGRITY_MIGRATIONS: &[(&str, &str)] = &[(
@@ -283,7 +287,7 @@ mod tests {
                 .query_row("SELECT COUNT(*) FROM schema_migrations", [], |row| row
                     .get::<_, i64>(0))
                 .unwrap(),
-            6
+            7
         );
         assert!(
             connection
@@ -308,7 +312,7 @@ mod tests {
                     0
                 ))
                 .unwrap(),
-            6
+            7
         );
     }
 
@@ -320,7 +324,7 @@ mod tests {
             .execute(
                 "INSERT INTO schema_migrations
                  (version, name, applied_at, checksum_sha256)
-                 VALUES (7, 'future.sql', '2026-01-01T00:00:00Z', 'future')",
+                 VALUES (8, 'future.sql', '2026-01-01T00:00:00Z', 'future')",
                 [],
             )
             .unwrap();
@@ -426,6 +430,96 @@ mod tests {
                 })
                 .unwrap(),
             0
+        );
+    }
+
+    #[test]
+    fn sublibrary_definition_migration_preserves_plain_text_and_locks_c0_history() {
+        let connection = Connection::open_in_memory().unwrap();
+        migrate_raw(&connection).unwrap();
+        connection
+            .execute_batch(
+                "INSERT INTO sources
+                    (source_id, source_kind, provider, created_at) VALUES
+                    ('source_first_party', 'first_party', 'babata', '2026-07-23T00:00:00Z'),
+                    ('source_external', 'external', 'fixture', '2026-07-23T00:00:00Z');
+                 INSERT INTO items
+                    (item_id, source_id, content_type, first_captured_at, created_at) VALUES
+                    ('item_definition', 'source_first_party', 'text',
+                     '2026-07-23T00:00:00Z', '2026-07-23T00:00:00Z'),
+                    ('item_plain', 'source_external', 'text',
+                     '2026-07-23T00:00:00Z', '2026-07-23T00:00:00Z');
+                 INSERT INTO revisions
+                    (revision_id, item_id, revision_kind, ordinal, captured_at,
+                     raw_text, text_sha256, state, created_at)
+                 VALUES ('rev_plain', 'item_plain', 'capture', 1,
+                         '2026-07-23T00:00:00Z', 'ordinary non-JSON C0 text',
+                         'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+                         'ready', '2026-07-23T00:00:00Z');",
+            )
+            .unwrap();
+        let document = serde_json::json!({
+            "schema_version": "babata.sublibrary/v1",
+            "id": "sublibrary_01J00000000000000000000000",
+            "version": 1,
+            "title": "Fixture",
+            "purpose": "Prove immutable first-party definition history",
+            "selection": {"limit": 0},
+            "manual_include": [],
+            "manual_exclude": [],
+            "organisation_rules": ["title"],
+            "include_unreviewed": false,
+            "author": "fixture-user",
+            "created_at": "2026-07-23T00:00:00Z"
+        })
+        .to_string();
+        let hash = babata_domain::Sha256::of_bytes(document.as_bytes()).to_string();
+        connection
+            .execute(
+                "INSERT INTO revisions
+                    (revision_id, item_id, revision_kind, ordinal, captured_at, authored_at,
+                     raw_text, text_sha256, state, created_at)
+                 VALUES ('rev_definition', 'item_definition', 'authored', 1,
+                         '2026-07-23T00:00:00Z', '2026-07-23T00:00:00Z', ?1, ?2,
+                         'pending', '2026-07-23T00:00:00Z')",
+                params![document, hash],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "UPDATE revisions SET state = 'ready' WHERE revision_id = 'rev_definition'",
+                [],
+            )
+            .unwrap();
+        assert!(
+            connection
+                .execute(
+                    "UPDATE revisions SET raw_text = '{}' WHERE revision_id = 'rev_definition'",
+                    [],
+                )
+                .unwrap_err()
+                .to_string()
+                .contains("immutable")
+        );
+        assert!(
+            connection
+                .execute(
+                    "DELETE FROM revisions WHERE revision_id = 'rev_definition'",
+                    []
+                )
+                .unwrap_err()
+                .to_string()
+                .contains("append-only")
+        );
+        assert_eq!(
+            connection
+                .query_row(
+                    "SELECT COUNT(*) FROM revisions WHERE revision_id IN ('rev_plain', 'rev_definition')",
+                    [],
+                    |row| row.get::<_, i64>(0),
+                )
+                .unwrap(),
+            2
         );
     }
 

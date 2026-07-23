@@ -1,13 +1,17 @@
 use std::{io::Read, net::SocketAddr};
 
 use babata_application::{
-    CancelCollectionCommand, CollectorSessionService, ExploreService, RetryCollectionItemCommand,
-    SearchQuery, StartCollectionCommand,
+    BuildOutputCommand, CancelCollectionCommand, CollectorSessionService, CreateSublibraryCommand,
+    ExploreService, OutputService, RetryCollectionItemCommand, ReviseSublibraryCommand,
+    SearchQuery, StartCollectionCommand, SublibraryService,
 };
-use babata_domain::{CollectionSelection, CollectionSessionId, ItemId, SourceRouteId};
+use babata_domain::{
+    CollectionSelection, CollectionSessionId, ItemId, OutputId, SourceRouteId, SublibraryId,
+};
 use babata_infrastructure::{
-    AppConfig, FileAssetStore, SqliteRawRepository, SqliteReadProjection, SystemClock,
-    open_collection_database, sources::providers::browser::BrowserCandidateAdapter,
+    AppConfig, FileAssetStore, OutputViewStore, SqliteRawRepository, SqliteReadProjection,
+    SublibraryViewStore, SystemClock, open_collection_database, open_raw_database,
+    sources::providers::browser::BrowserCandidateAdapter,
 };
 use serde::de::DeserializeOwned;
 use serde_json::json;
@@ -17,8 +21,9 @@ use crate::{
     ApiError,
     auth::verify_token,
     requests::{
-        BrowserSessionRequest, CancelCollectionRequest, RecollectRequest, RetryCollectionRequest,
-        SelectCollectionRequest,
+        BrowserSessionRequest, CancelCollectionRequest, CreateSublibraryRequest, IdentifierRequest,
+        RecollectRequest, RetryCollectionRequest, ReviseSublibraryRequest, SelectCollectionRequest,
+        SublibraryVersionRequest,
     },
     responses::{ApiResponse, ErrorResponse},
     routes,
@@ -100,6 +105,7 @@ fn handle_request(mut request: Request, config: &ServerConfig) {
     let _ = request.respond(to_http_response(response, origin.as_deref()));
 }
 
+#[allow(clippy::too_many_lines)]
 fn dispatch(
     config: &ServerConfig,
     method: &str,
@@ -121,6 +127,98 @@ fn dispatch(
             }),
         ),
         ("POST", "/v1/explore/search") => (200, search_projection(&config.app, body)?),
+        ("GET", "/v1/sublibraries") => {
+            let definitions = sublibrary_service(&config.app)?.list()?;
+            (200, serde_json::to_value(definitions).map_err(json_error)?)
+        }
+        ("POST", "/v1/sublibraries/create") => {
+            let request: CreateSublibraryRequest = decode(body)?;
+            let service = sublibrary_service(&config.app)?;
+            let definition = service.create(CreateSublibraryCommand {
+                definition: request.definition,
+                author: "user".to_owned(),
+            })?;
+            (201, serde_json::to_value(definition).map_err(json_error)?)
+        }
+        ("POST", "/v1/sublibraries/revise") => {
+            let request: ReviseSublibraryRequest = decode(body)?;
+            let service = sublibrary_service(&config.app)?;
+            let definition = service.revise(ReviseSublibraryCommand {
+                sublibrary_id: parse_sublibrary_id(request.sublibrary_id)?,
+                expected_version: request.expected_version,
+                definition: request.definition,
+                author: "user".to_owned(),
+            })?;
+            (200, serde_json::to_value(definition).map_err(json_error)?)
+        }
+        ("GET", "/v1/sublibraries/show") => {
+            let (id, version) = sublibrary_from_query(query)?;
+            let definition = sublibrary_service(&config.app)?.show(&id, version)?;
+            (200, serde_json::to_value(definition).map_err(json_error)?)
+        }
+        ("GET", "/v1/sublibraries/versions") => {
+            let (id, _) = sublibrary_from_query(query)?;
+            let definitions = sublibrary_service(&config.app)?.versions(&id)?;
+            (200, serde_json::to_value(definitions).map_err(json_error)?)
+        }
+        ("POST", "/v1/sublibraries/materialize" | "/v1/sublibraries/rebuild") => {
+            let request: SublibraryVersionRequest = decode(body)?;
+            let outcome = sublibrary_service(&config.app)?.materialize(
+                &parse_sublibrary_id(request.sublibrary_id)?,
+                Some(request.version),
+            )?;
+            (200, serde_json::to_value(outcome).map_err(json_error)?)
+        }
+        ("GET", "/v1/sublibraries/status") => {
+            let (id, version) = required_sublibrary_version(query)?;
+            let outcome = sublibrary_service(&config.app)?.materialization_status(&id, version)?;
+            (200, serde_json::to_value(outcome).map_err(json_error)?)
+        }
+        ("POST", "/v1/sublibraries/verify") => {
+            let request: SublibraryVersionRequest = decode(body)?;
+            let outcome = sublibrary_service(&config.app)?.verify_materialization(
+                &parse_sublibrary_id(request.sublibrary_id)?,
+                request.version,
+            )?;
+            (200, serde_json::to_value(outcome).map_err(json_error)?)
+        }
+        ("POST", "/v1/sublibraries/delete") => {
+            let request: SublibraryVersionRequest = decode(body)?;
+            let outcome = sublibrary_service(&config.app)?.delete_materialization(
+                &parse_sublibrary_id(request.sublibrary_id)?,
+                request.version,
+            )?;
+            (200, serde_json::to_value(outcome).map_err(json_error)?)
+        }
+        ("GET", "/v1/outputs") => (
+            200,
+            serde_json::to_value(output_service(&config.app)?.list()).map_err(json_error)?,
+        ),
+        ("POST", "/v1/outputs/build") => {
+            let request: BuildOutputCommand = decode(body)?;
+            let outcome = output_service(&config.app)?.build(request)?;
+            (201, serde_json::to_value(outcome).map_err(json_error)?)
+        }
+        ("GET", "/v1/outputs/status") => {
+            let output = output_from_query(query)?;
+            let outcome = output_service(&config.app)?.status(&output)?;
+            (200, serde_json::to_value(outcome).map_err(json_error)?)
+        }
+        ("POST", "/v1/outputs/verify") => {
+            let request: IdentifierRequest = decode(body)?;
+            let outcome = output_service(&config.app)?.verify(&parse_output_id(request.id)?)?;
+            (200, serde_json::to_value(outcome).map_err(json_error)?)
+        }
+        ("POST", "/v1/outputs/delete") => {
+            let request: IdentifierRequest = decode(body)?;
+            let outcome = output_service(&config.app)?.delete(&parse_output_id(request.id)?)?;
+            (200, serde_json::to_value(outcome).map_err(json_error)?)
+        }
+        ("POST", "/v1/outputs/rebuild") => {
+            let request: IdentifierRequest = decode(body)?;
+            let outcome = output_service(&config.app)?.rebuild(&parse_output_id(request.id)?)?;
+            (200, serde_json::to_value(outcome).map_err(json_error)?)
+        }
         ("POST", "/v1/collector/sessions") => {
             let request: BrowserSessionRequest = decode(body)?;
             validate_browser_start(&request)?;
@@ -208,6 +306,80 @@ fn search_projection(app: &AppConfig, body: &[u8]) -> Result<serde_json::Value, 
         app.sqlite.busy_timeout_ms,
     ));
     serde_json::to_value(service.search(request)?).map_err(json_error)
+}
+
+type LocalSublibraryService = SublibraryService<
+    SqliteRawRepository,
+    FileAssetStore,
+    SystemClock,
+    SqliteRawRepository,
+    SqliteReadProjection,
+    SublibraryViewStore,
+>;
+
+fn sublibrary_service(config: &AppConfig) -> Result<LocalSublibraryService, ApiError> {
+    let repository = open_raw_database(&config.paths(), config.sqlite.busy_timeout_ms)?;
+    Ok(SublibraryService::new(
+        repository.clone(),
+        FileAssetStore::new(config.paths()),
+        SystemClock,
+        repository,
+        SqliteReadProjection::new(config.paths(), config.sqlite.busy_timeout_ms),
+        SublibraryViewStore::new(config.paths()),
+    ))
+}
+
+type LocalOutputService =
+    OutputService<SqliteRawRepository, SqliteReadProjection, OutputViewStore, SystemClock>;
+
+fn output_service(config: &AppConfig) -> Result<LocalOutputService, ApiError> {
+    Ok(OutputService::new(
+        open_raw_database(&config.paths(), config.sqlite.busy_timeout_ms)?,
+        SqliteReadProjection::new(config.paths(), config.sqlite.busy_timeout_ms),
+        OutputViewStore::new(config.paths()),
+        SystemClock,
+    ))
+}
+
+fn sublibrary_from_query(query: Option<&str>) -> Result<(SublibraryId, Option<u32>), ApiError> {
+    let values = url::form_urlencoded::parse(query.unwrap_or_default().as_bytes())
+        .into_owned()
+        .collect::<std::collections::HashMap<_, _>>();
+    let id = values.get("sublibrary").ok_or_else(|| {
+        ApiError::InvalidRequest("sublibrary query parameter is required".to_owned())
+    })?;
+    let version = values
+        .get("version")
+        .map(|value| value.parse::<u32>())
+        .transpose()
+        .map_err(|_| ApiError::InvalidRequest("version query parameter is invalid".to_owned()))?;
+    Ok((parse_sublibrary_id(id)?, version))
+}
+
+fn required_sublibrary_version(query: Option<&str>) -> Result<(SublibraryId, u32), ApiError> {
+    let (id, version) = sublibrary_from_query(query)?;
+    let version = version.ok_or_else(|| {
+        ApiError::InvalidRequest("version query parameter is required".to_owned())
+    })?;
+    Ok((id, version))
+}
+
+fn output_from_query(query: Option<&str>) -> Result<OutputId, ApiError> {
+    let value = url::form_urlencoded::parse(query.unwrap_or_default().as_bytes())
+        .find(|(key, _)| key == "output")
+        .map(|(_, value)| value.into_owned())
+        .ok_or_else(|| ApiError::InvalidRequest("output query parameter is required".to_owned()))?;
+    parse_output_id(value)
+}
+
+fn parse_sublibrary_id(value: impl AsRef<str>) -> Result<SublibraryId, ApiError> {
+    SublibraryId::parse(value)
+        .map_err(|error| ApiError::Application(babata_application::ApplicationError::from(error)))
+}
+
+fn parse_output_id(value: impl AsRef<str>) -> Result<OutputId, ApiError> {
+    OutputId::parse(value)
+        .map_err(|error| ApiError::Application(babata_application::ApplicationError::from(error)))
 }
 
 type BrowserService = CollectorSessionService<SqliteRawRepository, FileAssetStore, SystemClock>;
@@ -473,6 +645,150 @@ mod tests {
         assert_eq!(response.status, 200);
         let response: Value = serde_json::from_slice(&response.body).unwrap();
         assert_eq!(response["data"]["records"].as_array().unwrap().len(), 0);
+    }
+
+    #[test]
+    #[allow(clippy::too_many_lines)]
+    fn p6_3_api_uses_the_same_sublibrary_and_output_services() {
+        let temporary = tempdir().unwrap();
+        let app = test_config(temporary.path());
+        ExploreService::new(SqliteReadProjection::new(
+            app.paths(),
+            app.sqlite.busy_timeout_ms,
+        ))
+        .rebuild()
+        .unwrap();
+        let config =
+            ServerConfig::new(app, "127.0.0.1:43873".parse().unwrap(), TOKEN.to_owned()).unwrap();
+        let created = dispatch(
+            &config,
+            "POST",
+            "/v1/sublibraries/create",
+            Some(TOKEN),
+            &serde_json::to_vec(&json!({
+                "definition": {
+                    "title": "API fixture",
+                    "purpose": "Prove local API composition shares the P6.3 application service",
+                    "selection": {"provider": "fixture", "limit": 20},
+                    "manual_include": [],
+                    "manual_exclude": [],
+                    "organisation_rules": ["title"],
+                    "include_unreviewed": false
+                }
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(created.status, 201);
+        let created: Value = serde_json::from_slice(&created.body).unwrap();
+        let sublibrary = created["data"]["id"].as_str().unwrap();
+        let listed = dispatch(&config, "GET", "/v1/sublibraries", Some(TOKEN), b"").unwrap();
+        let listed: Value = serde_json::from_slice(&listed.body).unwrap();
+        assert_eq!(listed["data"].as_array().unwrap().len(), 1);
+        let versions = dispatch(
+            &config,
+            "GET",
+            &format!("/v1/sublibraries/versions?sublibrary={sublibrary}"),
+            Some(TOKEN),
+            b"",
+        )
+        .unwrap();
+        let versions: Value = serde_json::from_slice(&versions.body).unwrap();
+        assert_eq!(versions["data"].as_array().unwrap().len(), 1);
+        let shown = dispatch(
+            &config,
+            "GET",
+            &format!("/v1/sublibraries/show?sublibrary={sublibrary}&version=1"),
+            Some(TOKEN),
+            b"",
+        )
+        .unwrap();
+        assert_eq!(shown.status, 200);
+        let materialized = dispatch(
+            &config,
+            "POST",
+            "/v1/sublibraries/materialize",
+            Some(TOKEN),
+            &serde_json::to_vec(&json!({"sublibraryId": sublibrary, "version": 1})).unwrap(),
+        )
+        .unwrap();
+        let materialized: Value = serde_json::from_slice(&materialized.body).unwrap();
+        assert_eq!(materialized["data"]["member_count"], 0);
+        let status = dispatch(
+            &config,
+            "GET",
+            &format!("/v1/sublibraries/status?sublibrary={sublibrary}&version=1"),
+            Some(TOKEN),
+            b"",
+        )
+        .unwrap();
+        let status: Value = serde_json::from_slice(&status.body).unwrap();
+        assert_eq!(status["data"]["state"], "succeeded");
+        let verified = dispatch(
+            &config,
+            "POST",
+            "/v1/sublibraries/verify",
+            Some(TOKEN),
+            &serde_json::to_vec(&json!({"sublibraryId": sublibrary, "version": 1})).unwrap(),
+        )
+        .unwrap();
+        let verified: Value = serde_json::from_slice(&verified.body).unwrap();
+        assert_eq!(verified["data"]["state"], "verified");
+        dispatch(
+            &config,
+            "POST",
+            "/v1/sublibraries/delete",
+            Some(TOKEN),
+            &serde_json::to_vec(&json!({"sublibraryId": sublibrary, "version": 1})).unwrap(),
+        )
+        .unwrap();
+        let rebuilt = dispatch(
+            &config,
+            "POST",
+            "/v1/sublibraries/rebuild",
+            Some(TOKEN),
+            &serde_json::to_vec(&json!({"sublibraryId": sublibrary, "version": 1})).unwrap(),
+        )
+        .unwrap();
+        let rebuilt: Value = serde_json::from_slice(&rebuilt.body).unwrap();
+        assert_eq!(rebuilt["data"]["state"], "succeeded");
+
+        let available = dispatch(&config, "GET", "/v1/outputs", Some(TOKEN), b"").unwrap();
+        let available: Value = serde_json::from_slice(&available.body).unwrap();
+        assert_eq!(available["data"], json!(["human_readable", "structured"]));
+        let output = dispatch(
+            &config,
+            "POST",
+            "/v1/outputs/build",
+            Some(TOKEN),
+            &serde_json::to_vec(&json!({
+                "kind": "structured",
+                "scope": {
+                    "record_ids": [],
+                    "sublibrary": {
+                        "sublibrary_id": sublibrary,
+                        "definition_version": 1
+                    },
+                    "description": "API fixture structured output"
+                },
+                "template_version": "api-fixture/v1"
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(output.status, 201);
+        let output: Value = serde_json::from_slice(&output.body).unwrap();
+        let output_id = output["data"]["id"].as_str().unwrap();
+        let verified = dispatch(
+            &config,
+            "POST",
+            "/v1/outputs/verify",
+            Some(TOKEN),
+            &serde_json::to_vec(&json!({"id": output_id})).unwrap(),
+        )
+        .unwrap();
+        let verified: Value = serde_json::from_slice(&verified.body).unwrap();
+        assert_eq!(verified["data"]["valid"], true);
     }
 
     #[test]

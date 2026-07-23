@@ -14,6 +14,8 @@ pub mod raw_repository;
 pub mod read_projection;
 pub mod semantic_digest_provider;
 pub mod source_adapter;
+pub mod sublibrary_definition;
+pub mod sublibrary_materializer;
 pub mod view_builder;
 
 pub use asset_store::{AssetStorePort, FinalizeAssetOutcome, StagedAsset};
@@ -40,4 +42,6 @@ pub use semantic_digest_provider::{
     SemanticDigestOutcome, SemanticDigestProviderPort, SemanticDigestRequest,
 };
 pub use source_adapter::SourceAdapterPort;
+pub use sublibrary_definition::SublibraryDefinitionPort;
+pub use sublibrary_materializer::SublibraryMaterializerPort;
 pub use view_builder::ViewBuilderPort;
