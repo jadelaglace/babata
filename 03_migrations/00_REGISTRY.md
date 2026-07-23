@@ -2,7 +2,7 @@
 
 | Database | Owner | Directory | Naming | Activation |
 | --- | --- | --- | --- | --- |
-| raw SQLite | `SqliteRawRepository` | `01_raw/` | `NNNN_raw_description.sql` | P3; attachment-only recovery is separated by 0005; common item metadata and append-only source observations start at 0006 |
+| raw SQLite | `SqliteRawRepository` | `01_raw/` | `NNNN_raw_description.sql` | P3/P6.3; attachment-only recovery is separated by 0005; common item metadata and source observations start at 0006; first-party sublibrary definition guards start at 0007 |
 | collection extension | `SqliteRawRepository` | `02_collection/` | `NNNN_collection_description.sql` | P4; candidate common metadata starts at 0005 |
 | derived SQLite | `SqliteDerivedRepository` | `02_derived/` | `NNNN_derived_description.sql` | P5 |
 | runtime SQLite | `SqliteJobRepository` | `03_runtime/` | `NNNN_runtime_description.sql` | P5 |

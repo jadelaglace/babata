@@ -7,6 +7,8 @@ pub mod output;
 pub mod sublibrary;
 
 pub use dense_expression::DenseExpressionViewStore;
+pub use output::OutputViewStore;
+pub use sublibrary::SublibraryViewStore;
 
 use babata_domain::{CapabilityStatus, ViewDescriptor, ViewId, ViewKind};
 

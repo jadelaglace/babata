@@ -44,7 +44,11 @@ pub use knowledge::{
     SuggestionDecision, SuggestionDecisionKind,
 };
 pub use ops::{BackupClass, HealthState, RestoreState, SnapshotRef};
-pub use output::{OutputBuild, OutputKind, OutputManifestRef, OutputScope, OutputState};
+pub use output::{
+    OUTPUT_MANIFEST_SCHEMA_VERSION, OutputBuild, OutputDocument, OutputInputRecord, OutputKind,
+    OutputManifestRef, OutputScope, OutputScoreProfileRef, OutputState, OutputVerification,
+    SublibraryOutputScope,
+};
 pub use processing::{
     DerivativeRef, JobRef, PipelineId, ProcessJob, ProcessJobState, ProcessRun, ProviderTaskRef,
 };
@@ -58,6 +62,11 @@ pub use route::{
     CandidateEnvelope, CandidatePayload, RouteCoverage, RouteEvidence, SourceRouteDescriptor,
     SourceRouteId,
 };
-pub use sublibrary::SublibraryDefinition;
+pub use sublibrary::{
+    SUBLIBRARY_SCHEMA_VERSION, SublibraryAuthorityRef, SublibraryDefinition,
+    SublibraryDefinitionInput, SublibraryExclusion, SublibraryMaterialization,
+    SublibraryMaterializationDocument, SublibraryMaterializationState, SublibraryMember,
+    SublibraryOrganisationRule,
+};
 pub use value::{LogicalPath, Metadata, Sha256, TextPayload, UtcTimestamp};
 pub use view::{BuildTarget, ViewDescriptor, ViewKind};

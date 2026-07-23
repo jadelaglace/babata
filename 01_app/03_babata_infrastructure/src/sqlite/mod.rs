@@ -311,6 +311,43 @@ pub mod test_support {
             .map_err(|error| error.to_string())
     }
 
+    pub fn raw_authority_digest(data_root: &Path) -> Result<(i64, i64, String), String> {
+        let connection = open(data_root)?;
+        connection
+            .query_row(
+                "SELECT
+                    (SELECT COUNT(*) FROM items),
+                    (SELECT COUNT(*) FROM revisions),
+                    (SELECT group_concat(text_sha256, '|') FROM
+                        (SELECT text_sha256 FROM revisions ORDER BY revision_id))",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            )
+            .map_err(|error| error.to_string())
+    }
+
+    pub fn revision_mutation_rejections(
+        data_root: &Path,
+        revision_id: &str,
+    ) -> Result<(String, String), String> {
+        let connection = open(data_root)?;
+        let update_error = connection
+            .execute(
+                "UPDATE revisions SET raw_text = '{}' WHERE revision_id = ?1",
+                [revision_id],
+            )
+            .expect_err("raw revision update must be rejected")
+            .to_string();
+        let delete_error = connection
+            .execute(
+                "DELETE FROM revisions WHERE revision_id = ?1",
+                [revision_id],
+            )
+            .expect_err("raw revision delete must be rejected")
+            .to_string();
+        Ok((update_error, delete_error))
+    }
+
     fn open(data_root: &Path) -> Result<rusqlite::Connection, String> {
         open_connection(&DataPaths::new(data_root.to_path_buf()).raw_database(), 100)
             .map_err(|error| error.to_string())
@@ -378,7 +415,7 @@ mod tests {
         drop(connection);
         let after = super::raw_status(&paths, 100).unwrap();
         assert!(after.reachable);
-        assert_eq!(after.schema_version, 6);
+        assert_eq!(after.schema_version, 7);
         assert_eq!(after.pending_journals, 1);
         assert_eq!(after.orphans, 1);
         assert_eq!(after.quarantined_revisions, 0);

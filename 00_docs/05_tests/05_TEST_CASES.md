@@ -144,6 +144,12 @@ Git。所有 destructive 测试使用临时或隔离数据根。
 预期：C2 可删除重建；C0/C1 内容、哈希与关系不变；视图不冒充原件、人工资料或机器
 派生权威。TC-03B 不替代 TC-03A 的真实 asset 溯源证据。
 
+执行状态（2026-07-23）：TC-03B 通过，因此与已通过的 TC-03A 合并后，TC-03 整体通过。
+P6.2 搜索投影和 P6.3 子库物化/输出均可从 manifest 回到 C0/C1 与生成记录；真实
+machine/unreviewed Knowledge 在物化、Markdown 和 JSON 中仍明确为机器建议而非人工资料。
+删除重建 C2 前后 46 张 raw/knowledge 表和 4 张 derived 表摘要不变，C2 ports 也没有
+C0/C1 writer 依赖。该结论不替代 TC-03A 的真实 asset、源文件/预览和 C1 溯源证据。
+
 ### TC-04：忠实清洗、失败重试与百炼路径
 
 关联：AC-04，阶段 P5。
@@ -320,8 +326,8 @@ Issue #60 的测试是 AC-07/TC-07 前置机制证据，不是检索产品验收
 预期：各类资料均可发现；浮现可解释且不产生隐藏写入；断链显示明确状态；子库人工
 定义/版本不随物化删除；重建不复制第二套权威资料，也不改变 C0/C1、评分历史或建议状态。
 
-执行状态（2026-07-22）：P6.2 已通过步骤 1–4，并通过步骤 6 的搜索/浮现投影删除重建部分；
-步骤 5 和步骤 6 的子库物化部分属于 P6.3，尚未通过，因此 TC-07 整体仍未通过。
+执行状态（2026-07-23）：TC-07 整体通过。P6.2 已通过步骤 1–4 和步骤 6 的搜索/浮现投影
+部分；P6.3 已通过步骤 5 与步骤 6 的子库部分。
 
 - 隔离 fixture 覆盖正文与结构化组合检索、媒体-only、附件-only、受限、缺失、removed、
   first-party/machine、unreviewed/accepted/rejected、多 profile 评分、raw/semantic 关系、
@@ -339,6 +345,13 @@ Issue #60 的测试是 AC-07/TC-07 前置机制证据，不是检索产品验收
   4 张 derived 表摘要完全相同，实时库 `quick_check=ok`、foreign key 异常为 0。证据位于
   `BABATA_DATA_HOME/verification/p6-2-discovery-20260722-235222/`
   `P6_2_DISCOVERY_E2E.md`。
+- P6.3 fixture 通过真实 CLI 创建两版 first-party C0 `SublibraryDefinition`，覆盖组合选择、
+  人工 include/exclude、确定性组织规则、unreviewed 纳入/排除、旧版完整读回、数据库
+  UPDATE/DELETE 拒绝、物化篡改拒绝和 delete/rebuild；local API 调用同一 application service。
+- 真实定义精确选择现有 machine/unreviewed Knowledge，生成 1 项成员的物化并保留
+  `human_judgment=false`、`confirmed_fact=false`。物化篡改使 verify 失败，删除重建后通过；
+  C2 操作前后 raw/derived 逐表摘要不变。证据位于
+  `BABATA_DATA_HOME/verification/p6-3-sublibrary-output-20260723-200352/`。
 
 ### TC-08：可追溯输出与只读边界
 
@@ -357,6 +370,21 @@ Issue #60 的测试是 AC-07/TC-07 前置机制证据，不是检索产品验收
 
 预期：输出可回溯且支持明确批量；外部编辑/删除不改变权威资料；重建差异有记录；
 未实现类型不显示可用。
+
+执行状态（2026-07-23）：TC-08 通过。
+
+- fixture 对固定子库版本生成 Markdown，对显式两项集合及单项生成 JSON；两类 builder
+  共用 scope 解析，manifest 读回输入 ID/version/hash、来源、审阅身份、builder/template/
+  profile、时间、状态、限制与输出 hash；
+- 外部修改 Markdown 后 verify 返回 `valid=false`，首次 delete/rebuild 产生 generation 2 和差异
+  记录；manifest profile/history 合同收紧后两类输出经正式 rebuild 形成最终 generation 3 并通过
+  verify。C0 定义、外部原件、机器语义与 C1 均未反写；
+- 真实数据以现有 1 条 machine/unreviewed Knowledge 生成两类输出，Markdown 和 JSON 均可
+  定位 semantic/item/revision/source，且没有把建议改成人工事实；
+- 可用类型只列 `human_readable`、`structured`；请求 Web 返回 `capability_unavailable`，
+  Obsidian 同样保持未启用；
+- 全部证据与 TC-07 的 P6.3 证据同处
+  `BABATA_DATA_HOME/verification/p6-3-sublibrary-output-20260723-200352/`。
 
 ### TC-09：Skill、脚本、浏览器入口与 Agent 受控
 

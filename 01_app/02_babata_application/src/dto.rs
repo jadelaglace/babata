@@ -2,10 +2,11 @@ use babata_domain::{
     AssetAttachmentId, AssetId, AssetRole, BuildTarget, CandidateEnvelope, CandidateSummary,
     CollectionId, CollectionSessionId, CommonSourceMetadata, ContentType, DerivativeId,
     DerivativeKind, DerivativeRef, FirstPartySemanticDefinition, HealthState, ItemId, LogicalPath,
-    Metadata, PageCursor, PipelineId, ProcessJob, ProcessRun, ProcessingState, ProjectionStatus,
-    QueryFilter, RawState, RecollectionState, RecordSummary, RelationKind, RevisionId,
-    RouteCoverage, RunId, ScoreProfile, SemanticCandidatePackage, SemanticPayload, Sha256,
-    SnapshotRef, SourceId, SourceKind, SourceObservationId, SourceObservationKind, SourceRouteId,
+    Metadata, OutputKind, OutputScope, PageCursor, PipelineId, ProcessJob, ProcessRun,
+    ProcessingState, ProjectionStatus, QueryFilter, RawState, RecollectionState, RecordSummary,
+    RelationKind, RevisionId, RouteCoverage, RunId, ScoreProfile, SemanticCandidatePackage,
+    SemanticPayload, Sha256, SnapshotRef, SourceId, SourceKind, SourceObservationId,
+    SourceObservationKind, SourceRouteId, SublibraryDefinitionInput, SublibraryId,
     SuggestionDecisionKind, UtcTimestamp, ViewDescriptor, ViewId,
 };
 use serde::{Deserialize, Serialize};
@@ -268,6 +269,27 @@ pub struct SurfaceQuery {
 pub struct ProjectionOperationOutcome {
     pub operation: String,
     pub status: ProjectionStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateSublibraryCommand {
+    pub definition: SublibraryDefinitionInput,
+    pub author: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReviseSublibraryCommand {
+    pub sublibrary_id: SublibraryId,
+    pub expected_version: u32,
+    pub definition: SublibraryDefinitionInput,
+    pub author: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BuildOutputCommand {
+    pub kind: OutputKind,
+    pub scope: OutputScope,
+    pub template_version: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

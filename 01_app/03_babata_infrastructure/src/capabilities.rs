@@ -92,9 +92,27 @@ pub fn all_descriptors() -> Vec<CapabilityDescriptor> {
                     .to_owned(),
             ),
         },
-        CapabilityDescriptor::unavailable("sublibraries", "P6"),
+        CapabilityDescriptor {
+            id: CapabilityId::new("sublibraries"),
+            status: CapabilityStatus::Enabled,
+            activation_phase: "P6.3".to_owned(),
+            reason: Some(
+                "Versioned first-party definitions and disposable materializations are enabled"
+                    .to_owned(),
+            ),
+        },
         CapabilityDescriptor::unavailable("views", "P6"),
-        CapabilityDescriptor::unavailable("outputs", "P6"),
+        CapabilityDescriptor {
+            id: CapabilityId::new("outputs"),
+            status: CapabilityStatus::Enabled,
+            activation_phase: "P6.3".to_owned(),
+            reason: Some(
+                "Traceable human-readable Markdown and structured JSON outputs are enabled"
+                    .to_owned(),
+            ),
+        },
+        CapabilityDescriptor::unavailable("outputs.web", "unplanned"),
+        CapabilityDescriptor::unavailable("outputs.obsidian", "unplanned"),
         CapabilityDescriptor::unavailable("ops.backup", "P8"),
     ];
     descriptors.extend(crate::processing::registry::processing_descriptors());

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use babata_domain::CandidateEnvelope;
+use babata_domain::{CandidateEnvelope, SublibraryDefinitionInput};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CaptureRequest {
@@ -50,4 +50,25 @@ pub struct CancelCollectionRequest {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct RecollectRequest {
     pub item_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct CreateSublibraryRequest {
+    pub definition: SublibraryDefinitionInput,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ReviseSublibraryRequest {
+    pub sublibrary_id: String,
+    pub expected_version: u32,
+    pub definition: SublibraryDefinitionInput,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct SublibraryVersionRequest {
+    pub sublibrary_id: String,
+    pub version: u32,
 }

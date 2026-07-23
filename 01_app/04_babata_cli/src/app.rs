@@ -1,22 +1,23 @@
 use babata_application::ports::ClockPort;
 use babata_application::{
-    ApplicationError, CapabilityService, CaptureService, ChangeMapNodeTagCommand,
-    ChangeMapParentCommand, ChangeSemanticMapAssignmentCommand, CreateMapNodeCommand,
-    CreateScoreProfileCommand, DenseExpressionPreviewService, EvolveMapNodeAction,
-    EvolveMapNodeCommand, ExploreService, KnowledgeService, ProcessService,
-    RecordRelevanceScoreCommand, RecordSuggestionReviewCommand, RegisterFirstPartySemanticCommand,
-    SearchQuery, SemanticDigestService, SurfaceQuery, WorkspaceService,
+    ApplicationError, BuildOutputCommand, CapabilityService, CaptureService,
+    ChangeMapNodeTagCommand, ChangeMapParentCommand, ChangeSemanticMapAssignmentCommand,
+    CreateMapNodeCommand, CreateScoreProfileCommand, CreateSublibraryCommand,
+    DenseExpressionPreviewService, EvolveMapNodeAction, EvolveMapNodeCommand, ExploreService,
+    KnowledgeService, OutputService, ProcessService, RecordRelevanceScoreCommand,
+    RecordSuggestionReviewCommand, RegisterFirstPartySemanticCommand, ReviseSublibraryCommand,
+    SearchQuery, SemanticDigestService, SublibraryService, SurfaceQuery, WorkspaceService,
 };
 use babata_domain::{
-    DerivativeId, FirstPartySemanticDefinition, ItemId, PageCursor, PipelineId, QueryFilter,
-    RelevanceComponents, RelevanceTargetKind, RevisionId, RunId, ScoreProfile, ScoreProfileId,
-    UtcTimestamp,
+    DerivativeId, FirstPartySemanticDefinition, ItemId, OutputId, OutputScope, PageCursor,
+    PipelineId, QueryFilter, RelevanceComponents, RelevanceTargetKind, RevisionId, RunId,
+    ScoreProfile, ScoreProfileId, SublibraryId, SublibraryOutputScope, UtcTimestamp,
 };
 use babata_infrastructure::{
-    AppConfig, DenseExpressionViewStore, FileAssetStore, SqliteReadProjection,
-    StaticCapabilityRegistry, SystemClock, load_config, open_derived_database, open_job_database,
-    open_knowledge_review_database, open_raw_database, processing::registry::ProcessProviderRouter,
-    raw_status,
+    AppConfig, DenseExpressionViewStore, FileAssetStore, OutputViewStore, SqliteReadProjection,
+    StaticCapabilityRegistry, SublibraryViewStore, SystemClock, load_config, open_derived_database,
+    open_job_database, open_knowledge_review_database, open_raw_database,
+    processing::registry::ProcessProviderRouter, raw_status,
 };
 use clap::Parser;
 
@@ -78,13 +79,169 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         RootCommand::Knowledge(command) => execute_knowledge(command, &config, cli.json)?,
         RootCommand::Process(command) => execute_process(*command, &config, cli.json)?,
         RootCommand::Explore(command) => execute_explore(*command, &config, cli.json)?,
-        RootCommand::Sublibraries(_) => return Err(unavailable("sublibraries", "P6")),
+        RootCommand::Sublibraries(command) => execute_sublibraries(command, &config, cli.json)?,
         RootCommand::Views(_) => return Err(unavailable("views", "P6")),
-        RootCommand::Outputs(_) => return Err(unavailable("outputs", "P6")),
+        RootCommand::Outputs(command) => execute_outputs(command, &config, cli.json)?,
         RootCommand::Routes(_) => return Err(unavailable("routes", "P4")),
         RootCommand::Ops(_) => return Err(unavailable("ops.backup", "P8")),
     }
     Ok(())
+}
+
+fn execute_sublibraries(
+    command: crate::commands::SublibrariesCommand,
+    config: &AppConfig,
+    json: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let repository = open_raw_database(&config.paths(), config.sqlite.busy_timeout_ms)?;
+    let service = SublibraryService::new(
+        repository.clone(),
+        FileAssetStore::new(config.paths()),
+        SystemClock,
+        repository,
+        SqliteReadProjection::new(config.paths(), config.sqlite.busy_timeout_ms),
+        SublibraryViewStore::new(config.paths()),
+    );
+    match command {
+        crate::commands::SublibrariesCommand::Create { definition } => {
+            render_value(
+                &service.create(CreateSublibraryCommand {
+                    definition: read_json(&definition)?,
+                    author: "user".to_owned(),
+                })?,
+                json,
+            )?;
+        }
+        crate::commands::SublibrariesCommand::Revise {
+            sublibrary,
+            expected_version,
+            definition,
+        } => {
+            render_value(
+                &service.revise(ReviseSublibraryCommand {
+                    sublibrary_id: SublibraryId::parse(sublibrary)?,
+                    expected_version,
+                    definition: read_json(&definition)?,
+                    author: "user".to_owned(),
+                })?,
+                json,
+            )?;
+        }
+        crate::commands::SublibrariesCommand::List => render_value(&service.list()?, json)?,
+        crate::commands::SublibrariesCommand::Versions { sublibrary } => {
+            render_value(&service.versions(&SublibraryId::parse(sublibrary)?)?, json)?;
+        }
+        crate::commands::SublibrariesCommand::Show {
+            sublibrary,
+            version,
+        } => render_value(
+            &service.show(&SublibraryId::parse(sublibrary)?, version)?,
+            json,
+        )?,
+        crate::commands::SublibrariesCommand::Materialize {
+            sublibrary,
+            version,
+        } => render_value(
+            &service.materialize(&SublibraryId::parse(sublibrary)?, version)?,
+            json,
+        )?,
+        crate::commands::SublibrariesCommand::Status {
+            sublibrary,
+            version,
+        } => render_value(
+            &service.materialization_status(&SublibraryId::parse(sublibrary)?, version)?,
+            json,
+        )?,
+        crate::commands::SublibrariesCommand::Verify {
+            sublibrary,
+            version,
+        } => render_value(
+            &service.verify_materialization(&SublibraryId::parse(sublibrary)?, version)?,
+            json,
+        )?,
+        crate::commands::SublibrariesCommand::Delete {
+            sublibrary,
+            version,
+        } => render_value(
+            &service.delete_materialization(&SublibraryId::parse(sublibrary)?, version)?,
+            json,
+        )?,
+        crate::commands::SublibrariesCommand::Rebuild {
+            sublibrary,
+            version,
+        } => render_value(
+            &service.materialize(&SublibraryId::parse(sublibrary)?, Some(version))?,
+            json,
+        )?,
+    }
+    Ok(())
+}
+
+fn execute_outputs(
+    command: crate::commands::OutputsCommand,
+    config: &AppConfig,
+    json: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let definitions = open_raw_database(&config.paths(), config.sqlite.busy_timeout_ms)?;
+    let service = OutputService::new(
+        definitions,
+        SqliteReadProjection::new(config.paths(), config.sqlite.busy_timeout_ms),
+        OutputViewStore::new(config.paths()),
+        SystemClock,
+    );
+    match command {
+        crate::commands::OutputsCommand::List => render_value(&service.list(), json)?,
+        crate::commands::OutputsCommand::Build {
+            kind,
+            records,
+            sublibrary,
+            sublibrary_version,
+            description,
+            template_version,
+        } => {
+            let sublibrary = sublibrary
+                .map(|id| {
+                    Ok::<_, ApplicationError>(SublibraryOutputScope {
+                        sublibrary_id: SublibraryId::parse(id)?,
+                        definition_version: sublibrary_version.ok_or_else(|| {
+                            ApplicationError::Integrity(
+                                "--sublibrary-version is required with --sublibrary".to_owned(),
+                            )
+                        })?,
+                    })
+                })
+                .transpose()?;
+            render_value(
+                &service.build(BuildOutputCommand {
+                    kind: parse_wire(&kind)?,
+                    scope: OutputScope {
+                        record_ids: records,
+                        sublibrary,
+                        description,
+                    },
+                    template_version,
+                })?,
+                json,
+            )?;
+        }
+        crate::commands::OutputsCommand::Status { output } => {
+            render_value(&service.status(&OutputId::parse(output)?)?, json)?;
+        }
+        crate::commands::OutputsCommand::Verify { output } => {
+            render_value(&service.verify(&OutputId::parse(output)?)?, json)?;
+        }
+        crate::commands::OutputsCommand::Delete { output } => {
+            render_value(&service.delete(&OutputId::parse(output)?)?, json)?;
+        }
+        crate::commands::OutputsCommand::Rebuild { output } => {
+            render_value(&service.rebuild(&OutputId::parse(output)?)?, json)?;
+        }
+    }
+    Ok(())
+}
+
+fn read_json<T: serde::de::DeserializeOwned>(path: &str) -> Result<T, Box<dyn std::error::Error>> {
+    Ok(serde_json::from_str(&std::fs::read_to_string(path)?)?)
 }
 
 fn execute_explore(
