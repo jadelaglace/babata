@@ -49,7 +49,7 @@ flowchart LR
 
 | 原则 | 含义 |
 | --- | --- |
-| Local first | 原件、SQLite、模型输出、日志和凭据只进入外部 `BABATA_DATA_HOME`，不进入 Git。 |
+| Local first | 正式数据只进入外部 `BABATA_DATA_HOME` 的编号分区；开发证据和待收集恢复材料使用独立本地根，三者都不进入 Git。 |
 | One authority | 浏览器、CLI、Skill、脚本和 Agent 只提交候选或调用能力；正式持久化由 Rust application/core 经 infrastructure 完成。 |
 | Preserve provenance | 原件尽量 append-only；来源、哈希、附件、处理器、版本、状态和历史都可追溯。 |
 | Rebuild downstream | 派生物与视图按层级重建；删除 C2 展示结果不能损伤 C0/C1 或人工记录。 |
@@ -89,6 +89,16 @@ cargo run --manifest-path ./01_app/Cargo.toml -p babata-cli -- --help
 $env:BABATA_DATA_HOME = 'D:\BabataData'
 cargo run --manifest-path ./01_app/Cargo.toml -p babata-cli -- data status
 ```
+
+开发和真实验收还应把证据与未正式收集的恢复材料放在另外两个 Git 外本地根：
+
+```powershell
+$env:BABATA_EVIDENCE_HOME = 'D:\BabataEvidence'
+$env:BABATA_RECOVERY_HOME = 'D:\BabataRecovery'
+```
+
+`BABATA_EVIDENCE_HOME` 不是正式备份，`BABATA_RECOVERY_HOME` 中的文件也还不是 C0；
+活动 `BABATA_DATA_HOME` 顶层只保留 `00_inbox` 至 `05_logs` 六个编号分区。
 
 仓库级验证：
 

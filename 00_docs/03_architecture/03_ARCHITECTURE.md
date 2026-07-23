@@ -295,7 +295,8 @@ domain <- application <- infrastructure
 ## 7. 数据根与持久化
 
 运行时优先解析 `BABATA_DATA_HOME`，再使用显式本地配置；仓库只保存配置模板。
-数据根采用编号分区：
+`BABATA_DATA_HOME` 是唯一活动产品数据根，不是通用项目工作目录或验收归档。其顶层除
+最小本地说明外只允许以下编号分区：
 
 ```text
 00_inbox/     用户明确放入的待处理文件与导出件；未收集前不是 C0
@@ -305,6 +306,23 @@ domain <- application <- infrastructure
 04_runtime/   C3 队列、缓存、暂存、会话和受保护本地配置
 05_logs/      C3 收集、处理、输出和运维日志
 ```
+
+Git 外另有两个非权威辅助根：
+
+```text
+BABATA_EVIDENCE_HOME/  开发/验收报告、隔离数据根和必要历史快照；高敏感，不是正式备份
+BABATA_RECOVERY_HOME/  已取得但尚未通过 Capture/C0 接管的来源恢复材料
+```
+
+辅助根不得位于 Git 仓库或 `BABATA_DATA_HOME` 内。证据根可以保存脱敏报告、迁移清单和
+为了复核真实阶段结果而必要的 SQLite/媒体副本，但不能成为第二活动数据库，也不能被
+Babata 正常检索或输出消费。恢复根中的资料仍是待收集材料；只有 Rust application/core
+经 infrastructure 提交成功并完整读回后才成为 C0。二者的长期加密备份、保留和删除策略
+由 P8 完成；在此之前不得把阶段快照冒充正式备份。
+
+模型和本地预处理的可清理工作目录统一位于
+`04_runtime/staging/model-workspaces/<task>/`。外围工具可以在这里写 C3 暂存，但正式 C1
+仍只能通过 Process 用例进入 `02_derived`；工作目录路径不得登记为正式逻辑资产。
 
 初始实现可以继续使用：
 

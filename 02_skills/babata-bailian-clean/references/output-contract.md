@@ -7,7 +7,7 @@
   "task": "omba25-week1-miniv",
   "created_at": "ISO-8601",
   "source_root": "C:/path/to/originals",
-  "output_root": "C:/path/to/generated/...",
+  "output_root": "C:/path/to/BabataData/04_runtime/staging/model-workspaces/...",
   "items": [
     {
       "id": "pdf-001",
@@ -37,7 +37,7 @@
 
 `status`：
 
-- `staged_only`：仅有 generated/，尚未 `process register`
+- `staged_only`：仅有 `04_runtime/staging/model-workspaces/`，尚未 `process register`
 - `ok`：至少一次成功 register（或用户明确只要 staging）
 - `partial` / `failed`：清洗或登记有缺口
 
