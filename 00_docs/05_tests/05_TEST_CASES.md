@@ -406,6 +406,20 @@ Issue #60 的测试是 AC-07/TC-07 前置机制证据，不是检索产品验收
 中断，取消后范围不扩张；未确认越界自动化被拒绝；外围无第二权威写入；Skill 测试不
 替代底层能力测试。
 
+状态（2026-07-24）：TC-09 部分执行，尚未整体通过。Issue #82 完成 extra-source 与底层
+能力前置：真实 `.notes` 在隔离库和活动库均发现 `1 batch + 163 notes`；活动库 164/164
+saved、0 failed/skipped，349 个资源连同 1 个原 `.notes` 和 1 个解密 ENEX 经唯一核心链路
+进入 C0；同 session 重采 164/164 unchanged、0 新 revision。相对路径、错误扩展、XML
+entity、畸形资源、截断包和 HMAC 篡改均被拒绝；CLI/local API 复用 application service，
+JS/Python/Skill 无新增数据库或最终资产 writer。真实库最终为
+`6 sources / 192 items / 195 revisions / 358 assets / 1 relation`，schema v7、
+`quick_check=ok`、外键异常和所有 pending/quarantine/journal/orphan 为 0。证据位于
+`BABATA_EVIDENCE_HOME/runs/p7-1-evernote-20260724-224315/`。
+
+尚未执行的 TC-09 部分包括：正式 Skill 的 available/unavailable 对照、Agent 范围查看与
+取消、未确认账号级越界拒绝、自动确认模型建议拒绝，以及多个外围入口的完整结果对照。
+因此本切片只启用已经自行通过真实验收的 `source.evernote`，不标记 TC-09 或 P7 完成。
+
 ### TC-10：外部数据根、数据级别与隔离恢复
 
 关联：AC-10，阶段 P3/P8。

@@ -36,6 +36,15 @@ pub fn all_descriptors() -> Vec<CapabilityDescriptor> {
         disabled_pending_evidence("source.browser_pages"),
         disabled_pending_evidence("source.browser_bookmarks"),
         disabled_pending_evidence("source.wechat_articles"),
+        CapabilityDescriptor {
+            id: CapabilityId::new("source.evernote"),
+            status: CapabilityStatus::Enabled,
+            activation_phase: "P7".to_owned(),
+            reason: Some(
+                "One explicitly authorised official .notes export can be authenticated, decrypted, collected with resources, and recollected through the core"
+                    .to_owned(),
+            ),
+        },
         CapabilityDescriptor::enabled("collector", "P4"),
         CapabilityDescriptor {
             id: CapabilityId::new("processing"),

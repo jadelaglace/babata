@@ -11,7 +11,7 @@ use babata_domain::{
 use babata_infrastructure::{
     AppConfig, FileAssetStore, OutputViewStore, SqliteRawRepository, SqliteReadProjection,
     SublibraryViewStore, SystemClock, open_collection_database, open_raw_database,
-    sources::providers::browser::BrowserCandidateAdapter,
+    sources::providers::{browser::BrowserCandidateAdapter, evernote::EvernoteNotesAdapter},
 };
 use serde::de::DeserializeOwned;
 use serde_json::json;
@@ -223,7 +223,7 @@ fn dispatch(
             let request: BrowserSessionRequest = decode(body)?;
             validate_browser_start(&request)?;
             let route_id = SourceRouteId(request.route_id.clone());
-            let service = browser_service(&config.app, Some((&route_id, request.candidates)))?;
+            let service = collector_service(&config.app, Some((&route_id, request.candidates)))?;
             let session = service.start(StartCollectionCommand {
                 route_id,
                 source_reference: request.source_reference,
@@ -235,7 +235,7 @@ fn dispatch(
         }
         ("GET", "/v1/collector/candidates") => {
             let session_id = session_from_query(query)?;
-            let service = browser_service(&config.app, None)?;
+            let service = collector_service(&config.app, None)?;
             (
                 200,
                 serde_json::to_value(service.candidates(&session_id)?).map_err(json_error)?,
@@ -244,7 +244,7 @@ fn dispatch(
         ("POST", "/v1/collector/select") => {
             let request: SelectCollectionRequest = decode(body)?;
             let session_id = parse_session_id(request.session_id)?;
-            let service = browser_service(&config.app, None)?;
+            let service = collector_service(&config.app, None)?;
             let session = service.session(&session_id)?;
             let items = service.select(CollectionSelection {
                 session_id,
@@ -258,7 +258,7 @@ fn dispatch(
         }
         ("GET", "/v1/collector/status") => {
             let session_id = session_from_query(query)?;
-            let service = browser_service(&config.app, None)?;
+            let service = collector_service(&config.app, None)?;
             (
                 200,
                 serde_json::to_value(service.status(&session_id)?).map_err(json_error)?,
@@ -266,7 +266,7 @@ fn dispatch(
         }
         ("POST", "/v1/collector/retry") => {
             let request: RetryCollectionRequest = decode(body)?;
-            let service = browser_service(&config.app, None)?;
+            let service = collector_service(&config.app, None)?;
             let item = service.retry(RetryCollectionItemCommand {
                 session_id: parse_session_id(request.session_id)?,
                 candidate_id: request.candidate_id,
@@ -275,7 +275,7 @@ fn dispatch(
         }
         ("POST", "/v1/collector/cancel") => {
             let request: CancelCollectionRequest = decode(body)?;
-            let service = browser_service(&config.app, None)?;
+            let service = collector_service(&config.app, None)?;
             let items = service.cancel(CancelCollectionCommand {
                 session_id: parse_session_id(request.session_id)?,
                 reason: request.reason,
@@ -284,7 +284,7 @@ fn dispatch(
         }
         ("POST", "/v1/collector/recollect") => {
             let request: RecollectRequest = decode(body)?;
-            let service = browser_service(&config.app, None)?;
+            let service = collector_service(&config.app, None)?;
             let item_id = ItemId::parse(request.item_id)
                 .map_err(|error| ApiError::Application(error.into()))?;
             let outcome = service.recollect(&item_id)?;
@@ -382,26 +382,34 @@ fn parse_output_id(value: impl AsRef<str>) -> Result<OutputId, ApiError> {
         .map_err(|error| ApiError::Application(babata_application::ApplicationError::from(error)))
 }
 
-type BrowserService = CollectorSessionService<SqliteRawRepository, FileAssetStore, SystemClock>;
+type CollectorService = CollectorSessionService<SqliteRawRepository, FileAssetStore, SystemClock>;
 
-fn browser_service(
+fn collector_service(
     config: &AppConfig,
     active: Option<(&SourceRouteId, Vec<babata_domain::CandidateEnvelope>)>,
-) -> Result<BrowserService, ApiError> {
+) -> Result<CollectorService, ApiError> {
     let repository = open_collection_database(&config.paths(), config.sqlite.busy_timeout_ms)?;
-    let adapters = [BROWSER_PAGE_ROUTE, BROWSER_BOOKMARK_ROUTE]
-        .into_iter()
-        .map(|route| {
-            let route_id = SourceRouteId(route.to_owned());
-            let candidates = active
-                .as_ref()
-                .filter(|(active_route, _)| **active_route == route_id)
-                .map(|(_, candidates)| candidates.clone())
-                .unwrap_or_default();
-            Box::new(BrowserCandidateAdapter::for_route(route_id, candidates))
-                as Box<dyn babata_application::ports::SourceAdapterPort>
-        })
-        .collect();
+    let mut adapters: Vec<Box<dyn babata_application::ports::SourceAdapterPort>> =
+        vec![Box::new(EvernoteNotesAdapter::new(
+            config
+                .paths()
+                .root()
+                .join("04_runtime/provider-downloads/evernote"),
+        ))];
+    adapters.extend(
+        [BROWSER_PAGE_ROUTE, BROWSER_BOOKMARK_ROUTE]
+            .into_iter()
+            .map(|route| {
+                let route_id = SourceRouteId(route.to_owned());
+                let candidates = active
+                    .as_ref()
+                    .filter(|(active_route, _)| **active_route == route_id)
+                    .map(|(_, candidates)| candidates.clone())
+                    .unwrap_or_default();
+                Box::new(BrowserCandidateAdapter::for_route(route_id, candidates))
+                    as Box<dyn babata_application::ports::SourceAdapterPort>
+            }),
+    );
     Ok(CollectorSessionService::new(
         repository,
         FileAssetStore::new(config.paths()),
@@ -620,6 +628,32 @@ mod tests {
         assert!(verify_origin(None).is_ok());
         assert!(verify_origin(Some("chrome-extension://abcdefghijklmnop")).is_ok());
         assert!(verify_origin(Some("https://example.test")).is_err());
+    }
+
+    #[test]
+    fn shared_collector_service_registers_evernote_without_opening_browser_start() {
+        let temporary = tempdir().unwrap();
+        let app = test_config(temporary.path());
+        let error = collector_service(&app, None)
+            .unwrap()
+            .start(StartCollectionCommand {
+                route_id: SourceRouteId("source.evernote".to_owned()),
+                source_reference: "notes:relative.notes".to_owned(),
+                scope_description: "one explicit fixture export".to_owned(),
+                authorisation_id: "fixture-authorisation".to_owned(),
+            })
+            .unwrap_err();
+        assert!(error.to_string().contains("source path must be absolute"));
+        assert!(
+            validate_browser_start(&BrowserSessionRequest {
+                route_id: "source.evernote".to_owned(),
+                source_reference: "submitted:fixture".to_owned(),
+                scope_description: "one explicit fixture export".to_owned(),
+                installation_id: "fixture-installation".to_owned(),
+                candidates: Vec::new(),
+            })
+            .is_err()
+        );
     }
 
     #[test]

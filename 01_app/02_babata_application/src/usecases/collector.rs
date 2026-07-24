@@ -328,6 +328,35 @@ where
         Ok(outcome)
     }
 
+    pub fn recollect_session(
+        &self,
+        session_id: &CollectionSessionId,
+    ) -> Result<Vec<RecollectionOutcome>, ApplicationError> {
+        let session = self.session(session_id)?;
+        if session.state != CollectionSessionState::Completed {
+            return Err(ApplicationError::Conflict(
+                "only a completed collection session can be recollected".to_owned(),
+            ));
+        }
+        let mut seen = HashSet::new();
+        let item_ids = self
+            .status(session_id)?
+            .into_iter()
+            .filter(|item| item.state == CollectionItemState::Saved)
+            .filter_map(|item| item.item_id)
+            .filter(|item_id| seen.insert(item_id.clone()))
+            .collect::<Vec<_>>();
+        if item_ids.is_empty() {
+            return Err(ApplicationError::Conflict(
+                "collection session has no saved items to recollect".to_owned(),
+            ));
+        }
+        item_ids
+            .iter()
+            .map(|item_id| self.recollect(item_id))
+            .collect()
+    }
+
     fn run_item(
         &self,
         session_id: &CollectionSessionId,

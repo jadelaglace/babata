@@ -781,6 +781,7 @@ fn validate_candidate(candidate: &CandidateEnvelope) -> Result<(), ApplicationEr
             | "source.chatgpt"
             | "source.yuque"
             | "source.wechat_articles"
+            | "source.evernote"
             | "source.browser_pages"
             | "source.browser_bookmarks"
     ) {
@@ -802,6 +803,16 @@ fn validate_candidate(candidate: &CandidateEnvelope) -> Result<(), ApplicationEr
         "source.wechat_articles" if candidate.content_type != ContentType::Document => {
             return Err(ApplicationError::Conflict(
                 "WeChat article candidates must declare document content".to_owned(),
+            ));
+        }
+        "source.evernote"
+            if !matches!(
+                candidate.content_type,
+                ContentType::Archive | ContentType::Document
+            ) =>
+        {
+            return Err(ApplicationError::Conflict(
+                "Evernote candidates must declare archive or document content".to_owned(),
             ));
         }
         _ => {}
@@ -2002,5 +2013,29 @@ pub(crate) mod tests {
         });
         assert!(result.is_err());
         assert!(repository.state.lock().unwrap().revisions.is_empty());
+    }
+
+    #[test]
+    fn evernote_candidate_is_limited_to_archive_or_document_content() {
+        let payload = "Evernote fixture";
+        let mut candidate = CandidateEnvelope {
+            protocol_version: "1".to_owned(),
+            route_id: SourceRouteId("source.evernote".to_owned()),
+            source_reference: "C:/recovery/fixture.notes".to_owned(),
+            content_type: ContentType::Archive,
+            payload_sha256: Sha256::of_bytes(payload.as_bytes()),
+            metadata: Metadata::empty(),
+            payload: CandidatePayload::Text {
+                text: payload.to_owned(),
+            },
+            context: Some("one explicit export".to_owned()),
+            native_id: Some("export:fixture".to_owned()),
+            common_metadata: CommonSourceMetadata::default(),
+        };
+        assert!(validate_candidate(&candidate).is_ok());
+        candidate.content_type = ContentType::Document;
+        assert!(validate_candidate(&candidate).is_ok());
+        candidate.content_type = ContentType::WebPage;
+        assert!(validate_candidate(&candidate).is_err());
     }
 }
