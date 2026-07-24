@@ -250,6 +250,13 @@ rebuild 形成最终 generation 3 且 verify 通过。Web/Obsidian 未实现且�
 5. 一项 Skill 只有在对应本地能力通过自身验收后才显示可用；Skill 的测试不能替代
    被调用能力的真实验收。
 
+状态（2026-07-24）：AC-09 部分成立，尚未整体通过。Issue #82 先完成正式 Skill 的底层
+前置：`source.evernote` 对一份明确授权的官方 `.notes` 导出完成 164 个候选、163 条正文、
+349 个资源的统一 Rust application/core 持久化，并以 164/164 `unchanged` 验证范围内连续
+重采不制造 revision；CLI 与 local API 的既有 session 操作共用同一 service，外围无 SQLite
+或最终资产写入。正式 Skill、Agent 取消/越界、unavailable Skill 对照和模型建议越权测试
+仍未完成，因此不能把该单来源证据写成 AC-09 通过。
+
 ### AC-10：本地权威、数据分级与恢复成立
 
 关联产品行为：PRD-10。

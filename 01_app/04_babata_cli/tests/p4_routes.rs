@@ -77,6 +77,9 @@ fn collector_is_enabled_without_promoting_partially_proven_source_routes() {
             capability["id"] == source && capability["status"] == "disabled"
         }));
     }
+    assert!(capabilities.as_array().unwrap().iter().any(|capability| {
+        capability["id"] == "source.evernote" && capability["status"] == "enabled"
+    }));
 }
 
 #[test]

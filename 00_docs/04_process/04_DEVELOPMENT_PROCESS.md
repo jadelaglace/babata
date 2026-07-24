@@ -6,7 +6,7 @@
 
 ## 1. 当前状态
 
-**更新时间：2026-07-23**
+**更新时间：2026-07-24**
 
 ```text
 P0  冻结旧版本                                    已完成
@@ -19,7 +19,7 @@ P6  核心沉淀、检索、子库与输出                      已完成
   P6.1 核心知识沉淀                                 已完成
   P6.2 发现、检索与关系导航                         已完成
   P6.3 子库与输出                                   已完成
-P7  扩展来源、正式 Skill 与受控 Agent               未开始
+P7  扩展来源、正式 Skill 与受控 Agent               进行中（首个来源切片完成）
 P8  备份、恢复、运维与长期加固                      未开始
 ```
 
@@ -31,6 +31,7 @@ P8  备份、恢复、运维与长期加固                      未开始
 <!-- P6.2 preflight: Issue #60 common C0 metadata/observations implemented -->
 <!-- P6.2: completed; AC-07 items 1..4,7 and TC-07 steps 1..4 plus search projection rebuild passed; P6.3 later completed the full AC-07/TC-07 -->
 <!-- P6.3: completed; AC-03, AC-07, AC-08 and TC-03, TC-07, TC-08 passed -->
+<!-- P7: in progress; Issue #82 source.evernote E3 enabled; AC-09 and TC-09 remain incomplete -->
 
 当前真实情况：
 
@@ -50,10 +51,9 @@ P8  备份、恢复、运维与长期加固                      未开始
   全部点名来源完成或来源 available。
 - P4-G1 至 P4-G6、TC-01 和 TC-02 已通过。P4 完成只证明飞书与正式 Chrome 点名平台的
   首批流程、选择范围、逐条状态、失败重试和重采边界成立；OneNote、微信聊天、视频号、
-  抖音和书签自动遍历等仍未闭环。印象笔记已经证明官方整库 `.notes` 可用固定算法解密，
-  但只完成首条正文校验，尚未全量生成 ENEX、正式进入 Babata 或重采。前述扩展来源转入
-  P7，书签最后单独收集；抖音和视频号按用户决定暂时不处理。它们都保持 disabled，不阻塞
-  P4，也不冒充已有样本或自动化。
+  抖音和书签自动遍历等仍未闭环。P4 收尾时印象笔记只完成 `.notes` 首条正文校验；现已由
+  P7 Issue #82 完成全量 ENEX、C0、资源和 unchanged 重采并单独启用。其余扩展来源继续留在
+  P7，书签最后单独收集；抖音和视频号按用户决定暂时不处理。
 - 微信样本使用官方 PC 微信 4.1.11.55 的“全部收藏”窄 UI，读取 8 个最新可见候选并选择
   “爬虫-这20个仓库教会什么叫降维打击”；保存 2,946 字符结构化正文、2,597 字节
   Markdown 和 2,331,350 字节原始 HTML。首次因候选白名单缺口进入可重试 `failed`，原
@@ -777,7 +777,21 @@ P6.3 与 P6 整体完成。该结论只启用实际验证的子库、Markdown �
 图片和 1 个 XML 清单，但没有明确页面边界；印象笔记 `.notes` XML 含 163 条笔记和 349
 个资源，163 条正文虽为 `base64:aes`/`ENC0`，但公开的固定算法不需要用户密码。真实文件
 首条已通过 HMAC 校验并解密为 381 字节 ENML；网页 DOM 和单篇 MHT 也已验证为备选。
-两者都尚未正式进入 Babata、没有重采，不算 E3 或来源可用。
+该段是进入 P7 前的 E2 基线；OneNote 仍停在这里，印象笔记已由下述切片推进到 E3。
+
+2026-07-24，Issue #82 完成 P7 首个单来源切片：真实 `.notes` 与 P4 记录的
+78,711,776 字节/SHA-256 完全一致并归入 Recovery；Rust adapter 对 163/163 正文逐条完成
+ENC0、HMAC-SHA256 与 AES-128-CBC 验证，生成全量解密 ENEX，并映射 349 个资源。隔离库和
+活动库均发现 `1 batch + 163 notes`，活动库 164/164 saved、0 failed/skipped；随后同 session
+重采 164/164 unchanged、0 新 revision。活动库由 `5 sources / 28 items / 31 revisions /
+7 assets` 变为 `6 / 192 / 195 / 358`，原有 relation 仍为 1；Evernote 自身为
+`1 source / 164 items / 164 revisions / 351 assets / 328 observations`。全库 schema v7、
+`quick_check=ok`、外键异常和 pending/quarantine/journal/orphan 均为 0。
+
+`.notes` 不含 note GUID、updated 或笔记本层级，created 也不唯一，因此当前身份明确限制为
+immutable export hash + note ordinal；不伪造跨导出稳定 ID。底层 `source.evernote` 已启用，
+但正式 Skill、受控 Agent、取消/越界拒绝的完整 TC-09 仍未完成，P7 继续保持进行中。
+开发证据位于 `BABATA_EVIDENCE_HOME/runs/p7-1-evernote-20260724-224315/`，不是 P8 备份。
 
 对应底层能力通过自己的 AC/TC 后，P2 Skill 规格才转成真实 `SKILL.md`。Agent 默认
 人工触发或确认，批处理携带明确范围，不自动扩张授权或把模型判断升级为事实。

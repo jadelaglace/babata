@@ -4,7 +4,7 @@
 
 **把散落在平台里的个人资料拿回来，保留原貌，逐步沉淀成可检索、可关联、可重建的个人知识宇宙。**
 
-[![Engineering gates](https://github.com/jadelaglace/babata/actions/workflows/engineering-gates.yml/badge.svg)](https://github.com/jadelaglace/babata/actions/workflows/engineering-gates.yml) ![Rust 1.85+](https://img.shields.io/badge/Rust-1.85%2B-000000?logo=rust) ![Local first](https://img.shields.io/badge/data-local--first-0f766e) ![Phase](https://img.shields.io/badge/phase-P6%20complete-2563eb)
+[![Engineering gates](https://github.com/jadelaglace/babata/actions/workflows/engineering-gates.yml/badge.svg)](https://github.com/jadelaglace/babata/actions/workflows/engineering-gates.yml) ![Rust 1.85+](https://img.shields.io/badge/Rust-1.85%2B-000000?logo=rust) ![Local first](https://img.shields.io/badge/data-local--first-0f766e) ![Phase](https://img.shields.io/badge/phase-P7%20in%20progress-2563eb)
 
 <sub>Post-2.0 reboot · Rust-first · single repository · under active development</sub>
 
@@ -15,7 +15,7 @@ Babata 是一个本地优先的个人资料与知识系统。它面向微信、�
 它不是云端笔记服务，也不是先设计协议再寻找用途的框架。当前目标很具体：让属于自己的资料能够被拿回来、留得住、看得懂、找得到、用得起来。
 
 > [!IMPORTANT]
-> Babata 仍处于开发阶段，不是面向普通用户的稳定发行版。当前已经完成 P0-P5 和 P6：核心知识沉淀、检索/关系导航、版本化子库以及 Markdown/JSON 输出均已通过阶段验收；P7-P8 尚未开始。
+> Babata 仍处于开发阶段，不是面向普通用户的稳定发行版。当前已经完成 P0-P6：核心知识沉淀、检索/关系导航、版本化子库以及 Markdown/JSON 输出均已通过阶段验收；P7 正在按单一真实来源逐项推进，P8 尚未开始。
 
 ## 从原件到使用
 
@@ -36,6 +36,7 @@ flowchart LR
 
 - 真实 C0 原件与 first-party 内容的追加式保存、修订、附件和完整读回。
 - 飞书、语雀、微信、知乎、Bilibili、AI 对话和笔记导出等首批来源的真实收集路径与限制记录。
+- 印象笔记官方整库 `.notes` 的逐条认证解密、全量 ENEX、163 条笔记/349 个资源 C0 和 unchanged 重采。
 - PDF、图片、音视频等多模态资料经百炼处理进入可追溯 C1，保留任务、模型、输入输出哈希和失败状态。
 - P6.1 知识核心：三级地图、多重归属、统一标签、显式关系、三维相关度评分、模型建议与追加式人工审阅。
 - P6.2 发现能力：可删除重建的 C2 搜索投影、多条件检索、评分排序、关系导航，以及说明方向、相关度、时间和关系的内容浮现。
@@ -120,6 +121,7 @@ cargo test --workspace --manifest-path ./01_app/Cargo.toml
 | P6.1 | 完成 | 核心知识沉淀、地图、关系、评分、建议与高密度表达 |
 | P6.2 | 完成 | 搜索投影、多条件检索、评分排序、关系导航与可解释浮现 |
 | P6.3 | 完成 | 版本化子库、可重建物化、Markdown/JSON 输出与只读 manifest |
-| P7-P8 | 未开始 | 扩展来源、正式 Skills、受控 Agent、备份恢复与长期加固 |
+| P7 | 进行中 | 首个印象笔记整库来源已闭环；其余扩展来源、正式 Skills 与受控 Agent 继续逐项推进 |
+| P8 | 未开始 | 备份恢复、运维与长期加固 |
 
 日常开发从 GitHub Issue 开始，使用 `codex/` 短分支并通过 Pull Request 合并。提交前请阅读[提交与验收纪律](00_docs/04_process/04_DEVELOPMENT_PROCESS.md#13-提交与验收纪律)。

@@ -11,10 +11,10 @@ use babata_infrastructure::{
     AppConfig, FileAssetStore, SystemClock, open_collection_database,
     sources::providers::{
         bilibili_collection::BilibiliOpenCliAdapter, browser::BrowserCandidateAdapter,
-        chatgpt::ChatGptOpenCliAdapter, doubao::DoubaoOpenCliAdapter, feishu::FeishuCliAdapter,
-        kimi::KimiOpenCliAdapter, wechat::WechatArticleOpenCliAdapter,
-        xiaohongshu::XiaohongshuOpenCliAdapter, yuque::YuqueOpenCliAdapter,
-        zhihu::ZhihuOpenCliAdapter,
+        chatgpt::ChatGptOpenCliAdapter, doubao::DoubaoOpenCliAdapter,
+        evernote::EvernoteNotesAdapter, feishu::FeishuCliAdapter, kimi::KimiOpenCliAdapter,
+        wechat::WechatArticleOpenCliAdapter, xiaohongshu::XiaohongshuOpenCliAdapter,
+        yuque::YuqueOpenCliAdapter, zhihu::ZhihuOpenCliAdapter,
     },
 };
 use serde::Serialize;
@@ -71,6 +71,10 @@ pub enum CollectorCommand {
         #[arg(long)]
         item: String,
     },
+    RecollectSession {
+        #[arg(long)]
+        session: String,
+    },
 }
 
 #[derive(Debug, Serialize)]
@@ -81,6 +85,7 @@ pub enum CollectorExecution {
     Items(Vec<babata_domain::CollectionItemStatus>),
     Item(babata_domain::CollectionItemStatus),
     Recollection(babata_domain::RecollectionOutcome),
+    Recollections(Vec<babata_domain::RecollectionOutcome>),
 }
 
 pub fn execute(
@@ -162,6 +167,9 @@ pub fn execute(
         CollectorCommand::Recollect { item } => service
             .recollect(&ItemId::parse(item)?)
             .map(CollectorExecution::Recollection),
+        CollectorCommand::RecollectSession { session } => service
+            .recollect_session(&CollectionSessionId::parse(session)?)
+            .map(CollectorExecution::Recollections),
     }
 }
 
@@ -171,6 +179,12 @@ fn source_adapters(
     browser_candidates: &[CandidateEnvelope],
 ) -> Vec<Box<dyn babata_application::ports::SourceAdapterPort>> {
     let mut adapters: Vec<Box<dyn babata_application::ports::SourceAdapterPort>> = vec![
+        Box::new(EvernoteNotesAdapter::new(
+            config
+                .paths()
+                .root()
+                .join("04_runtime/provider-downloads/evernote"),
+        )),
         Box::new(FeishuCliAdapter::new(
             config
                 .paths()

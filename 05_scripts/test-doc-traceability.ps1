@@ -88,7 +88,20 @@ try {
         Set-SourceFieldEmpty -ResearchPath $research -SourceId 'source.kimi' -CellIndex 4
     }
 
-    Write-Output 'Document traceability mutation tests passed: missing source, empty Kimi evidence, and empty Kimi authorization all fail closed.'
+    Assert-CheckerFails -Name 'e2-onenote-marked-available' -ExpectedMessage 'below E3 and must remain disabled' -Mutate {
+        param($research)
+        $lines = @(Get-Content -Encoding utf8 -LiteralPath $research)
+        $index = 0..($lines.Count - 1) | Where-Object { $lines[$_] -match '^\|\s*source\.onenote\s*\|' }
+        if (@($index).Count -ne 1) {
+            throw 'Mutation setup expected exactly one source.onenote row'
+        }
+        $cells = @($lines[$index].Split('|'))
+        $cells[7] = ' available '
+        $lines[$index] = $cells -join '|'
+        Set-Content -Encoding utf8 -LiteralPath $research -Value $lines
+    }
+
+    Write-Output 'Document traceability mutation tests passed: missing/empty source fields and E2 availability promotion all fail closed.'
 }
 finally {
     if (Test-Path -LiteralPath $tempRoot) {

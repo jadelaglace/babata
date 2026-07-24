@@ -81,7 +81,7 @@ P2-G7 的完成口径是：00 点名的来源都有真实调查、证据等级�
 | source.feishu | 飞书文档、Wiki、知识库、云文档 | 官方 `lark-cli` 直接调用，Babata 只包授权、范围选择和结果接入 | 一次飞书应用配置与用户 OAuth；以后选择文档/节点/范围 | E3：10 个根候选和 6 个子候选中选 1 篇，正文/8 PNG、真实 failed 后定向 retry 和 `unchanged` 重采已验证 | 嵌入 Sheet/Base/Slides/画板内部数据及其他文档类型未覆盖 | disabled |
 | source.yuque | 语雀 | Codex Chrome 发现范围，单篇用语雀官方 Markdown 导出端点；整库可用官方 PDF/LakeBook；`yuque-dl` 仅作受控批处理候选 | 登录语雀并选择知识库/文档；会员 API/MCP 暂不启用，不要求手抄会话 Token | E3：8 个真实候选选 1 篇，官方 Markdown、22 张图片、C0 和 `unchanged` 重采已验证 | 整库通用格式、文件/表格/画板/评论未覆盖；OpenAPI/MCP 需要超级会员，留待统一决策 | disabled |
 | source.onenote | OneNote | 官方桌面客户端整本导出 PDF + MHT，Agent 跟随一次明确笔记本范围取得导出件 | 客户端已登录；选择一个或多个笔记本范围 | E2：真实 17,161,246 字节 MHT 已解析为 1 HTML、30 图片和 1 XML 清单，正文可读 | 缺 PDF 配对、明确页面边界、C0、失败状态和重采；不再继续 CLI/API 调研 | disabled |
-| source.evernote | 印象笔记 / Evernote | 官方客户端整库 `.notes` 导出；使用已公开并在真实文件上校验的固定算法解密为 ENEX；网页 DOM 和单篇 MHT 为回退 | 客户端已登录并选择笔记本或账号范围；不需要用户密码、Cookie 或第三方账号授权 | E2：真实 78,711,776 字节 `.notes` 含 163 条笔记和 349 个资源；首条 `ENC0` 正文已通过 HMAC 校验并解密为 ENML；另验证网页 DOM 和单篇 MHT | 尚未全量生成解密 ENEX、提交 C0、记录失败状态或重采；来源仍未启用 | disabled |
+| source.evernote | 印象笔记 / Evernote | 官方客户端整库 `.notes` 导出；Babata Rust adapter 逐条认证解密为 ENEX/ENML；网页 DOM 和单篇 MHT 为回退 | 客户端已登录并选择一个明确导出范围；不需要用户密码、Cookie 或第三方账号授权 | E3：真实 78,711,776 字节 `.notes` 的 163 条正文和 349 个资源全部验证；1 batch + 163 notes 全量 C0，164/164 `unchanged` 重采 | `.notes` 没有 note GUID、updated 或笔记本层级；身份限于 immutable export hash + ordinal，跨导出匹配未启用 | available |
 | source.wechat_favorites | 微信收藏 | 官方 PC 微信窄 UI；用户给一次范围后由 Agent 发现可见候选并复制/另存，不使用内存扫描或数据库解密 | 已登录官方 PC 微信；选择当前可见集合、分类或时间范围 | E3：Weixin 4.1.11.55 的“全部收藏”读取 8 个最新可见候选，选 1 篇公众号文章，正文/原链接进入 C0 并 `unchanged` 重采 | 当前只闭合文章类型 1 条；其他收藏类型和账号范围未覆盖 | disabled |
 | source.wechat_articles | 微信公众号文章 | 官方 PC 微信 UI 取得文章或公开 URL；Agent 对 UI 暴露的公共 URL 保存 HTML/媒体并登记，不把公共下载器写成微信历史 CLI | PC 微信已登录并选择文章；公开 URL 无额外授权 | E3：1 篇真实文章保存 2,946 字符结构化正文、2,597 字节 Markdown 和 2,331,350 字节 HTML；首次白名单失败后原 item retry 成功，重采 `unchanged` | 当前样本无正文图片/音视频；批量历史和更多形态未覆盖 | disabled |
 | source.wechat_channels | 微信视频号 | 暂时延期；若重新启用也只操作官方 PC 微信 UI，UI 无法另存的媒体明确受限 | 当前无需动作 | E1：候选工具和权限模型已核；2026-07-19 用户决定暂时不处理 | 延期到用户重新启用；不安装代理证书或捕获工具 | disabled |
@@ -110,7 +110,7 @@ hash、状态和 staging 管理由 Agent/Babata 自主完成，直到范围结�
 | 飞书 | 已完成官方应用配置和用户 OAuth；过期时重新确认 | 文档、搜索结果、Wiki 节点或明确范围 | 列候选、分页、正文、附件、版本、重收集和状态 | 一次真实正文+附件 E3 样本 |
 | 语雀 | 优先在已登录 Chrome 安装语雀批量扩展；CLI 路线才授权本机会话 | 知识库、文档或全账号 bootstrap | 目录、图片、附件、断点续传、增量和 staging 接入 | 扩展真实样本；禁止让用户手抄 Cookie |
 | OneNote | 官方桌面客户端已登录 | 一个或多个整本笔记本 | 跟随 UI 导出 PDF/MHT、记录 manifest/hash 并提交 C0 | 未实跑；转 P7，不再调研 CLI/API |
-| Evernote | 官方客户端已登录 | 笔记本或明确账号范围 | 跟随 UI 导出 HTML/资源目录、记录 manifest/hash 并提交 C0 | 未实跑；转 P7，不再调研 CLI/API |
+| Evernote | 官方客户端已登录 | 一个明确 `.notes` 导出文件 | Rust adapter 验证原件 hash，生成解密 ENEX，列出 batch/note 候选并经核心提交 C0 | 已实跑 163 notes/349 resources；跨导出匹配未覆盖 |
 | 微信收藏 | PC 微信登录并打开收藏 | 当前可见集合、分类或时间范围 | Agent 操作官方 UI 枚举、复制、另存和附件下载 | 文章类型已闭合 1 条；还缺其他收藏类型 |
 | 公众号文章 | 单篇无授权；批量历史时扫码登录自己的公众号后台 | 链接、公众号、合集或文章范围 | 已知 URL 的正文、Markdown/HTML、可得媒体和重收集 | 单篇已闭合；还缺带媒体样本、批量历史和更多形态 |
 | 微信视频号 | 当前无需动作 | 暂无 | 保留 UI-only 边界，不安装代理证书或捕获工具 | 用户已决定暂时不处理 |
@@ -387,8 +387,27 @@ Evernote ENEX，共 163 条 note、349 个 resource。163 条 content 全部标�
   300x60 PNG 预览图和一个 63,126 字节 `.spd` 原附件。该路线 UI 步骤较多，只作回退。
 
 决策：**官方整库 `.notes` + 已验证固定算法解密为正常路线；网页 DOM 为补充，客户端
-单篇 MHT 为回退**。当前达到 E2：批量原导出和首条正文解密成立，但尚未全量生成 ENEX、
-提交 C0、记录失败状态或重采，因此仍保持 `disabled`，不冒充来源已正式启用。
+单篇 MHT 为回退**。
+
+2026-07-24，Issue #82 将同一真实导出归入 `BABATA_RECOVERY_HOME`，再次校验大小与 SHA-256
+不变。Rust `EvernoteNotesAdapter` 只接受 `notes:<absolute-file>` 的单文件明确范围；拒绝相对
+路径、目录、错误扩展、XML entity declaration、畸形资源、截断包和 HMAC 篡改。它以应用
+固定种子经 50,000 轮 HMAC-SHA256 分别派生认证/AES key，先做常量时间 HMAC 校验，再用
+AES-128-CBC 解密；163/163 正文全部通过，349 个资源均完成 base64、字节数、MIME、文件名
+和 SHA-256 映射。
+
+同一导出发现 1 个 batch export 和 163 个 note 候选；批次 C0 保存原 `.notes` 与全量解密
+ENEX，note C0 保存 ENML，明确请求附件后保存 349 条 attachment 记录。活动库 164/164
+`saved`、0 failed/skipped；随后 session 级重采为 164/164 `unchanged`、0 新 revision。最终
+Evernote 为 `1 source / 164 items / 164 revisions / 351 assets / 328 observations`，资产角色
+为 `349 attachment + 1 original + 1 export`；全库 `quick_check=ok`、外键异常和所有
+pending/quarantine/journal/orphan 均为 0。证据位于
+`BABATA_EVIDENCE_HOME/runs/p7-1-evernote-20260724-224315/`，不进入 Git。
+
+真实 `.notes` 没有 note GUID 或 updated，163 条 created 也只有 63 个不同值，因此不能
+伪造平台级稳定 ID。当前身份诚实限定为 immutable export SHA-256 + note ordinal；同一原件
+可稳定重采，跨新导出自动对齐仍未启用。基于上述 E3，`source.evernote` 现为 `enabled`；
+这只代表该明确整库导出路径可用，不代表 P7、AC-09、TC-09 或正式 Skill 已整体完成。
 
 ## 7. 微信来源
 
@@ -782,7 +801,8 @@ Browser Use、Agent Browser、Playwright CLI 与 OpenCLI 的通用方向已经�
 Codex Chrome 又在 Kimi 完成真实历史分页、长正文读取和外部 staging 样本。
 
 因此 **P2-G7 已通过**。抖音等具体来源仍缺 E3，Kimi 也没有完成附件、逐条状态和重收集；
-这些来源必须继续保持 disabled，缺口进入 P4/P7。E3 未完成不再错误阻塞 P2，也不能因为
-P2-G7 通过就显示任何未验收来源 available。
+除已在 P7 以真实整库闭环启用的 `source.evernote` 外，其余未完成来源继续保持 disabled，
+缺口进入 P4/P7。E3 未完成不再错误阻塞 P2，也不能因为 P2-G7 通过就显示未验收来源
+available。
 
 <!-- P2-G7: passed -->
