@@ -1,0 +1,4 @@
+interface:
+  display_name: "Babata 收集"
+  short_description: "Route explicitly scoped sources into Babata verified C0"
+  default_prompt: "Use $babata-collect to collect one explicitly scoped source into Babata C0 and report the real route limitations."

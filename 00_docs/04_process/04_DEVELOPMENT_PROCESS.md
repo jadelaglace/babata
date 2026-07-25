@@ -19,7 +19,7 @@ P6  核心沉淀、检索、子库与输出                      已完成
   P6.1 核心知识沉淀                                 已完成
   P6.2 发现、检索与关系导航                         已完成
   P6.3 子库与输出                                   已完成
-P7  扩展来源、正式 Skill 与受控 Agent               进行中（两个来源启用、四个切片完成）
+P7  扩展来源、正式 Skill 与受控 Agent               进行中（两个来源启用、五个切片完成）
 P8  备份、恢复、运维与长期加固                      未开始
 ```
 
@@ -67,7 +67,7 @@ P8  备份、恢复、运维与长期加固                      未开始
   原始 DOCX 与平台预览 PDF 作为同一 item 的新 revision 正式登记，分别标为 `original` 和
   `preview`。Issue #88 随后把其余 6 个 DOCX 通过通用附件操作附加到该 ready revision；
   全部 7 个原始 DOCX 现已正式进入统一 C0，未新增正文 revision、relation 或 C1。该结果仍
-  不冒充豆包其他附件形态、正式 Skill 或长期自动化完成。
+  不冒充豆包其他附件形态、可执行来源 recipe 或长期自动化完成。
 - PR #22 已在 PRD 加入人话词汇表和三层闭环规则。后续界面和阶段汇报先说明实际拿回内容、
   保存位置和缺口，再按需补充 C0、asset、revision 等工程词。
 - P3 已按蓝图重新审阅 29 个活跃文件：显式 text/file/export 和 first-party
@@ -797,7 +797,7 @@ ENC0、HMAC-SHA256 与 AES-128-CBC 验证，生成全量解密 ENEX，并映射 
 
 `.notes` 不含 note GUID、updated 或笔记本层级，created 也不唯一，因此当前身份明确限制为
 immutable export hash + note ordinal；不伪造跨导出稳定 ID。底层 `source.evernote` 已启用，
-但正式 Skill、受控 Agent、取消/越界拒绝的完整 TC-09 仍未完成，P7 继续保持进行中。
+当时总 Skill、受控 Agent、取消/越界拒绝的完整 TC-09 仍未完成，P7 继续保持进行中。
 开发证据位于 `BABATA_EVIDENCE_HOME/runs/p7-1-evernote-20260724-224315/`，不是 P8 备份。
 
 2026-07-25，Issue #84 完成第二个单来源切片。用户明确同次 PDF/MHT 是一个 OneNote 来源：
@@ -810,7 +810,7 @@ PDF 更接近平台渲染和划分，MHT 更适合图片、文字和格式。真
 活动库由 `6 sources / 192 items / 195 revisions / 358 assets` 变为 `7 / 193 / 196 / 360`，
 relation 仍为 1；OneNote 有 2 次 source observation。两份 C0 资产与 Recovery 原件的字节数和
 SHA-256 完全一致；全库 schema v7、`quick_check=ok`、外键异常和所有
-pending/quarantine/journal/orphan 为 0。`source.onenote` 已启用，但跨导出匹配、正式 Skill
+pending/quarantine/journal/orphan 为 0。`source.onenote` 已启用，但当时跨导出匹配、总 Skill
 和受控 Agent 仍未完成。这里的跨导出匹配是来源身份缺口；可选 C1 切分是以后
 独立消费 C0 的通用处理，不属于 OneNote 收集缺口或启用条件。开发证据位于
 `BABATA_EVIDENCE_HOME/runs/p7-2-onenote-20260725-071439/`，不是 P8 备份。
@@ -826,8 +826,8 @@ pending/quarantine/journal/orphan 为 0。`source.onenote` 已启用，但跨导
 其他四个无提示。活动库最终为 `7 sources / 199 items / 202 revisions / 366 assets / 1 relation /
 342 observations`，schema v7、`quick_check=ok`、外键异常和所有
 pending/quarantine/journal/orphan 为 0。开发证据位于
-`BABATA_EVIDENCE_HOME/runs/p7-3-onenote-mht-20260725-090516/`，不是 P8 备份。来源侧仍缺
-正式 Skill 和受控 Agent；按需要进行的 C1 段落切分、语义去重和层级判断另行立项，不计作
+`BABATA_EVIDENCE_HOME/runs/p7-3-onenote-mht-20260725-090516/`，不是 P8 备份。当时来源侧仍缺
+总 Skill 和受控 Agent；按需要进行的 C1 段落切分、语义去重和层级判断另行立项，不计作
 本次 OneNote 收集的未完成部分。
 
 同日 Issue #88 完成第四个切片，但不新增豆包专用 adapter。此前 Agent 已从复杂会话“战略
@@ -840,10 +840,24 @@ process runs/16 个 derivatives 均不变，schema v7、`quick_check=ok`、外�
 pending/quarantine/journal/orphan 为 0。证据位于
 `BABATA_EVIDENCE_HOME/runs/p7-4-doubao-w1-assets-20260725-111326/`，不是 P8 备份。
 这证明来源收集可在统一 C0 独立结束，不要求或触发 C1；`source.doubao` 仍保持 disabled，
-直到正式 Skill/受控 Agent 与其他真实附件形态通过自身验收。
+直到可执行来源 recipe/受控 Agent 与其他真实附件形态通过自身验收。
 
 对应底层能力通过自己的 AC/TC 后，P2 Skill 规格才转成真实 `SKILL.md`。Agent 默认
 人工触发或确认，批处理携带明确范围，不自动扩张授权或把模型判断升级为事实。
+
+Issue #90 完成第五个 P7 切片：先沿 00→05 权威链确定只有一个用户可见的
+`babata-collect`，再实现其内部来源 recipe 和 Agent 引导。首版只把已有真实证据写成能力
+边界：OneNote 与印象笔记可用；豆包保留 disabled；浏览器/UI 是执行工具而不是泛化来源。
+同一来源新增内容形态以后扩展 recipe、能力声明和真实测试，不新增平台专用收集 Skill。
+
+该切片按以下顺序交付：
+
+1. 写清 Skill、route/recipe、adapter、case 的责任及 C0 终止边界；
+2. 生成 `02_skills/babata-collect/`，按需加载来源 reference；
+3. 以隔离、只读 forward tests 验证路由、范围、disabled/unknown 和无 C1 编排；
+4. 运行既有 Rust、文档、架构、变异、数据根与敏感信息门禁；
+5. Skill 格式、三个隔离只读 forward tests、确定性检查与三项负向变异，以及 Rust/文档/
+   架构/数据根门禁全部通过；不提前宣称 P7、AC-09 或 TC-09 整体通过。
 
 P7 主要交付 AC-09 和 TC-09。
 

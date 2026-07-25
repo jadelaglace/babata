@@ -213,6 +213,34 @@ revision；`changed` 只创建一个新 revision，并由同一次 capture obser
 | Capability | 报告来源、处理器、Skill 和输出的真实可用性及限制 | 不因有占位文件就标记可用 |
 | Ops | 数据根状态、诊断、备份、隔离恢复和完整性报告 | 不把实时数据库目录当同步盘 |
 
+### 5.1 一个总收集 Skill，内部按来源路由
+
+`babata-collect` 是唯一面向用户和 Agent 的收集 Skill；路由职责直接属于该 Skill，不再增加
+一个要求用户先调用的“路由 Skill”。它只负责编排，结构如下：
+
+```text
+用户给出来源与明确范围
+  -> babata-collect 识别 source route
+  -> 查询 Rust Capability 状态
+  -> 加载该来源 recipe，选择官方导出 / CLI / 浏览器 / 桌面工具
+  -> 发现候选并取得原件、上下文、附件和限制
+  -> 同一个 CollectorSession -> Capture -> C0
+  -> 回读状态、revision、assets 和限制后结束
+```
+
+四个概念保持分离：
+
+| 概念 | 责任 | 扩展条件 |
+| --- | --- | --- |
+| Skill | 一个用户入口、范围控制、能力检查、执行编排和结果汇报 | 收集产品本身出现新的独立用户意图 |
+| route/recipe | 某来源的授权范围、工具顺序、内容形态、限制和失败恢复 | 来源增加新形态或新的真实取得路径 |
+| adapter | Rust `SourceAdapterPort` 的窄实现，向统一 Collector 提供来源读取 | 现有工具/Skill 反复证明缺稳定批量、重试或恢复能力 |
+| case | 一次真实 PDF/MHT、`.notes`、会话或附件范围及其验收证据 | 用于证明或收紧 recipe，不形成产品入口 |
+
+成熟的浏览器、飞书或桌面控制 Skill 是 recipe 可选择的执行依赖，不拥有 C0。recipe 可以
+先由 Agent 按真实证据执行，也可以调用已有 adapter；两者最终都必须经 Rust application/core
+进入同一 C0。任何 recipe 都不得调用 Process 作为收集完成条件。
+
 应用层的最小内部请求/结果概念如下，名称可以随实现演化，但责任不能越界：
 
 ```text

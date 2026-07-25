@@ -58,6 +58,12 @@ jobs:
       - name: Test document traceability checker
         shell: pwsh
         run: ./05_scripts/test-doc-traceability.ps1
+      - name: Check routed collection Skill
+        shell: pwsh
+        run: ./05_scripts/check-collection-skill.ps1
+      - name: Test routed collection Skill checker
+        shell: pwsh
+        run: ./05_scripts/test-collection-skill.ps1
       - name: Check P6 document provenance
         shell: pwsh
         run: ./05_scripts/check-doc-provenance.ps1
