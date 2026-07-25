@@ -690,6 +690,7 @@ mod tests {
                 assets.push(CaptureImportAsset {
                     path: path.clone(),
                     role: AssetRole::Original,
+                    expected_sha256: None,
                 });
             }
             Ok(outcome)

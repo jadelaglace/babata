@@ -36,15 +36,14 @@ pub fn all_descriptors() -> Vec<CapabilityDescriptor> {
         disabled_pending_evidence("source.browser_pages"),
         disabled_pending_evidence("source.browser_bookmarks"),
         disabled_pending_evidence("source.wechat_articles"),
-        CapabilityDescriptor {
-            id: CapabilityId::new("source.evernote"),
-            status: CapabilityStatus::Enabled,
-            activation_phase: "P7".to_owned(),
-            reason: Some(
-                "One explicitly authorised official .notes export can be authenticated, decrypted, collected with resources, and recollected through the core"
-                    .to_owned(),
-            ),
-        },
+        enabled_p7_source(
+            "source.onenote",
+            "One explicitly authorised official PDF/MHT pair can be structurally verified, collected as complementary exports, and recollected through the core",
+        ),
+        enabled_p7_source(
+            "source.evernote",
+            "One explicitly authorised official .notes export can be authenticated, decrypted, collected with resources, and recollected through the core",
+        ),
         CapabilityDescriptor::enabled("collector", "P4"),
         CapabilityDescriptor {
             id: CapabilityId::new("processing"),
@@ -137,5 +136,14 @@ fn disabled_pending_evidence(id: &str) -> CapabilityDescriptor {
         status: CapabilityStatus::Disabled,
         activation_phase: "P4".to_owned(),
         reason: Some("awaiting authorised contextual collection evidence".to_owned()),
+    }
+}
+
+fn enabled_p7_source(id: &str, reason: &str) -> CapabilityDescriptor {
+    CapabilityDescriptor {
+        id: CapabilityId::new(id),
+        status: CapabilityStatus::Enabled,
+        activation_phase: "P7".to_owned(),
+        reason: Some(reason.to_owned()),
     }
 }

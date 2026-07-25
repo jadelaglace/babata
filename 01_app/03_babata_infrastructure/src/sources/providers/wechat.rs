@@ -219,6 +219,7 @@ fn downloaded_article(
     let mut assets = vec![CaptureImportAsset {
         path: saved.to_string_lossy().into_owned(),
         role: AssetRole::Export,
+        expected_sha256: None,
     }];
     let mut stable_asset_hashes = Vec::new();
     if let Some(parent) = saved.parent() {
@@ -230,6 +231,7 @@ fn downloaded_article(
             assets.push(CaptureImportAsset {
                 path: path.to_string_lossy().into_owned(),
                 role: AssetRole::Attachment,
+                expected_sha256: None,
             });
         }
     }
@@ -240,6 +242,7 @@ fn downloaded_article(
         assets.push(CaptureImportAsset {
             path: raw_html.to_string_lossy().into_owned(),
             role: AssetRole::Export,
+            expected_sha256: None,
         });
     }
     let evidence_path = article_root.join("evidence.json");

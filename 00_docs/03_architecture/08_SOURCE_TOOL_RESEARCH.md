@@ -80,7 +80,7 @@ P2-G7 的完成口径是：00 点名的来源都有真实调查、证据等级�
 | --- | --- | --- | --- | --- | --- | --- |
 | source.feishu | 飞书文档、Wiki、知识库、云文档 | 官方 `lark-cli` 直接调用，Babata 只包授权、范围选择和结果接入 | 一次飞书应用配置与用户 OAuth；以后选择文档/节点/范围 | E3：10 个根候选和 6 个子候选中选 1 篇，正文/8 PNG、真实 failed 后定向 retry 和 `unchanged` 重采已验证 | 嵌入 Sheet/Base/Slides/画板内部数据及其他文档类型未覆盖 | disabled |
 | source.yuque | 语雀 | Codex Chrome 发现范围，单篇用语雀官方 Markdown 导出端点；整库可用官方 PDF/LakeBook；`yuque-dl` 仅作受控批处理候选 | 登录语雀并选择知识库/文档；会员 API/MCP 暂不启用，不要求手抄会话 Token | E3：8 个真实候选选 1 篇，官方 Markdown、22 张图片、C0 和 `unchanged` 重采已验证 | 整库通用格式、文件/表格/画板/评论未覆盖；OpenAPI/MCP 需要超级会员，留待统一决策 | disabled |
-| source.onenote | OneNote | 官方桌面客户端整本导出 PDF + MHT，Agent 跟随一次明确笔记本范围取得导出件 | 客户端已登录；选择一个或多个笔记本范围 | E2：真实 17,161,246 字节 MHT 已解析为 1 HTML、30 图片和 1 XML 清单，正文可读 | 缺 PDF 配对、明确页面边界、C0、失败状态和重采；不再继续 CLI/API 调研 | disabled |
+| source.onenote | OneNote | 官方桌面客户端整本导出 PDF + MHT；Rust 窄 adapter 严格验证同目录同名配对，并经唯一核心链路保存一个 archive C0 与两个互补 export | 客户端已登录；选择一个明确笔记本范围并完成一次整本 PDF/MHT 导出 | E3：真实 MHT 为 1 HTML、1 XML、12 PNG、18 JPEG，真实 PDF 为 OneNote 2021 生成的 626 页 A4；活动库 1 item/1 revision/2 exports，重采 unchanged | 没有原生 page/section ID，跨导出匹配和 C1 逐页切分未启用；正式 Skill/受控 Agent 未创建 | available |
 | source.evernote | 印象笔记 / Evernote | 官方客户端整库 `.notes` 导出；Babata Rust adapter 逐条认证解密为 ENEX/ENML；网页 DOM 和单篇 MHT 为回退 | 客户端已登录并选择一个明确导出范围；不需要用户密码、Cookie 或第三方账号授权 | E3：真实 78,711,776 字节 `.notes` 的 163 条正文和 349 个资源全部验证；1 batch + 163 notes 全量 C0，164/164 `unchanged` 重采 | `.notes` 没有 note GUID、updated 或笔记本层级；身份限于 immutable export hash + ordinal，跨导出匹配未启用 | available |
 | source.wechat_favorites | 微信收藏 | 官方 PC 微信窄 UI；用户给一次范围后由 Agent 发现可见候选并复制/另存，不使用内存扫描或数据库解密 | 已登录官方 PC 微信；选择当前可见集合、分类或时间范围 | E3：Weixin 4.1.11.55 的“全部收藏”读取 8 个最新可见候选，选 1 篇公众号文章，正文/原链接进入 C0 并 `unchanged` 重采 | 当前只闭合文章类型 1 条；其他收藏类型和账号范围未覆盖 | disabled |
 | source.wechat_articles | 微信公众号文章 | 官方 PC 微信 UI 取得文章或公开 URL；Agent 对 UI 暴露的公共 URL 保存 HTML/媒体并登记，不把公共下载器写成微信历史 CLI | PC 微信已登录并选择文章；公开 URL 无额外授权 | E3：1 篇真实文章保存 2,946 字符结构化正文、2,597 字节 Markdown 和 2,331,350 字节 HTML；首次白名单失败后原 item retry 成功，重采 `unchanged` | 当前样本无正文图片/音视频；批量历史和更多形态未覆盖 | disabled |
@@ -109,7 +109,7 @@ hash、状态和 staging 管理由 Agent/Babata 自主完成，直到范围结�
 | --- | --- | --- | --- | --- |
 | 飞书 | 已完成官方应用配置和用户 OAuth；过期时重新确认 | 文档、搜索结果、Wiki 节点或明确范围 | 列候选、分页、正文、附件、版本、重收集和状态 | 一次真实正文+附件 E3 样本 |
 | 语雀 | 优先在已登录 Chrome 安装语雀批量扩展；CLI 路线才授权本机会话 | 知识库、文档或全账号 bootstrap | 目录、图片、附件、断点续传、增量和 staging 接入 | 扩展真实样本；禁止让用户手抄 Cookie |
-| OneNote | 官方桌面客户端已登录 | 一个或多个整本笔记本 | 跟随 UI 导出 PDF/MHT、记录 manifest/hash 并提交 C0 | 未实跑；转 P7，不再调研 CLI/API |
+| OneNote | 官方桌面客户端已登录 | 一个明确整本笔记本 | 取得同次 PDF/MHT 导出，Babata 校验结构和 manifest/hash 后作为同一 C0 的两个互补 export 保存 | 已实跑一对 626 页 PDF/MHT 并 unchanged 重采；还缺跨导出匹配、C1 切分和正式 Skill/Agent |
 | Evernote | 官方客户端已登录 | 一个明确 `.notes` 导出文件 | Rust adapter 验证原件 hash，生成解密 ENEX，列出 batch/note 候选并经核心提交 C0 | 已实跑 163 notes/349 resources；跨导出匹配未覆盖 |
 | 微信收藏 | PC 微信登录并打开收藏 | 当前可见集合、分类或时间范围 | Agent 操作官方 UI 枚举、复制、另存和附件下载 | 文章类型已闭合 1 条；还缺其他收藏类型 |
 | 公众号文章 | 单篇无授权；批量历史时扫码登录自己的公众号后台 | 链接、公众号、合集或文章范围 | 已知 URL 的正文、Markdown/HTML、可得媒体和重收集 | 单篇已闭合；还缺带媒体样本、批量历史和更多形态 |
@@ -332,12 +332,14 @@ PDF/LakeBook 用作恢复或原生备份；会员 OpenAPI/MCP、未实证批量�
 ### 6.3 OneNote
 
 用户已确认官方桌面客户端可以整本导出 PDF 和 MHT。按八级路线，这属于第一级官方免费
-批量导出，不需要再用 Graph、第三方 CLI 或专用适配器绕路。
+批量导出，不需要再用 Graph 或第三方 CLI 绕路；Babata 只增加了真实缺口所需的窄配对
+adapter，用来结构校验、建立确定性 manifest 并进入唯一 C0 链路。
 
 正常执行是：用户只选择一次笔记本范围，Agent 跟随官方桌面 UI 导出整本 PDF 和 MHT，
 保留笔记本名称、导出时间、客户端版本、文件大小和 SHA-256，再通过 Babata 唯一 C0
-路径登记。PDF 保留阅读版式，MHT 保留网页式内容；二者都作为官方导出件保存并分别标明
-格式限制，不互相冒充。
+路径登记。同一次导出的 PDF 与 MHT 属于同一来源、只形成一个 archive item；PDF 更接近
+OneNote 的渲染和划分，MHT 更适合保留图片、文字和格式。二者都作为独立官方 export
+保存并标明 representation role，不能互相替代，也不能把 PDF 页码冒充平台 page/section ID。
 
 Graph PowerShell 2.38.1 和 `onenote-md-exporter` 的历史调研记录不再作为当前待办。只有
 将来真实重复执行证明官方整本导出缺少必要的批量、重试或恢复能力，且用户重新要求时，
@@ -350,8 +352,27 @@ Graph PowerShell 2.38.1 和 `onenote-md-exporter` 的历史调研记录不再作
 section ID 边界，因此原 MHT 可作为整本 C0 导出件，逐页切分属于后续 C1 清洗，不能在
 收集阶段猜测。
 
-决策：**官方桌面整本 PDF + MHT 导出；停止继续调研**。当前达到 E2 真实导出解析，尚未
-提交 C0 或重采，保持 `disabled`，转入 P7 扩展来源而不是阻塞 P4。
+同次配对 PDF 为 11,189,470 字节，SHA-256
+`FB00DB70FBBEC77EB28469886DF4190CC3B7DE529AC33BEFA703D3397FBB1DD5`；由 Microsoft
+OneNote 2021 生成，未加密，共 626 张 A4 页面。首、中、末页渲染抽样均可读；归一化文本
+对比得到约 83.53% 的 MHT 8-gram 覆盖率和约 70.01% Jaccard，证明二者内容高度相关但
+用途不同。
+
+2026-07-25，Issue #84 将同一对真实导出归入 `BABATA_RECOVERY_HOME`。Rust
+`OneNotePairedExportAdapter` 只接受 `pair:<absolute-mht>|<absolute-pdf>`，拒绝相对路径、
+跨目录/异名配对、缺失或重复 HTML root、MIME 路径穿越、畸形/加密 PDF，以及 discovery
+后发生变化的文件。它发现一个 archive 候选，manifest 同时绑定 pair/MHT/PDF/HTML hash、
+MIME 结构、PDF 页数/版式/生成器和互补角色；没有 adapter cache，也不推断页面身份。
+
+隔离库与活动库均保存 1 item、1 ready revision 和 2 个 ready export，随后同一 session 重采
+为 unchanged、0 新 revision。OneNote 自身有 1 source、2 observations；活动库最终为
+`7 sources / 193 items / 196 revisions / 360 assets / 1 relation`，schema v7、
+`quick_check=ok`，外键异常和所有 pending/quarantine/journal/orphan 为 0。证据位于
+`BABATA_EVIDENCE_HOME/runs/p7-2-onenote-20260725-071439/`，不进入 Git。
+
+决策：**官方桌面整本 PDF + MHT 是同一来源的互补表示；停止继续调研 Graph/第三方 CLI**。
+基于上述 E3，`source.onenote` 现为 `enabled`。跨导出匹配、C1 逐页切分、正式 Skill 和
+受控 Agent 仍未完成；该切片不代表 P7、AC-09 或 TC-09 整体通过。
 
 ### 6.4 Evernote / 印象笔记
 
@@ -771,7 +792,7 @@ folder 直接列候选：路径、相对层级、类型、大小、mtime、可�
 | bilibili-api-python | 降级；仓库已归档 |
 | DouK-Downloader 作为抖音正常路线 | 降级；签名算法失效，扫码失效、浏览器 Cookie 读取弃用，现状要求手抄 Cookie/自备参数生成器 |
 | `better-douyin` 公开源码 | 淘汰；仓库明确不包含真实平台连接器、签名、Cookie 或下载解析 |
-| OneNote 官方整本 PDF/MHT | 正常路线；用户已确认可用，等待 P7 真实样本 |
+| OneNote 官方整本 PDF/MHT | 正常路线；Issue #84 已以同源互补配对完成真实 C0 与 unchanged 重采 |
 | 印象笔记官方 HTML 作为主路线 | 降为回退；官方整库 `.notes` 已证明可用固定算法解密，网页 DOM 为补充，单篇 MHT 为 UI 回退 |
 | 通用“万能爬虫” | 淘汰；已有站点 CLI/扩展的来源不得重新造重型爬虫 |
 
@@ -801,7 +822,7 @@ Browser Use、Agent Browser、Playwright CLI 与 OpenCLI 的通用方向已经�
 Codex Chrome 又在 Kimi 完成真实历史分页、长正文读取和外部 staging 样本。
 
 因此 **P2-G7 已通过**。抖音等具体来源仍缺 E3，Kimi 也没有完成附件、逐条状态和重收集；
-除已在 P7 以真实整库闭环启用的 `source.evernote` 外，其余未完成来源继续保持 disabled，
+除已在 P7 以真实导出闭环启用的 `source.evernote` 和 `source.onenote` 外，其余未完成来源继续保持 disabled，
 缺口进入 P4/P7。E3 未完成不再错误阻塞 P2，也不能因为 P2-G7 通过就显示未验收来源
 available。
 

@@ -39,6 +39,8 @@ pub struct CaptureFileCommand {
 pub struct CaptureImportAsset {
     pub path: String,
     pub role: AssetRole,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub expected_sha256: Option<Sha256>,
 }
 
 #[derive(Debug, Clone)]

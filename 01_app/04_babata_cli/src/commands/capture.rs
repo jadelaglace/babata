@@ -49,14 +49,17 @@ pub fn execute(
                     .map(|path| CaptureImportAsset {
                         path: path.to_string_lossy().to_string(),
                         role: AssetRole::Original,
+                        expected_sha256: None,
                     })
                     .chain(input.preview.into_iter().map(|path| CaptureImportAsset {
                         path: path.to_string_lossy().to_string(),
                         role: AssetRole::Preview,
+                        expected_sha256: None,
                     }))
                     .chain(input.attachment.into_iter().map(|path| CaptureImportAsset {
                         path: path.to_string_lossy().to_string(),
                         role: AssetRole::Attachment,
+                        expected_sha256: None,
                     }))
                     .collect(),
                 reason: input.reason,
@@ -123,10 +126,12 @@ pub fn execute(
                     assets: std::iter::once(CaptureImportAsset {
                         path: input.path.to_string_lossy().to_string(),
                         role: AssetRole::Export,
+                        expected_sha256: None,
                     })
                     .chain(input.attachment.into_iter().map(|path| CaptureImportAsset {
                         path: path.to_string_lossy().to_string(),
                         role: AssetRole::Attachment,
+                        expected_sha256: None,
                     }))
                     .collect(),
                     route_evidence: route_evidence(
@@ -203,6 +208,7 @@ pub fn execute(
                         assets: vec![CaptureImportAsset {
                             path: original_export.clone(),
                             role: AssetRole::Export,
+                            expected_sha256: None,
                         }],
                         route_evidence: route_evidence(
                             "source.browser_bookmarks",

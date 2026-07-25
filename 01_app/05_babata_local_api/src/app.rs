@@ -11,7 +11,10 @@ use babata_domain::{
 use babata_infrastructure::{
     AppConfig, FileAssetStore, OutputViewStore, SqliteRawRepository, SqliteReadProjection,
     SublibraryViewStore, SystemClock, open_collection_database, open_raw_database,
-    sources::providers::{browser::BrowserCandidateAdapter, evernote::EvernoteNotesAdapter},
+    sources::providers::{
+        browser::BrowserCandidateAdapter, evernote::EvernoteNotesAdapter,
+        onenote::OneNotePairedExportAdapter,
+    },
 };
 use serde::de::DeserializeOwned;
 use serde_json::json;
@@ -389,13 +392,15 @@ fn collector_service(
     active: Option<(&SourceRouteId, Vec<babata_domain::CandidateEnvelope>)>,
 ) -> Result<CollectorService, ApiError> {
     let repository = open_collection_database(&config.paths(), config.sqlite.busy_timeout_ms)?;
-    let mut adapters: Vec<Box<dyn babata_application::ports::SourceAdapterPort>> =
-        vec![Box::new(EvernoteNotesAdapter::new(
+    let mut adapters: Vec<Box<dyn babata_application::ports::SourceAdapterPort>> = vec![
+        Box::new(OneNotePairedExportAdapter),
+        Box::new(EvernoteNotesAdapter::new(
             config
                 .paths()
                 .root()
                 .join("04_runtime/provider-downloads/evernote"),
-        ))];
+        )),
+    ];
     adapters.extend(
         [BROWSER_PAGE_ROUTE, BROWSER_BOOKMARK_ROUTE]
             .into_iter()
@@ -649,6 +654,32 @@ mod tests {
                 route_id: "source.evernote".to_owned(),
                 source_reference: "submitted:fixture".to_owned(),
                 scope_description: "one explicit fixture export".to_owned(),
+                installation_id: "fixture-installation".to_owned(),
+                candidates: Vec::new(),
+            })
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn shared_collector_service_registers_onenote_without_opening_browser_start() {
+        let temporary = tempdir().unwrap();
+        let app = test_config(temporary.path());
+        let error = collector_service(&app, None)
+            .unwrap()
+            .start(StartCollectionCommand {
+                route_id: SourceRouteId("source.onenote".to_owned()),
+                source_reference: "pair:relative.mht|relative.pdf".to_owned(),
+                scope_description: "one explicit paired fixture export".to_owned(),
+                authorisation_id: "fixture-authorisation".to_owned(),
+            })
+            .unwrap_err();
+        assert!(error.to_string().contains("paths must be absolute"));
+        assert!(
+            validate_browser_start(&BrowserSessionRequest {
+                route_id: "source.onenote".to_owned(),
+                source_reference: "submitted:fixture".to_owned(),
+                scope_description: "one explicit paired fixture export".to_owned(),
                 installation_id: "fixture-installation".to_owned(),
                 candidates: Vec::new(),
             })

@@ -103,6 +103,7 @@ impl FeishuCliAdapter {
                     } else {
                         AssetRole::Attachment
                     },
+                    expected_sha256: None,
                 })
             })
             .collect()

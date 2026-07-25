@@ -109,6 +109,7 @@ impl ZhihuOpenCliAdapter {
                 Ok(CaptureImportAsset {
                     path: path.to_string_lossy().into_owned(),
                     role: AssetRole::Attachment,
+                    expected_sha256: None,
                 })
             })
             .collect()
