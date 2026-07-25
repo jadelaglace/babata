@@ -125,10 +125,12 @@ Git。所有 destructive 测试使用临时或隔离数据根。
 5. 使用缺附件或缺来源字段的受限样本重复检查。
 6. 使用同时提供上传 DOCX 与平台转换 PDF 的真实或等价样本，确认保存并标识 DOCX 为
    源文件，PDF 只作为派生物或回退证据；再模拟源文件不可取得并检查限制说明。
+7. 只收集一批真实原件并保持零项新 C1，确认收集已正常结束；随后可选地从同一 C0
+   revision/asset 启动通用清洗，确认 C1 引用该输入且来源收集记录、正文和附件不变化。
 
 预期：C0 内容与哈希不变；外部原件、first-party 和机器派生物可辨别；C1 删除不会
 损伤 C0；每个文件派生结果绑定真实 asset；不完整资料保持明确限制；平台预览/转码件
-不冒充源文件。
+不冒充源文件；C0 可在没有 C1 时独立完成，C1 知道其 C0 输入但不形成来源专属管道。
 
 #### TC-03B：C2 视图与子库边界（P6）
 
@@ -433,6 +435,15 @@ exports，随后 6/6 unchanged、0 新 revision。批次内只有“灵感消化
 跨目录、非 OneNote 元数据、非法 MIME、discovery 后变化均被拒绝；旧 PDF/MHT 配对 manifest
 继续保持 `onenote-paired-export/1`，避免代码升级制造伪 revision。证据位于
 `BABATA_EVIDENCE_HOME/runs/p7-3-onenote-mht-20260725-090516/`。
+
+Issue #88 随后完成第四个 P7 切片：对豆包复杂会话“战略领导力W1”已拿回的 7 个原始
+DOCX 复核消息 MD5、Recovery SHA-256、大小和 DOCX 结构，再把此前缺少的 6 个通过通用
+附件操作附加到既有 ready revision。隔离库和活动库均只改变 `assets` 与两张附件操作表；
+活动库最终为 `7 sources / 199 items / 202 revisions / 372 assets / 1 relation / 342 observations`，
+W1 为 7 个 original DOCX 加 1 个 preview PDF。正文 hash、既有资产、17 个 process runs/
+16 个 derivatives 均不变，`quick_check=ok`、外键异常和所有 pending/quarantine/journal/orphan
+为 0。证据位于 `BABATA_EVIDENCE_HOME/runs/p7-4-doubao-w1-assets-20260725-111326/`。
+该切片验证的是统一 C0 独立完成与外围无第二 writer，不包含正式豆包 Skill 或受控 Agent。
 
 尚未执行的 TC-09 部分包括：正式 Skill 的 available/unavailable 对照、Agent 范围查看与
 取消、未确认账号级越界拒绝、自动确认模型建议拒绝，以及多个外围入口的完整结果对照。
