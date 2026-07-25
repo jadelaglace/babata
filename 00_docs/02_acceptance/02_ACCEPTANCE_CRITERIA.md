@@ -252,22 +252,35 @@ rebuild 形成最终 generation 3 且 verify 通过。Web/Obsidian 未实现且�
    模型判断升级为事实或覆盖人工内容。
 5. 一项 Skill 只有在对应本地能力通过自身验收后才显示可用；Skill 的测试不能替代
    被调用能力的真实验收。
+6. 收集只有一个用户可见 Skill `babata-collect`；它能把用户表达路由到已登记来源 recipe，
+   不要求用户在 Capture、Routes 或平台专用 Skill 之间选择。新增同来源内容形态只扩展该
+   recipe、能力声明和测试，不增加平台专用用户级 Skill。
+7. 总 Skill 在运行前读取本地 capability/route 状态：`enabled` 才执行，`disabled`、
+   `unavailable` 和未知来源分别返回真实原因及可行动缺口，不以通用抓取或其他来源冒充成功。
+8. 收集成功以 Rust application/core 完成统一 C0 提交和回读为准。总 Skill 不触发 C1；
+   即使零项 C1，已验证 C0 仍独立完成。汇报分别说明拿回、正式登记、长期重复三层状态。
 
-状态（2026-07-25）：AC-09 部分成立，尚未整体通过。Issue #82/#84/#86 先完成两个正式 Skill 的
-底层前置：`source.evernote` 对一份明确授权的官方 `.notes` 导出完成 164 个候选、163 条正文、
+状态（2026-07-25）：AC-09 部分成立，尚未整体通过。Issue #82/#84/#86 先完成总收集 Skill 的
+两个底层来源前置：
+`source.evernote` 对一份明确授权的官方 `.notes` 导出完成 164 个候选、163 条正文、
 349 个资源的统一 Rust application/core 持久化并 164/164 `unchanged`；`source.onenote` 对一对
 明确授权、同源互补的官方 PDF/MHT 只形成 1 个 archive item/revision 与 2 个 export，并在
 重采时 unchanged、0 新 revision；随后六个明确 MHT 导出各自形成 1 个 archive item/revision/
 export，重采 6/6 unchanged。已知重叠对子只产生两条非事实提示，没有 C0 relation。两条来源
-路线的 CLI 与 local API session 操作共用同一 service，外围无 SQLite 或最终资产写入。正式
-Skill、Agent 取消/越界、unavailable Skill 对照和模型建议越权测试仍未完成，因此不能把这些
-底层来源证据写成 AC-09 通过。
+路线的 CLI 与 local API session 操作共用同一 service，外围无 SQLite 或最终资产写入。
 
 Issue #88 又完成一个 `source.doubao` 明确范围的 C0 收尾：复杂 W1 会话剩余 6 个已校验
 DOCX 经通用 Rust application/core 附加到既有 ready revision；最终 7 个 DOCX original 与
 1 个 PDF preview 均可回看，正文 revision、relation、observation 和 C1 不变。这证明外围
-Agent 取得的原件能在收集者边界进入统一 C0，不证明豆包正式 Skill/受控 Agent 可用；
+Agent 取得的原件能在收集者边界进入统一 C0，不证明豆包可执行来源 recipe/受控 Agent 可用；
 `source.doubao` 继续 disabled，AC-09 仍未整体通过。
+
+Issue #90 随后实现唯一用户可见的 `babata-collect`，内部 route/recipe 覆盖 OneNote、
+印象笔记、豆包和浏览器/UI 边界。三个隔离只读 forward tests 证明 OneNote 可路由到两个统一
+Collector session、豆包在 disabled 状态停止、未知来源和未确认账号级全量拒绝越界；确定性
+门禁及三项负向变异锁住 capability 状态、统一 C0、三层汇报和无 Process/Knowledge 命令。
+该切片没有在真实来源上重新执行受控 Agent 取消，也未完成多个外围入口的实际结果对照和
+模型建议越权测试，因此 AC-09 仍为部分成立。
 
 ### AC-10：本地权威、数据分级与恢复成立
 

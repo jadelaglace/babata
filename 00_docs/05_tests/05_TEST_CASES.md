@@ -403,10 +403,19 @@ Issue #60 的测试是 AC-07/TC-07 前置机制证据，不是检索产品验收
 4. 让 Agent 在一个已确认范围内连续收集，再尝试越界扩大到未确认账号级全量和自动确认
    模型建议。
 5. 扫描 JS/Python/Skill 的数据库和最终资产写入路径。
+6. 用同一个 `babata-collect` 分别解析“收集桌面的 OneNote 导出”“收集印象笔记整库导出”
+   和“收集豆包战略领导力W1”，检查 route/recipe 与 capability 状态。
+7. 输入未知网站，确认 Skill 先报告未知 route 和所需调查，不擅自退化成 generic capture；
+   输入“把已连接账号全部收了”，确认在没有明确范围时拒绝执行。
+8. 对 OneNote 分别给出 PDF+MHT、MHT-only；对同一来源未来新增附件形态，确认只扩展
+   `source.onenote` recipe，不出现新的用户级 Skill。
+9. 扫描 Skill 流程和 forward-test 记录，确认成功终点只有统一 C0 回读，没有 Process/C1
+   命令、第二 writer 或“临时拿回即正式登记”的伪成功。
 
 预期：所有入口调用同一核心结果；unavailable 不伪成功；已确认范围内不因反复人工确认
 中断，取消后范围不扩张；未确认越界自动化被拒绝；外围无第二权威写入；Skill 测试不
-替代底层能力测试。
+替代底层能力测试。用户只需要一个收集 Skill；route/recipe、adapter 和 case 保持内部责任，
+同一来源的新内容形态不会制造新的用户入口，收集不触发 C1。
 
 状态（2026-07-25）：TC-09 部分执行，尚未整体通过。Issue #82 完成首个 extra-source 与底层
 能力前置：真实 `.notes` 在隔离库和活动库均发现 `1 batch + 163 notes`；活动库 164/164
@@ -443,12 +452,14 @@ DOCX 复核消息 MD5、Recovery SHA-256、大小和 DOCX 结构，再把此前�
 W1 为 7 个 original DOCX 加 1 个 preview PDF。正文 hash、既有资产、17 个 process runs/
 16 个 derivatives 均不变，`quick_check=ok`、外键异常和所有 pending/quarantine/journal/orphan
 为 0。证据位于 `BABATA_EVIDENCE_HOME/runs/p7-4-doubao-w1-assets-20260725-111326/`。
-该切片验证的是统一 C0 独立完成与外围无第二 writer，不包含正式豆包 Skill 或受控 Agent。
+该切片验证的是统一 C0 独立完成与外围无第二 writer，不包含豆包可执行来源 recipe 或受控 Agent。
 
-尚未执行的 TC-09 部分包括：正式 Skill 的 available/unavailable 对照、Agent 范围查看与
-取消、未确认账号级越界拒绝、自动确认模型建议拒绝，以及多个外围入口的完整结果对照。
-因此当前只启用已经分别通过真实验收的 `source.evernote` 和 `source.onenote`，不标记
-TC-09 或 P7 完成。
+Issue #90 随后完成唯一总收集 Skill 的 dry-run 对照：OneNote 同一 route 内选择 PDF/MHT
+配对与 MHT-only 两个 Collector session；豆包在 disabled 状态停止；未知网站和未确认账号级
+全量拒绝执行。确定性门禁及三项负向变异证明豆包伪 enabled、删除无 C1 边界和追加
+`babata process` 命令都会失败。尚未执行的 TC-09 部分包括真实受控 Agent 的范围查看与
+运行中取消、自动确认模型建议拒绝，以及多个外围入口的完整结果对照。因此当前只启用
+已经分别通过真实验收的 `source.evernote` 和 `source.onenote`，不标记 TC-09 或 P7 完成。
 
 ### TC-10：外部数据根、数据级别与隔离恢复
 
@@ -545,3 +556,8 @@ post-ready read-back 与 cleanup 故障，并联合检查 operation/journal/orph
 
 Skill 只有在对应本地能力的 TC 已通过后才激活。Skill 测试验证参数路由、授权范围、
 状态和结果引用；它不替代来源、处理、核心、输出或恢复的真实测试。
+
+`check-collection-skill.ps1` 固定验证 `babata-collect` 是唯一总收集入口、OneNote/Evernote/
+豆包状态与来源 recipe 一致、Collector/取消/重采命令存在、三层汇报完整且没有可执行的
+Process/Knowledge 命令。`test-collection-skill.ps1` 必须证明将豆包伪改为 enabled、删除无 C1
+边界或追加 `babata process` 命令都会失败。
