@@ -6,7 +6,7 @@
 
 ## 1. 当前状态
 
-**更新时间：2026-07-24**
+**更新时间：2026-07-25**
 
 ```text
 P0  冻结旧版本                                    已完成
@@ -19,7 +19,7 @@ P6  核心沉淀、检索、子库与输出                      已完成
   P6.1 核心知识沉淀                                 已完成
   P6.2 发现、检索与关系导航                         已完成
   P6.3 子库与输出                                   已完成
-P7  扩展来源、正式 Skill 与受控 Agent               进行中（两个来源切片完成）
+P7  扩展来源、正式 Skill 与受控 Agent               进行中（两个来源、三个切片完成）
 P8  备份、恢复、运维与长期加固                      未开始
 ```
 
@@ -31,7 +31,7 @@ P8  备份、恢复、运维与长期加固                      未开始
 <!-- P6.2 preflight: Issue #60 common C0 metadata/observations implemented -->
 <!-- P6.2: completed; AC-07 items 1..4,7 and TC-07 steps 1..4 plus search projection rebuild passed; P6.3 later completed the full AC-07/TC-07 -->
 <!-- P6.3: completed; AC-03, AC-07, AC-08 and TC-03, TC-07, TC-08 passed -->
-<!-- P7: in progress; Issues #82/#84 enabled source.evernote/source.onenote at E3; AC-09 and TC-09 remain incomplete -->
+<!-- P7: in progress; Issues #82/#84/#86 enabled and extended source.evernote/source.onenote at E3; AC-09 and TC-09 remain incomplete -->
 
 当前真实情况：
 
@@ -52,7 +52,8 @@ P8  备份、恢复、运维与长期加固                      未开始
 - P4-G1 至 P4-G6、TC-01 和 TC-02 已通过。P4 完成只证明飞书与正式 Chrome 点名平台的
   首批流程、选择范围、逐条状态、失败重试和重采边界成立；微信聊天、视频号、抖音和
   书签自动遍历等仍未闭环。P4 收尾时 OneNote 与印象笔记都只有 E2 导出解析；现已分别由
-  P7 Issue #84/#82 完成真实 C0 与 unchanged 重采并单独启用。其余扩展来源继续留在 P7，
+  P7 Issue #84/#82 完成真实 C0 与 unchanged 重采并单独启用；Issue #86 又完成六个显式
+  OneNote MHT 导出的 C0、非事实重叠提示与 unchanged 重采。其余扩展来源继续留在 P7，
   书签最后单独收集；抖音和视频号按用户决定暂时不处理。
 - 微信样本使用官方 PC 微信 4.1.11.55 的“全部收藏”窄 UI，读取 8 个最新可见候选并选择
   “爬虫-这20个仓库教会什么叫降维打击”；保存 2,946 字符结构化正文、2,597 字节
@@ -806,6 +807,20 @@ SHA-256 完全一致；全库 schema v7、`quick_check=ok`、外键异常和所�
 pending/quarantine/journal/orphan 为 0。`source.onenote` 已启用，但跨导出匹配、C1 切分、
 正式 Skill 和受控 Agent 仍未完成。开发证据位于
 `BABATA_EVIDENCE_HOME/runs/p7-2-onenote-20260725-071439/`，不是 P8 备份。
+
+同日 Issue #86 完成第三个切片：用户明确给出六个新的 OneNote MHT，并提示其中有子本单独
+导出、一本内也有许多独立内容段。每个实际 MHT 各自作为完整 C0 保存，不在收集阶段拆分、
+合并或猜测层级。Rust adapter 接受显式同目录绝对路径列表，验证单体 HTML 与 multipart MHT
+的 OneNote 元数据、MIME 结构、可见文本和所有 hash；确定性重叠只作为机器未审阅、非确认
+事实的 manifest 证据。
+
+隔离库和活动库均为 6 ready items/revisions/assets，随后 6/6 unchanged、0 新 revision。
+“灵感消化”与“猫与月季花”产生两条双向重叠提示，约 95.83%/100%，没有正式 relation；
+其他四个无提示。活动库最终为 `7 sources / 199 items / 202 revisions / 366 assets / 1 relation /
+342 observations`，schema v7、`quick_check=ok`、外键异常和所有
+pending/quarantine/journal/orphan 为 0。开发证据位于
+`BABATA_EVIDENCE_HOME/runs/p7-3-onenote-mht-20260725-090516/`，不是 P8 备份。C1 段落切分、
+语义去重、层级确认、正式 Skill 和受控 Agent 仍未完成。
 
 对应底层能力通过自己的 AC/TC 后，P2 Skill 规格才转成真实 `SKILL.md`。Agent 默认
 人工触发或确认，批处理携带明确范围，不自动扩张授权或把模型判断升级为事实。
