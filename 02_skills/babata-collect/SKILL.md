@@ -16,6 +16,11 @@ Use this as the only collection entry point. Identify the source and authorised 
 internal source recipe, use the best verified acquisition tool, and submit through Babata's Rust
 application/core. Never create a platform-specific user Skill.
 
+Judge and improve routes in this fixed order: **stable, accurate, real, then fast**. Once the first
+three are proven, measure the live run, remove repeated navigation and indecision, and retain one
+working route plus one explicit fallback. Do not preserve speculative branches or keep researching
+after the authorised scope can be completed honestly.
+
 ## Mandatory Contract
 
 Read these two references for every task:
@@ -115,12 +120,15 @@ but no enabled formal route can accept them, report "拿回但未正式登记" a
 ```text
 babata --json collector cancel --session <session_id> --reason <reason>
 babata --json collector retry --session <session_id> --candidate <failed_candidate_id>
+babata --json collector recollect --item <item_id>
 babata --json collector recollect-session --session <session_id>
 ```
 
 Cancellation preserves already saved items and skips remaining queued work. Retry only a reported
 retryable failure. Recollection must report `changed`, `unchanged`, `inaccessible`, or `removed`;
-it never overwrites an earlier C0 revision.
+it never overwrites an earlier C0 revision. For browser-backed batches, recollect per item so one
+transient external-command failure cannot abort validation of the whole batch. Retry one failed
+item once when the failure is transient; do not restart successful items.
 
 ### 6. Verify and report
 
@@ -137,6 +145,10 @@ When a source gains images, audio, attachments, quotes, or another export format
 3. update capability evidence and add a real authorised test for the new shape;
 4. add or widen a Rust adapter only after repeated use proves existing tools insufficient;
 5. never create `babata-<platform>-collect` for the new case.
+
+After a real run, update the same recipe with measured bottlenecks and the single next optimisation.
+Speed work may reuse an acquisition session or capture lifecycle, but must keep each candidate's C0
+transaction, completeness check, provenance, and failure result independent.
 
 Create a new route only for a genuinely separate source identity or authorisation boundary, not for
 a file extension, attachment type, or one acceptance sample.

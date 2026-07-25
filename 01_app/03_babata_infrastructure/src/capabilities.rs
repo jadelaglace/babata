@@ -36,14 +36,6 @@ pub fn all_descriptors() -> Vec<CapabilityDescriptor> {
         disabled_pending_evidence("source.browser_pages"),
         disabled_pending_evidence("source.browser_bookmarks"),
         disabled_pending_evidence("source.wechat_articles"),
-        enabled_p7_source(
-            "source.onenote",
-            "One explicitly authorised official PDF/MHT pair can be structurally verified, collected as complementary exports, and recollected through the core",
-        ),
-        enabled_p7_source(
-            "source.evernote",
-            "One explicitly authorised official .notes export can be authenticated, decrypted, collected with resources, and recollected through the core",
-        ),
         CapabilityDescriptor::enabled("collector", "P4"),
         CapabilityDescriptor {
             id: CapabilityId::new("processing"),
@@ -123,11 +115,29 @@ pub fn all_descriptors() -> Vec<CapabilityDescriptor> {
         CapabilityDescriptor::unavailable("outputs.obsidian", "unplanned"),
         CapabilityDescriptor::unavailable("ops.backup", "P8"),
     ];
+    descriptors.extend(p7_source_descriptors());
     descriptors.extend(crate::processing::registry::processing_descriptors());
     descriptors.push(
         crate::processing::semantic_digest::BailianSemanticDigestProvider::detect().describe(),
     );
     descriptors
+}
+
+fn p7_source_descriptors() -> Vec<CapabilityDescriptor> {
+    vec![
+        enabled_p7_source(
+            "source.onenote",
+            "One explicitly authorised official PDF/MHT pair can be structurally verified, collected as complementary exports, and recollected through the core",
+        ),
+        enabled_p7_source(
+            "source.evernote",
+            "One explicitly authorised official .notes export can be authenticated, decrypted, collected with resources, and recollected through the core",
+        ),
+        enabled_p7_source(
+            "source.doubao",
+            "Explicit batches of 1-20 conversations can be discovered from the signed-in history, collected through OpenCLI into C0, and recollected per item without incomplete pagination or transient browser fields becoming C0",
+        ),
+    ]
 }
 
 fn disabled_pending_evidence(id: &str) -> CapabilityDescriptor {

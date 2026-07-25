@@ -15,7 +15,7 @@ The authoritative research table is
 | --- | --- | --- | --- |
 | `source.onenote` | OneNote official PDF/MHT exports | enabled | `source-onenote.md` |
 | `source.evernote` | Evernote / 印象笔记 `.notes` export | enabled | `source-evernote.md` |
-| `source.doubao` | 豆包 conversations and attachments | disabled | `source-doubao.md` |
+| `source.doubao` | 豆包 explicit conversation batches; proven DOCX attachments | enabled | `source-doubao.md` |
 | `source.feishu` | 飞书 Docs/Wiki/knowledge | disabled | `source-browser-and-ui.md` |
 | `source.yuque` | 语雀 | disabled | `source-browser-and-ui.md` |
 | `source.wechat_favorites` | 微信收藏 | disabled | `source-browser-and-ui.md` |
@@ -53,3 +53,7 @@ Browser and desktop control are execution tools, never generic replacements for 
 When a platform is unknown, first investigate its official export/API/CLI and mature Agent tooling,
 then open a normal Babata Issue to add evidence and a recipe. Do not silently use
 `source.browser_pages` to claim platform support.
+
+Evaluate a chosen route in this order: stable, accurate, real, fast. Do not trade the first three
+for throughput. Once they pass, measure elapsed time, collapse indecisive branches, and optimise the
+single proven bottleneck instead of continuing tool research without a demonstrated failure.

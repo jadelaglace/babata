@@ -92,7 +92,7 @@ P2-G7 的完成口径是：00 点名的来源都有真实调查、证据等级�
 | source.douyin | 抖音收藏 | 先用通用 Agent 浏览器遍历已登录收藏页面；所选媒体再验证 `F2` 或现有下载器 | Chrome 已登录；首次批准远程调试；给出收藏范围 | E0：错误主路线已撤回，候选路线已核；2026-07-19 用户决定暂时不处理 | 延期到用户重新启用；`F2` 和真实样本均未实证 | disabled |
 | source.browser_bookmarks | 浏览器书签 | 最后单独收集；届时由 Agent 按一次明确文件夹范围读取候选并自动遍历网址、收正文/可得附件；实验性窄扩展冻结 | 暂无；最终收集时给出文件夹或集合范围一次 | E1：扩展候选、loopback 和唯一 C0 writer 机制已验证；正式 Chrome 证明当前实现只会手动提交 locator | 延到所有点名来源之后；缺 Agent 自动遍历正文、附件、逐条状态和新鲜重采 | disabled |
 | source.browser_pages | 浏览器当前页面、选区和网页收藏 | 当前存量由 Codex Chrome 自主导航和读取；未来快速剪藏入口仅作低优先级补充，保真页面再评估 SingleFile | 给出页面/站点范围一次 | E1：实验性扩展与 loopback 机制已验证，但正式 Chrome 仍要求用户逐项点击 | 手动剪藏器已冻结；缺 Agent 自主批量范围、附件、保真页面和新鲜重采 | disabled |
-| source.doubao | 豆包对话 | Codex Chrome 遍历历史；OpenCLI 薄命令只固化已证明的详情读取和任务外重采 | Chrome 已登录；给出会话、时间或数量范围 | E3：20 个真实候选选 1，正文、逐条状态、C0 和 `unchanged` 重采已验证；复杂 W1 会话的 7 个原始 DOCX 已全部进入统一 C0 | 只闭合该会话的 DOCX；其他附件/媒体形态、可执行来源 recipe/受控 Agent 和长期重采未完成 | disabled |
+| source.doubao | 豆包对话 | Codex Chrome 一次展开和选择真实历史；OpenCLI 薄命令读取显式 1-20 条批次，逐 item 重采 | Chrome 已登录；给出会话、时间或数量范围 | E3：两个 20 条真实批次中 38 条进入 C0、2 条因分页不完整拒绝，38/38 `unchanged`；W1 的 7 个原始 DOCX 已进入统一 C0 | 普通图片/音频/非 DOCX 附件未覆盖；超长会话需完整分页路线；当前主要慢点为每条重建导航/捕获 | available |
 | source.kimi | Kimi 对话 | 当前优先 Codex Chrome 调用 Kimi 结构化历史和会话接口；OpenCLI 薄命令只用于任务外重试/重采 | Chrome 已登录；给出会话、时间或数量范围 | E3：15 个真实候选选 1，结构化消息、逐条状态、C0 和 `unchanged` 重采已验证 | 当前样本无附件；全历史和深研产物未覆盖 | disabled |
 | source.chatgpt | ChatGPT 对话 | 日常范围用 Codex Chrome；OpenCLI 薄命令固化已证明的结构化读取；账号级首次回收可用官方 Data Export | Chrome 已登录；全量时只在 Data Controls 确认 | E3：20 个真实候选选 1，2 条角色消息/10 引用、逐条状态、C0 和 `unchanged` 重采已验证 | 当前样本附件为 0，二进制附件和工作区全量资格未验证 | disabled |
 | source.local_files | 本地文件 | Babata 核心文件选择器、拖放或受控目录扫描直接读取 | 选择文件、目录或明确监视范围 | E2：P3 显式 file/export 已通过唯一 C0 提交、资产哈希、回读和故障补偿 | 缺日常文件选择器/目录候选、逐条状态和重收集 | disabled |
@@ -749,10 +749,25 @@ OpenCLI 已核到 `doubao history --limit`、`detail <id>`、`read`，以及会�
 附件操作把剩余 6 个 DOCX 附加到既有 ready revision。活动库没有新增 item、正文 revision、
 relation、observation 或 C1，W1 最终为 7 个 `original` DOCX 加 1 个 `preview` PDF。该结果
 证明这个明确收集范围已经完整进入统一 C0，不建立或触发豆包专属 C1；它不证明其他附件
-形态、可执行来源 recipe、受控 Agent 或长期重采可用；Issue #90 的总 Skill 会对该状态
-fail closed，因此 `source.doubao` 保持 disabled。
+形态、可执行来源 recipe、受控 Agent 或长期重采可用；Issue #90 的总 Skill 当时对该状态
+fail closed，因此在 Issue #92 批量实证之前 `source.doubao` 保持 disabled。
 
-决策：**Browser Use/Agent Browser 主导航，OpenCLI 补稳定命令；附件缺口实证后再窄补**。
+真实批量证据（2026-07-25，Issue #92）：Agent 在已登录 Chrome 中一次展开约 60 个去重
+会话，按用户指示排除超大的“主对话”，再把前 40 个非主会话拆成两个显式 20 条批次。
+首批 18 saved/2 failed，次批 20 saved/0 failed；两个失败均因平台 `HasMore=true`，adapter
+在残缺消息进入 C0 前拒绝。38 个保存项逐 item 重采全部 `unchanged`、0 新 revision；C1
+完全不变。活动库新增 34 items 和 38 revisions，其中 4 条为已有 v1 item 首次进入去除临时
+block/signature URL 的 v2 稳定指纹时产生的一次性归一化 revision，稳定消息内容没有变化，
+后续重采不再增长。以后先按 `source_native_id` 与现有 C0 去重；指纹升级必须走显式兼容/
+迁移决策，不能静默冒充来源变化。
+
+两批收集耗时约 408.53 秒，逐 item 重采约 458.27 秒。实测瓶颈不是 Rust C0，而是 OpenCLI
+为每条会话重新导航并建立网络捕获。按“稳定、准确、真实、速度”的顺序，前三项已通过，
+下一项只优化同一浏览器/捕获生命周期复用；候选完整分页、独立 C0 事务和单 item 故障隔离
+保持不变，不继续并列探索多条未证明路线。
+
+决策：**启用一个总 Skill 内的豆包 recipe：Chrome 一次发现范围，OpenCLI 显式批量读取，
+Babata 逐候选写 C0、逐 item 重采；下一步只优化捕获生命周期复用，附件按真实形态窄补**。
 
 ### 10.2 Kimi
 
