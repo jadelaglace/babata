@@ -80,6 +80,9 @@ fn collector_is_enabled_without_promoting_partially_proven_source_routes() {
     assert!(capabilities.as_array().unwrap().iter().any(|capability| {
         capability["id"] == "source.evernote" && capability["status"] == "enabled"
     }));
+    assert!(capabilities.as_array().unwrap().iter().any(|capability| {
+        capability["id"] == "source.onenote" && capability["status"] == "enabled"
+    }));
 }
 
 #[test]

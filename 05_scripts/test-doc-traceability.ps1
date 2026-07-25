@@ -88,12 +88,12 @@ try {
         Set-SourceFieldEmpty -ResearchPath $research -SourceId 'source.kimi' -CellIndex 4
     }
 
-    Assert-CheckerFails -Name 'e2-onenote-marked-available' -ExpectedMessage 'below E3 and must remain disabled' -Mutate {
+    Assert-CheckerFails -Name 'e1-bookmarks-marked-available' -ExpectedMessage 'below E3 and must remain disabled' -Mutate {
         param($research)
         $lines = @(Get-Content -Encoding utf8 -LiteralPath $research)
-        $index = 0..($lines.Count - 1) | Where-Object { $lines[$_] -match '^\|\s*source\.onenote\s*\|' }
+        $index = 0..($lines.Count - 1) | Where-Object { $lines[$_] -match '^\|\s*source\.browser_bookmarks\s*\|' }
         if (@($index).Count -ne 1) {
-            throw 'Mutation setup expected exactly one source.onenote row'
+            throw 'Mutation setup expected exactly one source.browser_bookmarks row'
         }
         $cells = @($lines[$index].Split('|'))
         $cells[7] = ' available '
@@ -101,7 +101,7 @@ try {
         Set-Content -Encoding utf8 -LiteralPath $research -Value $lines
     }
 
-    Write-Output 'Document traceability mutation tests passed: missing/empty source fields and E2 availability promotion all fail closed.'
+    Write-Output 'Document traceability mutation tests passed: missing/empty source fields and below-E3 availability promotion all fail closed.'
 }
 finally {
     if (Test-Path -LiteralPath $tempRoot) {

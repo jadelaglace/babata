@@ -19,7 +19,7 @@ P6  核心沉淀、检索、子库与输出                      已完成
   P6.1 核心知识沉淀                                 已完成
   P6.2 发现、检索与关系导航                         已完成
   P6.3 子库与输出                                   已完成
-P7  扩展来源、正式 Skill 与受控 Agent               进行中（首个来源切片完成）
+P7  扩展来源、正式 Skill 与受控 Agent               进行中（两个来源切片完成）
 P8  备份、恢复、运维与长期加固                      未开始
 ```
 
@@ -31,7 +31,7 @@ P8  备份、恢复、运维与长期加固                      未开始
 <!-- P6.2 preflight: Issue #60 common C0 metadata/observations implemented -->
 <!-- P6.2: completed; AC-07 items 1..4,7 and TC-07 steps 1..4 plus search projection rebuild passed; P6.3 later completed the full AC-07/TC-07 -->
 <!-- P6.3: completed; AC-03, AC-07, AC-08 and TC-03, TC-07, TC-08 passed -->
-<!-- P7: in progress; Issue #82 source.evernote E3 enabled; AC-09 and TC-09 remain incomplete -->
+<!-- P7: in progress; Issues #82/#84 enabled source.evernote/source.onenote at E3; AC-09 and TC-09 remain incomplete -->
 
 当前真实情况：
 
@@ -50,10 +50,10 @@ P8  备份、恢复、运维与长期加固                      未开始
   Sheet/Base/Slides/画板内部数据仍未覆盖。P4 已按代表性首批路径收尾，不把阶段完成扩大成
   全部点名来源完成或来源 available。
 - P4-G1 至 P4-G6、TC-01 和 TC-02 已通过。P4 完成只证明飞书与正式 Chrome 点名平台的
-  首批流程、选择范围、逐条状态、失败重试和重采边界成立；OneNote、微信聊天、视频号、
-  抖音和书签自动遍历等仍未闭环。P4 收尾时印象笔记只完成 `.notes` 首条正文校验；现已由
-  P7 Issue #82 完成全量 ENEX、C0、资源和 unchanged 重采并单独启用。其余扩展来源继续留在
-  P7，书签最后单独收集；抖音和视频号按用户决定暂时不处理。
+  首批流程、选择范围、逐条状态、失败重试和重采边界成立；微信聊天、视频号、抖音和
+  书签自动遍历等仍未闭环。P4 收尾时 OneNote 与印象笔记都只有 E2 导出解析；现已分别由
+  P7 Issue #84/#82 完成真实 C0 与 unchanged 重采并单独启用。其余扩展来源继续留在 P7，
+  书签最后单独收集；抖音和视频号按用户决定暂时不处理。
 - 微信样本使用官方 PC 微信 4.1.11.55 的“全部收藏”窄 UI，读取 8 个最新可见候选并选择
   “爬虫-这20个仓库教会什么叫降维打击”；保存 2,946 字符结构化正文、2,597 字节
   Markdown 和 2,331,350 字节原始 HTML。首次因候选白名单缺口进入可重试 `failed`，原
@@ -777,7 +777,7 @@ P6.3 与 P6 整体完成。该结论只启用实际验证的子库、Markdown �
 图片和 1 个 XML 清单，但没有明确页面边界；印象笔记 `.notes` XML 含 163 条笔记和 349
 个资源，163 条正文虽为 `base64:aes`/`ENC0`，但公开的固定算法不需要用户密码。真实文件
 首条已通过 HMAC 校验并解密为 381 字节 ENML；网页 DOM 和单篇 MHT 也已验证为备选。
-该段是进入 P7 前的 E2 基线；OneNote 仍停在这里，印象笔记已由下述切片推进到 E3。
+该段是进入 P7 前的 E2 基线；印象笔记和 OneNote 已分别由下述两个切片推进到 E3。
 
 2026-07-24，Issue #82 完成 P7 首个单来源切片：真实 `.notes` 与 P4 记录的
 78,711,776 字节/SHA-256 完全一致并归入 Recovery；Rust adapter 对 163/163 正文逐条完成
@@ -792,6 +792,20 @@ ENC0、HMAC-SHA256 与 AES-128-CBC 验证，生成全量解密 ENEX，并映射 
 immutable export hash + note ordinal；不伪造跨导出稳定 ID。底层 `source.evernote` 已启用，
 但正式 Skill、受控 Agent、取消/越界拒绝的完整 TC-09 仍未完成，P7 继续保持进行中。
 开发证据位于 `BABATA_EVIDENCE_HOME/runs/p7-1-evernote-20260724-224315/`，不是 P8 备份。
+
+2026-07-25，Issue #84 完成第二个单来源切片。用户明确同次 PDF/MHT 是一个 OneNote 来源：
+PDF 更接近平台渲染和划分，MHT 更适合图片、文字和格式。真实 17,161,246 字节 MHT 含
+1 HTML、1 XML、12 PNG、18 JPEG；真实 11,189,470 字节 PDF 由 OneNote 2021 生成，未加密，
+共 626 页 A4。Rust adapter 严格配对两份导出，生成一个 archive 候选和确定性 manifest；
+隔离库与活动库均只保存 1 item、1 ready revision、2 个互补 export，随后重采 unchanged、
+0 新 revision。它不把 PDF 页码伪造为平台 page/section ID，逐页切分留给 C1。
+
+活动库由 `6 sources / 192 items / 195 revisions / 358 assets` 变为 `7 / 193 / 196 / 360`，
+relation 仍为 1；OneNote 有 2 次 source observation。两份 C0 资产与 Recovery 原件的字节数和
+SHA-256 完全一致；全库 schema v7、`quick_check=ok`、外键异常和所有
+pending/quarantine/journal/orphan 为 0。`source.onenote` 已启用，但跨导出匹配、C1 切分、
+正式 Skill 和受控 Agent 仍未完成。开发证据位于
+`BABATA_EVIDENCE_HOME/runs/p7-2-onenote-20260725-071439/`，不是 P8 备份。
 
 对应底层能力通过自己的 AC/TC 后，P2 Skill 规格才转成真实 `SKILL.md`。Agent 默认
 人工触发或确认，批处理携带明确范围，不自动扩张授权或把模型判断升级为事实。

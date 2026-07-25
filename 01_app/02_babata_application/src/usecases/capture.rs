@@ -220,7 +220,25 @@ where
         let mut staged_assets = Vec::with_capacity(assets.len());
         for asset in assets {
             match self.assets.stage(&asset.path, asset.role, operation_id) {
-                Ok(staged) => staged_assets.push(staged),
+                Ok(staged) => {
+                    if asset
+                        .expected_sha256
+                        .as_ref()
+                        .is_some_and(|expected| expected != &staged.sha256)
+                    {
+                        let _ = self.assets.discard_stage(&staged);
+                        for staged in &staged_assets {
+                            let _ = self.assets.discard_stage(staged);
+                        }
+                        let _ = self.assets.complete_operation(operation_id);
+                        return Err(ApplicationError::Integrity(
+                            "staged import asset hash does not match the expected source hash"
+                                .to_owned(),
+                        )
+                        .with_operation(operation_id.to_owned()));
+                    }
+                    staged_assets.push(staged);
+                }
                 Err(error) => {
                     for staged in &staged_assets {
                         let _ = self.assets.discard_stage(staged);
@@ -267,19 +285,7 @@ where
             .unwrap_or(&candidate.route_id.0)
             .to_owned();
         let operation_id = new_operation_id();
-        let mut staged_assets = Vec::with_capacity(assets.len());
-        for asset in &assets {
-            match self.assets.stage(&asset.path, asset.role, &operation_id) {
-                Ok(staged) => staged_assets.push(staged),
-                Err(error) => {
-                    for staged in &staged_assets {
-                        let _ = self.assets.discard_stage(staged);
-                    }
-                    let _ = self.assets.complete_operation(&operation_id);
-                    return Err(error.with_operation(operation_id));
-                }
-            }
-        }
+        let staged_assets = self.stage_import_assets(&assets, &operation_id)?;
         let result = self.capture_external(
             operation_id.clone(),
             provider.clone(),
@@ -782,6 +788,7 @@ fn validate_candidate(candidate: &CandidateEnvelope) -> Result<(), ApplicationEr
             | "source.yuque"
             | "source.wechat_articles"
             | "source.evernote"
+            | "source.onenote"
             | "source.browser_pages"
             | "source.browser_bookmarks"
     ) {
@@ -813,6 +820,11 @@ fn validate_candidate(candidate: &CandidateEnvelope) -> Result<(), ApplicationEr
         {
             return Err(ApplicationError::Conflict(
                 "Evernote candidates must declare archive or document content".to_owned(),
+            ));
+        }
+        "source.onenote" if candidate.content_type != ContentType::Archive => {
+            return Err(ApplicationError::Conflict(
+                "OneNote paired-export candidates must declare archive content".to_owned(),
             ));
         }
         _ => {}
@@ -1618,6 +1630,7 @@ pub(crate) mod tests {
                 assets: vec![crate::CaptureImportAsset {
                     path: "source.docx".to_owned(),
                     role: AssetRole::Original,
+                    expected_sha256: None,
                 }],
                 reason: "recover source".to_owned(),
                 metadata: Metadata::parse(r#"{"route":"fixture"}"#).unwrap(),
@@ -1636,6 +1649,41 @@ pub(crate) mod tests {
         let attachment = &outcome.record.unwrap().asset_attachments[0];
         assert_eq!(attachment.reason, "recover source");
         assert_eq!(attachment.metadata.to_json(), r#"{"route":"fixture"}"#);
+    }
+
+    #[test]
+    fn expected_import_asset_hash_is_checked_before_persistence() {
+        let repository = MockRepository::default();
+        let assets = MockAssets::default();
+        let parent = CaptureService::new(repository.clone(), assets.clone(), FixedClock)
+            .capture_text(text("fixture", "existing source text"))
+            .unwrap();
+        let service = CaptureService::new(repository.clone(), assets.clone(), FixedClock);
+
+        let error = service
+            .attach_recovered_assets(AttachRecoveredAssetsCommand {
+                revision_id: parent.revision_id,
+                assets: vec![crate::CaptureImportAsset {
+                    path: "changed-source.docx".to_owned(),
+                    role: AssetRole::Original,
+                    expected_sha256: Some(Sha256::of_bytes(b"expected source bytes")),
+                }],
+                reason: "recover source".to_owned(),
+                metadata: Metadata::empty(),
+            })
+            .unwrap_err();
+
+        assert!(error.to_string().contains("expected source hash"));
+        assert_eq!(*assets.staged.lock().unwrap(), 1);
+        assert_eq!(*assets.discarded.lock().unwrap(), 1);
+        assert!(
+            repository
+                .state
+                .lock()
+                .unwrap()
+                .asset_attachments
+                .is_empty()
+        );
     }
 
     #[test]
@@ -1695,6 +1743,7 @@ pub(crate) mod tests {
                     assets: vec![crate::CaptureImportAsset {
                         path: "source.docx".to_owned(),
                         role: AssetRole::Original,
+                        expected_sha256: None,
                     }],
                     reason: "recover source".to_owned(),
                     metadata: Metadata::empty(),
@@ -2036,6 +2085,28 @@ pub(crate) mod tests {
         candidate.content_type = ContentType::Document;
         assert!(validate_candidate(&candidate).is_ok());
         candidate.content_type = ContentType::WebPage;
+        assert!(validate_candidate(&candidate).is_err());
+    }
+
+    #[test]
+    fn onenote_candidate_is_limited_to_archive_content() {
+        let payload = "OneNote paired export fixture";
+        let mut candidate = CandidateEnvelope {
+            protocol_version: "1".to_owned(),
+            route_id: SourceRouteId("source.onenote".to_owned()),
+            source_reference: "pair:C:/recovery/fixture.mht|C:/recovery/fixture.pdf".to_owned(),
+            content_type: ContentType::Archive,
+            payload_sha256: Sha256::of_bytes(payload.as_bytes()),
+            metadata: Metadata::empty(),
+            payload: CandidatePayload::Text {
+                text: payload.to_owned(),
+            },
+            context: Some("one explicit paired export".to_owned()),
+            native_id: Some("pair:fixture".to_owned()),
+            common_metadata: CommonSourceMetadata::default(),
+        };
+        assert!(validate_candidate(&candidate).is_ok());
+        candidate.content_type = ContentType::Document;
         assert!(validate_candidate(&candidate).is_err());
     }
 }
