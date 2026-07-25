@@ -859,6 +859,18 @@ Issue #90 完成第五个 P7 切片：先沿 00→05 权威链确定只有一个
 5. Skill 格式、三个隔离只读 forward tests、确定性检查与三项负向变异，以及 Rust/文档/
    架构/数据根门禁全部通过；不提前宣称 P7、AC-09 或 TC-09 整体通过。
 
+Issue #92 完成第六个 P7 切片：在唯一 `babata-collect` 内扩展豆包 recipe 和现有窄 adapter，
+不创建平台专用 Skill，也不触发 C1。Agent 一次展开真实历史并排除用户指定的超大主会话，
+40 个明确候选分成两个 20 条 Collector session；结果为 18+20 saved，2 条因
+`HasMore=true` 在残缺 C0 写入前失败。38 个保存项逐 item 重采全部 `unchanged`、0 新 revision；
+活动库从 199 items/202 revisions 增至 233/240，C1 仍为 17 runs/16 derivatives，schema v7、
+quick check、外键及 pending/quarantine/journal/orphan 全部正常。新增 34 items 与 38 revisions
+的差额来自 4 个已有 v1 item 首次迁移到 v2 稳定指纹的一次性归一化历史，不记作来源内容
+变化。两批收集 408.53 秒、重采 458.27 秒，下一切片若提速只复用浏览器/捕获生命周期，
+不合并逐会话 C0 事务或完整性判断。该切片启用 `source.doubao` 的正常文本批次；普通媒体/
+附件形态、真实取消、多个外围入口对照和模型建议越权测试仍未完成，P7/AC-09/TC-09 不提前
+宣告完成。
+
 P7 主要交付 AC-09 和 TC-09。
 
 ## 11. P8：备份、恢复、运维与长期加固

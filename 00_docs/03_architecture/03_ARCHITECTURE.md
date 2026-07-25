@@ -241,6 +241,12 @@ revision；`changed` 只创建一个新 revision，并由同一次 capture obser
 先由 Agent 按真实证据执行，也可以调用已有 adapter；两者最终都必须经 Rust application/core
 进入同一 C0。任何 recipe 都不得调用 Process 作为收集完成条件。
 
+路线治理按稳定、准确、真实、速度排序。前三项由真实数据和重采证据证明后，recipe 记录
+耗时与唯一主要瓶颈，并删除没有失败证据支撑的并行猜测路线。允许在 acquisition 层复用
+浏览器会话、页面导航或网络捕获生命周期；`CollectorItem`/候选仍是完整性判断、失败隔离、
+C0 事务和重采的最小边界。整批 convenience command 不能成为一个外部抖动中断全部验证的
+故障边界。
+
 应用层的最小内部请求/结果概念如下，名称可以随实现演化，但责任不能越界：
 
 ```text

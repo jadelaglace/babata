@@ -411,11 +411,20 @@ Issue #60 的测试是 AC-07/TC-07 前置机制证据，不是检索产品验收
    `source.onenote` recipe，不出现新的用户级 Skill。
 9. 扫描 Skill 流程和 forward-test 记录，确认成功终点只有统一 C0 回读，没有 Process/C1
    命令、第二 writer 或“临时拿回即正式登记”的伪成功。
+10. 在已登录豆包历史中一次发现明确数量范围，排除用户指定的超大主会话，将约 40 条拆成
+    不超过 20 条的显式批次；验证分页不完整项不写 C0，保存项逐 item 重采，一个外部命令
+    失败不终止其余 item。记录收集/重采耗时并确认提速方案不放松逐项事务与完整性判断。
 
 预期：所有入口调用同一核心结果；unavailable 不伪成功；已确认范围内不因反复人工确认
 中断，取消后范围不扩张；未确认越界自动化被拒绝；外围无第二权威写入；Skill 测试不
 替代底层能力测试。用户只需要一个收集 Skill；route/recipe、adapter 和 case 保持内部责任，
 同一来源的新内容形态不会制造新的用户入口，收集不触发 C1。
+
+豆包批量补充结果（Issue #92）：40 个真实候选分两批执行，38 saved、2 个因
+`HasMore=true` 诚实拒绝；38/38 逐 item 重采 `unchanged`、0 新 revision，C1 不变。数据库
+新增 34 items/38 revisions，4 个差额经旧新 payload 对照确认为 v1→v2 稳定指纹一次性归一化，
+不是来源内容变化。该实测同时证明整批重采不是合适的外部故障边界；Skill 已固定单 item
+隔离和一次定向重试，并把唯一后续提速目标限制为复用浏览器/捕获生命周期。
 
 状态（2026-07-25）：TC-09 部分执行，尚未整体通过。Issue #82 完成首个 extra-source 与底层
 能力前置：真实 `.notes` 在隔离库和活动库均发现 `1 batch + 163 notes`；活动库 164/164
@@ -559,5 +568,5 @@ Skill 只有在对应本地能力的 TC 已通过后才激活。Skill 测试验�
 
 `check-collection-skill.ps1` 固定验证 `babata-collect` 是唯一总收集入口、OneNote/Evernote/
 豆包状态与来源 recipe 一致、Collector/取消/重采命令存在、三层汇报完整且没有可执行的
-Process/Knowledge 命令。`test-collection-skill.ps1` 必须证明将豆包伪改为 enabled、删除无 C1
-边界或追加 `babata process` 命令都会失败。
+Process/Knowledge 命令。`test-collection-skill.ps1` 必须证明将已实证的豆包伪降为 disabled、
+删除分页不完整拒绝或逐 item 故障隔离、删除无 C1 边界或追加 `babata process` 命令都会失败。

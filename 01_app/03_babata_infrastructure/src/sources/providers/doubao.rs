@@ -1,4 +1,4 @@
-use std::process::Command;
+use std::{collections::HashSet, process::Command};
 
 use babata_application::{
     AcquisitionOutcome, ApplicationError, DiscoveredCandidate, ports::SourceAdapterPort,
@@ -17,6 +17,7 @@ const ADAPTER_VERSION: &str = "opencli-doubao/2";
 #[derive(Debug, PartialEq, Eq)]
 enum DoubaoScope {
     Recent(usize),
+    Conversations(Vec<String>),
     Conversation(String),
 }
 
@@ -28,8 +29,8 @@ impl SourceAdapterPort for DoubaoOpenCliAdapter {
         SourceRouteDescriptor {
             id: SourceRouteId(ROUTE_ID.to_owned()),
             provider: "doubao".to_owned(),
-            status: CapabilityStatus::Disabled,
-            activation_phase: "P4".to_owned(),
+            status: CapabilityStatus::Enabled,
+            activation_phase: "P7".to_owned(),
         }
     }
 
@@ -40,36 +41,20 @@ impl SourceAdapterPort for DoubaoOpenCliAdapter {
     ) -> Result<Vec<DiscoveredCandidate>, ApplicationError> {
         let limit = match parse_scope(source_reference)? {
             DoubaoScope::Conversation(conversation_id) => {
-                let title = format!("Doubao conversation {conversation_id}");
-                return Ok(vec![DiscoveredCandidate {
-                    summary: CandidateSummary {
-                        candidate_id: format!("doubao_{conversation_id}"),
-                        session_id: session_id.clone(),
-                        route_id: SourceRouteId(ROUTE_ID.to_owned()),
-                        source_native_id: Some(conversation_id.clone()),
-                        title: Some(title.clone()),
-                        source_location: Some(format!(
-                            "https://www.doubao.com/chat/{conversation_id}"
-                        )),
-                        hierarchy: vec![
-                            "Doubao".to_owned(),
-                            "Explicit conversation".to_owned(),
-                            title,
-                        ],
-                        content_type: ContentType::Document,
-                        source_updated_at: None,
-                        attachment_available: None,
-                        limitations: vec![
-                        "the conversation was explicitly discovered in the signed-in Chrome sidebar"
-                            .to_owned(),
-                        "history metadata does not declare message attachments".to_owned(),
-                    ],
-                        selection_capabilities: vec!["single".to_owned(), "explicit_id".to_owned()],
-                        common_metadata: babata_domain::CommonSourceMetadata::default(),
-                    }
-                    .with_common_from_legacy(),
-                    prefetched: None,
-                }]);
+                return Ok(vec![explicit_candidate(
+                    session_id,
+                    conversation_id,
+                    "Explicit conversation",
+                    "single",
+                )]);
+            }
+            DoubaoScope::Conversations(conversation_ids) => {
+                return Ok(conversation_ids
+                    .into_iter()
+                    .map(|conversation_id| {
+                        explicit_candidate(session_id, conversation_id, "Explicit batch", "batch")
+                    })
+                    .collect());
             }
             DoubaoScope::Recent(limit) => limit,
         };
@@ -257,16 +242,78 @@ fn parse_scope(source_reference: &str) -> Result<DoubaoScope, ApplicationError> 
         }
         return Ok(DoubaoScope::Recent(limit));
     }
+    if let Some(raw) = source_reference.strip_prefix("conversations:") {
+        let conversation_ids = raw
+            .split(',')
+            .map(str::trim)
+            .map(str::to_owned)
+            .collect::<Vec<_>>();
+        if !(1..=20).contains(&conversation_ids.len()) {
+            return Err(ApplicationError::Conflict(
+                "Doubao explicit batch must contain between 1 and 20 conversation IDs".to_owned(),
+            ));
+        }
+        if conversation_ids
+            .iter()
+            .any(|conversation_id| !is_conversation_id(conversation_id))
+        {
+            return Err(ApplicationError::Conflict(
+                "Doubao explicit batch contains an invalid conversation ID".to_owned(),
+            ));
+        }
+        let unique = conversation_ids.iter().collect::<HashSet<_>>();
+        if unique.len() != conversation_ids.len() {
+            return Err(ApplicationError::Conflict(
+                "Doubao explicit batch contains duplicate conversation IDs".to_owned(),
+            ));
+        }
+        return Ok(DoubaoScope::Conversations(conversation_ids));
+    }
     if let Some(conversation_id) = source_reference.strip_prefix("conversation:")
-        && conversation_id.len() >= 8
-        && conversation_id.bytes().all(|byte| byte.is_ascii_digit())
+        && is_conversation_id(conversation_id)
     {
         return Ok(DoubaoScope::Conversation(conversation_id.to_owned()));
     }
     Err(ApplicationError::Conflict(
-        "Doubao scope must be recent:<count> or conversation:<id>; account-wide all is never implicit"
+        "Doubao scope must be recent:<count>, conversation:<id>, or conversations:<id,...>; account-wide all is never implicit"
             .to_owned(),
     ))
+}
+
+fn is_conversation_id(value: &str) -> bool {
+    value.len() >= 8 && value.bytes().all(|byte| byte.is_ascii_digit())
+}
+
+fn explicit_candidate(
+    session_id: &CollectionSessionId,
+    conversation_id: String,
+    hierarchy_scope: &str,
+    selection_kind: &str,
+) -> DiscoveredCandidate {
+    let title = format!("Doubao conversation {conversation_id}");
+    DiscoveredCandidate {
+        summary: CandidateSummary {
+            candidate_id: format!("doubao_{conversation_id}"),
+            session_id: session_id.clone(),
+            route_id: SourceRouteId(ROUTE_ID.to_owned()),
+            source_native_id: Some(conversation_id.clone()),
+            title: Some(title.clone()),
+            source_location: Some(format!("https://www.doubao.com/chat/{conversation_id}")),
+            hierarchy: vec!["Doubao".to_owned(), hierarchy_scope.to_owned(), title],
+            content_type: ContentType::Document,
+            source_updated_at: None,
+            attachment_available: None,
+            limitations: vec![
+                "the conversation was explicitly discovered in the signed-in Chrome sidebar"
+                    .to_owned(),
+                "history metadata does not declare message attachments".to_owned(),
+            ],
+            selection_capabilities: vec![selection_kind.to_owned(), "explicit_id".to_owned()],
+            common_metadata: babata_domain::CommonSourceMetadata::default(),
+        }
+        .with_common_from_legacy(),
+        prefetched: None,
+    }
 }
 
 fn doubao_content_fingerprint(
@@ -396,7 +443,10 @@ fn unix_seconds_timestamp(
 
 #[cfg(test)]
 mod tests {
-    use super::{DoubaoScope, doubao_content_fingerprint, parse_scope};
+    use babata_application::ports::SourceAdapterPort;
+    use babata_domain::CapabilityStatus;
+
+    use super::{DoubaoOpenCliAdapter, DoubaoScope, doubao_content_fingerprint, parse_scope};
     use serde_json::json;
 
     #[test]
@@ -407,11 +457,39 @@ mod tests {
             parse_scope("conversation:38434881297298946").unwrap(),
             DoubaoScope::Conversation("38434881297298946".to_owned())
         );
+        assert_eq!(
+            parse_scope("conversations:38434881297298946,38435737678224898").unwrap(),
+            DoubaoScope::Conversations(vec![
+                "38434881297298946".to_owned(),
+                "38435737678224898".to_owned(),
+            ])
+        );
         assert!(parse_scope("recent:0").is_err());
         assert!(parse_scope("recent:21").is_err());
+        assert!(parse_scope("conversations:").is_err());
+        assert!(parse_scope("conversations:38434881297298946,,38435737678224898").is_err());
+        assert!(parse_scope("conversations:38434881297298946,not-an-id").is_err());
+        assert!(parse_scope("conversations:38434881297298946,38434881297298946").is_err());
+        assert!(
+            parse_scope(&format!(
+                "conversations:{}",
+                (0..21)
+                    .map(|index| format!("{index:08}"))
+                    .collect::<Vec<_>>()
+                    .join(",")
+            ))
+            .is_err()
+        );
         assert!(parse_scope("conversation:1234567").is_err());
         assert!(parse_scope("conversation:not-an-id").is_err());
         assert!(parse_scope("all").is_err());
+    }
+
+    #[test]
+    fn route_is_enabled_after_real_bounded_batch_evidence() {
+        let descriptor = DoubaoOpenCliAdapter.describe();
+        assert_eq!(descriptor.status, CapabilityStatus::Enabled);
+        assert_eq!(descriptor.activation_phase, "P7");
     }
 
     #[test]

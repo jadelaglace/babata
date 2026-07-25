@@ -37,11 +37,27 @@ try {
     New-Item -ItemType Directory -Path $tempRoot | Out-Null
     & $checker -SkillRoot $sourceSkill | Out-Null
 
-    Assert-CheckerFails -Name 'doubao-falsely-enabled' -ExpectedMessage 'disabled Doubao route' -Mutate {
+    Assert-CheckerFails -Name 'doubao-falsely-disabled' -ExpectedMessage 'enabled Doubao route' -Mutate {
         param($caseRoot)
         $path = Join-Path $caseRoot 'references\route-catalog.md'
         $text = Get-Content -Raw -Encoding utf8 -LiteralPath $path
-        $text = $text -replace '(?m)^(\| `source\.doubao` \|.*\| )disabled( \|.*)$', '${1}enabled${2}'
+        $text = $text -replace '(?m)^(\| `source\.doubao` \|.*\| )enabled( \|.*)$', '${1}disabled${2}'
+        Set-Content -Encoding utf8 -LiteralPath $path -Value $text
+    }
+
+    Assert-CheckerFails -Name 'doubao-allows-incomplete-pagination' -ExpectedMessage 'incomplete-pagination refusal' -Mutate {
+        param($caseRoot)
+        $path = Join-Path $caseRoot 'references\source-doubao.md'
+        $text = Get-Content -Raw -Encoding utf8 -LiteralPath $path
+        $text = $text.Replace('`HasMore=true`', '`pagination flag`')
+        Set-Content -Encoding utf8 -LiteralPath $path -Value $text
+    }
+
+    Assert-CheckerFails -Name 'doubao-loses-item-isolation' -ExpectedMessage 'per-item recollection boundary' -Mutate {
+        param($caseRoot)
+        $path = Join-Path $caseRoot 'references\source-doubao.md'
+        $text = Get-Content -Raw -Encoding utf8 -LiteralPath $path
+        $text = $text.Replace('recollect --item <item_id>', 'recollect-session --session <session_id>')
         Set-Content -Encoding utf8 -LiteralPath $path -Value $text
     }
 
