@@ -10,7 +10,9 @@ batches of 1-20 conversation IDs. Runtime capability remains authoritative.
 - `conversation:<id>` collects one explicit conversation. `conversations:<id>,<id>,...` discovers
   1-20 explicit conversations in one Collector session. `all` is rejected.
 - Two live batches containing 40 non-main conversations produced 38 formal C0 results. Two long
-  conversations returned `HasMore=true` and were honestly rejected before any incomplete C0 write.
+  conversations initially returned `HasMore=true` and were honestly rejected before any incomplete
+  C0 write. A later authorised Chrome-native run completed them as 3 pages / 60 messages and
+  2 pages / 25 messages, with unique message IDs and `has_more=false` on both final pages.
 - All 38 saved items were recollected individually as `unchanged`, with no new revision and no C1.
 - The complex conversation “战略领导力W1” also has seven verified original DOCX attachments and one
   PDF preview in C0. Other attachment and media shapes remain unproven.
@@ -30,6 +32,12 @@ batches of 1-20 conversation IDs. Runtime capability remains authoritative.
 
 4. Inspect candidates, select the batch once, and report each `saved` or `failed` result. A response
    with incomplete message pagination must fail closed; never trim it into a plausible transcript.
+   For a long conversation, prefer direct control of the user's signed-in desktop Chrome. Observe
+   `/im/chain/single`, then follow the official descending `anchor_index` requests until
+   `has_more=false`; verify conversation identity and unique message IDs before C0. Preserve the
+   complete structured JSON in Recovery, then call Rust `capture file` exactly once with a distinct
+   identity such as `doubao:<conversation_id>`. Do not route through the unauthenticated in-app
+   browser, and do not wait on OpenCLI when desktop Chrome is already available.
 5. Recollect every saved `item_id` with `babata --json collector recollect --item <item_id>`. Keep
    failure isolation at one item and retry a transient command failure once. Do not let one OpenCLI
    failure stop checks for the rest of the batch.
@@ -41,19 +49,22 @@ batches of 1-20 conversation IDs. Runtime capability remains authoritative.
   relevant source payload and limitations without treating unstable delivery fields as content.
 - Treat `HasMore=true` as incomplete pagination and write no C0 for that candidate.
 - Do not call C1 or interpret the conversation. Collection ends after formal C0 and readback.
+- Never use a second `capture file` import as recollection: it creates an import revision even when
+  the JSON bytes are unchanged. Use the Collector's typed recollection path only after that path can
+  consume the same Chrome-native complete read; otherwise report recollection as pending.
 - Before changing fingerprint logic, test old and new payloads against existing C0. An algorithm
   upgrade must not silently claim source content changed. Use an explicit compatibility/migration
   decision and report any one-time normalisation revision separately from real source revisions.
 
 ## Speed Rule
 
-Optimise only after stable, accurate, and real collection pass. The measured bottleneck is repeated
-OpenCLI navigation and network-capture setup for each conversation. The one next optimisation is to
-reuse a browser/capture lifecycle across a batch while preserving per-conversation completeness
-checks, C0 transactions, provenance, and failure isolation. Do not add parallel speculative routes.
+Optimise only after stable, accurate, and real collection pass. Time is the fourth hard metric.
+Reuse the already signed-in desktop Chrome tab and its native network lifecycle across a batch;
+do not spend time planning parallel routes after the page contract is proven. Preserve
+per-conversation completeness checks, distinct C0 identities, provenance, and failure isolation.
 
 ## Remaining Limits
 
-Normal conversation text batches are enabled. The two conversations rejected for incomplete
-pagination remain uncollected until a complete-page route succeeds. Ordinary images, audio, quoted
-pages, and non-DOCX attachments need their own real shape evidence before the recipe claims them.
+Normal conversation text batches and the two authorised long conversations are in C0. Typed
+recollection for Chrome-native long reads remains pending; ordinary images, audio, quoted pages,
+and non-DOCX attachments need their own real shape evidence before the recipe claims them.
