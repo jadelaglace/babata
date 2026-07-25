@@ -15,7 +15,9 @@ batches of 1-20 conversation IDs. Runtime capability remains authoritative.
   2 pages / 25 messages, with unique message IDs and `has_more=false` on both final pages.
 - All 38 saved items were recollected individually as `unchanged`, with no new revision and no C1.
 - The complex conversation “战略领导力W1” also has seven verified original DOCX attachments and one
-  PDF preview in C0. Other attachment and media shapes remain unproven.
+  PDF preview in the formal C0. A later temporary-root exercise proved a fresh Chrome-native handoff
+  can collect the same 16-message conversation with exactly the seven originals and typed-recollect
+  a refreshed equivalent handoff as `unchanged`. Other attachment and media shapes remain unproven.
 
 ## Batch Workflow
 
@@ -34,11 +36,27 @@ batches of 1-20 conversation IDs. Runtime capability remains authoritative.
    with incomplete message pagination must fail closed; never trim it into a plausible transcript.
    For a long conversation, prefer direct control of the user's signed-in desktop Chrome. Observe
    `/im/chain/single`, then follow the official descending `anchor_index` requests until
-   `has_more=false`; verify conversation identity and unique message IDs before C0. Preserve the
-   complete structured JSON in Recovery, then call Rust `capture file` exactly once with a distinct
-   identity such as `doubao:<conversation_id>`. Do not route through the unauthenticated in-app
-   browser, and do not wait on OpenCLI when desktop Chrome is already available.
-5. Recollect every saved `item_id` with `babata --json collector recollect --item <item_id>`. Keep
+   `has_more=false`; verify conversation identity and unique message IDs before C0. For original
+   DOCX files, open Doubao Drive and locate the same filename; use the file-row `下载` action, not a
+   document preview export. Build one local acquisition handoff containing the structured response
+   and every declared original's path, size, MD5, and SHA-256, then start with:
+
+   ```text
+   babata --json collector start --route source.doubao --source conversation:<id> --scope <scope> --authorisation <reference> --acquisition-handoff <handoff.json>
+   ```
+
+   Select with `--attachments --confirm`. Missing, mismatched, or changed originals must fail before
+   C0. If attachments were requested and the OpenCLI fallback reports nonzero attachment keys,
+   reject the fallback before C0 and require a Chrome-native handoff. Do not route through the
+   unauthenticated in-app browser, and do not wait on OpenCLI when desktop Chrome is already
+   available.
+5. Recollect every saved `item_id` with a newly captured equivalent handoff:
+
+   ```text
+   babata --json collector recollect --item <item_id> --acquisition-handoff <fresh-handoff.json>
+   ```
+
+   Expect `unchanged` and no new revision. Keep
    failure isolation at one item and retry a transient command failure once. Do not let one OpenCLI
    failure stop checks for the rest of the batch.
 
@@ -65,6 +83,8 @@ per-conversation completeness checks, distinct C0 identities, provenance, and fa
 
 ## Remaining Limits
 
-Normal conversation text batches and the two authorised long conversations are in C0. Typed
-recollection for Chrome-native long reads remains pending; ordinary images, audio, quoted pages,
-and non-DOCX attachments need their own real shape evidence before the recipe claims them.
+Normal conversation text batches and the two authorised long conversations are in C0. Chrome-native
+typed recollection with original attachments is proven only for the W1 seven-DOCX shape; ordinary
+images, audio, quoted pages, and non-DOCX attachments need their own real shape evidence before the
+recipe claims them. W1 already exists in formal Babata, so future exercises use a temporary data root
+and stop once the loop passes.

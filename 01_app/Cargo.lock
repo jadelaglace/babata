@@ -142,6 +142,7 @@ dependencies = [
  "hmac",
  "lopdf",
  "mailparse",
+ "md-5",
  "mime_guess",
  "quick-xml",
  "rusqlite",

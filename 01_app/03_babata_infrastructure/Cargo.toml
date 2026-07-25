@@ -20,6 +20,7 @@ cbc = { version = "0.1", features = ["alloc", "block-padding"] }
 hmac = "0.12"
 lopdf = { version = "0.38", default-features = false }
 mailparse = "0.16"
+md-5 = "0.10"
 mime_guess = "2.0"
 quick-xml = { version = "0.38", features = ["serialize"] }
 rusqlite = { version = "0.37", features = ["bundled"] }

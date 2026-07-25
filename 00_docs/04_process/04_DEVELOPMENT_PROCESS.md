@@ -871,6 +871,14 @@ quick check、外键及 pending/quarantine/journal/orphan 全部正常。新增 
 附件形态、真实取消、多个外围入口对照和模型建议越权测试仍未完成，P7/AC-09/TC-09 不提前
 宣告完成。
 
+Issue #96 完成 P7.8 高难样本练手，但不重复写正式活动数据：在新的 acquisition 临时目录和
+全新 `BABATA_DATA_HOME` 中，用登录态 Chrome 重新取得“战略领导力W1”的 16 条消息、
+`has_more=false` 与 7 个 DOCX 元数据；原件经大小、MD5、SHA-256 和 DOCX 结构校验后通过
+`--acquisition-handoff` 进入统一 Collector，结果为 1 saved item、1 ready revision、7 original
+assets。刷新页面生成新的 handoff 后，typed recollection 为 `unchanged`、0 新 revision；缺附件
+和篡改字节均在 C0 前失败，最终 metadata 无临时路径，C1 未启动。此切片把 Chrome 取得与
+后续独立 select/recollect 接上，不把 W1 再记作一次正式取回，也不继续围绕该样本扩展范围。
+
 P7 主要交付 AC-09 和 TC-09。
 
 ## 11. P8：备份、恢复、运维与长期加固
