@@ -106,6 +106,9 @@ Babata 整体完成。没有真实资料参与的骨架、夹具或空接口，�
    不会被表现成完整原件。
 6. 对来源同时提供上传源文件和平台预览/转码件的样本，用户能够分辨二者；源文件可取得时
    实际保存源文件，预览 PDF、转码媒体或截图不会被标成源文件或用于冒充附件完整。
+7. 一个明确来源范围在原件、上下文和限制进入统一 C0 后即可独立显示收集完成，零项 C1
+   不会阻塞或降级该结果；以后产生的 C1 引用具体 C0 输入，但来源收集器不拥有或强制触发
+   一条平台专属 C1 链路。
 
 阶段责任：P3 建立 C0/first-party 底座；P5 证明真实 C0 输入、独立 C1、删除/重建 C1
 不改变 C0（TC-03A）；P6 证明用户可见的 C0/C1/C2 辨别、C2 删除重建与子库/视图边界
@@ -259,6 +262,12 @@ export，重采 6/6 unchanged。已知重叠对子只产生两条非事实提示
 路线的 CLI 与 local API session 操作共用同一 service，外围无 SQLite 或最终资产写入。正式
 Skill、Agent 取消/越界、unavailable Skill 对照和模型建议越权测试仍未完成，因此不能把这些
 底层来源证据写成 AC-09 通过。
+
+Issue #88 又完成一个 `source.doubao` 明确范围的 C0 收尾：复杂 W1 会话剩余 6 个已校验
+DOCX 经通用 Rust application/core 附加到既有 ready revision；最终 7 个 DOCX original 与
+1 个 PDF preview 均可回看，正文 revision、relation、observation 和 C1 不变。这证明外围
+Agent 取得的原件能在收集者边界进入统一 C0，不证明豆包正式 Skill/受控 Agent 可用；
+`source.doubao` 继续 disabled，AC-09 仍未整体通过。
 
 ### AC-10：本地权威、数据分级与恢复成立
 

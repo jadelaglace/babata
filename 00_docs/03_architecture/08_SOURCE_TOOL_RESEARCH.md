@@ -80,7 +80,7 @@ P2-G7 的完成口径是：00 点名的来源都有真实调查、证据等级�
 | --- | --- | --- | --- | --- | --- | --- |
 | source.feishu | 飞书文档、Wiki、知识库、云文档 | 官方 `lark-cli` 直接调用，Babata 只包授权、范围选择和结果接入 | 一次飞书应用配置与用户 OAuth；以后选择文档/节点/范围 | E3：10 个根候选和 6 个子候选中选 1 篇，正文/8 PNG、真实 failed 后定向 retry 和 `unchanged` 重采已验证 | 嵌入 Sheet/Base/Slides/画板内部数据及其他文档类型未覆盖 | disabled |
 | source.yuque | 语雀 | Codex Chrome 发现范围，单篇用语雀官方 Markdown 导出端点；整库可用官方 PDF/LakeBook；`yuque-dl` 仅作受控批处理候选 | 登录语雀并选择知识库/文档；会员 API/MCP 暂不启用，不要求手抄会话 Token | E3：8 个真实候选选 1 篇，官方 Markdown、22 张图片、C0 和 `unchanged` 重采已验证 | 整库通用格式、文件/表格/画板/评论未覆盖；OpenAPI/MCP 需要超级会员，留待统一决策 | disabled |
-| source.onenote | OneNote | 官方桌面客户端导出 PDF+MHT 配对或显式 MHT 列表；Rust 窄 adapter 校验每个实际导出，经唯一核心链路保存 C0，并只记录非事实重叠提示 | 客户端已登录；选择明确笔记本/子本范围并完成官方导出 | E3：一对真实 626 页 PDF/MHT 保存为 1 item/2 exports；另有 6 个真实 MHT 各自保存，重采 6/6 unchanged，已知重叠对子无正式 relation | 没有原生 page/section ID；跨导出层级、C1 段落切分/去重、正式 Skill/受控 Agent 未完成 | available |
+| source.onenote | OneNote | 官方桌面客户端导出 PDF+MHT 配对或显式 MHT 列表；Rust 窄 adapter 校验每个实际导出，经唯一核心链路保存 C0，并只记录非事实重叠提示 | 客户端已登录；选择明确笔记本/子本范围并完成官方导出 | E3：一对真实 626 页 PDF/MHT 保存为 1 item/2 exports；另有 6 个真实 MHT 各自保存，重采 6/6 unchanged，已知重叠对子无正式 relation | 没有原生 page/section ID；跨导出来源身份、正式 Skill/受控 Agent 未完成；可选 C1 分段不属于来源缺口 | available |
 | source.evernote | 印象笔记 / Evernote | 官方客户端整库 `.notes` 导出；Babata Rust adapter 逐条认证解密为 ENEX/ENML；网页 DOM 和单篇 MHT 为回退 | 客户端已登录并选择一个明确导出范围；不需要用户密码、Cookie 或第三方账号授权 | E3：真实 78,711,776 字节 `.notes` 的 163 条正文和 349 个资源全部验证；1 batch + 163 notes 全量 C0，164/164 `unchanged` 重采 | `.notes` 没有 note GUID、updated 或笔记本层级；身份限于 immutable export hash + ordinal，跨导出匹配未启用 | available |
 | source.wechat_favorites | 微信收藏 | 官方 PC 微信窄 UI；用户给一次范围后由 Agent 发现可见候选并复制/另存，不使用内存扫描或数据库解密 | 已登录官方 PC 微信；选择当前可见集合、分类或时间范围 | E3：Weixin 4.1.11.55 的“全部收藏”读取 8 个最新可见候选，选 1 篇公众号文章，正文/原链接进入 C0 并 `unchanged` 重采 | 当前只闭合文章类型 1 条；其他收藏类型和账号范围未覆盖 | disabled |
 | source.wechat_articles | 微信公众号文章 | 官方 PC 微信 UI 取得文章或公开 URL；Agent 对 UI 暴露的公共 URL 保存 HTML/媒体并登记，不把公共下载器写成微信历史 CLI | PC 微信已登录并选择文章；公开 URL 无额外授权 | E3：1 篇真实文章保存 2,946 字符结构化正文、2,597 字节 Markdown 和 2,331,350 字节 HTML；首次白名单失败后原 item retry 成功，重采 `unchanged` | 当前样本无正文图片/音视频；批量历史和更多形态未覆盖 | disabled |
@@ -92,7 +92,7 @@ P2-G7 的完成口径是：00 点名的来源都有真实调查、证据等级�
 | source.douyin | 抖音收藏 | 先用通用 Agent 浏览器遍历已登录收藏页面；所选媒体再验证 `F2` 或现有下载器 | Chrome 已登录；首次批准远程调试；给出收藏范围 | E0：错误主路线已撤回，候选路线已核；2026-07-19 用户决定暂时不处理 | 延期到用户重新启用；`F2` 和真实样本均未实证 | disabled |
 | source.browser_bookmarks | 浏览器书签 | 最后单独收集；届时由 Agent 按一次明确文件夹范围读取候选并自动遍历网址、收正文/可得附件；实验性窄扩展冻结 | 暂无；最终收集时给出文件夹或集合范围一次 | E1：扩展候选、loopback 和唯一 C0 writer 机制已验证；正式 Chrome 证明当前实现只会手动提交 locator | 延到所有点名来源之后；缺 Agent 自动遍历正文、附件、逐条状态和新鲜重采 | disabled |
 | source.browser_pages | 浏览器当前页面、选区和网页收藏 | 当前存量由 Codex Chrome 自主导航和读取；未来快速剪藏入口仅作低优先级补充，保真页面再评估 SingleFile | 给出页面/站点范围一次 | E1：实验性扩展与 loopback 机制已验证，但正式 Chrome 仍要求用户逐项点击 | 手动剪藏器已冻结；缺 Agent 自主批量范围、附件、保真页面和新鲜重采 | disabled |
-| source.doubao | 豆包对话 | Codex Chrome 遍历历史；OpenCLI 薄命令只固化已证明的详情读取和任务外重采 | Chrome 已登录；给出会话、时间或数量范围 | E3：20 个真实候选选 1，正文、逐条状态、C0 和 `unchanged` 重采已验证 | 二进制媒体未闭合 | disabled |
+| source.doubao | 豆包对话 | Codex Chrome 遍历历史；OpenCLI 薄命令只固化已证明的详情读取和任务外重采 | Chrome 已登录；给出会话、时间或数量范围 | E3：20 个真实候选选 1，正文、逐条状态、C0 和 `unchanged` 重采已验证；复杂 W1 会话的 7 个原始 DOCX 已全部进入统一 C0 | 只闭合该会话的 DOCX；其他附件/媒体形态、正式 Skill/受控 Agent 和长期重采未完成 | disabled |
 | source.kimi | Kimi 对话 | 当前优先 Codex Chrome 调用 Kimi 结构化历史和会话接口；OpenCLI 薄命令只用于任务外重试/重采 | Chrome 已登录；给出会话、时间或数量范围 | E3：15 个真实候选选 1，结构化消息、逐条状态、C0 和 `unchanged` 重采已验证 | 当前样本无附件；全历史和深研产物未覆盖 | disabled |
 | source.chatgpt | ChatGPT 对话 | 日常范围用 Codex Chrome；OpenCLI 薄命令固化已证明的结构化读取；账号级首次回收可用官方 Data Export | Chrome 已登录；全量时只在 Data Controls 确认 | E3：20 个真实候选选 1，2 条角色消息/10 引用、逐条状态、C0 和 `unchanged` 重采已验证 | 当前样本附件为 0，二进制附件和工作区全量资格未验证 | disabled |
 | source.local_files | 本地文件 | Babata 核心文件选择器、拖放或受控目录扫描直接读取 | 选择文件、目录或明确监视范围 | E2：P3 显式 file/export 已通过唯一 C0 提交、资产哈希、回读和故障补偿 | 缺日常文件选择器/目录候选、逐条状态和重收集 | disabled |
@@ -109,7 +109,7 @@ hash、状态和 staging 管理由 Agent/Babata 自主完成，直到范围结�
 | --- | --- | --- | --- | --- |
 | 飞书 | 已完成官方应用配置和用户 OAuth；过期时重新确认 | 文档、搜索结果、Wiki 节点或明确范围 | 列候选、分页、正文、附件、版本、重收集和状态 | 一次真实正文+附件 E3 样本 |
 | 语雀 | 优先在已登录 Chrome 安装语雀批量扩展；CLI 路线才授权本机会话 | 知识库、文档或全账号 bootstrap | 目录、图片、附件、断点续传、增量和 staging 接入 | 扩展真实样本；禁止让用户手抄 Cookie |
-| OneNote | 官方桌面客户端已登录 | 一个明确笔记本或子本范围 | 取得同次 PDF/MHT，或接收用户明确列出的 MHT 导出；Babata 校验结构和 manifest/hash，分别保存实际原件，并仅把确定性重叠作为非事实证据 | 已实跑一对 626 页 PDF/MHT 和 6 个显式 MHT；还缺跨导出层级确认、C1 切分/去重和正式 Skill/Agent |
+| OneNote | 官方桌面客户端已登录 | 一个明确笔记本或子本范围 | 取得同次 PDF/MHT，或接收用户明确列出的 MHT 导出；Babata 校验结构和 manifest/hash，分别保存实际原件，并仅把确定性重叠作为非事实证据 | 已实跑一对 626 页 PDF/MHT 和 6 个显式 MHT；来源侧还缺跨导出身份确认和正式 Skill/Agent，可选 C1 切分/去重独立处理 |
 | Evernote | 官方客户端已登录 | 一个明确 `.notes` 导出文件 | Rust adapter 验证原件 hash，生成解密 ENEX，列出 batch/note 候选并经核心提交 C0 | 已实跑 163 notes/349 resources；跨导出匹配未覆盖 |
 | 微信收藏 | PC 微信登录并打开收藏 | 当前可见集合、分类或时间范围 | Agent 操作官方 UI 枚举、复制、另存和附件下载 | 文章类型已闭合 1 条；还缺其他收藏类型 |
 | 公众号文章 | 单篇无授权；批量历史时扫码登录自己的公众号后台 | 链接、公众号、合集或文章范围 | 已知 URL 的正文、Markdown/HTML、可得媒体和重收集 | 单篇已闭合；还缺带媒体样本、批量历史和更多形态 |
@@ -371,8 +371,9 @@ MIME 结构、PDF 页数/版式/生成器和互补角色；没有 adapter cache�
 `BABATA_EVIDENCE_HOME/runs/p7-2-onenote-20260725-071439/`，不进入 Git。
 
 决策：**官方桌面整本 PDF + MHT 是同一来源的互补表示；停止继续调研 Graph/第三方 CLI**。
-基于上述 E3，`source.onenote` 现为 `enabled`。跨导出匹配、C1 逐页切分、正式 Skill 和
-受控 Agent 仍未完成；该切片不代表 P7、AC-09 或 TC-09 整体通过。
+基于上述 E3，`source.onenote` 现为 `enabled`。来源侧仍缺跨导出匹配、正式 Skill 和受控
+Agent；可选 C1 逐页切分是收集结束后独立消费 C0 的通用处理，不是来源缺口或启用条件。
+该切片不代表 P7、AC-09 或 TC-09 整体通过。
 
 2026-07-25，Issue #86 处理用户另行导出的六个真实 MHT，其中有的可能是子本。用户同时
 明确 OneNote 会把许多独立内容段放在一起。`OneNoteExportAdapter` 新增
@@ -385,8 +386,9 @@ OneNote generator，记录根 HTML、可见文本、MIME part、原件与批次 
 n-gram 比较只在“灵感消化”与“猫与月季花”之间产生两条双向提示：较小导出的覆盖率为
 100%，较大导出的覆盖率约 95.83%。提示明确保持 `human_judgment=false`、
 `confirmed_fact=false`，没有写 OneNote page/section ID、父子关系或正式 C0 relation。
-这证明 C0 能保留可复算的初步重叠证据，但不能证明哪一个是子本；段落切分、语义去重和
-层级确认仍属于后续 C1。
+这证明 C0 能保留可复算的初步重叠证据，但不能证明哪一个是子本。若以后确有使用需要，
+段落切分、语义去重和层级判断由通用 C1 独立读取这些 C0；它不是 OneNote 收集的后续必经
+步骤，也不影响本次 C0 完成。
 
 隔离库与活动库均保存 6/6，随后同 session 重采 6/6 unchanged、0 新 revision。六份 C0
 资产与 Recovery 原件逐字节 hash 一致；活动库最终为 `7 sources / 199 items / 202 revisions /
@@ -394,8 +396,9 @@ n-gram 比较只在“灵感消化”与“猫与月季花”之间产生两条�
 pending/quarantine/journal/orphan 为 0。旧配对 manifest 继续使用
 `onenote-paired-export/1`，新列表 manifest 独立使用 `onenote-mht-export/1`，避免适配器升级
 让既有配对产生伪 revision。证据位于
-`BABATA_EVIDENCE_HOME/runs/p7-3-onenote-mht-20260725-090516/`。正式 Skill、受控 Agent 与
-C1 分段/层级仍未完成；P7、AC-09、TC-09 不提前标记通过。
+`BABATA_EVIDENCE_HOME/runs/p7-3-onenote-mht-20260725-090516/`。正式 Skill 与受控 Agent
+仍未完成；P7、AC-09、TC-09 不提前标记通过。可选 C1 分段/层级另行立项，不计作
+`source.onenote` 的未完成收集范围。
 
 ### 6.4 Evernote / 印象笔记
 
@@ -737,6 +740,14 @@ OpenCLI 已核到 `doubao history --limit`、`detail <id>`、`read`，以及会�
 限制：当前命令未证明能下载普通对话附件、图片、引用网页和全部历史；需要用真实样本
 补充 DOM/网络附件覆盖，必要时对当前会话追加 SingleFile 页面快照。会议 transcript 可
 下载，但摘要是派生物，不能替代原会话/音频。
+
+真实补充证据（2026-07-25，Issue #88）：Agent 此前已从“战略领导力W1”消息内嵌文件对象
+取得 7 个原始 DOCX，并按消息 MD5、Recovery manifest SHA-256、字节数和 DOCX ZIP 结构
+校验。此前只有“设立目标”DOCX 和一个平台 PDF preview 正式登记；本次通过 Babata 通用
+附件操作把剩余 6 个 DOCX 附加到既有 ready revision。活动库没有新增 item、正文 revision、
+relation、observation 或 C1，W1 最终为 7 个 `original` DOCX 加 1 个 `preview` PDF。该结果
+证明这个明确收集范围已经完整进入统一 C0，不建立或触发豆包专属 C1；它不证明其他附件
+形态、正式 Skill、受控 Agent 或长期重采可用，因此 `source.doubao` 保持 disabled。
 
 决策：**Browser Use/Agent Browser 主导航，OpenCLI 补稳定命令；附件缺口实证后再窄补**。
 

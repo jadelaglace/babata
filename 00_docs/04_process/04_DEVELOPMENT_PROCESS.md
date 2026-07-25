@@ -19,7 +19,7 @@ P6  核心沉淀、检索、子库与输出                      已完成
   P6.1 核心知识沉淀                                 已完成
   P6.2 发现、检索与关系导航                         已完成
   P6.3 子库与输出                                   已完成
-P7  扩展来源、正式 Skill 与受控 Agent               进行中（两个来源、三个切片完成）
+P7  扩展来源、正式 Skill 与受控 Agent               进行中（两个来源启用、四个切片完成）
 P8  备份、恢复、运维与长期加固                      未开始
 ```
 
@@ -31,7 +31,7 @@ P8  备份、恢复、运维与长期加固                      未开始
 <!-- P6.2 preflight: Issue #60 common C0 metadata/observations implemented -->
 <!-- P6.2: completed; AC-07 items 1..4,7 and TC-07 steps 1..4 plus search projection rebuild passed; P6.3 later completed the full AC-07/TC-07 -->
 <!-- P6.3: completed; AC-03, AC-07, AC-08 and TC-03, TC-07, TC-08 passed -->
-<!-- P7: in progress; Issues #82/#84/#86 enabled and extended source.evernote/source.onenote at E3; AC-09 and TC-09 remain incomplete -->
+<!-- P7: in progress; Issues #82/#84/#86 enabled and extended source.evernote/source.onenote at E3; Issue #88 completed one source.doubao C0 asset scope without enabling the source; AC-09 and TC-09 remain incomplete -->
 
 当前真实情况：
 
@@ -46,7 +46,8 @@ P8  备份、恢复、运维与长期加固                      未开始
 - Kimi、豆包、Bilibili、飞书 Docx、ChatGPT、知乎回答、小红书收藏、语雀文档和微信收藏中的公众号文章已分别完成一个真实小范围的候选、明确选择、C0、逐条状态和
   重收集闭环；Bilibili 另把 44,773,539 字节原视频作为 C0 资产保存并复核 SHA-256。
   飞书样本另保存 3,391 字符 XML 正文和 8 张真实 PNG；ChatGPT 样本保存 2 条角色消息和
-  10 个引用。来源仍保持 disabled：Kimi/ChatGPT 当前样本无附件，豆包二进制媒体未闭合，Bilibili 按用户要求只证明一条，飞书嵌入
+  10 个引用。来源仍保持 disabled：Kimi/ChatGPT 当前样本无附件，豆包只闭合一个复杂
+  会话的 7 个 DOCX 原件、其他附件形态与长期执行未闭合，Bilibili 按用户要求只证明一条，飞书嵌入
   Sheet/Base/Slides/画板内部数据仍未覆盖。P4 已按代表性首批路径收尾，不把阶段完成扩大成
   全部点名来源完成或来源 available。
 - P4-G1 至 P4-G6、TC-01 和 TC-02 已通过。P4 完成只证明飞书与正式 Chrome 点名平台的
@@ -64,8 +65,9 @@ P8  备份、恢复、运维与长期加固                      未开始
   完整脑图已拿回，7 个原始 DOCX 共 111,296,956 字节，逐个大小和 MD5 与豆包消息元数据
   一致，并通过 DOCX 结构检查。对话和脑图已正式归档；P5 TC-03A 又把其中“设立目标”的
   原始 DOCX 与平台预览 PDF 作为同一 item 的新 revision 正式登记，分别标为 `original` 和
-  `preview`。其余 6 个 Word 原件仍在 recovery staging，尚未登记为正式附件；该结果仍不冒充
-  全部附件归档或长期自动化。
+  `preview`。Issue #88 随后把其余 6 个 DOCX 通过通用附件操作附加到该 ready revision；
+  全部 7 个原始 DOCX 现已正式进入统一 C0，未新增正文 revision、relation 或 C1。该结果仍
+  不冒充豆包其他附件形态、正式 Skill 或长期自动化完成。
 - PR #22 已在 PRD 加入人话词汇表和三层闭环规则。后续界面和阶段汇报先说明实际拿回内容、
   保存位置和缺口，再按需补充 C0、asset、revision 等工程词。
 - P3 已按蓝图重新审阅 29 个活跃文件：显式 text/file/export 和 first-party
@@ -113,7 +115,8 @@ P8  备份、恢复、运维与长期加固                      未开始
   豆包      20 个真实候选 -> 选 1 条 -> 1 条资料/1 个版本 -> 重采没变化
              -> 另收“战略领导力W1”：16 条消息 + 完整脑图 + 7 个原始 Word
              -> 7 个 Word 共 111.30 MB，大小/MD5/Word 结构均已校验
-             -> 对话和脑图已正式归档；Word 仍在临时回收区，尚未挂为正式附件
+             -> 对话、脑图和 7 个原始 Word 均已正式登记；另保留 1 个平台 PDF 预览
+             -> 补附件没有制造新正文版本，也没有启动清洗
              -> Agent 收集已完成；当前不开发专用适配器，需要重复执行时优先整理 Skill
   Bilibili  20 个真实历史 -> 选 BV1ogzsBFE1T
              -> 正文 + 官方字幕 + 官方摘要 + 44.8 MB 视频
@@ -400,8 +403,11 @@ P4 按 `07_P4_FIRST_COLLECTION_PATHS.md` 实现：
   111,296,956 字节，实际大小和 MD5 均与豆包元数据一致，SHA-256 已记录，DOCX ZIP 中
   `[Content_Types].xml` 和 `word/document.xml` 均存在。文件和 manifest 位于
   `${BABATA_RECOVERY_HOME}/batches/doubao/20260719-w1-complex/`。预览器下载的
-  43 页 PDF 只是豆包转换预览件，不是原件。当前结论分别是：Agent 收集闭环已完成；
-  对话/脑图已正式归档但 7 个 Word 尚未登记为正式附件；长期自动化未完成。
+  43 页 PDF 只是豆包转换预览件，不是原件。Issue #88 复核 Recovery manifest、消息内
+  MD5、SHA-256 和 DOCX 结构后，把此前缺少的 6 个 DOCX 作为 `original` 附加到既有 ready
+  revision。W1 现在有 7 个 DOCX original 和 1 个 PDF preview；正文仍为 2 revisions，
+  attachment operation/member 为 1/6，没有新 relation 或 C1。当前结论分别是：该明确范围的
+  Agent 收集与统一 C0 登记均已完成；豆包其他附件形态和长期自动化未完成。
 - Bilibili：验证根 `p4-bilibili-final-20260718-181500`，20 个观看历史候选中选
   `BV1ogzsBFE1T`，保存元数据、官方字幕、官方 AI 摘要和 44,773,539 字节 MP4；最终
   1 item/1 revision/1 asset，资产 SHA-256 为
@@ -804,8 +810,9 @@ PDF 更接近平台渲染和划分，MHT 更适合图片、文字和格式。真
 活动库由 `6 sources / 192 items / 195 revisions / 358 assets` 变为 `7 / 193 / 196 / 360`，
 relation 仍为 1；OneNote 有 2 次 source observation。两份 C0 资产与 Recovery 原件的字节数和
 SHA-256 完全一致；全库 schema v7、`quick_check=ok`、外键异常和所有
-pending/quarantine/journal/orphan 为 0。`source.onenote` 已启用，但跨导出匹配、C1 切分、
-正式 Skill 和受控 Agent 仍未完成。开发证据位于
+pending/quarantine/journal/orphan 为 0。`source.onenote` 已启用，但跨导出匹配、正式 Skill
+和受控 Agent 仍未完成。这里的跨导出匹配是来源身份缺口；可选 C1 切分是以后
+独立消费 C0 的通用处理，不属于 OneNote 收集缺口或启用条件。开发证据位于
 `BABATA_EVIDENCE_HOME/runs/p7-2-onenote-20260725-071439/`，不是 P8 备份。
 
 同日 Issue #86 完成第三个切片：用户明确给出六个新的 OneNote MHT，并提示其中有子本单独
@@ -819,8 +826,21 @@ pending/quarantine/journal/orphan 为 0。`source.onenote` 已启用，但跨导
 其他四个无提示。活动库最终为 `7 sources / 199 items / 202 revisions / 366 assets / 1 relation /
 342 observations`，schema v7、`quick_check=ok`、外键异常和所有
 pending/quarantine/journal/orphan 为 0。开发证据位于
-`BABATA_EVIDENCE_HOME/runs/p7-3-onenote-mht-20260725-090516/`，不是 P8 备份。C1 段落切分、
-语义去重、层级确认、正式 Skill 和受控 Agent 仍未完成。
+`BABATA_EVIDENCE_HOME/runs/p7-3-onenote-mht-20260725-090516/`，不是 P8 备份。来源侧仍缺
+正式 Skill 和受控 Agent；按需要进行的 C1 段落切分、语义去重和层级判断另行立项，不计作
+本次 OneNote 收集的未完成部分。
+
+同日 Issue #88 完成第四个切片，但不新增豆包专用 adapter。此前 Agent 已从复杂会话“战略
+领导力W1”拿回并校验 7 个原始 DOCX，其中 1 个已正式登记；本切片只把剩余 6 个原件通过
+通用 `capture attach-assets` 操作附加到既有 ready revision。隔离库与活动库都只变化
+`assets`、`asset_attachment_operations`、`asset_attachment_members`；活动库保持
+`7 sources / 199 items / 202 revisions / 1 relation / 342 observations`，资产变为 372，W1
+为 7 个 DOCX original 加 1 个 PDF preview。目标正文 hash、所有既有资产、C1 的 17 个
+process runs/16 个 derivatives 均不变，schema v7、`quick_check=ok`、外键异常和所有
+pending/quarantine/journal/orphan 为 0。证据位于
+`BABATA_EVIDENCE_HOME/runs/p7-4-doubao-w1-assets-20260725-111326/`，不是 P8 备份。
+这证明来源收集可在统一 C0 独立结束，不要求或触发 C1；`source.doubao` 仍保持 disabled，
+直到正式 Skill/受控 Agent 与其他真实附件形态通过自身验收。
 
 对应底层能力通过自己的 AC/TC 后，P2 Skill 规格才转成真实 `SKILL.md`。Agent 默认
 人工触发或确认，批处理携带明确范围，不自动扩张授权或把模型判断升级为事实。
