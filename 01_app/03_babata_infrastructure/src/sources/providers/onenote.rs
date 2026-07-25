@@ -1,5 +1,5 @@
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet, HashSet},
     fs,
     path::{Path, PathBuf},
 };
@@ -16,13 +16,19 @@ use babata_domain::{
 };
 use lopdf::{Document, Object};
 use mailparse::{MailHeaderMap, ParsedMail, parse_mail};
+use scraper::{Html, Selector};
 use serde::Serialize;
 
 const ROUTE_ID: &str = "source.onenote";
-const ADAPTER_VERSION: &str = "onenote-paired-export/1";
+const PAIRED_ADAPTER_VERSION: &str = "onenote-paired-export/1";
+const MHT_EXPORT_ADAPTER_VERSION: &str = "onenote-mht-export/1";
 const MAX_EXPORT_BYTES: u64 = 512 * 1024 * 1024;
 const MAX_MIME_PARTS: usize = 100_000;
 const MAX_PDF_PAGES: usize = 100_000;
+const MAX_MHT_LIST_FILES: usize = 1_000;
+const OVERLAP_NGRAM_CHARS: usize = 12;
+const OVERLAP_THRESHOLD_BASIS_POINTS: u16 = 9_000;
+const MIN_OVERLAP_TEXT_CHARS: usize = 100;
 
 #[derive(Debug, Clone, Default)]
 pub struct OneNoteConfig {
@@ -39,9 +45,9 @@ pub fn descriptor() -> SourceRouteDescriptor {
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct OneNotePairedExportAdapter;
+pub struct OneNoteExportAdapter;
 
-impl SourceAdapterPort for OneNotePairedExportAdapter {
+impl SourceAdapterPort for OneNoteExportAdapter {
     fn describe(&self) -> SourceRouteDescriptor {
         descriptor()
     }
@@ -51,12 +57,19 @@ impl SourceAdapterPort for OneNotePairedExportAdapter {
         session_id: &CollectionSessionId,
         source_reference: &str,
     ) -> Result<Vec<DiscoveredCandidate>, ApplicationError> {
-        let pair = ParsedPair::read(&parse_pair_reference(source_reference)?)?;
-        let envelope = pair.envelope()?;
-        Ok(vec![DiscoveredCandidate {
-            summary: pair.summary(session_id, &envelope),
-            prefetched: Some(envelope),
-        }])
+        match parse_source_scope(source_reference)? {
+            OneNoteSourceScope::Pair(paths) => {
+                let pair = ParsedPair::read(&paths)?;
+                let envelope = pair.envelope()?;
+                Ok(vec![DiscoveredCandidate {
+                    summary: pair.summary(session_id, &envelope),
+                    prefetched: Some(envelope),
+                }])
+            }
+            OneNoteSourceScope::MhtList(paths) => {
+                ParsedMhtBatch::read(paths)?.candidates(session_id)
+            }
+        }
     }
 
     fn collect(
@@ -68,35 +81,45 @@ impl SourceAdapterPort for OneNotePairedExportAdapter {
         let location = candidate.source_location.as_deref().ok_or_else(|| {
             ApplicationError::Integrity("OneNote candidate has no source location".to_owned())
         })?;
-        let pair = ParsedPair::read(&parse_pair_reference(location)?)?;
-        let current = pair.envelope()?;
         let expected = prefetched.ok_or_else(|| {
             ApplicationError::Integrity("OneNote candidate envelope is missing".to_owned())
         })?;
-        if expected.route_id != current.route_id
-            || expected.native_id != current.native_id
-            || expected.payload_sha256 != current.payload_sha256
-            || expected.source_reference != current.source_reference
-        {
-            return Err(ApplicationError::Conflict(
-                "OneNote export pair changed after candidate discovery".to_owned(),
-            ));
+        match parse_source_scope(location)? {
+            OneNoteSourceScope::Pair(paths) => {
+                let pair = ParsedPair::read(&paths)?;
+                let current = pair.envelope()?;
+                ensure_unchanged(expected, &current)?;
+                Ok(AcquisitionOutcome::Found {
+                    candidate: Box::new(current),
+                    assets: vec![
+                        CaptureImportAsset {
+                            path: pair.paths.mht.to_string_lossy().into_owned(),
+                            role: AssetRole::Export,
+                            expected_sha256: Some(pair.mht.sha256.clone()),
+                        },
+                        CaptureImportAsset {
+                            path: pair.paths.pdf.to_string_lossy().into_owned(),
+                            role: AssetRole::Export,
+                            expected_sha256: Some(pair.pdf.sha256.clone()),
+                        },
+                    ],
+                })
+            }
+            OneNoteSourceScope::MhtList(paths) => {
+                let batch = ParsedMhtBatch::read(paths)?;
+                let export = batch.find_export(expected.native_id.as_deref())?;
+                let current = batch.envelope(export)?;
+                ensure_unchanged(expected, &current)?;
+                Ok(AcquisitionOutcome::Found {
+                    candidate: Box::new(current),
+                    assets: vec![CaptureImportAsset {
+                        path: export.path.to_string_lossy().into_owned(),
+                        role: AssetRole::Export,
+                        expected_sha256: Some(export.mht.sha256.clone()),
+                    }],
+                })
+            }
         }
-        Ok(AcquisitionOutcome::Found {
-            candidate: Box::new(current),
-            assets: vec![
-                CaptureImportAsset {
-                    path: pair.paths.mht.to_string_lossy().into_owned(),
-                    role: AssetRole::Export,
-                    expected_sha256: Some(pair.mht.sha256.clone()),
-                },
-                CaptureImportAsset {
-                    path: pair.paths.pdf.to_string_lossy().into_owned(),
-                    role: AssetRole::Export,
-                    expected_sha256: Some(pair.pdf.sha256.clone()),
-                },
-            ],
-        })
     }
 
     fn coverage(&self) -> RouteCoverage {
@@ -104,7 +127,7 @@ impl SourceAdapterPort for OneNotePairedExportAdapter {
             metadata: true,
             attachments: true,
             revisions: false,
-            limitations: common_limitations()
+            limitations: route_limitations()
                 .into_iter()
                 .map(|limitation| limitation.detail)
                 .collect(),
@@ -112,10 +135,299 @@ impl SourceAdapterPort for OneNotePairedExportAdapter {
     }
 }
 
+fn ensure_unchanged(
+    expected: &CandidateEnvelope,
+    current: &CandidateEnvelope,
+) -> Result<(), ApplicationError> {
+    if expected.route_id != current.route_id
+        || expected.native_id != current.native_id
+        || expected.payload_sha256 != current.payload_sha256
+        || expected.source_reference != current.source_reference
+    {
+        return Err(ApplicationError::Conflict(
+            "OneNote export scope changed after candidate discovery".to_owned(),
+        ));
+    }
+    Ok(())
+}
+
+#[derive(Debug)]
+enum OneNoteSourceScope {
+    Pair(PairPaths),
+    MhtList(Vec<PathBuf>),
+}
+
 #[derive(Debug, Clone)]
 struct PairPaths {
     mht: PathBuf,
     pdf: PathBuf,
+}
+
+#[derive(Debug)]
+struct ParsedMhtExport {
+    path: PathBuf,
+    title: String,
+    mht: ParsedMht,
+}
+
+impl ParsedMhtExport {
+    fn read(path: PathBuf) -> Result<Self, ApplicationError> {
+        let bytes = read_stable_export(&path)?;
+        let parsed = ParsedMht::read(&bytes)?;
+        Ok(Self {
+            title: export_title(&path),
+            path,
+            mht: ParsedMht {
+                sha256: Sha256::of_bytes(&bytes),
+                byte_size: bytes.len() as u64,
+                ..parsed
+            },
+        })
+    }
+
+    fn native_id(&self) -> String {
+        format!("mht:{}", self.mht.sha256)
+    }
+}
+
+#[derive(Debug)]
+struct ParsedMhtBatch {
+    paths: Vec<PathBuf>,
+    exports: Vec<ParsedMhtExport>,
+    batch_sha256: Sha256,
+}
+
+impl ParsedMhtBatch {
+    fn read(paths: Vec<PathBuf>) -> Result<Self, ApplicationError> {
+        let exports = paths
+            .iter()
+            .cloned()
+            .map(ParsedMhtExport::read)
+            .collect::<Result<Vec<_>, _>>()?;
+        let identity = exports
+            .iter()
+            .map(|export| export.mht.sha256.as_str())
+            .collect::<Vec<_>>()
+            .join(":");
+        Ok(Self {
+            paths,
+            exports,
+            batch_sha256: Sha256::of_bytes(identity.as_bytes()),
+        })
+    }
+
+    fn candidates(
+        &self,
+        session_id: &CollectionSessionId,
+    ) -> Result<Vec<DiscoveredCandidate>, ApplicationError> {
+        self.exports
+            .iter()
+            .map(|export| {
+                let envelope = self.envelope(export)?;
+                Ok(DiscoveredCandidate {
+                    summary: self.summary(session_id, export, &envelope),
+                    prefetched: Some(envelope),
+                })
+            })
+            .collect()
+    }
+
+    fn find_export(&self, native_id: Option<&str>) -> Result<&ParsedMhtExport, ApplicationError> {
+        let native_id = native_id.ok_or_else(|| {
+            ApplicationError::Integrity("OneNote MHT candidate native ID is missing".to_owned())
+        })?;
+        self.exports
+            .iter()
+            .find(|export| export.native_id() == native_id)
+            .ok_or_else(|| {
+                ApplicationError::Conflict(
+                    "OneNote MHT candidate is no longer present in the explicit list".to_owned(),
+                )
+            })
+    }
+
+    fn overlap_hints(&self, export: &ParsedMhtExport) -> Vec<MhtOverlapHint> {
+        self.exports
+            .iter()
+            .filter(|other| other.mht.sha256 != export.mht.sha256)
+            .filter_map(|other| overlap_hint(export, other))
+            .collect()
+    }
+
+    fn manifest(&self, export: &ParsedMhtExport) -> Result<String, ApplicationError> {
+        serde_json::to_string_pretty(&serde_json::json!({
+            "schema": "onenote_mht_export_manifest_v1",
+            "adapter_version": MHT_EXPORT_ADAPTER_VERSION,
+            "identity_sha256": export.mht.sha256.as_str(),
+            "identity_scope": "immutable_mht_export",
+            "batch_sha256": self.batch_sha256.as_str(),
+            "export": {
+                "kind": "mht",
+                "role": "content_images_and_formatting",
+                "sha256": export.mht.sha256.as_str(),
+                "byte_size": export.mht.byte_size,
+                "root_mime_type": export.mht.root_mime_type,
+                "root_html_sha256": export.mht.root_html_sha256.as_str(),
+                "root_html_byte_size": export.mht.root_html_byte_size,
+                "visible_text_sha256": export.mht.visible_text_sha256.as_str(),
+                "normalized_visible_text_chars": export.mht.normalized_text_chars,
+                "generator": export.mht.generator,
+                "content_types": export.mht.content_types,
+                "parts": export.mht.parts,
+            },
+            "overlap_hints": self.overlap_hints(export),
+            "limitations": mht_list_limitations(),
+        }))
+        .map_err(|error| ApplicationError::Integrity(error.to_string()))
+    }
+
+    fn envelope(&self, export: &ParsedMhtExport) -> Result<CandidateEnvelope, ApplicationError> {
+        let manifest = self.manifest(export)?;
+        let common_metadata = Self::common_metadata(export);
+        let hints = self.overlap_hints(export);
+        Ok(CandidateEnvelope {
+            protocol_version: "1".to_owned(),
+            route_id: SourceRouteId(ROUTE_ID.to_owned()),
+            source_reference: mht_reference(&export.path),
+            content_type: ContentType::Archive,
+            payload_sha256: Sha256::of_bytes(manifest.as_bytes()),
+            metadata: Metadata::parse(
+                &serde_json::json!({
+                    "title": export.title,
+                    "import_format": "onenote_official_mht_export",
+                    "adapter_version": MHT_EXPORT_ADAPTER_VERSION,
+                    "identity_sha256": export.mht.sha256.as_str(),
+                    "identity_scope": "immutable_mht_export",
+                    "batch_sha256": self.batch_sha256.as_str(),
+                    "root_html_sha256": export.mht.root_html_sha256.as_str(),
+                    "visible_text_sha256": export.mht.visible_text_sha256.as_str(),
+                    "normalized_visible_text_chars": export.mht.normalized_text_chars,
+                    "overlap_hint_count": hints.len(),
+                    "overlap_hints_human_judgment": false,
+                    "overlap_hints_confirmed_fact": false,
+                    "content_fingerprint": export.mht.sha256.as_str(),
+                })
+                .to_string(),
+            )?,
+            payload: CandidatePayload::Text { text: manifest },
+            context: common_metadata.context.clone(),
+            native_id: Some(export.native_id()),
+            common_metadata,
+        })
+    }
+
+    fn summary(
+        &self,
+        session_id: &CollectionSessionId,
+        export: &ParsedMhtExport,
+        envelope: &CandidateEnvelope,
+    ) -> CandidateSummary {
+        let limitations = mht_list_limitations();
+        CandidateSummary {
+            candidate_id: format!("onenote_mht_{}", &export.mht.sha256.as_str()[..24]),
+            session_id: session_id.clone(),
+            route_id: SourceRouteId(ROUTE_ID.to_owned()),
+            source_native_id: envelope.native_id.clone(),
+            title: Some(export.title.clone()),
+            source_location: Some(mht_list_reference(&self.paths)),
+            hierarchy: vec![export.title.clone()],
+            content_type: ContentType::Archive,
+            source_updated_at: None,
+            attachment_available: Some(true),
+            limitations: limitations
+                .iter()
+                .map(|limitation| limitation.detail.clone())
+                .collect(),
+            selection_capabilities: vec![
+                "mht_export".to_owned(),
+                "batch_export".to_owned(),
+                "explicit_export_list".to_owned(),
+                "overlap_hint_evidence".to_owned(),
+            ],
+            common_metadata: envelope.common_metadata.clone(),
+        }
+    }
+
+    fn common_metadata(export: &ParsedMhtExport) -> CommonSourceMetadata {
+        CommonSourceMetadata {
+            title: Some(export.title.clone()),
+            hierarchy: vec![SourceHierarchyNode {
+                kind: Some("official_mht_export_scope".to_owned()),
+                name: export.title.clone(),
+                native_id: Some(export.mht.sha256.as_str().to_owned()),
+                locator: Some(mht_reference(&export.path)),
+            }],
+            context: Some(format!("Official OneNote MHT export / {}", export.title)),
+            limitations: mht_list_limitations(),
+            access_state: SourceAccessState::Accessible,
+            media: SourceMediaMetadata {
+                schema: babata_domain::SOURCE_MEDIA_METADATA_SCHEMA_V1.to_owned(),
+                entries: vec![SourceMediaEntry {
+                    kind: "content_images_and_formatting_export".to_owned(),
+                    media_type: Some(export.mht.root_mime_type.clone()),
+                    duration_ms: None,
+                    width: None,
+                    height: None,
+                    page_count: None,
+                }],
+            },
+            ..CommonSourceMetadata::default()
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
+struct MhtOverlapHint {
+    kind: String,
+    counterpart_native_id: String,
+    basis: String,
+    this_coverage_basis_points: u16,
+    counterpart_coverage_basis_points: u16,
+    relative_scope_size: String,
+    human_judgment: bool,
+    confirmed_fact: bool,
+}
+
+fn overlap_hint(export: &ParsedMhtExport, other: &ParsedMhtExport) -> Option<MhtOverlapHint> {
+    if export.mht.normalized_text_chars < MIN_OVERLAP_TEXT_CHARS
+        || other.mht.normalized_text_chars < MIN_OVERLAP_TEXT_CHARS
+    {
+        return None;
+    }
+    let this_coverage = overlap_basis_points(&export.mht.ngrams, &other.mht.ngrams);
+    let other_coverage = overlap_basis_points(&other.mht.ngrams, &export.mht.ngrams);
+    if this_coverage < OVERLAP_THRESHOLD_BASIS_POINTS
+        && other_coverage < OVERLAP_THRESHOLD_BASIS_POINTS
+    {
+        return None;
+    }
+    let relative_scope_size = match export
+        .mht
+        .normalized_text_chars
+        .cmp(&other.mht.normalized_text_chars)
+    {
+        std::cmp::Ordering::Less => "smaller_export",
+        std::cmp::Ordering::Equal => "equal_sized_export",
+        std::cmp::Ordering::Greater => "larger_export",
+    };
+    Some(MhtOverlapHint {
+        kind: "normalized_text_overlap_candidate".to_owned(),
+        counterpart_native_id: other.native_id(),
+        basis: format!("normalized_visible_text_fnv1a64_{OVERLAP_NGRAM_CHARS}_char_ngrams"),
+        this_coverage_basis_points: this_coverage,
+        counterpart_coverage_basis_points: other_coverage,
+        relative_scope_size: relative_scope_size.to_owned(),
+        human_judgment: false,
+        confirmed_fact: false,
+    })
+}
+
+fn overlap_basis_points(subject: &HashSet<u64>, other: &HashSet<u64>) -> u16 {
+    if subject.is_empty() {
+        return 0;
+    }
+    let intersection = subject.intersection(other).count() as u64;
+    ((intersection * 10_000) / subject.len() as u64) as u16
 }
 
 #[derive(Debug)]
@@ -138,7 +450,7 @@ impl ParsedPair {
         let identity_sha256 =
             Sha256::of_bytes(format!("{}:{}", mht_sha256.as_str(), pdf_sha256.as_str()).as_bytes());
         Ok(Self {
-            title: pair_title(paths),
+            title: export_title(&paths.mht),
             paths: paths.clone(),
             mht: ParsedMht {
                 sha256: mht_sha256,
@@ -157,7 +469,7 @@ impl ParsedPair {
     fn manifest(&self) -> Result<String, ApplicationError> {
         serde_json::to_string_pretty(&serde_json::json!({
             "schema": "onenote_paired_export_manifest_v1",
-            "adapter_version": ADAPTER_VERSION,
+            "adapter_version": PAIRED_ADAPTER_VERSION,
             "identity_sha256": self.identity_sha256.as_str(),
             "identity_scope": "immutable_mht_pdf_pair",
             "representations": [
@@ -168,6 +480,9 @@ impl ParsedPair {
                     "byte_size": self.mht.byte_size,
                     "root_html_sha256": self.mht.root_html_sha256.as_str(),
                     "root_html_byte_size": self.mht.root_html_byte_size,
+                    "visible_text_sha256": self.mht.visible_text_sha256.as_str(),
+                    "normalized_visible_text_chars": self.mht.normalized_text_chars,
+                    "generator": self.mht.generator,
                     "content_types": self.mht.content_types,
                     "parts": self.mht.parts,
                 },
@@ -185,7 +500,7 @@ impl ParsedPair {
                     "encrypted": false,
                 }
             ],
-            "limitations": common_limitations(),
+            "limitations": paired_limitations(),
         }))
         .map_err(|error| ApplicationError::Integrity(error.to_string()))
     }
@@ -203,7 +518,7 @@ impl ParsedPair {
                 &serde_json::json!({
                     "title": self.title,
                     "import_format": "onenote_official_paired_export",
-                    "adapter_version": ADAPTER_VERSION,
+                    "adapter_version": PAIRED_ADAPTER_VERSION,
                     "identity_sha256": self.identity_sha256.as_str(),
                     "identity_scope": "immutable_mht_pdf_pair",
                     "mht_sha256": self.mht.sha256.as_str(),
@@ -230,7 +545,7 @@ impl ParsedPair {
         session_id: &CollectionSessionId,
         envelope: &CandidateEnvelope,
     ) -> CandidateSummary {
-        let limitations = common_limitations();
+        let limitations = paired_limitations();
         CandidateSummary {
             candidate_id: format!("onenote_pair_{}", &self.identity_sha256.as_str()[..24]),
             session_id: session_id.clone(),
@@ -268,7 +583,7 @@ impl ParsedPair {
                 "Official OneNote paired PDF/MHT export / {}",
                 self.title
             )),
-            limitations: common_limitations(),
+            limitations: paired_limitations(),
             access_state: SourceAccessState::Accessible,
             media: SourceMediaMetadata {
                 schema: babata_domain::SOURCE_MEDIA_METADATA_SCHEMA_V1.to_owned(),
@@ -300,8 +615,13 @@ impl ParsedPair {
 struct ParsedMht {
     sha256: Sha256,
     byte_size: u64,
+    root_mime_type: String,
     root_html_sha256: Sha256,
     root_html_byte_size: u64,
+    visible_text_sha256: Sha256,
+    normalized_text_chars: usize,
+    generator: String,
+    ngrams: HashSet<u64>,
     content_types: BTreeMap<String, usize>,
     parts: Vec<MhtPart>,
 }
@@ -311,13 +631,10 @@ impl ParsedMht {
         let parsed = parse_mail(bytes).map_err(|error| {
             ApplicationError::Integrity(format!("invalid OneNote MHT MIME: {error}"))
         })?;
-        if !parsed
-            .ctype
-            .mimetype
-            .eq_ignore_ascii_case("multipart/related")
-        {
+        let root_mime_type = parsed.ctype.mimetype.to_ascii_lowercase();
+        if root_mime_type != "multipart/related" && root_mime_type != "text/html" {
             return Err(ApplicationError::Integrity(
-                "OneNote MHT root must be multipart/related".to_owned(),
+                "OneNote MHT root must be multipart/related or text/html".to_owned(),
             ));
         }
         let mut leaves = Vec::new();
@@ -344,14 +661,21 @@ impl ParsedMht {
             }
             *content_types.entry(mime.clone()).or_insert(0) += 1;
             let sha256 = Sha256::of_bytes(&body);
-            if mime == "text/html"
-                && root_html
-                    .replace((sha256.clone(), body.len() as u64))
+            if mime == "text/html" {
+                let html = part.get_body().map_err(|error| {
+                    ApplicationError::Integrity(format!(
+                        "OneNote MHT HTML decoding failed: {error}"
+                    ))
+                })?;
+                let facts = parse_onenote_html(&html)?;
+                if root_html
+                    .replace((sha256.clone(), body.len() as u64, facts))
                     .is_some()
-            {
-                return Err(ApplicationError::Integrity(
-                    "OneNote MHT must contain exactly one HTML root".to_owned(),
-                ));
+                {
+                    return Err(ApplicationError::Integrity(
+                        "OneNote MHT must contain exactly one HTML root".to_owned(),
+                    ));
+                }
             }
             parts.push(MhtPart {
                 ordinal: index + 1,
@@ -361,18 +685,91 @@ impl ParsedMht {
                 content_location: location,
             });
         }
-        let (root_html_sha256, root_html_byte_size) = root_html.ok_or_else(|| {
+        let (root_html_sha256, root_html_byte_size, html_facts) = root_html.ok_or_else(|| {
             ApplicationError::Integrity("OneNote MHT must contain exactly one HTML root".to_owned())
         })?;
         Ok(Self {
             sha256: Sha256::of_bytes(&[]),
             byte_size: 0,
+            root_mime_type,
             root_html_sha256,
             root_html_byte_size,
+            visible_text_sha256: Sha256::of_bytes(html_facts.normalized_text.as_bytes()),
+            normalized_text_chars: html_facts.normalized_text.chars().count(),
+            generator: html_facts.generator,
+            ngrams: stable_ngram_hashes(&html_facts.normalized_text),
             content_types,
             parts,
         })
     }
+}
+
+#[derive(Debug)]
+struct ParsedOneNoteHtml {
+    generator: String,
+    normalized_text: String,
+}
+
+fn parse_onenote_html(html: &str) -> Result<ParsedOneNoteHtml, ApplicationError> {
+    let document = Html::parse_document(html);
+    let meta_selector = Selector::parse("meta").map_err(|_| {
+        ApplicationError::Integrity("OneNote HTML meta selector is invalid".to_owned())
+    })?;
+    let body_selector = Selector::parse("body").map_err(|_| {
+        ApplicationError::Integrity("OneNote HTML body selector is invalid".to_owned())
+    })?;
+    let mut generator = None;
+    let mut program_id = None;
+    for element in document.select(&meta_selector) {
+        let Some(name) = element.value().attr("name") else {
+            continue;
+        };
+        let content = element.value().attr("content").unwrap_or_default();
+        if name.eq_ignore_ascii_case("generator") {
+            generator = Some(content.to_owned());
+        } else if name.eq_ignore_ascii_case("progid") {
+            program_id = Some(content.to_owned());
+        }
+    }
+    let generator =
+        generator.filter(|value| value.to_ascii_lowercase().contains("microsoft onenote"));
+    if generator.is_none()
+        || !program_id.is_some_and(|value| value.eq_ignore_ascii_case("OneNote.File"))
+    {
+        return Err(ApplicationError::Integrity(
+            "MHT HTML metadata does not identify Microsoft OneNote".to_owned(),
+        ));
+    }
+    let normalized_text = document
+        .select(&body_selector)
+        .flat_map(|body| body.text())
+        .flat_map(str::chars)
+        .filter(|character| !character.is_whitespace())
+        .collect::<String>();
+    Ok(ParsedOneNoteHtml {
+        generator: generator.unwrap_or_default(),
+        normalized_text,
+    })
+}
+
+fn stable_ngram_hashes(value: &str) -> HashSet<u64> {
+    let characters = value.chars().collect::<Vec<_>>();
+    characters
+        .windows(OVERLAP_NGRAM_CHARS)
+        .map(|window| {
+            window
+                .iter()
+                .fold(0xcbf2_9ce4_8422_2325, |hash, character| {
+                    character
+                        .to_string()
+                        .as_bytes()
+                        .iter()
+                        .fold(hash, |next, byte| {
+                            (next ^ u64::from(*byte)).wrapping_mul(0x0000_0100_0000_01b3)
+                        })
+                })
+        })
+        .collect()
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -444,6 +841,19 @@ impl ParsedPdf {
     }
 }
 
+fn parse_source_scope(value: &str) -> Result<OneNoteSourceScope, ApplicationError> {
+    if value.starts_with("pair:") {
+        return parse_pair_reference(value).map(OneNoteSourceScope::Pair);
+    }
+    if value.starts_with("mht-list:") {
+        return parse_mht_list_reference(value).map(OneNoteSourceScope::MhtList);
+    }
+    Err(ApplicationError::Conflict(
+        "OneNote source must be pair:<absolute-mht>|<absolute-pdf> or mht-list:<absolute-mht>|..."
+            .to_owned(),
+    ))
+}
+
 fn parse_pair_reference(value: &str) -> Result<PairPaths, ApplicationError> {
     let value = value.strip_prefix("pair:").ok_or_else(|| {
         ApplicationError::Conflict(
@@ -470,6 +880,41 @@ fn parse_pair_reference(value: &str) -> Result<PairPaths, ApplicationError> {
     Ok(PairPaths { mht, pdf })
 }
 
+fn parse_mht_list_reference(value: &str) -> Result<Vec<PathBuf>, ApplicationError> {
+    let value = value.strip_prefix("mht-list:").ok_or_else(|| {
+        ApplicationError::Conflict(
+            "OneNote MHT source must be mht-list:<absolute-mht>|...".to_owned(),
+        )
+    })?;
+    let raw_paths = value.split('|').collect::<Vec<_>>();
+    if raw_paths.is_empty()
+        || raw_paths.len() > MAX_MHT_LIST_FILES
+        || raw_paths.iter().any(|path| path.trim().is_empty())
+    {
+        return Err(ApplicationError::Conflict(format!(
+            "OneNote MHT list must contain between 1 and {MAX_MHT_LIST_FILES} explicit files"
+        )));
+    }
+    let mut paths = raw_paths
+        .into_iter()
+        .map(|path| canonical_export_path(Path::new(path), "mht"))
+        .collect::<Result<Vec<_>, _>>()?;
+    let parent = paths[0].parent();
+    if paths.iter().any(|path| path.parent() != parent) {
+        return Err(ApplicationError::Conflict(
+            "OneNote MHT list files must share one explicit directory".to_owned(),
+        ));
+    }
+    paths.sort_by_cached_key(|path| path.to_string_lossy().to_ascii_lowercase());
+    let unique = paths.iter().collect::<BTreeSet<_>>();
+    if unique.len() != paths.len() {
+        return Err(ApplicationError::Conflict(
+            "OneNote MHT list must not contain duplicate files".to_owned(),
+        ));
+    }
+    Ok(paths)
+}
+
 fn canonical_export_path(path: &Path, extension: &str) -> Result<PathBuf, ApplicationError> {
     if !path.is_absolute() {
         return Err(ApplicationError::Conflict(
@@ -482,7 +927,7 @@ fn canonical_export_path(path: &Path, extension: &str) -> Result<PathBuf, Applic
         .is_some_and(|value| value.eq_ignore_ascii_case(extension))
     {
         return Err(ApplicationError::Conflict(format!(
-            "OneNote paired export requires a .{extension} file"
+            "OneNote export requires a .{extension} file"
         )));
     }
     let canonical = fs::canonicalize(path).map_err(asset_io)?;
@@ -642,16 +1087,29 @@ fn pair_reference(paths: &PairPaths) -> String {
     )
 }
 
-fn pair_title(paths: &PairPaths) -> String {
-    paths
-        .mht
-        .file_stem()
+fn mht_reference(path: &Path) -> String {
+    format!("mht:{}", path.to_string_lossy())
+}
+
+fn mht_list_reference(paths: &[PathBuf]) -> String {
+    format!(
+        "mht-list:{}",
+        paths
+            .iter()
+            .map(|path| path.to_string_lossy())
+            .collect::<Vec<_>>()
+            .join("|")
+    )
+}
+
+fn export_title(path: &Path) -> String {
+    path.file_stem()
         .and_then(|value| value.to_str())
-        .unwrap_or("OneNote notebook export")
+        .unwrap_or("OneNote export")
         .to_owned()
 }
 
-fn common_limitations() -> Vec<SourceLimitation> {
+fn paired_limitations() -> Vec<SourceLimitation> {
     vec![
         SourceLimitation {
             code: "complementary_export_representations".to_owned(),
@@ -666,6 +1124,33 @@ fn common_limitations() -> Vec<SourceLimitation> {
             detail: "identity is scoped to the immutable MHT/PDF hash pair; cross-export notebook matching is unavailable".to_owned(),
         },
     ]
+}
+
+fn mht_list_limitations() -> Vec<SourceLimitation> {
+    vec![
+        SourceLimitation {
+            code: "mht_only_representation".to_owned(),
+            detail: "this explicit export has MHT content, images, and formatting but no paired PDF rendering evidence".to_owned(),
+        },
+        SourceLimitation {
+            code: "overlap_is_not_hierarchy".to_owned(),
+            detail: "batch-local normalized-text overlap is machine evidence only; it does not confirm a native OneNote parent, child, page, or section relation".to_owned(),
+        },
+        SourceLimitation {
+            code: "c1_segmentation_pending".to_owned(),
+            detail: "semantic segmentation, deduplication, and hierarchy confirmation remain later traceable C1 work".to_owned(),
+        },
+        SourceLimitation {
+            code: "export_scoped_identity".to_owned(),
+            detail: "identity is scoped to the immutable MHT hash; cross-export native OneNote identity is unavailable".to_owned(),
+        },
+    ]
+}
+
+fn route_limitations() -> Vec<SourceLimitation> {
+    let mut limitations = paired_limitations();
+    limitations.extend(mht_list_limitations());
+    limitations
 }
 
 fn pdf_structure(error: lopdf::Error) -> ApplicationError {
@@ -696,7 +1181,7 @@ mod tests {
     fn paired_export_discovers_one_complementary_archive_candidate() {
         let temporary = tempdir().unwrap();
         let paths = write_fixture_pair(temporary.path(), "notebook");
-        let adapter = OneNotePairedExportAdapter;
+        let adapter = OneNoteExportAdapter;
         let candidates = adapter
             .discover(&CollectionSessionId::new(), &pair_reference(&paths))
             .unwrap();
@@ -707,6 +1192,7 @@ mod tests {
         let manifest = match &candidate.prefetched.as_ref().unwrap().payload {
             CandidatePayload::Text { text } => text,
         };
+        assert!(manifest.contains("\"adapter_version\": \"onenote-paired-export/1\""));
         assert!(manifest.contains("content_images_and_formatting"));
         assert!(manifest.contains("rendering_and_partition_evidence"));
         assert!(manifest.contains("\"page_count\": 1"));
@@ -726,10 +1212,152 @@ mod tests {
     }
 
     #[test]
+    fn explicit_mht_list_discovers_exports_and_nonfactual_overlap_hints() {
+        let temporary = tempdir().unwrap();
+        let child_text = "独立内容".repeat(40);
+        let parent = temporary.path().join("parent.mht");
+        let child = temporary.path().join("child.mht");
+        fs::write(
+            &parent,
+            fixture_single_mht(&format!("{child_text}父范围补充"), true),
+        )
+        .unwrap();
+        fs::write(&child, fixture_single_mht(&child_text, true)).unwrap();
+        let paths = canonical_mht_paths(&[parent, child]);
+        let reference = mht_list_reference(&paths);
+        let adapter = OneNoteExportAdapter;
+
+        let candidates = adapter
+            .discover(&CollectionSessionId::new(), &reference)
+            .unwrap();
+        assert_eq!(candidates.len(), 2);
+        assert!(
+            candidates
+                .iter()
+                .all(|candidate| candidate.summary.content_type == ContentType::Archive)
+        );
+        let child = candidates
+            .iter()
+            .find(|candidate| candidate.summary.title.as_deref() == Some("child"))
+            .unwrap();
+        let manifest = match &child.prefetched.as_ref().unwrap().payload {
+            CandidatePayload::Text { text } => serde_json::from_str::<serde_json::Value>(text)
+                .expect("MHT manifest should be JSON"),
+        };
+        let hints = manifest["overlap_hints"].as_array().unwrap();
+        assert_eq!(manifest["adapter_version"], "onenote-mht-export/1");
+        assert_eq!(hints.len(), 1);
+        assert_eq!(hints[0]["kind"], "normalized_text_overlap_candidate");
+        assert_eq!(hints[0]["relative_scope_size"], "smaller_export");
+        assert_eq!(hints[0]["human_judgment"], false);
+        assert_eq!(hints[0]["confirmed_fact"], false);
+        assert_eq!(hints[0]["this_coverage_basis_points"], 10_000);
+
+        let acquisition = adapter
+            .collect(&child.summary, child.prefetched.as_ref(), true)
+            .unwrap();
+        let AcquisitionOutcome::Found { assets, .. } = acquisition else {
+            panic!("MHT export should be collectable");
+        };
+        assert_eq!(assets.len(), 1);
+        assert_eq!(
+            assets[0].expected_sha256,
+            Some(Sha256::of_bytes(&fs::read(&assets[0].path).unwrap()))
+        );
+    }
+
+    #[test]
+    fn mht_list_scope_generator_and_mime_fail_closed() {
+        let temporary = tempdir().unwrap();
+        let multipart = temporary.path().join("multipart.mht");
+        let single = temporary.path().join("single.mht");
+        fs::write(&multipart, fixture_mht(true, false, false)).unwrap();
+        fs::write(&single, fixture_single_mht("单体 OneNote 正文", true)).unwrap();
+        let paths = canonical_mht_paths(&[multipart.clone(), single.clone()]);
+        let adapter = OneNoteExportAdapter;
+        assert_eq!(
+            adapter
+                .discover(&CollectionSessionId::new(), &mht_list_reference(&paths))
+                .unwrap()
+                .len(),
+            2
+        );
+        assert!(
+            adapter
+                .discover(&CollectionSessionId::new(), "mht-list:relative.mht")
+                .is_err()
+        );
+        assert!(
+            adapter
+                .discover(
+                    &CollectionSessionId::new(),
+                    &format!("mht-list:{}|{}", paths[0].display(), paths[0].display())
+                )
+                .is_err()
+        );
+
+        let other_root = temporary.path().join("other");
+        fs::create_dir(&other_root).unwrap();
+        let other = other_root.join("other.mht");
+        fs::write(&other, fixture_single_mht("另一个范围", true)).unwrap();
+        assert!(
+            adapter
+                .discover(
+                    &CollectionSessionId::new(),
+                    &format!(
+                        "mht-list:{}|{}",
+                        paths[0].display(),
+                        other.canonicalize().unwrap().display()
+                    )
+                )
+                .is_err()
+        );
+
+        fs::write(&single, fixture_single_mht("不是 OneNote", false)).unwrap();
+        assert!(
+            adapter
+                .discover(
+                    &CollectionSessionId::new(),
+                    &mht_list_reference(&canonical_mht_paths(&[single]))
+                )
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn mht_batch_change_after_discovery_is_rejected_without_a_cache() {
+        let temporary = tempdir().unwrap();
+        let first = temporary.path().join("first.mht");
+        let second = temporary.path().join("second.mht");
+        fs::write(&first, fixture_single_mht(&"共同内容".repeat(40), true)).unwrap();
+        fs::write(
+            &second,
+            fixture_single_mht(&format!("{}补充", "共同内容".repeat(40)), true),
+        )
+        .unwrap();
+        let paths = canonical_mht_paths(&[first, second.clone()]);
+        let adapter = OneNoteExportAdapter;
+        let candidate = adapter
+            .discover(&CollectionSessionId::new(), &mht_list_reference(&paths))
+            .unwrap()
+            .remove(0);
+        fs::write(&second, fixture_single_mht("已变化的批内内容", true)).unwrap();
+
+        let error = adapter
+            .collect(&candidate.summary, candidate.prefetched.as_ref(), true)
+            .unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("changed after candidate discovery")
+        );
+    }
+
+    #[test]
     fn scope_and_mime_structure_fail_closed() {
         let temporary = tempdir().unwrap();
         let paths = write_fixture_pair(temporary.path(), "notebook");
-        let adapter = OneNotePairedExportAdapter;
+        let adapter = OneNoteExportAdapter;
         assert!(
             adapter
                 .discover(
@@ -778,7 +1406,7 @@ mod tests {
     fn malformed_and_encrypted_pdfs_are_rejected() {
         let temporary = tempdir().unwrap();
         let paths = write_fixture_pair(temporary.path(), "notebook");
-        let adapter = OneNotePairedExportAdapter;
+        let adapter = OneNoteExportAdapter;
         fs::write(&paths.pdf, b"%PDF-1.7 truncated").unwrap();
         assert!(
             adapter
@@ -797,7 +1425,7 @@ mod tests {
     fn pair_change_after_discovery_is_rejected_without_a_cache() {
         let temporary = tempdir().unwrap();
         let paths = write_fixture_pair(temporary.path(), "notebook");
-        let adapter = OneNotePairedExportAdapter;
+        let adapter = OneNoteExportAdapter;
         let candidate = adapter
             .discover(&CollectionSessionId::new(), &pair_reference(&paths))
             .unwrap()
@@ -828,7 +1456,7 @@ mod tests {
             repository.clone(),
             FileAssetStore::new(data_paths),
             SystemClock,
-            vec![Box::new(OneNotePairedExportAdapter)],
+            vec![Box::new(OneNoteExportAdapter)],
         );
         let session = service
             .start(StartCollectionCommand {
@@ -878,6 +1506,75 @@ mod tests {
         );
     }
 
+    #[test]
+    fn collector_persists_explicit_mht_exports_and_recollects_unchanged() {
+        let temporary = tempdir().unwrap();
+        let first = temporary.path().join("first.mht");
+        let second = temporary.path().join("second.mht");
+        fs::write(&first, fixture_single_mht("第一份明确导出", true)).unwrap();
+        fs::write(&second, fixture_single_mht("第二份明确导出", true)).unwrap();
+        let export_paths = canonical_mht_paths(&[first, second]);
+        let data_paths = DataPaths::new(temporary.path().join("data"));
+        ensure_layout(&data_paths).unwrap();
+        let repository = crate::open_collection_database(&data_paths, 100).unwrap();
+        let service = CollectorSessionService::new(
+            repository.clone(),
+            FileAssetStore::new(data_paths),
+            SystemClock,
+            vec![Box::new(OneNoteExportAdapter)],
+        );
+        let session = service
+            .start(StartCollectionCommand {
+                route_id: SourceRouteId(ROUTE_ID.to_owned()),
+                source_reference: mht_list_reference(&export_paths),
+                scope_description: "two explicit synthetic MHT exports".to_owned(),
+                authorisation_id: "fixture-authorisation".to_owned(),
+            })
+            .unwrap();
+        let candidates = service.candidates(&session.session_id).unwrap();
+        assert_eq!(candidates.len(), 2);
+        let items = service
+            .select(CollectionSelection {
+                session_id: session.session_id.clone(),
+                candidate_ids: candidates
+                    .iter()
+                    .map(|candidate| candidate.candidate_id.clone())
+                    .collect(),
+                scope_description: "both explicit fixture exports".to_owned(),
+                confirmed: true,
+                authorised_context: "fixture-authorisation".to_owned(),
+                requested_attachments: true,
+            })
+            .unwrap();
+        assert_eq!(items.len(), 2);
+        assert!(
+            items
+                .iter()
+                .all(|item| item.state == CollectionItemState::Saved)
+        );
+        for item in &items {
+            let detail = repository
+                .load_detail(item.item_id.as_ref().unwrap())
+                .unwrap();
+            assert_eq!(detail.revisions.len(), 1);
+            assert_eq!(detail.assets.len(), 1);
+            assert_eq!(detail.assets[0].role, AssetRole::Export);
+        }
+
+        let recollected = service.recollect_session(&session.session_id).unwrap();
+        assert_eq!(recollected.len(), 2);
+        assert!(
+            recollected
+                .iter()
+                .all(|item| item.state == RecollectionState::Unchanged)
+        );
+        assert!(
+            recollected
+                .iter()
+                .all(|item| item.new_revision_id.is_none())
+        );
+    }
+
     fn write_fixture_pair(root: &Path, stem: &str) -> PairPaths {
         let mht = root.join(format!("{stem}.mht"));
         let pdf = root.join(format!("{stem}.pdf"));
@@ -899,14 +1596,18 @@ mod tests {
         if include_html {
             write!(
                 parts,
-                "--fixture\r\nContent-Type: text/html; charset=utf-8\r\nContent-Location: {html_location}\r\n\r\n<html><body>fixture</body></html>\r\n"
+                "--fixture\r\nContent-Type: text/html; charset=utf-8\r\nContent-Location: {html_location}\r\n\r\n{}\r\n",
+                fixture_html("fixture", true)
             )
             .unwrap();
         }
         if duplicate_html {
-            parts.push_str(
-                "--fixture\r\nContent-Type: text/html; charset=utf-8\r\nContent-Location: file:///C:/fixture/second.htm\r\n\r\n<html><body>second</body></html>\r\n",
-            );
+            write!(
+                parts,
+                "--fixture\r\nContent-Type: text/html; charset=utf-8\r\nContent-Location: file:///C:/fixture/second.htm\r\n\r\n{}\r\n",
+                fixture_html("second", true)
+            )
+            .unwrap();
         }
         parts.push_str(
             "--fixture\r\nContent-Type: image/png\r\nContent-Transfer-Encoding: base64\r\nContent-Location: file:///C:/fixture/image.png\r\n\r\nZml4dHVyZQ==\r\n--fixture--\r\n",
@@ -915,6 +1616,32 @@ mod tests {
             "MIME-Version: 1.0\r\nContent-Type: multipart/related; boundary=\"fixture\"\r\n\r\n{parts}"
         )
         .into_bytes()
+    }
+
+    fn fixture_single_mht(body: &str, onenote: bool) -> Vec<u8> {
+        format!(
+            "MIME-Version: 1.0\r\nContent-Location: file:///C:/fixture/root.htm\r\nContent-Type: text/html; charset=utf-8\r\n\r\n{}",
+            fixture_html(body, onenote)
+        )
+        .into_bytes()
+    }
+
+    fn fixture_html(body: &str, onenote: bool) -> String {
+        let metadata = if onenote {
+            r#"<meta name="ProgId" content="OneNote.File"><meta name="Generator" content="Microsoft OneNote 15">"#
+        } else {
+            r#"<meta name="Generator" content="Browser Export">"#
+        };
+        format!("<html><head>{metadata}</head><body>{body}</body></html>")
+    }
+
+    fn canonical_mht_paths(paths: &[PathBuf]) -> Vec<PathBuf> {
+        let mut paths = paths
+            .iter()
+            .map(|path| path.canonicalize().unwrap())
+            .collect::<Vec<_>>();
+        paths.sort_by_cached_key(|path| path.to_string_lossy().to_ascii_lowercase());
+        paths
     }
 
     fn fixture_pdf(encrypted: bool) -> Vec<u8> {

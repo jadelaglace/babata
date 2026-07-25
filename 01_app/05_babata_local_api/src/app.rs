@@ -13,7 +13,7 @@ use babata_infrastructure::{
     SublibraryViewStore, SystemClock, open_collection_database, open_raw_database,
     sources::providers::{
         browser::BrowserCandidateAdapter, evernote::EvernoteNotesAdapter,
-        onenote::OneNotePairedExportAdapter,
+        onenote::OneNoteExportAdapter,
     },
 };
 use serde::de::DeserializeOwned;
@@ -393,7 +393,7 @@ fn collector_service(
 ) -> Result<CollectorService, ApiError> {
     let repository = open_collection_database(&config.paths(), config.sqlite.busy_timeout_ms)?;
     let mut adapters: Vec<Box<dyn babata_application::ports::SourceAdapterPort>> = vec![
-        Box::new(OneNotePairedExportAdapter),
+        Box::new(OneNoteExportAdapter),
         Box::new(EvernoteNotesAdapter::new(
             config
                 .paths()

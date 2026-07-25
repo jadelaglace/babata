@@ -121,7 +121,7 @@ cargo test --workspace --manifest-path ./01_app/Cargo.toml
 | P6.1 | 完成 | 核心知识沉淀、地图、关系、评分、建议与高密度表达 |
 | P6.2 | 完成 | 搜索投影、多条件检索、评分排序、关系导航与可解释浮现 |
 | P6.3 | 完成 | 版本化子库、可重建物化、Markdown/JSON 输出与只读 manifest |
-| P7 | 进行中 | 印象笔记整库与 OneNote 同源 PDF/MHT 已分别闭环；其余扩展来源、正式 Skills 与受控 Agent 继续逐项推进 |
+| P7 | 进行中 | 印象笔记整库、OneNote 同源 PDF/MHT 及六个显式 MHT 导出已闭环；OneNote 段落/层级仍待 C1，正式 Skills 与受控 Agent 继续逐项推进 |
 | P8 | 未开始 | 备份恢复、运维与长期加固 |
 
 日常开发从 GitHub Issue 开始，使用 `codex/` 短分支并通过 Pull Request 合并。提交前请阅读[提交与验收纪律](00_docs/04_process/04_DEVELOPMENT_PROCESS.md#13-提交与验收纪律)。

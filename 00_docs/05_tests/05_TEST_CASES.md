@@ -423,6 +423,17 @@ MIME 穿越、畸形/加密 PDF 和 discovery 后变化均被拒绝。真实库�
 `BABATA_EVIDENCE_HOME/runs/p7-1-evernote-20260724-224315/` 和
 `BABATA_EVIDENCE_HOME/runs/p7-2-onenote-20260725-071439/`。
 
+Issue #86 扩展同一 `source.onenote` 的显式 MHT-only 路线。六个真实导出同时覆盖
+`multipart/related` 和单体 `text/html`，隔离库和活动库均保存 6 ready revisions 与 6 ready
+exports，随后 6/6 unchanged、0 新 revision。批次内只有“灵感消化”与“猫与月季花”产生
+双向两条 12 字符 n-gram 重叠提示，覆盖率约为 95.83%/100%；两条均为
+`human_judgment=false`、`confirmed_fact=false`，新 item 的正式 relation 为 0。活动库最终为
+`7 sources / 199 items / 202 revisions / 366 assets / 1 relation / 342 observations`，schema v7、
+`quick_check=ok`、外键异常和所有 pending/quarantine/journal/orphan 为 0。相对路径、重复文件、
+跨目录、非 OneNote 元数据、非法 MIME、discovery 后变化均被拒绝；旧 PDF/MHT 配对 manifest
+继续保持 `onenote-paired-export/1`，避免代码升级制造伪 revision。证据位于
+`BABATA_EVIDENCE_HOME/runs/p7-3-onenote-mht-20260725-090516/`。
+
 尚未执行的 TC-09 部分包括：正式 Skill 的 available/unavailable 对照、Agent 范围查看与
 取消、未确认账号级越界拒绝、自动确认模型建议拒绝，以及多个外围入口的完整结果对照。
 因此当前只启用已经分别通过真实验收的 `source.evernote` 和 `source.onenote`，不标记

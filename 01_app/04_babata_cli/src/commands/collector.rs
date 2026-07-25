@@ -13,7 +13,7 @@ use babata_infrastructure::{
         bilibili_collection::BilibiliOpenCliAdapter, browser::BrowserCandidateAdapter,
         chatgpt::ChatGptOpenCliAdapter, doubao::DoubaoOpenCliAdapter,
         evernote::EvernoteNotesAdapter, feishu::FeishuCliAdapter, kimi::KimiOpenCliAdapter,
-        onenote::OneNotePairedExportAdapter, wechat::WechatArticleOpenCliAdapter,
+        onenote::OneNoteExportAdapter, wechat::WechatArticleOpenCliAdapter,
         xiaohongshu::XiaohongshuOpenCliAdapter, yuque::YuqueOpenCliAdapter,
         zhihu::ZhihuOpenCliAdapter,
     },
@@ -180,7 +180,7 @@ fn source_adapters(
     browser_candidates: &[CandidateEnvelope],
 ) -> Vec<Box<dyn babata_application::ports::SourceAdapterPort>> {
     let mut adapters: Vec<Box<dyn babata_application::ports::SourceAdapterPort>> = vec![
-        Box::new(OneNotePairedExportAdapter),
+        Box::new(OneNoteExportAdapter),
         Box::new(EvernoteNotesAdapter::new(
             config
                 .paths()
