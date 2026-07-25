@@ -293,6 +293,14 @@ C0；另外 2 个因平台仍报告 `HasMore=true` 而在写入前诚实拒绝�
 逐会话事务和完整性检查。普通图片、音频及非 DOCX 附件仍不冒充已覆盖；真实取消、多个
 外围入口对照和模型建议越权测试尚缺，因此 AC-09 仍未整体通过。
 
+Issue #96 在全新临时数据根复用已正式取回的高难 W1 样本验证 Chrome-native handoff：
+当前登录态重新取得 16 条消息、完整分页和 7 个 DOCX 声明，7 个原件逐一核对大小、MD5、
+SHA-256 与 DOCX 结构后，经同一 Collector/Capture 形成 1 item、1 ready revision、7 个
+original assets；刷新来源生成新的等价 handoff 后，typed recollection 返回 `unchanged`、
+0 新 revision。缺附件或文件字节变化的负向测试均在 C0 前失败，临时路径不进入最终 revision
+metadata，全程没有 C1。该结果只证明练手闭环和快路径，不重复改写正式 W1，也不扩大豆包
+其他附件形态或长期自动化声明。
+
 ### AC-10：本地权威、数据分级与恢复成立
 
 关联产品行为：PRD-10。

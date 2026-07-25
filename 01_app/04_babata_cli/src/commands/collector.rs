@@ -33,6 +33,8 @@ pub enum CollectorCommand {
         authorisation: String,
         #[arg(long = "candidate-envelope", hide = true)]
         candidate_envelopes: Vec<PathBuf>,
+        #[arg(long = "acquisition-handoff")]
+        acquisition_handoffs: Vec<PathBuf>,
     },
     Candidates {
         #[arg(long)]
@@ -71,10 +73,14 @@ pub enum CollectorCommand {
     Recollect {
         #[arg(long)]
         item: String,
+        #[arg(long = "acquisition-handoff")]
+        acquisition_handoffs: Vec<PathBuf>,
     },
     RecollectSession {
         #[arg(long)]
         session: String,
+        #[arg(long = "acquisition-handoff")]
+        acquisition_handoffs: Vec<PathBuf>,
     },
 }
 
@@ -107,8 +113,23 @@ pub fn execute(
         CollectorCommand::Start { route, .. } => Some(route.as_str()),
         _ => None,
     };
+    let doubao_handoffs = match &command {
+        CollectorCommand::Start {
+            acquisition_handoffs,
+            ..
+        }
+        | CollectorCommand::Recollect {
+            acquisition_handoffs,
+            ..
+        }
+        | CollectorCommand::RecollectSession {
+            acquisition_handoffs,
+            ..
+        } => acquisition_handoffs.as_slice(),
+        _ => &[],
+    };
     let repository = open_collection_database(&config.paths(), config.sqlite.busy_timeout_ms)?;
-    let adapters = source_adapters(config, active_route, &browser_candidates);
+    let adapters = source_adapters(config, active_route, &browser_candidates, doubao_handoffs)?;
     let service = CollectorSessionService::new(
         repository,
         FileAssetStore::new(config.paths()),
@@ -165,10 +186,10 @@ pub fn execute(
                 reason,
             })
             .map(CollectorExecution::Items),
-        CollectorCommand::Recollect { item } => service
+        CollectorCommand::Recollect { item, .. } => service
             .recollect(&ItemId::parse(item)?)
             .map(CollectorExecution::Recollection),
-        CollectorCommand::RecollectSession { session } => service
+        CollectorCommand::RecollectSession { session, .. } => service
             .recollect_session(&CollectionSessionId::parse(session)?)
             .map(CollectorExecution::Recollections),
     }
@@ -178,7 +199,11 @@ fn source_adapters(
     config: &AppConfig,
     active_route: Option<&str>,
     browser_candidates: &[CandidateEnvelope],
-) -> Vec<Box<dyn babata_application::ports::SourceAdapterPort>> {
+    doubao_handoffs: &[PathBuf],
+) -> Result<
+    Vec<Box<dyn babata_application::ports::SourceAdapterPort>>,
+    babata_application::ApplicationError,
+> {
     let mut adapters: Vec<Box<dyn babata_application::ports::SourceAdapterPort>> = vec![
         Box::new(OneNoteExportAdapter),
         Box::new(EvernoteNotesAdapter::new(
@@ -194,7 +219,9 @@ fn source_adapters(
                 .join("04_runtime/provider-downloads/feishu"),
         )),
         Box::new(KimiOpenCliAdapter),
-        Box::new(DoubaoOpenCliAdapter),
+        Box::new(DoubaoOpenCliAdapter::from_acquisition_handoffs(
+            doubao_handoffs,
+        )?),
         Box::new(ChatGptOpenCliAdapter),
         Box::new(ZhihuOpenCliAdapter::new(
             config
@@ -242,7 +269,7 @@ fn source_adapters(
             candidates,
         )));
     }
-    adapters
+    Ok(adapters)
 }
 
 fn read_candidate(

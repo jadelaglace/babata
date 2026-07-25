@@ -262,6 +262,14 @@ SublibraryDefinition   人工选择、排除、组织规则和版本
 OutputBuild            明确范围、格式、生成版本、manifest 和结果引用
 ```
 
+豆包 Chrome-native 路线已有真实调用者，因此允许一个窄的 acquisition handoff：它只承接
+官方页面响应中的会话信息、完整消息链、来源 URL，以及 Agent 已下载到临时目录的原件路径、
+文件名、大小、MD5 和 SHA-256。CLI 在 discovery 时把已校验 handoff 作为 prefetched candidate
+暂存，使后续独立 `select` 进程仍能走统一 Collector；Capture 前再次核对会话身份、消息唯一性、
+分页终点和全部文件字节。临时路径只存在于待选候选，不进入 ready revision metadata；最终
+指纹只使用稳定消息内容与附件 SHA-256。新的 handoff 可在 recollection composition root 中
+替换旧 prefetched 取得结果，但仍由 application service 决定 `changed/unchanged`。
+
 只在真实调用者出现时固化序列化协议。应用内部 Rust 类型不是承诺给多个未来消费者的
 外部协议。
 
