@@ -540,13 +540,18 @@ where
                         asset.id
                     ))
                 })?;
-                if Sha256::of_bytes(&bytes) != asset.sha256 {
+                let actual = Sha256::of_bytes(&bytes);
+                if asset
+                    .sha256
+                    .as_ref()
+                    .is_some_and(|expected| expected != &actual)
+                {
                     return Err(ApplicationError::Integrity(format!(
-                        "asset {} bytes no longer match C0 hash {}",
-                        asset.id, asset.sha256
+                        "asset {} bytes no longer match its C0 hash",
+                        asset.id
                     )));
                 }
-                Ok((asset.sha256, Some(asset.id)))
+                Ok((actual, Some(asset.id)))
             }
             "bailian_summary" => {
                 let text = revision.raw_text.as_deref().ok_or_else(|| {
@@ -583,7 +588,11 @@ where
     ) -> Result<ProviderExecutionRequest, ApplicationError> {
         let input_text = if let Some(asset_id) = &job.input_asset_id {
             let asset = self.asset_for_revision(asset_id, &job.input_revision_id)?;
-            if asset.sha256 != job.input_sha256 {
+            if asset
+                .sha256
+                .as_ref()
+                .is_some_and(|sha256| sha256 != &job.input_sha256)
+            {
                 return Err(ApplicationError::Integrity(
                     "queued asset hash no longer matches C0".to_owned(),
                 ));
@@ -788,10 +797,10 @@ where
             .map(|asset_id| self.asset_for_revision(asset_id, revision_id))
             .transpose()?;
         if let Some(asset) = &bound_asset {
-            if asset.sha256 != *input_sha256 {
+            if asset.sha256.as_ref() != Some(input_sha256) {
                 return Err(ApplicationError::Integrity(format!(
-                    "input_sha256 {input_sha256} does not match asset {} hash {}",
-                    asset.id, asset.sha256
+                    "input_sha256 {input_sha256} does not match asset {} recorded hash",
+                    asset.id
                 )));
             }
             ensure_asset_kind(kind, asset)?;
@@ -878,7 +887,10 @@ where
         if let Some(path) = &command.logical_path {
             ensure_managed_c1_prefix(path)?;
             let hash = match staged {
-                Some(staged) => staged.sha256.clone(),
+                Some(staged) => staged
+                    .sha256
+                    .clone()
+                    .expect("derived staging always produces sha256"),
                 None => self.assets.hash_logical(path)?,
             };
             ensure_managed_c1_path(path, &hash)?;
@@ -1056,7 +1068,8 @@ where
             }
         }
         let text_match = revision.text_sha256.as_ref() == Some(input_sha256);
-        let asset_match = bound_asset.is_some_and(|asset| asset.sha256 == *input_sha256);
+        let asset_match =
+            bound_asset.is_some_and(|asset| asset.sha256.as_ref() == Some(input_sha256));
         if !text_match && !asset_match {
             return Err(ApplicationError::Integrity(format!(
                 "input_sha256 {input_sha256} matches neither the text hash of revision {revision_id} nor the bound asset hash"

@@ -104,6 +104,7 @@ impl FeishuCliAdapter {
                         AssetRole::Attachment
                     },
                     expected_sha256: None,
+                    ..CaptureImportAsset::default()
                 })
             })
             .collect()

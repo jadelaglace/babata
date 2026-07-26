@@ -160,11 +160,13 @@ impl SourceAdapterPort for EvernoteNotesAdapter {
                         path: export.path.to_string_lossy().into_owned(),
                         role: AssetRole::Original,
                         expected_sha256: None,
+                        ..CaptureImportAsset::default()
                     },
                     CaptureImportAsset {
                         path: export.decrypted_enex_path.to_string_lossy().into_owned(),
                         role: AssetRole::Export,
                         expected_sha256: None,
+                        ..CaptureImportAsset::default()
                     },
                 ],
             )
@@ -456,6 +458,7 @@ impl ParsedExport {
                     path: output.to_string_lossy().into_owned(),
                     role: AssetRole::Attachment,
                     expected_sha256: None,
+                    ..CaptureImportAsset::default()
                 })
             })
             .collect()

@@ -39,7 +39,7 @@ P6  核心沉淀、检索、子库与输出                      已完成
   P6.1 核心知识沉淀                                 已完成
   P6.2 发现、检索与关系导航                         已完成
   P6.3 子库与输出                                   已完成
-P7  扩展来源、正式 Skill 与受控 Agent               进行中（继续证明更多真实来源与形态）
+P7  扩展来源、正式 Skill 与受控 Agent               已完成
 P8  全账户回收闭合、备份恢复与长期加固              未开始
 ```
 
@@ -51,7 +51,7 @@ P8  全账户回收闭合、备份恢复与长期加固              未开始
 <!-- P6.2 preflight: Issue #60 common C0 metadata/observations implemented -->
 <!-- P6.2: completed; AC-07 items 1..4,7 and TC-07 steps 1..4 plus search projection rebuild passed; P6.3 later completed the full AC-07/TC-07 -->
 <!-- P6.3: completed; AC-03, AC-07, AC-08 and TC-03, TC-07, TC-08 passed -->
-<!-- P7: in progress; source.evernote/source.onenote/source.doubao and babata-collect have real evidence; continue proving more source shapes and close AC-09/TC-09; account-wide Doubao recovery belongs to P8 -->
+<!-- P7: completed; AC-09/TC-09 passed through real source batches and the controlled two-attempt item contract; account-wide recovery belongs to P8 -->
 
 2026-07-26，Issue #104 澄清 C0 的两个独立维度：主权深度 C0-A1/C0-A2/C0-A3+ 与管理就绪
 captured/prepared/registered。当前真实回收优先抢救 C0-A1，再补直接依赖 C0-A2；语义引用 C0-A3+
@@ -966,7 +966,26 @@ Issue #104 随后把真实回收中已经形成的口径正式写回权威链：
 覆盖原始归档。C1/C2 若发现引用缺口，只能提出新的授权取得任务并形成独立记录或关系，不能
 直接改写旧 C0。该定义更新不改变本节任何历史计数或阶段结论。
 
-P7 主要交付 AC-09 和 TC-09。
+Issue #101 的 P7 收尾又把本地零散资料接入同一 Collector。用户最终决定紧急路径直接复制，
+不在热路径按大小、抽样或哈希去重；`source.local_files` 因此默认 `opaque_copy`，每个选择文件
+形成独立 `size_snapshot_v1` 资产，`sha256` 留空，强 SHA-256 仅为显式模式。真实 `omba25`
+批次 247 个文件、14,728,536,423 字节在 66.961 秒内 247/247 saved，随后 247/247
+`unchanged`、0 新 revision；数据库 `quick_check=ok`、外键违规 0。该批次不启动 C1。
+
+同一收尾批次把微信第一阶段代表样本从 Recovery 接入正式 C0：13 个 prepared handoff 中
+12 个保存并重采 `unchanged`，其中收藏 7、文件传输助手 5；`favorite:5008` 因同一 revision
+内五个异名同字节媒体触发唯一性冲突，第一次失败后只重试一次并最终 skipped。微信来源固定为
+解密数据库/Recovery；除非用户明确要求，Agent 不操作微信 UI。两个长豆包对话
+`38414453372140034`（60 条消息）与 `38435487680201730`（25 条消息）也已 typed 登记并分别
+重采 `unchanged`，两者均声明 0 个附件。
+
+此前计划单独演练的运行中取消、模型建议越权和多个外围入口逐一对照，按用户实际工作方式
+收敛为受控执行合同：明确范围后优先跑完整轮，单项最多两次，第二次失败即跳过，零星难例
+最后处理；任何外围入口都不得扩张范围、另写最终资产或把模型判断升级为事实。上述真实批次、
+确定性门禁和统一 writer 证据已经覆盖该合同，不再制造脱离真实工作的专项演练。
+
+至此 AC-09、TC-09 通过，P7 完成。未取得内容与 disabled 来源继续诚实报告；全账户回收、
+微信第二/三阶段和后续新增来源转入 P8 或运营，不倒灌为 P7 阻塞项。
 
 ## 11. P8：全账户回收闭合、备份恢复与长期加固
 

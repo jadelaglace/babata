@@ -214,6 +214,7 @@ impl SourceAdapterPort for BilibiliOpenCliAdapter {
                 path: self.download_video(bvid)?,
                 role: AssetRole::Original,
                 expected_sha256: None,
+                ..CaptureImportAsset::default()
             }]
         } else {
             Vec::new()

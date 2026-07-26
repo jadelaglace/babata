@@ -1,8 +1,8 @@
 use babata_domain::{
-    AssetAttachmentId, AssetId, AssetRole, BuildTarget, CandidateEnvelope, CandidateSummary,
-    CollectionId, CollectionSessionId, CommonSourceMetadata, ContentType, DerivativeId,
-    DerivativeKind, DerivativeRef, FirstPartySemanticDefinition, HealthState, ItemId, LogicalPath,
-    Metadata, OutputKind, OutputScope, PageCursor, PipelineId, ProcessJob, ProcessRun,
+    AssetAttachmentId, AssetId, AssetIntegrityMethod, AssetRole, BuildTarget, CandidateEnvelope,
+    CandidateSummary, CollectionId, CollectionSessionId, CommonSourceMetadata, ContentType,
+    DerivativeId, DerivativeKind, DerivativeRef, FirstPartySemanticDefinition, HealthState, ItemId,
+    LogicalPath, Metadata, OutputKind, OutputScope, PageCursor, PipelineId, ProcessJob, ProcessRun,
     ProcessingState, ProjectionStatus, QueryFilter, RawState, RecollectionState, RecordSummary,
     RelationKind, RevisionId, RouteCoverage, RunId, ScoreProfile, SemanticCandidatePackage,
     SemanticPayload, Sha256, SnapshotRef, SourceId, SourceKind, SourceObservationId,
@@ -41,6 +41,28 @@ pub struct CaptureImportAsset {
     pub role: AssetRole,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub expected_sha256: Option<Sha256>,
+    #[serde(default)]
+    pub integrity_method: AssetIntegrityMethod,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub selected_relative_path: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub expected_byte_size: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub expected_modified_unix_nanos: Option<u128>,
+}
+
+impl Default for CaptureImportAsset {
+    fn default() -> Self {
+        Self {
+            path: String::new(),
+            role: AssetRole::Original,
+            expected_sha256: None,
+            integrity_method: AssetIntegrityMethod::Sha256V1,
+            selected_relative_path: None,
+            expected_byte_size: None,
+            expected_modified_unix_nanos: None,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -207,7 +229,9 @@ pub struct AssetDetail {
     pub revision_id: RevisionId,
     pub role: AssetRole,
     pub logical_path: String,
-    pub sha256: String,
+    pub sha256: Option<String>,
+    pub integrity_method: AssetIntegrityMethod,
+    pub integrity_metadata: Metadata,
     pub byte_size: u64,
     pub media_type: Option<String>,
     pub original_filename: Option<String>,

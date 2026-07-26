@@ -415,7 +415,7 @@ mod tests {
         drop(connection);
         let after = super::raw_status(&paths, 100).unwrap();
         assert!(after.reachable);
-        assert_eq!(after.schema_version, 7);
+        assert_eq!(after.schema_version, 8);
         assert_eq!(after.pending_journals, 1);
         assert_eq!(after.orphans, 1);
         assert_eq!(after.quarantined_revisions, 0);

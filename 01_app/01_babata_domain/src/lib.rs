@@ -32,8 +32,8 @@ pub use ids::{
     SuggestionReviewId, TagId, ViewId,
 };
 pub use kinds::{
-    AssetRole, ContentType, DerivativeKind, ProcessingState, RawState, RelationKind, RevisionKind,
-    SourceKind,
+    AssetIntegrityMethod, AssetRole, ContentType, DerivativeKind, ProcessingState, RawState,
+    RelationKind, RevisionKind, SourceKind,
 };
 pub use knowledge::{
     CandidateRelation, DenseExpressionCandidate, DenseExpressionKind, DerivativeEvidence,

@@ -204,6 +204,8 @@ where
                 role: asset.role,
                 logical_path: asset.logical_path.as_str().to_owned(),
                 sha256: asset.sha256.clone(),
+                integrity_method: asset.integrity_method,
+                integrity_metadata: asset.integrity_metadata.clone(),
                 byte_size: asset.byte_size,
                 media_type: asset.media_type.clone(),
                 original_filename: asset.original_filename.clone(),
@@ -219,12 +221,20 @@ where
     ) -> Result<Vec<StagedAsset>, ApplicationError> {
         let mut staged_assets = Vec::with_capacity(assets.len());
         for asset in assets {
-            match self.assets.stage(&asset.path, asset.role, operation_id) {
+            match self.assets.stage_with_integrity(
+                &asset.path,
+                asset.role,
+                operation_id,
+                asset.integrity_method,
+                asset.selected_relative_path.as_deref(),
+                asset.expected_byte_size,
+                asset.expected_modified_unix_nanos,
+            ) {
                 Ok(staged) => {
                     if asset
                         .expected_sha256
                         .as_ref()
-                        .is_some_and(|expected| expected != &staged.sha256)
+                        .is_some_and(|expected| staged.sha256.as_ref() != Some(expected))
                     {
                         let _ = self.assets.discard_stage(&staged);
                         for staged in &staged_assets {
@@ -351,7 +361,15 @@ where
         let identity = command
             .identity
             .or_else(|| command.native_id.as_ref().map(|id| format!("native:{id}")))
-            .unwrap_or_else(|| format!("file:{}", staged.sha256.as_str()));
+            .unwrap_or_else(|| {
+                format!(
+                    "file:{}",
+                    staged
+                        .sha256
+                        .as_ref()
+                        .expect("normal file capture always stages with sha256")
+                )
+            });
         let content_type = content_type_for(&command.path);
         let common_metadata = CommonSourceMetadata {
             source_published_at: command.source_published_at.clone(),
@@ -510,6 +528,8 @@ where
                 role: asset.role,
                 logical_path: asset.logical_path.as_str().to_owned(),
                 sha256: asset.sha256.clone(),
+                integrity_method: asset.integrity_method,
+                integrity_metadata: asset.integrity_metadata.clone(),
                 byte_size: asset.byte_size,
                 media_type: asset.media_type.clone(),
                 original_filename: asset.original_filename.clone(),
@@ -769,6 +789,7 @@ where
     }
 }
 
+#[allow(clippy::too_many_lines)]
 fn validate_candidate(candidate: &CandidateEnvelope) -> Result<(), ApplicationError> {
     if candidate.protocol_version != "1" {
         return Err(ApplicationError::Conflict(
@@ -787,8 +808,11 @@ fn validate_candidate(candidate: &CandidateEnvelope) -> Result<(), ApplicationEr
             | "source.chatgpt"
             | "source.yuque"
             | "source.wechat_articles"
+            | "source.wechat_favorites"
+            | "source.wechat_chats"
             | "source.evernote"
             | "source.onenote"
+            | "source.local_files"
             | "source.browser_pages"
             | "source.browser_bookmarks"
     ) {
@@ -807,9 +831,21 @@ fn validate_candidate(candidate: &CandidateEnvelope) -> Result<(), ApplicationEr
                 "browser bookmark candidates must declare document content".to_owned(),
             ));
         }
-        "source.wechat_articles" if candidate.content_type != ContentType::Document => {
+        "source.wechat_articles" | "source.wechat_favorites"
+            if candidate.content_type != ContentType::Document =>
+        {
             return Err(ApplicationError::Conflict(
-                "WeChat article candidates must declare document content".to_owned(),
+                "WeChat article and favorite candidates must declare document content".to_owned(),
+            ));
+        }
+        "source.wechat_chats"
+            if !matches!(
+                candidate.content_type,
+                ContentType::Document | ContentType::Image | ContentType::Video
+            ) =>
+        {
+            return Err(ApplicationError::Conflict(
+                "WeChat chat candidates must declare document, image, or video content".to_owned(),
             ));
         }
         "source.evernote"
@@ -900,7 +936,10 @@ fn validate_ready_readback(
             .ok_or_else(|| {
                 ApplicationError::Integrity("ready asset did not read back".to_owned())
             })?;
-        if asset.state != RawState::Ready || asset.sha256 != staged.sha256.as_str() {
+        if asset.state != RawState::Ready
+            || asset.sha256.as_deref() != staged.sha256.as_ref().map(Sha256::as_str)
+            || asset.integrity_method != staged.integrity_method
+        {
             return Err(ApplicationError::Integrity(
                 "asset read back with wrong state or hash".to_owned(),
             ));
@@ -1423,7 +1462,9 @@ pub(crate) mod tests {
                         revision_id: asset.revision_id.clone(),
                         role: asset.role,
                         logical_path: asset.logical_path.clone(),
-                        sha256: asset.sha256.to_string(),
+                        sha256: asset.sha256.as_ref().map(ToString::to_string),
+                        integrity_method: asset.integrity_method,
+                        integrity_metadata: asset.integrity_metadata.clone(),
                         byte_size: asset.byte_size,
                         media_type: asset.media_type.clone(),
                         original_filename: asset.original_filename.clone(),
@@ -1558,7 +1599,9 @@ pub(crate) mod tests {
                 role,
                 staging_key: "test".to_owned(),
                 logical_path: LogicalPath::parse("01_raw/assets/test").unwrap(),
-                sha256: Sha256::of_bytes(b"test"),
+                sha256: Some(Sha256::of_bytes(b"test")),
+                integrity_method: babata_domain::AssetIntegrityMethod::Sha256V1,
+                integrity_metadata: Metadata::parse(r#"{"method":"sha256_v1"}"#).unwrap(),
                 byte_size: 4,
                 media_type: None,
                 original_filename: None,
@@ -1631,6 +1674,7 @@ pub(crate) mod tests {
                     path: "source.docx".to_owned(),
                     role: AssetRole::Original,
                     expected_sha256: None,
+                    ..crate::CaptureImportAsset::default()
                 }],
                 reason: "recover source".to_owned(),
                 metadata: Metadata::parse(r#"{"route":"fixture"}"#).unwrap(),
@@ -1667,6 +1711,7 @@ pub(crate) mod tests {
                     path: "changed-source.docx".to_owned(),
                     role: AssetRole::Original,
                     expected_sha256: Some(Sha256::of_bytes(b"expected source bytes")),
+                    ..crate::CaptureImportAsset::default()
                 }],
                 reason: "recover source".to_owned(),
                 metadata: Metadata::empty(),
@@ -1744,6 +1789,7 @@ pub(crate) mod tests {
                         path: "source.docx".to_owned(),
                         role: AssetRole::Original,
                         expected_sha256: None,
+                        ..crate::CaptureImportAsset::default()
                     }],
                     reason: "recover source".to_owned(),
                     metadata: Metadata::empty(),
