@@ -879,6 +879,13 @@ assets。刷新页面生成新的 handoff 后，typed recollection 为 `unchange
 和篡改字节均在 C0 前失败，最终 metadata 无临时路径，C1 未启动。此切片把 Chrome 取得与
 后续独立 select/recollect 接上，不把 W1 再记作一次正式取回，也不继续围绕该样本扩展范围。
 
+Issue #98 随后用第五轮限时练习修正原件取得主链，不再次写正式 C0：OpenCLI 读取完整会话
+并从 `content_type=20` 的消息内嵌 JSON 提取 7 个 DOCX 原始对象键；登录态页面一次调用
+`get_file_url(type=file)` 直接换得 7 个 DOCX 签名地址。下载的 111,296,956 字节逐项通过
+大小、MD5、历史 SHA-256 与 DOCX 结构校验，全程未进入云盘。已把该过程固化为
+`babata-collect` 的确定性 acquisition 脚本，并修复顶层 `AttachmentKeyCount=0` 掩盖消息内
+文件对象时的 fail-open 判断。消息卡片“查看”仍只产生 PDF preview；云盘下载保持独立备选。
+
 P7 主要交付 AC-09 和 TC-09。
 
 ## 11. P8：备份、恢复、运维与长期加固

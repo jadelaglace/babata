@@ -18,6 +18,10 @@ batches of 1-20 conversation IDs. Runtime capability remains authoritative.
   PDF preview in the formal C0. A later temporary-root exercise proved a fresh Chrome-native handoff
   can collect the same 16-message conversation with exactly the seven originals and typed-recollect
   a refreshed equivalent handoff as `unchanged`. Other attachment and media shapes remain unproven.
+- A timed 2026-07-26 forward run proved the fast original-file path: OpenCLI `detail-full` exposed
+  seven `content_type=20` message entities; their `entity_content.file.key` values were submitted in
+  one signed-in page call to `/alice/message/get_file_url` with `type=file`. Seven DOCX URLs returned
+  without Drive, and all 111,296,956 bytes matched message size/MD5 and the historical SHA-256 values.
 
 ## Batch Workflow
 
@@ -37,19 +41,37 @@ batches of 1-20 conversation IDs. Runtime capability remains authoritative.
    For a long conversation, prefer direct control of the user's signed-in desktop Chrome. Observe
    `/im/chain/single`, then follow the official descending `anchor_index` requests until
    `has_more=false`; verify conversation identity and unique message IDs before C0. For original
-   DOCX files, open Doubao Drive and locate the same filename; use the file-row `下载` action, not a
-   document preview export. Build one local acquisition handoff containing the structured response
-   and every declared original's path, size, MD5, and SHA-256, then start with:
+   DOCX files, use the bundled deterministic acquisition script:
+
+   ```powershell
+   ./02_skills/babata-collect/scripts/acquire-doubao-originals.ps1 `
+     -ConversationId <id> `
+     -OutputDirectory <temporary-or-recovery-directory>
+   ```
+
+   The script reads `content_type=20` message JSON, extracts every `entity_content.file` object,
+   calls the signed-in page's `/alice/message/get_file_url` once with the original object keys and
+   `type=file`, downloads only returned `.docx` URIs, validates size/MD5/SHA-256 and DOCX ZIP
+   structure, and writes `acquisition-handoff.json`. It never adds the returned original-download
+   signed URLs to the handoff; the preserved official source response may still contain unrelated
+   transient media URLs, which the stable fingerprint excludes. Do not click the
+   attachment card or its `查看` action: that supplies a converted PDF URI to the same endpoint and
+   opens the platform preview. Do not treat top-level `AttachmentKeyCount=0` as proof that no files
+   exist; inspect the nested message JSON directly.
+
+   Build or use the generated acquisition handoff, then start with:
 
    ```text
    babata --json collector start --route source.doubao --source conversation:<id> --scope <scope> --authorisation <reference> --acquisition-handoff <handoff.json>
    ```
 
    Select with `--attachments --confirm`. Missing, mismatched, or changed originals must fail before
-   C0. If attachments were requested and the OpenCLI fallback reports nonzero attachment keys,
-   reject the fallback before C0 and require a Chrome-native handoff. Do not route through the
-   unauthenticated in-app browser, and do not wait on OpenCLI when desktop Chrome is already
-   available.
+   C0. If attachments were requested and nested message JSON declares any file object, reject a
+   text-only fallback before C0 and require the generated Chrome-native handoff. If direct object-key
+   retrieval fails, keep Doubao Drive as a separate fallback: locate the exact filename and use the
+   file-row `下载` action, never the document preview. Do not mix Drive search into the direct path,
+   route through the unauthenticated in-app browser, or wait on speculative alternatives after the
+   signed-in page contract is available.
 5. Recollect every saved `item_id` with a newly captured equivalent handoff:
 
    ```text
