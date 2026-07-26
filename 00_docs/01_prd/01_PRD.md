@@ -63,11 +63,17 @@ Babata 的价值不在于建立很多协议、接口或宏观架构，而在于�
 | 主权深度 | A2 | 让 A1 内容本地完整所必需的正文、内嵌媒体和附件也已取得，未得部分明确列为缺口 |
 | 主权深度 | A3+ | 经单独判断继续取得有价值的语义引用；每个结果是独立 node/reference，默认低优先级并及时停止 |
 | 管理就绪 | captured | 已在本地保全且可校验 |
-| 管理就绪 | prepared / C0-B | 已完成解压、稳定命名、格式识别、manifest 和字段保留等非语义准备，原件未被覆盖 |
-| 管理就绪 | registered / C0-C | 已由唯一 Rust application/core 正式登记，可通过 item/revision/asset/provenance/relation/status 回读 |
+| 管理就绪 | prepared / C0-B | A2 已成立后，完成解压、稳定命名、格式识别、manifest 和字段保留等非语义准备，原件未被覆盖 |
+| 管理就绪 | registered / C0-C | A2 与 prepared 已成立，再由唯一 Rust application/core 正式登记，可通过 item/revision/asset/provenance/relation/status 回读 |
 
 只有 `registered / C0-C` 对外称为“正式进入 C0”或“正式 C0”。A1/A2 的 captured/prepared
 同样可以是已经成功完成的主权回收，不因尚未 SQL 登记而被说成“什么都没拿到”。
+但 A1 只能停在 captured：至少完成 A2，才允许进入 prepared/C0-B 和 registered/C0-C。
+A3+ 是可选语义引用，不阻塞 B/C。
+
+取得深度按明确范围判定，不要求一个来源全量同步推进。P7 从文件传输助手和收藏中选取
+10–20 条代表样本，两类都覆盖；样本优先覆盖 URL/文章并包含少量本地媒体，逐条达到 A2 后
+才能走 B/C。范围外全量继续显示 A1，不能因代表样本完成而升级全来源状态。
 
 ## 4. 产品行为
 
@@ -319,8 +325,9 @@ Skill 可以接收链接、文件和指令，提交给已经存在的收集或�
 `babata-collect` 只把明确范围送到统一 Collector/Capture 并验证 C0；它不启动 Process、
 不等待 C1，也不把“已拿回临时文件”“已正式登记 C0”“可长期稳定重跑”混成一个完成状态。
 取得路线先抢救 A1，再在直接依赖边界完成 A2；A3+ 只能作为显式、有限、低优先级的引用
-取得任务。外围工具可以形成 captured/prepared 材料，但只有 Rust application/core 回读成功
-才形成 registered C0。C1/C2 发现缺口时只能提出新的授权取得任务，不能反写已有 C0。
+取得任务。外围工具可以形成 captured；只有 A2 完整性依赖闭合后才能形成 prepared 材料，
+再经 Rust application/core 回读成功才形成 registered C0。C1/C2 发现缺口时只能提出新的
+授权取得任务，不能反写已有 C0。
 
 ### PRD-10：本地优先、唯一权威和可恢复
 
@@ -360,7 +367,7 @@ unchanged”，却不解释用户实际得到的结果。
 | --- | --- | --- |
 | C0（正式 C0 / C0-C） | 已正式登记的原件和用户自己写的内容 | 从来源拿回并经唯一 Rust 路径登记、可回读的原文、原图、原音视频、原文件、原导出件，以及用户的第一方创作和历史版本 |
 | A1 / A2 / A3+ | 主权拿回深度 | A1 抢先保存直接可得内容；A2 补齐正文、内嵌媒体和必要附件；A3+ 只在值得时有限追取语义引用 |
-| captured / prepared / registered | 管理就绪状态 | captured 已本地保全；prepared 只做不覆盖原件的解压、命名、格式和 manifest；registered 才是正式 C0 |
+| captured / prepared / registered | 管理就绪状态 | captured 已本地保全；A2 成立后才可 prepared；prepared 只做不覆盖原件的解压、命名、格式和 manifest；registered 才是正式 C0 |
 | C1 | 从原件加工出来的内容 | OCR、转写、字幕、摘要、标签、结构化结果和模型输出；必须能回到输入原件，可以重做 |
 | C2 | 随时可以重新生成的阅读或输出页面 | Obsidian、网页、报告、子库物化结果和其他视图；删除视图不等于删除资料 |
 | C3 | 任务运行留下的临时状态 | 队列、缓存、日志和运行状态；可以清理，不冒充用户资料 |

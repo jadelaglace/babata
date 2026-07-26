@@ -48,7 +48,8 @@ Then read exactly one relevant source reference:
 4. Let only Babata Rust application/core finalise originals, IDs, revisions, assets, hashes, and
    source observations. Never write SQLite or managed asset directories directly.
 5. Prefer A1 preservation when source loss is urgent; then obtain A2 body, embedded media, and required
-   attachments. Follow semantic references only as bounded, explicitly valuable A3+ tasks. End formal
+   attachments. Do not prepare or register A1-only material; A2 is required for C0-B/C0-C. Follow
+   semantic references only as bounded, explicitly valuable A3+ tasks; A3+ is not a B/C prerequisite. End formal
    collection after every selected candidate is `saved` with `item_id` and `revision_id`, or after honest
    captured/prepared/failed/skipped/cancelled results are reported. Never call `babata process`, a cleaning Skill,
    OCR/ASR, semantic digest, or knowledge commands as part of collection.

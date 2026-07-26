@@ -169,9 +169,10 @@ babata annotate
 
 ## 9. 统一 C0 写入序列
 
-此序列只描述从 prepared acquisition material 到 registered/C0-C 的唯一正式登记路径；A1
-抢救和 A2 直接依赖取得可以先在 Recovery/acquisition 区独立完成，不等待此序列。解压、命名、
-格式识别和 manifest 等 prepared 操作必须保留上游原件，不能覆盖或原地规范化来源归档。
+此序列只描述从 A2-complete prepared acquisition material 到 registered/C0-C 的唯一正式
+登记路径。A1 抢救和 A2 直接依赖取得可以先在 Recovery/acquisition 区完成，但 A1-only 输入
+不得进入 prepared/C0-B 或本序列。解压、命名、格式识别和 manifest 等 prepared 操作必须
+保留上游原件，不能覆盖或原地规范化来源归档。A3+ 不属于写入前置。
 
 ```text
 校验请求、来源/创作上下文和允许输入
@@ -230,6 +231,7 @@ FTS 或视图成为第二权威
 JS/Python 获得数据根最终路径或数据库写权限
 为了已存在代码提前宣告 P3、P4 或产品 AC 完成
 把 captured/prepared Recovery 材料冒充 registered/C0-C
+让 A1-only 材料绕过 A2 完整性门进入 prepared/C0-B 或 registered/C0-C
 让 A3+ 无界递归，或把语义 reference 混入 A2 完整性依赖
 让 C1/C2 直接反写旧 C0；下游发现缺口只能创建新的授权 acquisition 请求
 ```

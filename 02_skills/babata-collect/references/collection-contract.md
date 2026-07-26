@@ -31,10 +31,12 @@ belong to A2. A cited article, paper, or page is normally a reference, not an A2
 | Readiness | Meaning |
 | --- | --- |
 | `captured` | Locally preserved and verifiable. |
-| `prepared` / `C0-B` | Non-semantic extraction, stable naming, format identification, manifest, and field preservation are complete without overwriting upstream originals. |
-| `registered` / `C0-C` | The unique Rust application/core assigned SQL identity, revision, assets, provenance, relations, status, and successful read-back. |
+| `prepared` / `C0-B` | After A2 is complete, non-semantic extraction, stable naming, format identification, manifest, and field preservation are complete without overwriting upstream originals. |
+| `registered` / `C0-C` | After A2 and preparation, the unique Rust application/core assigned SQL identity, revision, assets, provenance, relations, status, and successful read-back. |
 
-Depth and readiness are independent: `A2 + prepared` is valid. Only `registered / C0-C` may be
+Depth and readiness are reported independently, but readiness has an admission rule: A1 may only be
+`captured`; A2 is required before `prepared / C0-B` or `registered / C0-C`. A3+ is optional and is not
+an admission requirement. Only `registered / C0-C` may be
 reported as "formally collected", "entered C0", or "formal C0". A1/A2 captured or prepared material
 may still be a successful sovereignty recovery and must not be reported as if nothing was retrieved.
 
@@ -54,6 +56,11 @@ managed C0 assets.
 C1/C2 may identify a missing reference and request a new authorised A3/A4 acquisition. They must not
 rewrite an old C0 record directly; each newly acquired result follows this contract as its own record
 or reference.
+
+A bounded representative scope may advance to A2/B/C while the rest of a recovered source remains
+A1. The report must preserve both scopes. For the P7 WeChat proof, select 10-20 representative items
+across both File Transfer Assistant and Favorites, prioritise URL/article items with a small local-media
+cross-section, and require body, embedded media, and required attachments before preparation or registration.
 
 ## Scope and Authorisation
 
