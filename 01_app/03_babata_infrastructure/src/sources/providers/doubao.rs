@@ -562,6 +562,7 @@ fn collect_handoff(
                     path: asset.path,
                     role: AssetRole::Attachment,
                     expected_sha256: Some(Sha256::parse(asset.sha256)?),
+                    ..CaptureImportAsset::default()
                 })
             })
             .collect::<Result<Vec<_>, ApplicationError>>()?

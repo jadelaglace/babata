@@ -444,6 +444,11 @@ Issue #60 的测试是 AC-07/TC-07 前置机制证据，不是检索产品验收
 14. 从微信文件传输助手和收藏中选择 10–20 条代表样本，两类都覆盖，优先覆盖 URL/文章并
     包含少量本地媒体；逐条取得正文、内嵌媒体和必要附件，确认样本达到 C0-A2 后进入 prepared/C0-B、registered/
     C0-C，并在重采时正确报告 unchanged。核对未选全量仍为 C0-A1，汇报不扩大样本结论。
+15. 选择一个包含同大小/同内容文件的本地目录，使用默认 `opaque_copy` 走正式 Collector；确认
+    每个文件各自复制和登记，全部资产为 `size_snapshot_v1`、`sha256 = null`，没有大小分组、
+    抽样哈希或内容复用；再显式选择 `full_sha256` 验证强校验仍可用。
+16. 微信样本只读取解密数据库/Recovery handoff；未收到用户明确要求时，任何步骤都不得操作
+    微信 UI。单项第一次失败后只允许一次重试，第二次失败转为 skipped/non-retryable。
 
 预期：所有入口调用同一核心结果；unavailable 不伪成功；已确认范围内不因反复人工确认
 中断，取消后范围不扩张；未确认越界自动化被拒绝；外围无第二权威写入；Skill 测试不
@@ -460,6 +465,13 @@ Issue #60 的测试是 AC-07/TC-07 前置机制证据，不是检索产品验收
 DOCX assets；新的等价 handoff 重采为 `unchanged`、0 新 revision，C1 为 0。单元测试另证明
 缺附件和来源文件变化会在 C0 前失败，ready revision metadata 不含 acquisition 临时路径。
 W1 原正式记录未被重复写入；该练手闭环后不继续扩大同一样本范围。
+
+P7 收尾结果（Issue #101）：真实 `omba25` 共 247 个文件、14,728,536,423 字节，默认
+`opaque_copy` 在 66.961 秒内 247/247 saved、0 failed/skipped；247 个资产全部为
+`size_snapshot_v1` 且 `sha256 = null`。同 session 重采 247/247 `unchanged`、0 新 revision，
+`quick_check=ok`、外键违规 0。微信 13 个 prepared handoff 中 12 个 saved 并 12/12
+`unchanged`；唯一 `favorite:5008` 在一次重试后 skipped/non-retryable。两个长豆包对话
+`38414453372140034` 与 `38435487680201730` 分别以 60/25 条消息登记，均重采 unchanged。
 
 状态（2026-07-25）：TC-09 部分执行，尚未整体通过。Issue #82 完成首个 extra-source 与底层
 能力前置：真实 `.notes` 在隔离库和活动库均发现 `1 batch + 163 notes`；活动库 164/164

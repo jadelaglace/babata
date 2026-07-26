@@ -1,5 +1,6 @@
 use babata_domain::{
-    DerivativeId, DerivativeKind, DerivativeRef, ItemId, ProcessingState, RevisionId, Sha256,
+    DerivativeId, DerivativeKind, DerivativeRef, ItemId, LogicalPath, ProcessingState, RevisionId,
+    Sha256,
 };
 
 use crate::{
@@ -260,7 +261,12 @@ where
                             run.id
                         ))
                     })?;
-                Sha256::parse(&asset.sha256).map_err(ApplicationError::from)?
+                match asset.sha256.as_deref() {
+                    Some(sha256) => Sha256::parse(sha256).map_err(ApplicationError::from)?,
+                    None => self.assets.hash_logical(
+                        &LogicalPath::parse(&asset.logical_path).map_err(ApplicationError::from)?,
+                    )?,
+                }
             }
             None => revision.text_sha256.clone().ok_or_else(|| {
                 ApplicationError::Integrity(format!(

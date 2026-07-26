@@ -1,8 +1,8 @@
 use babata_domain::{
-    AssetAttachmentId, AssetId, AssetRole, CollectionId, CollectionSessionId, CommonSourceMetadata,
-    ContentType, ItemId, Metadata, RawState, RecollectionState, RelationId, RelationKind,
-    RevisionId, RevisionKind, RouteCoverage, RouteEvidence, Sha256, SourceId, SourceKind,
-    SourceObservationId, SourceObservationKind, UtcTimestamp,
+    AssetAttachmentId, AssetId, AssetIntegrityMethod, AssetRole, CollectionId, CollectionSessionId,
+    CommonSourceMetadata, ContentType, ItemId, Metadata, RawState, RecollectionState, RelationId,
+    RelationKind, RevisionId, RevisionKind, RouteCoverage, RouteEvidence, Sha256, SourceId,
+    SourceKind, SourceObservationId, SourceObservationKind, UtcTimestamp,
 };
 
 use crate::{ApplicationError, RecordDetail};
@@ -94,7 +94,9 @@ pub struct NewAsset {
     pub revision_id: RevisionId,
     pub role: AssetRole,
     pub logical_path: String,
-    pub sha256: Sha256,
+    pub sha256: Option<Sha256>,
+    pub integrity_method: AssetIntegrityMethod,
+    pub integrity_metadata: Metadata,
     pub byte_size: u64,
     pub media_type: Option<String>,
     pub original_filename: Option<String>,

@@ -691,6 +691,7 @@ mod tests {
                     path: path.clone(),
                     role: AssetRole::Original,
                     expected_sha256: None,
+                    ..CaptureImportAsset::default()
                 });
             }
             Ok(outcome)

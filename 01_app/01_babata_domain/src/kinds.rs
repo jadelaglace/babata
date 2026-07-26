@@ -41,6 +41,14 @@ pub enum AssetRole {
     Preview,
 }
 
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AssetIntegrityMethod {
+    #[default]
+    Sha256V1,
+    SizeSnapshotV1,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum RawState {

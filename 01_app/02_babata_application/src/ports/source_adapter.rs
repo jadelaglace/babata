@@ -15,5 +15,13 @@ pub trait SourceAdapterPort: Send + Sync {
         prefetched: Option<&babata_domain::CandidateEnvelope>,
         requested_attachments: bool,
     ) -> Result<AcquisitionOutcome, ApplicationError>;
+    fn collect_recollection(
+        &self,
+        candidate: &CandidateSummary,
+        prefetched: Option<&babata_domain::CandidateEnvelope>,
+        requested_attachments: bool,
+    ) -> Result<AcquisitionOutcome, ApplicationError> {
+        self.collect(candidate, prefetched, requested_attachments)
+    }
     fn coverage(&self) -> RouteCoverage;
 }

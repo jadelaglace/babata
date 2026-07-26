@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    AssetId, AssetRole, CommonSourceMetadata, ContentType, ItemId, LogicalPath, Metadata, RawState,
-    RelationId, RelationKind, RevisionId, RevisionKind, Sha256, SourceId, SourceKind, UtcTimestamp,
+    AssetId, AssetIntegrityMethod, AssetRole, CommonSourceMetadata, ContentType, ItemId,
+    LogicalPath, Metadata, RawState, RelationId, RelationKind, RevisionId, RevisionKind, Sha256,
+    SourceId, SourceKind, UtcTimestamp,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -56,7 +57,9 @@ pub struct AssetRef {
     pub revision_id: RevisionId,
     pub role: AssetRole,
     pub logical_path: LogicalPath,
-    pub sha256: Sha256,
+    pub sha256: Option<Sha256>,
+    pub integrity_method: AssetIntegrityMethod,
+    pub integrity_metadata: Metadata,
     pub byte_size: u64,
     pub media_type: Option<String>,
     pub original_filename: Option<String>,

@@ -32,6 +32,10 @@ const MIGRATIONS: &[(&str, &str)] = &[
         "0007_sublibrary_definitions.sql",
         include_str!("../../../../03_migrations/01_raw/0007_sublibrary_definitions.sql"),
     ),
+    (
+        "0008_asset_integrity_methods.sql",
+        include_str!("../../../../03_migrations/01_raw/0008_asset_integrity_methods.sql"),
+    ),
 ];
 
 const INTEGRITY_MIGRATIONS: &[(&str, &str)] = &[(
@@ -287,7 +291,7 @@ mod tests {
                 .query_row("SELECT COUNT(*) FROM schema_migrations", [], |row| row
                     .get::<_, i64>(0))
                 .unwrap(),
-            7
+            MIGRATIONS.len() as i64
         );
         assert!(
             connection
@@ -312,7 +316,85 @@ mod tests {
                     0
                 ))
                 .unwrap(),
-            7
+            MIGRATIONS.len() as i64
+        );
+    }
+
+    #[test]
+    fn asset_integrity_migration_preserves_attachment_members() {
+        let connection = Connection::open_in_memory().unwrap();
+        connection
+            .pragma_update(None, "foreign_keys", "ON")
+            .unwrap();
+        for (index, (name, sql)) in MIGRATIONS.iter().take(7).enumerate() {
+            connection.execute_batch(sql).unwrap();
+            connection
+                .execute(
+                    "INSERT INTO schema_migrations
+                     (version, name, applied_at, checksum_sha256)
+                     VALUES (?1, ?2, '2026-07-27T00:00:00Z', ?3)",
+                    params![
+                        (index + 1) as i64,
+                        name,
+                        super::super::migration_checksum(sql)
+                    ],
+                )
+                .unwrap();
+        }
+        connection
+            .execute_batch(
+                "INSERT INTO sources
+                    (source_id, source_kind, provider, created_at)
+                 VALUES ('source_a', 'external', 'fixture', '2026-07-27T00:00:00Z');
+                 INSERT INTO items
+                    (item_id, source_id, content_type, first_captured_at, created_at)
+                 VALUES ('item_a', 'source_a', 'document',
+                         '2026-07-27T00:00:00Z', '2026-07-27T00:00:00Z');
+                 INSERT INTO revisions
+                    (revision_id, item_id, revision_kind, ordinal, captured_at,
+                     state, created_at)
+                 VALUES ('revision_a', 'item_a', 'capture', 1,
+                         '2026-07-27T00:00:00Z', 'ready', '2026-07-27T00:00:00Z');
+                 INSERT INTO assets
+                    (asset_id, revision_id, asset_role, logical_path, sha256,
+                     byte_size, state, created_at)
+                 VALUES ('asset_a', 'revision_a', 'original', '01_raw/a',
+                         'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+                         1, 'ready', '2026-07-27T00:00:00Z');
+                 INSERT INTO asset_attachment_operations
+                    (operation_id, revision_id, reason, state, started_at, completed_at)
+                 VALUES ('attachment_a', 'revision_a', 'fixture', 'ready',
+                         '2026-07-27T00:00:00Z', '2026-07-27T00:00:01Z');
+                 INSERT INTO asset_attachment_members (operation_id, asset_id)
+                 VALUES ('attachment_a', 'asset_a');",
+            )
+            .unwrap();
+
+        migrate_raw(&connection).unwrap();
+
+        let member: (String, String) = connection
+            .query_row(
+                "SELECT operation_id, asset_id FROM asset_attachment_members",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(member, ("attachment_a".to_owned(), "asset_a".to_owned()));
+        let method: String = connection
+            .query_row(
+                "SELECT integrity_method FROM assets WHERE asset_id = 'asset_a'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(method, "sha256_v1");
+        assert_eq!(
+            connection
+                .query_row("SELECT COUNT(*) FROM pragma_foreign_key_check", [], |row| {
+                    row.get::<_, i64>(0)
+                })
+                .unwrap(),
+            0
         );
     }
 
@@ -324,7 +406,7 @@ mod tests {
             .execute(
                 "INSERT INTO schema_migrations
                  (version, name, applied_at, checksum_sha256)
-                 VALUES (8, 'future.sql', '2026-01-01T00:00:00Z', 'future')",
+                 VALUES (9, 'future.sql', '2026-01-01T00:00:00Z', 'future')",
                 [],
             )
             .unwrap();

@@ -10,11 +10,19 @@ use babata_domain::{
 use babata_infrastructure::{
     AppConfig, FileAssetStore, SystemClock, open_collection_database,
     sources::providers::{
-        bilibili_collection::BilibiliOpenCliAdapter, browser::BrowserCandidateAdapter,
-        chatgpt::ChatGptOpenCliAdapter, doubao::DoubaoOpenCliAdapter,
-        evernote::EvernoteNotesAdapter, feishu::FeishuCliAdapter, kimi::KimiOpenCliAdapter,
-        onenote::OneNoteExportAdapter, wechat::WechatArticleOpenCliAdapter,
-        xiaohongshu::XiaohongshuOpenCliAdapter, yuque::YuqueOpenCliAdapter,
+        bilibili_collection::BilibiliOpenCliAdapter,
+        browser::BrowserCandidateAdapter,
+        chatgpt::ChatGptOpenCliAdapter,
+        doubao::DoubaoOpenCliAdapter,
+        evernote::EvernoteNotesAdapter,
+        feishu::FeishuCliAdapter,
+        kimi::KimiOpenCliAdapter,
+        local_files::{LocalFileStrategy, LocalFilesAdapter},
+        onenote::OneNoteExportAdapter,
+        wechat::WechatArticleOpenCliAdapter,
+        wechat_recovery::WechatRecoveryAdapter,
+        xiaohongshu::XiaohongshuOpenCliAdapter,
+        yuque::YuqueOpenCliAdapter,
         zhihu::ZhihuOpenCliAdapter,
     },
 };
@@ -31,6 +39,8 @@ pub enum CollectorCommand {
         scope: String,
         #[arg(long)]
         authorisation: String,
+        #[arg(long = "local-file-strategy", default_value = "opaque_copy")]
+        local_file_strategy: String,
         #[arg(long = "candidate-envelope", hide = true)]
         candidate_envelopes: Vec<PathBuf>,
         #[arg(long = "acquisition-handoff")]
@@ -95,6 +105,7 @@ pub enum CollectorExecution {
     Recollections(Vec<babata_domain::RecollectionOutcome>),
 }
 
+#[allow(clippy::too_many_lines)]
 pub fn execute(
     command: CollectorCommand,
     config: &AppConfig,
@@ -113,7 +124,14 @@ pub fn execute(
         CollectorCommand::Start { route, .. } => Some(route.as_str()),
         _ => None,
     };
-    let doubao_handoffs = match &command {
+    let local_file_strategy = match &command {
+        CollectorCommand::Start {
+            local_file_strategy,
+            ..
+        } => local_file_strategy.parse::<LocalFileStrategy>()?,
+        _ => LocalFileStrategy::default(),
+    };
+    let acquisition_handoffs = match &command {
         CollectorCommand::Start {
             acquisition_handoffs,
             ..
@@ -128,8 +146,15 @@ pub fn execute(
         } => acquisition_handoffs.as_slice(),
         _ => &[],
     };
+    let handoffs = partition_acquisition_handoffs(acquisition_handoffs)?;
     let repository = open_collection_database(&config.paths(), config.sqlite.busy_timeout_ms)?;
-    let adapters = source_adapters(config, active_route, &browser_candidates, doubao_handoffs)?;
+    let adapters = source_adapters(
+        config,
+        active_route,
+        &browser_candidates,
+        &handoffs,
+        local_file_strategy,
+    )?;
     let service = CollectorSessionService::new(
         repository,
         FileAssetStore::new(config.paths()),
@@ -199,7 +224,8 @@ fn source_adapters(
     config: &AppConfig,
     active_route: Option<&str>,
     browser_candidates: &[CandidateEnvelope],
-    doubao_handoffs: &[PathBuf],
+    handoffs: &AcquisitionHandoffPaths,
+    local_file_strategy: LocalFileStrategy,
 ) -> Result<
     Vec<Box<dyn babata_application::ports::SourceAdapterPort>>,
     babata_application::ApplicationError,
@@ -220,8 +246,12 @@ fn source_adapters(
         )),
         Box::new(KimiOpenCliAdapter),
         Box::new(DoubaoOpenCliAdapter::from_acquisition_handoffs(
-            doubao_handoffs,
+            &handoffs.doubao,
         )?),
+        Box::new(WechatRecoveryAdapter::favorites(
+            &handoffs.wechat_favorites,
+        )?),
+        Box::new(WechatRecoveryAdapter::chats(&handoffs.wechat_chats)?),
         Box::new(ChatGptOpenCliAdapter),
         Box::new(ZhihuOpenCliAdapter::new(
             config
@@ -253,6 +283,7 @@ fn source_adapters(
                 .root()
                 .join("04_runtime/provider-downloads/wechat"),
         )),
+        Box::new(LocalFilesAdapter::new(local_file_strategy)),
     ];
     for route in [
         "source.douyin",
@@ -270,6 +301,52 @@ fn source_adapters(
         )));
     }
     Ok(adapters)
+}
+
+#[derive(Debug, Default)]
+struct AcquisitionHandoffPaths {
+    doubao: Vec<PathBuf>,
+    wechat_favorites: Vec<PathBuf>,
+    wechat_chats: Vec<PathBuf>,
+}
+
+fn partition_acquisition_handoffs(
+    paths: &[PathBuf],
+) -> Result<AcquisitionHandoffPaths, babata_application::ApplicationError> {
+    let mut partitioned = AcquisitionHandoffPaths::default();
+    for path in paths {
+        let bytes = std::fs::read(path).map_err(|error| {
+            babata_application::ApplicationError::Asset(format!(
+                "unable to read acquisition handoff: {:?}",
+                error.kind()
+            ))
+        })?;
+        let header: serde_json::Value = serde_json::from_slice(&bytes).map_err(|_| {
+            babata_application::ApplicationError::Conflict(
+                "acquisition handoff is invalid JSON".to_owned(),
+            )
+        })?;
+        match header.get("provider").and_then(serde_json::Value::as_str) {
+            Some("doubao") => partitioned.doubao.push(path.clone()),
+            Some("wechat") => match header.get("route_id").and_then(serde_json::Value::as_str) {
+                Some("source.wechat_favorites") => {
+                    partitioned.wechat_favorites.push(path.clone());
+                }
+                Some("source.wechat_chats") => partitioned.wechat_chats.push(path.clone()),
+                _ => {
+                    return Err(babata_application::ApplicationError::Conflict(
+                        "WeChat acquisition handoff has an unsupported route".to_owned(),
+                    ));
+                }
+            },
+            _ => {
+                return Err(babata_application::ApplicationError::Conflict(
+                    "acquisition handoff has an unsupported provider".to_owned(),
+                ));
+            }
+        }
+    }
+    Ok(partitioned)
 }
 
 fn read_candidate(

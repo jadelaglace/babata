@@ -13,10 +13,10 @@ use babata_application::{
     },
 };
 use babata_domain::{
-    AssetAttachmentId, AssetId, AssetRole, CollectionId, CollectionSessionId, CommonSourceMetadata,
-    ContentType, ItemId, Metadata, RawState, RecollectionState, RelationId, RelationKind,
-    RevisionId, RevisionKind, RouteCoverage, RouteEvidence, Sha256, SourceId, SourceKind,
-    SourceObservationId, SourceObservationKind, SourceRouteId, SublibraryAuthorityRef,
+    AssetAttachmentId, AssetId, AssetIntegrityMethod, AssetRole, CollectionId, CollectionSessionId,
+    CommonSourceMetadata, ContentType, ItemId, Metadata, RawState, RecollectionState, RelationId,
+    RelationKind, RevisionId, RevisionKind, RouteCoverage, RouteEvidence, Sha256, SourceId,
+    SourceKind, SourceObservationId, SourceObservationKind, SourceRouteId, SublibraryAuthorityRef,
     SublibraryDefinition, SublibraryId, UtcTimestamp,
 };
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
@@ -191,7 +191,7 @@ impl RawRepositoryPort for SqliteRawRepository {
         let connection = self.lock()?;
         connection
             .query_row(
-                "SELECT asset_id, revision_id, asset_role, logical_path, sha256, byte_size, media_type, original_filename FROM assets WHERE asset_id = ?1",
+                "SELECT asset_id, revision_id, asset_role, logical_path, sha256, integrity_method, integrity_metadata_json, byte_size, media_type, original_filename FROM assets WHERE asset_id = ?1",
                 params![asset_id.to_string()],
                 new_asset_from_row,
             )
@@ -206,7 +206,7 @@ impl RawRepositoryPort for SqliteRawRepository {
         let connection = self.lock()?;
         let mut statement = connection
             .prepare(
-                "SELECT asset_id, revision_id, asset_role, logical_path, sha256, byte_size, media_type, original_filename FROM assets WHERE revision_id = ?1 ORDER BY created_at",
+                "SELECT asset_id, revision_id, asset_role, logical_path, sha256, integrity_method, integrity_metadata_json, byte_size, media_type, original_filename FROM assets WHERE revision_id = ?1 ORDER BY created_at",
             )
             .map_err(storage)?;
         let rows = statement
@@ -796,10 +796,17 @@ fn new_asset_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<NewAsset> {
         revision_id: RevisionId::parse(row.get::<_, String>(1)?).map_err(to_sql)?,
         role: parse_asset_role(&row.get::<_, String>(2)?).map_err(to_sql)?,
         logical_path: row.get(3)?,
-        sha256: Sha256::parse(row.get::<_, String>(4)?).map_err(to_sql)?,
-        byte_size: row.get::<_, i64>(5)? as u64,
-        media_type: row.get(6)?,
-        original_filename: row.get(7)?,
+        sha256: row
+            .get::<_, Option<String>>(4)?
+            .map(Sha256::parse)
+            .transpose()
+            .map_err(to_sql)?,
+        integrity_method: parse_asset_integrity_method(&row.get::<_, String>(5)?)
+            .map_err(to_sql)?,
+        integrity_metadata: Metadata::parse(&row.get::<_, String>(6)?).map_err(to_sql)?,
+        byte_size: row.get::<_, i64>(7)? as u64,
+        media_type: row.get(8)?,
+        original_filename: row.get(9)?,
     })
 }
 
@@ -807,7 +814,7 @@ fn load_assets(
     connection: &Connection,
     item_id: &ItemId,
 ) -> Result<Vec<AssetDetail>, ApplicationError> {
-    let mut statement = connection.prepare("SELECT a.asset_id, a.revision_id, a.asset_role, a.logical_path, a.sha256, a.byte_size, a.media_type, a.original_filename, a.state, a.created_at FROM assets a JOIN revisions r ON r.revision_id = a.revision_id WHERE r.item_id = ?1 ORDER BY a.created_at").map_err(storage)?;
+    let mut statement = connection.prepare("SELECT a.asset_id, a.revision_id, a.asset_role, a.logical_path, a.sha256, a.integrity_method, a.integrity_metadata_json, a.byte_size, a.media_type, a.original_filename, a.state, a.created_at FROM assets a JOIN revisions r ON r.revision_id = a.revision_id WHERE r.item_id = ?1 ORDER BY a.created_at").map_err(storage)?;
     let rows = statement
         .query_map(params![item_id.to_string()], |row| {
             Ok(AssetDetail {
@@ -816,11 +823,14 @@ fn load_assets(
                 role: parse_asset_role(&row.get::<_, String>(2)?).map_err(to_sql)?,
                 logical_path: row.get(3)?,
                 sha256: row.get(4)?,
-                byte_size: row.get::<_, i64>(5)? as u64,
-                media_type: row.get(6)?,
-                original_filename: row.get(7)?,
-                state: parse_raw_state(&row.get::<_, String>(8)?).map_err(to_sql)?,
-                created_at: UtcTimestamp::parse(row.get::<_, String>(9)?).map_err(to_sql)?,
+                integrity_method: parse_asset_integrity_method(&row.get::<_, String>(5)?)
+                    .map_err(to_sql)?,
+                integrity_metadata: Metadata::parse(&row.get::<_, String>(6)?).map_err(to_sql)?,
+                byte_size: row.get::<_, i64>(7)? as u64,
+                media_type: row.get(8)?,
+                original_filename: row.get(9)?,
+                state: parse_raw_state(&row.get::<_, String>(10)?).map_err(to_sql)?,
+                created_at: UtcTimestamp::parse(row.get::<_, String>(11)?).map_err(to_sql)?,
             })
         })
         .map_err(storage)?;
@@ -1006,7 +1016,7 @@ fn insert_revision(
 }
 
 fn insert_asset(transaction: &Transaction<'_>, asset: &NewAsset) -> Result<(), ApplicationError> {
-    transaction.execute("INSERT INTO assets (asset_id, revision_id, asset_role, logical_path, sha256, byte_size, media_type, original_filename, state, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 'pending', strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))", params![asset.id.to_string(), asset.revision_id.to_string(), asset_role(asset.role), asset.logical_path, asset.sha256.as_str(), asset.byte_size as i64, asset.media_type, asset.original_filename]).map_err(storage)?;
+    transaction.execute("INSERT INTO assets (asset_id, revision_id, asset_role, logical_path, sha256, integrity_method, integrity_metadata_json, byte_size, media_type, original_filename, state, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 'pending', strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))", params![asset.id.to_string(), asset.revision_id.to_string(), asset_role(asset.role), asset.logical_path, asset.sha256.as_ref().map(Sha256::as_str), asset_integrity_method(asset.integrity_method), asset.integrity_metadata.to_json(), asset.byte_size as i64, asset.media_type, asset.original_filename]).map_err(storage)?;
     Ok(())
 }
 
@@ -1191,6 +1201,12 @@ fn asset_role(value: AssetRole) -> &'static str {
         AssetRole::Preview => "preview",
     }
 }
+fn asset_integrity_method(value: AssetIntegrityMethod) -> &'static str {
+    match value {
+        AssetIntegrityMethod::Sha256V1 => "sha256_v1",
+        AssetIntegrityMethod::SizeSnapshotV1 => "size_snapshot_v1",
+    }
+}
 fn relation_kind(value: RelationKind) -> &'static str {
     match value {
         RelationKind::Revises => "revises",
@@ -1290,6 +1306,15 @@ fn parse_asset_role(value: &str) -> Result<AssetRole, ApplicationError> {
         "preview" => Ok(AssetRole::Preview),
         _ => Err(ApplicationError::Integrity(format!(
             "unknown asset role: {value}"
+        ))),
+    }
+}
+fn parse_asset_integrity_method(value: &str) -> Result<AssetIntegrityMethod, ApplicationError> {
+    match value {
+        "sha256_v1" => Ok(AssetIntegrityMethod::Sha256V1),
+        "size_snapshot_v1" => Ok(AssetIntegrityMethod::SizeSnapshotV1),
+        _ => Err(ApplicationError::Integrity(format!(
+            "unknown asset integrity method: {value}"
         ))),
     }
 }

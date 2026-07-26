@@ -9,6 +9,8 @@ pub fn descriptors() -> Vec<SourceRouteDescriptor> {
         providers::onenote::descriptor(),
         providers::evernote::descriptor(),
         providers::wechat::descriptor(),
+        providers::wechat_recovery::favorites_descriptor(),
+        providers::wechat_recovery::chats_descriptor(),
         providers::zhihu::descriptor(),
         providers::bilibili::descriptor(),
         providers::xiaohongshu::descriptor(),

@@ -50,16 +50,19 @@ pub fn execute(
                         path: path.to_string_lossy().to_string(),
                         role: AssetRole::Original,
                         expected_sha256: None,
+                        ..CaptureImportAsset::default()
                     })
                     .chain(input.preview.into_iter().map(|path| CaptureImportAsset {
                         path: path.to_string_lossy().to_string(),
                         role: AssetRole::Preview,
                         expected_sha256: None,
+                        ..CaptureImportAsset::default()
                     }))
                     .chain(input.attachment.into_iter().map(|path| CaptureImportAsset {
                         path: path.to_string_lossy().to_string(),
                         role: AssetRole::Attachment,
                         expected_sha256: None,
+                        ..CaptureImportAsset::default()
                     }))
                     .collect(),
                 reason: input.reason,
@@ -127,11 +130,13 @@ pub fn execute(
                         path: input.path.to_string_lossy().to_string(),
                         role: AssetRole::Export,
                         expected_sha256: None,
+                        ..CaptureImportAsset::default()
                     })
                     .chain(input.attachment.into_iter().map(|path| CaptureImportAsset {
                         path: path.to_string_lossy().to_string(),
                         role: AssetRole::Attachment,
                         expected_sha256: None,
+                        ..CaptureImportAsset::default()
                     }))
                     .collect(),
                     route_evidence: route_evidence(
@@ -209,6 +214,7 @@ pub fn execute(
                             path: original_export.clone(),
                             role: AssetRole::Export,
                             expected_sha256: None,
+                            ..CaptureImportAsset::default()
                         }],
                         route_evidence: route_evidence(
                             "source.browser_bookmarks",

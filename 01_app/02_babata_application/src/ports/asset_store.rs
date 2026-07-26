@@ -1,4 +1,4 @@
-use babata_domain::{AssetId, AssetRole, LogicalPath, Sha256};
+use babata_domain::{AssetId, AssetIntegrityMethod, AssetRole, LogicalPath, Metadata, Sha256};
 
 use crate::ApplicationError;
 
@@ -8,7 +8,9 @@ pub struct StagedAsset {
     pub role: AssetRole,
     pub staging_key: String,
     pub logical_path: LogicalPath,
-    pub sha256: Sha256,
+    pub sha256: Option<Sha256>,
+    pub integrity_method: AssetIntegrityMethod,
+    pub integrity_metadata: Metadata,
     pub byte_size: u64,
     pub media_type: Option<String>,
     pub original_filename: Option<String>,
@@ -35,6 +37,24 @@ pub trait AssetStorePort {
         role: AssetRole,
         operation_id: &str,
     ) -> Result<StagedAsset, ApplicationError>;
+    #[allow(clippy::too_many_arguments)]
+    fn stage_with_integrity(
+        &self,
+        source: &str,
+        role: AssetRole,
+        operation_id: &str,
+        integrity_method: AssetIntegrityMethod,
+        _selected_relative_path: Option<&str>,
+        _expected_byte_size: Option<u64>,
+        _expected_modified_unix_nanos: Option<u128>,
+    ) -> Result<StagedAsset, ApplicationError> {
+        if integrity_method != AssetIntegrityMethod::Sha256V1 {
+            return Err(ApplicationError::Asset(
+                "asset store does not support the requested integrity method".to_owned(),
+            ));
+        }
+        self.stage(source, role, operation_id)
+    }
     fn hash(&self, source: &str) -> Result<Sha256, ApplicationError>;
     fn finalize(&self, asset: &StagedAsset) -> Result<FinalizeAssetOutcome, ApplicationError>;
     fn discard_stage(&self, asset: &StagedAsset) -> Result<(), ApplicationError>;
@@ -50,10 +70,14 @@ pub trait AssetStorePort {
         operation_id: &str,
     ) -> Result<StagedAsset, ApplicationError> {
         let mut staged = self.stage(source, AssetRole::Derived, operation_id)?;
+        let sha256 = staged
+            .sha256
+            .as_ref()
+            .expect("derived staging requires sha256");
         staged.logical_path = LogicalPath::parse(format!(
             "02_derived/files/sha256/{}/{}",
-            &staged.sha256.as_str()[..2],
-            staged.sha256
+            &sha256.as_str()[..2],
+            sha256
         ))
         .map_err(ApplicationError::from)?;
         Ok(staged)

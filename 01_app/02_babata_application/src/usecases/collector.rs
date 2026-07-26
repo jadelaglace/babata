@@ -236,93 +236,91 @@ where
                 ApplicationError::Integrity("collected item has no ready revision".to_owned())
             })?;
         let checked_at = self.clock.now();
-        let (outcome, observation) =
-            match adapter.collect(&summary, prefetched.as_ref(), requested_attachments)? {
-                AcquisitionOutcome::Found { candidate, assets } => {
-                    let envelope = *candidate;
-                    let CandidatePayload::Text { ref text } = envelope.payload;
-                    let hash = babata_domain::Sha256::of_bytes(text.as_bytes());
-                    let content_unchanged = match (
-                        content_fingerprint(&previous.metadata),
-                        content_fingerprint(&envelope.metadata),
-                    ) {
-                        (Some(previous), Some(current)) => previous == current,
-                        _ => previous.text_sha256.as_deref() == Some(hash.as_str()),
+        let (outcome, observation) = match adapter.collect_recollection(
+            &summary,
+            prefetched.as_ref(),
+            requested_attachments,
+        )? {
+            AcquisitionOutcome::Found { candidate, assets } => {
+                let envelope = *candidate;
+                let CandidatePayload::Text { ref text } = envelope.payload;
+                let hash = babata_domain::Sha256::of_bytes(text.as_bytes());
+                let content_unchanged = match (
+                    content_fingerprint(&previous.metadata),
+                    content_fingerprint(&envelope.metadata),
+                ) {
+                    (Some(previous), Some(current)) => previous == current,
+                    _ => previous.text_sha256.as_deref() == Some(hash.as_str()),
+                };
+                if content_unchanged {
+                    let mut common_metadata = envelope.common_metadata.clone();
+                    common_metadata.access_state = SourceAccessState::Accessible;
+                    let outcome = RecollectionOutcome {
+                        item_id: item_id.clone(),
+                        state: RecollectionState::Unchanged,
+                        previous_revision_id: previous.revision_id.clone(),
+                        new_revision_id: None,
+                        reason: None,
+                        checked_at: checked_at.clone(),
                     };
-                    if content_unchanged {
-                        let mut common_metadata = envelope.common_metadata.clone();
-                        common_metadata.access_state = SourceAccessState::Accessible;
-                        let outcome = RecollectionOutcome {
+                    let observation = NewSourceObservation {
+                        id: SourceObservationId::new(),
+                        item_id: item_id.clone(),
+                        revision_id: previous.revision_id.clone(),
+                        capture_operation_id: None,
+                        collection_session_id: Some(session_id.clone()),
+                        candidate_id: Some(candidate_id.clone()),
+                        kind: SourceObservationKind::Recollection,
+                        recollection_state: Some(RecollectionState::Unchanged),
+                        source_native_id: envelope.native_id,
+                        source_locator: Some(envelope.source_reference),
+                        context: envelope.context,
+                        common_metadata,
+                        provider_metadata: envelope.metadata,
+                        reason: None,
+                        observed_at: checked_at,
+                    };
+                    (outcome, Some(observation))
+                } else {
+                    let capture =
+                        self.capture_candidate(&session, &candidate_id, adapter, envelope, assets)?;
+                    (
+                        RecollectionOutcome {
                             item_id: item_id.clone(),
-                            state: RecollectionState::Unchanged,
+                            state: RecollectionState::Changed,
                             previous_revision_id: previous.revision_id.clone(),
-                            new_revision_id: None,
+                            new_revision_id: Some(capture.revision_id),
                             reason: None,
-                            checked_at: checked_at.clone(),
-                        };
-                        let observation = NewSourceObservation {
-                            id: SourceObservationId::new(),
-                            item_id: item_id.clone(),
-                            revision_id: previous.revision_id.clone(),
-                            capture_operation_id: None,
-                            collection_session_id: Some(session_id.clone()),
-                            candidate_id: Some(candidate_id.clone()),
-                            kind: SourceObservationKind::Recollection,
-                            recollection_state: Some(RecollectionState::Unchanged),
-                            source_native_id: envelope.native_id,
-                            source_locator: Some(envelope.source_reference),
-                            context: envelope.context,
-                            common_metadata,
-                            provider_metadata: envelope.metadata,
-                            reason: None,
-                            observed_at: checked_at,
-                        };
-                        (outcome, Some(observation))
-                    } else {
-                        let capture = self.capture_candidate(
-                            &session,
-                            &candidate_id,
-                            adapter,
-                            envelope,
-                            assets,
-                        )?;
-                        (
-                            RecollectionOutcome {
-                                item_id: item_id.clone(),
-                                state: RecollectionState::Changed,
-                                previous_revision_id: previous.revision_id.clone(),
-                                new_revision_id: Some(capture.revision_id),
-                                reason: None,
-                                checked_at,
-                            },
-                            None,
-                        )
-                    }
+                            checked_at,
+                        },
+                        None,
+                    )
                 }
-                AcquisitionOutcome::Inaccessible { reason }
-                | AcquisitionOutcome::Skipped { reason } => recollection_without_content(
-                    item_id,
-                    &previous.revision_id,
-                    &session_id,
-                    &candidate_id,
-                    &summary,
-                    RecollectionState::Inaccessible,
-                    SourceAccessState::Inaccessible,
-                    reason,
-                    checked_at,
-                ),
-                AcquisitionOutcome::Removed { reason } => recollection_without_content(
-                    item_id,
-                    &previous.revision_id,
-                    &session_id,
-                    &candidate_id,
-                    &summary,
-                    RecollectionState::Removed,
-                    SourceAccessState::Removed,
-                    reason,
-                    checked_at,
-                ),
-            };
+            }
+            AcquisitionOutcome::Inaccessible { reason }
+            | AcquisitionOutcome::Skipped { reason } => recollection_without_content(
+                item_id,
+                &previous.revision_id,
+                &session_id,
+                &candidate_id,
+                &summary,
+                RecollectionState::Inaccessible,
+                SourceAccessState::Inaccessible,
+                reason,
+                checked_at,
+            ),
+            AcquisitionOutcome::Removed { reason } => recollection_without_content(
+                item_id,
+                &previous.revision_id,
+                &session_id,
+                &candidate_id,
+                &summary,
+                RecollectionState::Removed,
+                SourceAccessState::Removed,
+                reason,
+                checked_at,
+            ),
+        };
         self.repository
             .record_recollection(&outcome, observation.as_ref())?;
         Ok(outcome)
@@ -357,6 +355,7 @@ where
             .collect()
     }
 
+    #[allow(clippy::too_many_lines)]
     fn run_item(
         &self,
         session_id: &CollectionSessionId,
@@ -383,16 +382,28 @@ where
                 .find(|item| item.candidate_id == candidate_id)
                 .ok_or_else(|| ApplicationError::NotFound("collection item".to_owned()));
         };
+        let attempt_count = self
+            .status(session_id)?
+            .into_iter()
+            .find(|item| item.candidate_id == candidate_id)
+            .ok_or_else(|| ApplicationError::NotFound("collection item".to_owned()))?
+            .attempt_count;
+        let (failure_state, retryable) = if attempt_count >= 2 {
+            (CollectionItemState::Skipped, false)
+        } else {
+            (CollectionItemState::Failed, true)
+        };
         let acquisition =
             match adapter.collect(&candidate, prefetched.as_ref(), requested_attachments) {
                 Ok(outcome) => outcome,
                 Err(error) => {
+                    let reason = attempt_failure_reason(attempt_count, &error.to_string());
                     return self.repository.transition_item(
                         session_id,
                         candidate_id,
-                        CollectionItemState::Failed,
-                        Some(&error.to_string()),
-                        true,
+                        failure_state,
+                        Some(&reason),
+                        retryable,
                         None,
                         None,
                         false,
@@ -414,17 +425,20 @@ where
                         false,
                         &self.clock.now(),
                     ),
-                    Err(error) => self.repository.transition_item(
-                        session_id,
-                        candidate_id,
-                        CollectionItemState::Failed,
-                        Some(&error.to_string()),
-                        true,
-                        None,
-                        None,
-                        false,
-                        &self.clock.now(),
-                    ),
+                    Err(error) => {
+                        let reason = attempt_failure_reason(attempt_count, &error.to_string());
+                        self.repository.transition_item(
+                            session_id,
+                            candidate_id,
+                            failure_state,
+                            Some(&reason),
+                            retryable,
+                            None,
+                            None,
+                            false,
+                            &self.clock.now(),
+                        )
+                    }
                 }
             }
             AcquisitionOutcome::Skipped { reason } | AcquisitionOutcome::Removed { reason } => {
@@ -440,17 +454,20 @@ where
                     &self.clock.now(),
                 )
             }
-            AcquisitionOutcome::Inaccessible { reason } => self.repository.transition_item(
-                session_id,
-                candidate_id,
-                CollectionItemState::Failed,
-                Some(&reason),
-                true,
-                None,
-                None,
-                false,
-                &self.clock.now(),
-            ),
+            AcquisitionOutcome::Inaccessible { reason } => {
+                let reason = attempt_failure_reason(attempt_count, &reason);
+                self.repository.transition_item(
+                    session_id,
+                    candidate_id,
+                    failure_state,
+                    Some(&reason),
+                    retryable,
+                    None,
+                    None,
+                    false,
+                    &self.clock.now(),
+                )
+            }
         }
     }
 
@@ -573,6 +590,14 @@ fn content_fingerprint(metadata: &babata_domain::Metadata) -> Option<String> {
         .get("content_fingerprint")?
         .as_str()
         .map(str::to_owned)
+}
+
+fn attempt_failure_reason(attempt_count: u32, reason: &str) -> String {
+    if attempt_count >= 2 {
+        format!("attempt limit reached after one retry; skipped: {reason}")
+    } else {
+        reason.to_owned()
+    }
 }
 
 fn require_text(field: &'static str, value: &str) -> Result<(), ApplicationError> {

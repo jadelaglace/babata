@@ -96,11 +96,13 @@ impl SourceAdapterPort for OneNoteExportAdapter {
                             path: pair.paths.mht.to_string_lossy().into_owned(),
                             role: AssetRole::Export,
                             expected_sha256: Some(pair.mht.sha256.clone()),
+                            ..CaptureImportAsset::default()
                         },
                         CaptureImportAsset {
                             path: pair.paths.pdf.to_string_lossy().into_owned(),
                             role: AssetRole::Export,
                             expected_sha256: Some(pair.pdf.sha256.clone()),
+                            ..CaptureImportAsset::default()
                         },
                     ],
                 })
@@ -116,6 +118,7 @@ impl SourceAdapterPort for OneNoteExportAdapter {
                         path: export.path.to_string_lossy().into_owned(),
                         role: AssetRole::Export,
                         expected_sha256: Some(export.mht.sha256.clone()),
+                        ..CaptureImportAsset::default()
                     }],
                 })
             }

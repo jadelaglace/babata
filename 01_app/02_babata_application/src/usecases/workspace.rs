@@ -435,6 +435,8 @@ where
                     role: asset.role,
                     logical_path: asset.logical_path.as_str().to_owned(),
                     sha256: asset.sha256.clone(),
+                    integrity_method: asset.integrity_method,
+                    integrity_metadata: asset.integrity_metadata.clone(),
                     byte_size: asset.byte_size,
                     media_type: asset.media_type.clone(),
                     original_filename: asset.original_filename.clone(),

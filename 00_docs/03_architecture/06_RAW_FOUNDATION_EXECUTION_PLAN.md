@@ -58,10 +58,10 @@ validate request and provenance
   -> allocate operation ID
   -> create 04_runtime journal
   -> stage allowed input under 04_runtime/staging/<operation-id>
-  -> hash bytes and derive logical final keys
+  -> apply the selected integrity method and derive logical final keys
   -> BEGIN IMMEDIATE
   -> insert pending C0 graph
-  -> finalise or hash-share immutable assets in 01_raw
+  -> finalise opaque assets or hash-share strongly verified immutable assets in 01_raw
   -> mark ready
   -> COMMIT
   -> remove journal
