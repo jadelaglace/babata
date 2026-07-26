@@ -4,6 +4,7 @@ import {
     CommandExecutionError,
     EmptyResultError,
 } from '@jackwener/opencli/errors';
+import { collectCompleteHistory, historyCompletePageFunction } from './history-complete.js';
 
 const DOUBAO_URL = 'https://www.doubao.com/';
 const CONVERSATION_ID_RE = /^\d{8,}$/;
@@ -85,8 +86,8 @@ async function visibleConversationId(page) {
     await page.wait(2);
     return await page.evaluate(`(() => {
       const anchor = Array.from(document.querySelectorAll('a[href^="/chat/"]'))
-        .find((item) => /^\/chat\/\d{8,}$/.test(item.getAttribute('href') || ''));
-      return anchor?.getAttribute('href')?.match(/\/chat\/(\d{8,})/)?.[1] || '';
+        .find((item) => /^\\/chat\\/\\d{8,}$/.test(item.getAttribute('href') || ''));
+      return anchor?.getAttribute('href')?.match(/\\/chat\\/(\\d{8,})/)?.[1] || '';
     })()`);
 }
 
@@ -109,6 +110,52 @@ async function captureConversation(page, conversationId, pattern) {
     await page.goto(`${DOUBAO_URL}chat/${conversationId}`, { waitUntil: 'none' });
     await page.wait(3);
     return await page.readNetworkCapture();
+}
+
+async function captureRecentEndpoint(page) {
+    if (typeof page.startNetworkCapture !== 'function' || typeof page.readNetworkCapture !== 'function') {
+        throw new CommandExecutionError(
+            'OpenCLI Browser Bridge network capture is unavailable',
+            'Install or update the OpenCLI Chrome extension.',
+        );
+    }
+    const started = await page.startNetworkCapture('/im/chain/recent_conv');
+    if (!started) {
+        throw new CommandExecutionError(
+            'OpenCLI Browser Bridge network capture is unavailable',
+            'Install or update the OpenCLI Chrome extension.',
+        );
+    }
+    await page.goto(`${DOUBAO_URL}chat/?babata_history_complete=${Date.now()}`, { waitUntil: 'none' });
+    await page.wait(2);
+    await page.evaluate(`(() => {
+      const scroller = Array.from(document.querySelectorAll('#flow_chat_sidebar div'))
+        .find((node) => node.scrollHeight > node.clientHeight + 5);
+      if (!scroller) return false;
+      scroller.scrollTop = scroller.scrollHeight;
+      scroller.dispatchEvent(new Event('scroll', { bubbles: true }));
+      return true;
+    })()`);
+    await page.wait(3);
+    const entries = await page.readNetworkCapture();
+    return entries.find((item) => String(item?.url || '').includes('/im/chain/recent_conv'))?.url || '';
+}
+
+async function fetchRecentPage(page, endpoint, cursor, direction) {
+    const result = await page.evaluate(historyCompletePageFunction(endpoint, cursor, direction));
+    return parseResponse({
+        responseStatus: result?.status,
+        responsePreview: result?.body,
+        url: endpoint,
+    }, `recent_conv cursor ${cursor}`).body;
+}
+
+function parseExcludedIds(value) {
+    if (!value) return [];
+    const ids = String(value).split(',').map((item) => item.trim()).filter(Boolean);
+    const invalid = ids.find((id) => !CONVERSATION_ID_RE.test(id));
+    if (invalid) throw new ArgumentError('exclude', `invalid conversation ID ${invalid}`);
+    return ids;
 }
 
 cli({
@@ -152,6 +199,62 @@ cli({
                 UpdatedAt: String(conversation.update_time || ''),
             };
         });
+    },
+});
+
+cli({
+    site: 'doubao',
+    name: 'history-complete',
+    access: 'read',
+    description: 'Return the complete authenticated Doubao conversation history after cursor closure.',
+    domain: 'doubao.com',
+    strategy: Strategy.COOKIE,
+    browser: true,
+    siteSession: 'persistent',
+    navigateBefore: false,
+    args: [
+        { name: 'exclude', required: false, default: '', help: 'Comma-separated conversation IDs to omit' },
+    ],
+    columns: [
+        'Id',
+        'Title',
+        'Url',
+        'CreatedAt',
+        'UpdatedAt',
+        'PageIndex',
+        'RequestCursor',
+        'ResponseNextCursor',
+        'PageHasMore',
+        'PageCellCount',
+        'Complete',
+        'TotalConversations',
+    ],
+    func: async (page, kwargs) => {
+        const conversationId = await visibleConversationId(page);
+        if (!conversationId) {
+            throw new EmptyResultError('doubao history-complete', 'No authenticated conversation was visible.');
+        }
+        const endpoint = await captureRecentEndpoint(page);
+        if (!endpoint) {
+            throw new EmptyResultError('doubao history-complete', 'The official recent_conv endpoint was not captured.');
+        }
+        let rows;
+        try {
+            rows = await collectCompleteHistory(
+                (cursor, direction) => fetchRecentPage(page, endpoint, cursor, direction),
+                { excludedIds: parseExcludedIds(kwargs.exclude) },
+            );
+        } catch (error) {
+            if (error instanceof ArgumentError || error instanceof CommandExecutionError) throw error;
+            throw new CommandExecutionError(
+                'Doubao complete history pagination failed closed',
+                error instanceof Error ? error.message : String(error),
+            );
+        }
+        return rows.map((row) => ({
+            ...row,
+            Url: `${DOUBAO_URL}chat/${row.Id}`,
+        }));
     },
 });
 
