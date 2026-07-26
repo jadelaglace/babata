@@ -39,7 +39,7 @@ P6  核心沉淀、检索、子库与输出                      已完成
   P6.1 核心知识沉淀                                 已完成
   P6.2 发现、检索与关系导航                         已完成
   P6.3 子库与输出                                   已完成
-P7  扩展来源、正式 Skill 与受控 Agent               进行中（继续证明更多真实来源与形态）
+P7  扩展来源、正式 Skill 与受控 Agent               已完成
 P8  全账户回收闭合、备份恢复与长期加固              未开始
 ```
 
@@ -51,7 +51,7 @@ P8  全账户回收闭合、备份恢复与长期加固              未开始
 <!-- P6.2 preflight: Issue #60 common C0 metadata/observations implemented -->
 <!-- P6.2: completed; AC-07 items 1..4,7 and TC-07 steps 1..4 plus search projection rebuild passed; P6.3 later completed the full AC-07/TC-07 -->
 <!-- P6.3: completed; AC-03, AC-07, AC-08 and TC-03, TC-07, TC-08 passed -->
-<!-- P7: in progress; source.evernote/source.onenote/source.doubao and babata-collect have real evidence; continue proving more source shapes and close AC-09/TC-09; account-wide Doubao recovery belongs to P8 -->
+<!-- P7: completed; AC-09/TC-09 passed through real source batches and the controlled two-attempt item contract; account-wide recovery belongs to P8 -->
 
 2026-07-26，Issue #104 澄清 C0 的两个独立维度：主权深度 C0-A1/C0-A2/C0-A3+ 与管理就绪
 captured/prepared/registered。当前真实回收优先抢救 C0-A1，再补直接依赖 C0-A2；语义引用 C0-A3+
@@ -979,7 +979,13 @@ Issue #101 的 P7 收尾又把本地零散资料接入同一 Collector。用户�
 `38414453372140034`（60 条消息）与 `38435487680201730`（25 条消息）也已 typed 登记并分别
 重采 `unchanged`，两者均声明 0 个附件。
 
-P7 主要交付 AC-09 和 TC-09。
+此前计划单独演练的运行中取消、模型建议越权和多个外围入口逐一对照，按用户实际工作方式
+收敛为受控执行合同：明确范围后优先跑完整轮，单项最多两次，第二次失败即跳过，零星难例
+最后处理；任何外围入口都不得扩张范围、另写最终资产或把模型判断升级为事实。上述真实批次、
+确定性门禁和统一 writer 证据已经覆盖该合同，不再制造脱离真实工作的专项演练。
+
+至此 AC-09、TC-09 通过，P7 完成。未取得内容与 disabled 来源继续诚实报告；全账户回收、
+微信第二/三阶段和后续新增来源转入 P8 或运营，不倒灌为 P7 阻塞项。
 
 ## 11. P8：全账户回收闭合、备份恢复与长期加固
 
