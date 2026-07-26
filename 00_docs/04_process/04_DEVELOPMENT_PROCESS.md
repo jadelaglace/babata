@@ -53,6 +53,13 @@ P8  备份、恢复、运维与长期加固                      未开始
 <!-- P6.3: completed; AC-03, AC-07, AC-08 and TC-03, TC-07, TC-08 passed -->
 <!-- P7: in progress; source.evernote/source.onenote/source.doubao and the routed collection Skill have real evidence, but AC-09 and TC-09 remain incomplete -->
 
+2026-07-26，Issue #104 澄清 C0 的两个独立维度：主权深度 A1/A2/A3+ 与管理就绪
+captured/prepared/registered。当前真实回收优先抢救 A1，再补直接依赖 A2；语义引用 A3+
+显式、有限、低优先级。只有 Rust/SQL 完成并回读的 registered/C0-C 称为正式 C0；Recovery
+中的 captured/prepared 材料可以如实算“已拿回”，但不冒充正式登记。该决定只更新定义、
+验收和报告合同，不新增 schema/Rust，不重开 P3，也不撤销 P0-P6 或既有 P7 证据；历史文档
+和测试中的“C0”默认按 registered/C0-C 解释。以后 Recovery 汇报同时给出主权深度与管理状态。
+
 当前真实情况：
 
 - P2 已在旧 117 文件基础上补齐 20 个 Rust 责任文件和 3 份 Skill 规格，达到 6 个
@@ -906,6 +913,11 @@ Issue #98 随后用第五轮限时练习修正原件取得主链，不再次写�
 大小、MD5、历史 SHA-256 与 DOCX 结构校验，全程未进入云盘。已把该过程固化为
 `babata-collect` 的确定性 acquisition 脚本，并修复顶层 `AttachmentKeyCount=0` 掩盖消息内
 文件对象时的 fail-open 判断。消息卡片“查看”仍只产生 PDF preview；云盘下载保持独立备选。
+
+Issue #104 随后把真实回收中已经形成的口径正式写回权威链：拿回资料优先于登记；A1 不等待
+解析或 SQL，A2 只补齐当前内容所需正文/媒体/附件，A3+ 不作为默认爬取；prepared 处理不
+覆盖原始归档。C1/C2 若发现引用缺口，只能提出新的授权取得任务并形成独立记录或关系，不能
+直接改写旧 C0。该定义更新不改变本节任何历史计数或阶段结论。
 
 P7 主要交付 AC-09 和 TC-09。
 

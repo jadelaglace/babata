@@ -21,8 +21,9 @@ Babata 是一个本地优先的个人资料与知识系统。它面向微信、�
 
 ```mermaid
 flowchart LR
-    A["外部平台<br/>第一方创作"] --> B["收集原件<br/>C0"]
-    B --> C["清洗与模型处理<br/>C1"]
+    A["外部平台<br/>第一方创作"] --> B["主权取得与准备<br/>A1 / A2 / A3+"]
+    B --> C0["正式登记<br/>registered C0-C"]
+    C0 --> C["清洗与模型处理<br/>C1"]
     C --> D["消化、关联与建模<br/>Babata Core"]
     D --> E["检索、子库与输出<br/>可重建视图"]
 ```
@@ -98,7 +99,8 @@ $env:BABATA_EVIDENCE_HOME = 'D:\BabataEvidence'
 $env:BABATA_RECOVERY_HOME = 'D:\BabataRecovery'
 ```
 
-`BABATA_EVIDENCE_HOME` 不是正式备份，`BABATA_RECOVERY_HOME` 中的文件也还不是 C0；
+`BABATA_EVIDENCE_HOME` 不是正式备份；`BABATA_RECOVERY_HOME` 可以保存已校验的
+A1/A2 captured 或 prepared 主权材料，但它们还不是 registered C0-C；
 活动 `BABATA_DATA_HOME` 顶层只保留 `00_inbox` 至 `05_logs` 六个编号分区。
 
 仓库级验证：

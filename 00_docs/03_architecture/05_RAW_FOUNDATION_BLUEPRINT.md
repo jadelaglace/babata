@@ -106,6 +106,15 @@ C0 资产；两者都必须由 application 用例调用。
 
 ## 7. C0 migration 范围
 
+本蓝图和既有 Rust/SQL 实现中的 C0 专指 `registered / C0-C`：资料已经经过唯一
+application/core，获得 SQL 身份、revision、asset、provenance/relation/status 并可回读。
+来源恢复在此之前还可以形成 `captured` 或 `prepared / C0-B` 材料；这些材料属于 Git 外的
+acquisition/Recovery 边界，不属于 managed C0，也不授权外围工具写 SQLite 或最终资产目录。
+
+主权深度 A1/A2/A3+ 与管理就绪 captured/prepared/registered 当前作为 provenance/status
+概念和报告合同存在，不在本定义 PR 中新增 migration、Rust 类型、repository、服务或 writer。
+未来只有真实实现需要证明后，才按正常 Issue/PR 决定是否增加持久字段。
+
 ```text
 03_migrations/01_raw/
 ├── 0001_raw_schema.sql
@@ -159,6 +168,10 @@ babata annotate
 这些命令不构成对外分布式协议，也不替代 P4 的上下文候选与用户选择。
 
 ## 9. 统一 C0 写入序列
+
+此序列只描述从 prepared acquisition material 到 registered/C0-C 的唯一正式登记路径；A1
+抢救和 A2 直接依赖取得可以先在 Recovery/acquisition 区独立完成，不等待此序列。解压、命名、
+格式识别和 manifest 等 prepared 操作必须保留上游原件，不能覆盖或原地规范化来源归档。
 
 ```text
 校验请求、来源/创作上下文和允许输入
@@ -216,4 +229,7 @@ first-party 修改原地覆盖旧版本
 FTS 或视图成为第二权威
 JS/Python 获得数据根最终路径或数据库写权限
 为了已存在代码提前宣告 P3、P4 或产品 AC 完成
+把 captured/prepared Recovery 材料冒充 registered/C0-C
+让 A3+ 无界递归，或把语义 reference 混入 A2 完整性依赖
+让 C1/C2 直接反写旧 C0；下游发现缺口只能创建新的授权 acquisition 请求
 ```
