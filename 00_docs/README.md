@@ -9,6 +9,11 @@ The numbered documents govern the reboot in order:
 5. `04_process/04_DEVELOPMENT_PROCESS.md` — implementation order, phase gates, and verification commands
 6. `05_tests/05_TEST_CASES.md` — verification cases
 
+Requirements are the upstream product authority. Later documents interpret and deliver them but must not
+silently replace them. External research and AI conversations are reference material unless the user explicitly
+adopts a conclusion. The user owns requirements, priorities, progress judgement, and acceptance; Agents maintain
+the affected downstream chain, implementation, verification, evidence, and routine technical review.
+
 Architecture supplements:
 
 - `03_architecture/04_SYSTEM_SKELETON_BLUEPRINT.md` — corrected P2 137-file target, ownership, interface and tool skeleton.
