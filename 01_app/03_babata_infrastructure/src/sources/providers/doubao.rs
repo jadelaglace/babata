@@ -954,16 +954,38 @@ fn validate_opencli_attachment_coverage(
     row: &Value,
     requested_attachments: bool,
 ) -> Result<(), ApplicationError> {
-    let attachment_key_count = row
+    let reported_attachment_key_count = row
         .get("AttachmentKeyCount")
         .and_then(Value::as_u64)
         .unwrap_or_default();
+    let declared_attachment_count = row
+        .get("Messages")
+        .and_then(Value::as_array)
+        .map(|messages| count_declared_message_files(messages))
+        .unwrap_or_default();
+    let attachment_key_count = reported_attachment_key_count.max(declared_attachment_count);
     if requested_attachments && attachment_key_count > 0 {
         return Err(ApplicationError::Integrity(format!(
-            "OpenCLI reported {attachment_key_count} Doubao attachment keys but cannot download the original binaries; supply a Chrome-native acquisition handoff; C0 was not written"
+            "Doubao declares {attachment_key_count} attachment files but the text-only OpenCLI result has no validated original binaries; supply a Chrome-native acquisition handoff; C0 was not written"
         )));
     }
     Ok(())
+}
+
+fn count_declared_message_files(messages: &[Value]) -> u64 {
+    messages
+        .iter()
+        .filter(|message| message.get("content_type").and_then(Value::as_u64) == Some(20))
+        .filter_map(|message| message.get("content").and_then(Value::as_str))
+        .filter_map(|content| serde_json::from_str::<Value>(content).ok())
+        .filter_map(|content| content.get("entities").and_then(Value::as_array).cloned())
+        .map(|entities| {
+            entities
+                .iter()
+                .filter(|entity| entity.pointer("/entity_content/file").is_some())
+                .count() as u64
+        })
+        .sum()
 }
 
 fn required_string(value: &Value, key: &str) -> Result<String, ApplicationError> {
@@ -1167,6 +1189,18 @@ mod tests {
 
         validate_opencli_attachment_coverage(&row, false).unwrap();
         validate_opencli_attachment_coverage(&json!({"AttachmentKeyCount": 0}), true).unwrap();
+
+        let nested_row = json!({
+            "AttachmentKeyCount": 0,
+            "Messages": [{
+                "content_type": 20,
+                "content": json!({
+                    "entities": [{"entity_content": {"file": {"key": "original.docx"}}}]
+                }).to_string()
+            }]
+        });
+        let error = validate_opencli_attachment_coverage(&nested_row, true).unwrap_err();
+        assert!(error.to_string().contains("declares 1 attachment files"));
     }
 
     #[test]

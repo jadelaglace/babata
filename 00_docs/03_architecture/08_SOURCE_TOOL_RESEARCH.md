@@ -752,6 +752,15 @@ relation、observation 或 C1，W1 最终为 7 个 `original` DOCX 加 1 个 `pr
 形态、可执行来源 recipe、受控 Agent 或长期重采可用；Issue #90 的总 Skill 当时对该状态
 fail closed，因此在 Issue #92 批量实证之前 `source.doubao` 保持 disabled。
 
+2026-07-26 Issue #98 又把 W1 原件取得的实际主链复现清楚：OpenCLI `detail-full` 返回的
+`AttachmentKeyCount=0` 不代表没有附件，7 个 DOCX 位于 `content_type=20` 消息字符串中的
+`entity_content.file`。把这 7 个原始 `key` 一次传给登录态页面的
+`/alice/message/get_file_url`，并明确 `type=file`，直接返回 7 条 DOCX 签名地址；无需进入
+云盘。7 个文件共 111,296,956 字节，大小、MD5、历史 SHA-256 和 DOCX ZIP 结构全部一致。
+点击消息卡片的“查看”会把转换后的 PDF URI 交给同一接口，只能得到 preview，不是原件。
+因此主链固定为消息 JSON -> 原始 key -> 批量换签 -> 下载校验；云盘文件行“下载”只作为
+直取失败后的独立备选，不与主链混跑。
+
 真实批量证据（2026-07-25，Issue #92）：Agent 在已登录 Chrome 中一次展开约 60 个去重
 会话，按用户指示排除超大的“主对话”，再把前 40 个非主会话拆成两个显式 20 条批次。
 首批 18 saved/2 failed，次批 20 saved/0 failed；两个失败均因平台 `HasMore=true`，adapter
