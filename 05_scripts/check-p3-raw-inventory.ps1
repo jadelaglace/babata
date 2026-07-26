@@ -49,7 +49,8 @@ foreach ($migration in $p3Migrations) {
 $postP3RawExtensions = @(
     '0005_asset_attachment_operations.sql',
     '0006_source_observations.sql',
-    '0007_sublibrary_definitions.sql'
+    '0007_sublibrary_definitions.sql',
+    '0008_asset_integrity_methods.sql'
 )
 foreach ($migration in $postP3RawExtensions) {
     if (-not (Test-Path -LiteralPath (Join-Path $repo "03_migrations/01_raw/$migration"))) {
