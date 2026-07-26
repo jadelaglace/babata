@@ -20,8 +20,9 @@ does not prove that platform's candidate discovery, content, attachments, or rec
   only within the named scope.
 - Do not ask the user to transcribe passwords, cookies, tokens, export paths, or metadata when the
   Agent can inspect or invoke the official UI safely.
-- Never bypass access controls, decrypt private application databases, install interception
-  certificates, or scan process memory.
+- Never bypass access controls or install interception certificates. A user-authorized local
+  recovery/export tool may read the user's own migrated application data only after a real probe
+  proves the exact version and scope; its output remains Recovery until an enabled Rust route saves it.
 - Keep downloads transient until an enabled Babata route formally saves them.
 
 ## Unknown Sites and New Content Shapes
@@ -36,7 +37,9 @@ Do not create a new user Skill or route solely for the format.
 
 ## Special Boundaries
 
-- WeChat uses the official PC UI only; unavailable visible data stays restricted/failed.
+- WeChat first uses official phone-to-PC migration. WeChatDataAnalysis 1.18.5 is proven on current
+  Weixin 4.1.11.55 for local Recovery/export; official PC UI is the small-scope fallback. Neither
+  route enables formal C0 while `source.wechat_*` remains disabled.
 - Douyin and WeChat Channels remain deferred until the user explicitly re-enables them.
 - Browser bookmarks are last priority and must eventually auto-traverse page bodies and obtainable
   attachments; manual per-bookmark clipping is not acceptance.
