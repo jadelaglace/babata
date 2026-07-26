@@ -2,11 +2,12 @@
 name: babata-collect
 description: >
   Route one explicitly scoped collection request through Babata's verified source recipes and
-  unified Rust Collector/Capture path into C0. Use when the user asks to collect, recover, import,
+  unified Rust Collector/Capture path into registered C0-C when available, while allowing urgent
+  C0-A1/C0-A2 sovereignty recovery to complete before registration. Use when the user asks to collect, recover, import,
   export, recollect, retry, or cancel personal material from OneNote PDF/MHT exports, Evernote or
   Yinxiang .notes exports, Doubao or other chat histories, websites, browser state, official apps,
   or local source exports. This is the single user-visible collection Skill: platform recipes are
-  internal, capability state must be checked before execution, and collection ends at verified C0.
+  internal, capability state must be checked before execution, and formal collection ends at registered C0-C.
   Do not use for OCR, transcription, summarization, C1 processing, knowledge promotion, or output.
 ---
 
@@ -43,13 +44,16 @@ Then read exactly one relevant source reference:
 2. Treat `babata --json capabilities list` as runtime truth. Execute only an `enabled` source route.
    Return the real reason for `disabled`, `unavailable`, absent, or unknown routes.
 3. Use browser, Lark, desktop-control, platform CLI, and official export tools only as acquisition
-   dependencies. They do not own C0 and their downloaded files are not formal collection results.
+   dependencies. They may produce C0-A1/C0-A2 captured or prepared results, but do not own formal C0.
 4. Let only Babata Rust application/core finalise originals, IDs, revisions, assets, hashes, and
    source observations. Never write SQLite or managed asset directories directly.
-5. End after every selected candidate is `saved` with `item_id` and `revision_id`, or after honest
-   failed/skipped/cancelled results are reported. Never call `babata process`, a cleaning Skill,
+5. Prefer C0-A1 preservation when source loss is urgent; then obtain C0-A2 body, embedded media, and required
+   attachments. Do not prepare or register C0-A1-only material; C0-A2 is required for C0-B/C0-C. Follow
+   semantic references only as bounded, explicitly valuable C0-A3+ tasks; C0-A3+ is not a B/C prerequisite. End formal
+   collection after every selected candidate is `saved` with `item_id` and `revision_id`, or after honest
+   captured/prepared/failed/skipped/cancelled results are reported. Never call `babata process`, a cleaning Skill,
    OCR/ASR, semantic digest, or knowledge commands as part of collection.
-6. Do not split, merge, deduplicate, infer hierarchy, or rewrite source material during C0 capture.
+6. Do not split, merge, deduplicate, infer hierarchy, or rewrite source material during preparation or C0 capture.
    Preserve actual exports and record limitations. Later C1 may independently read C0.
 
 ## Workflow
@@ -113,7 +117,8 @@ candidate discovered from that one export; a visible-set or conversation request
 expand beyond it.
 
 Do not fabricate candidate envelopes or route evidence. If the recipe only obtains temporary files
-but no enabled formal route can accept them, report "拿回但未正式登记" and stop.
+but no enabled formal route can accept them, preserve and verify them without overwriting upstream
+originals, report their C0-A1/C0-A2 and captured/prepared status as "拿回但未正式登记", and stop.
 
 ### 5. Handle interruption and recollection
 
@@ -133,8 +138,9 @@ item once when the failure is transient; do not restart successful items.
 ### 6. Verify and report
 
 Require `saved` items to contain both `item_id` and `revision_id`. Report failures and limitations
-per candidate. Use the three-layer report in the collection contract and explicitly state that C1
-was neither required nor triggered.
+per candidate. Always report sovereignty depth C0-A1/C0-A2/C0-A3+ and readiness captured/prepared/registered,
+then use the three-layer report in the collection contract and explicitly state that C1 was neither
+required nor triggered. Only registered results may be called formal C0.
 
 ## Extending a Source
 

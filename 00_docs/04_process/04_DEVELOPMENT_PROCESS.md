@@ -53,6 +53,23 @@ P8  全账户回收闭合、备份恢复与长期加固              未开始
 <!-- P6.3: completed; AC-03, AC-07, AC-08 and TC-03, TC-07, TC-08 passed -->
 <!-- P7: in progress; source.evernote/source.onenote/source.doubao and babata-collect have real evidence; continue proving more source shapes and close AC-09/TC-09; account-wide Doubao recovery belongs to P8 -->
 
+2026-07-26，Issue #104 澄清 C0 的两个独立维度：主权深度 C0-A1/C0-A2/C0-A3+ 与管理就绪
+captured/prepared/registered。当前真实回收优先抢救 C0-A1，再补直接依赖 C0-A2；语义引用 C0-A3+
+显式、有限、低优先级。只有 Rust/SQL 完成并回读的 registered/C0-C 称为正式 C0；Recovery
+中的 captured/prepared 材料可以如实算“已拿回”，但不冒充正式登记。该决定只更新定义、
+验收和报告合同，不新增 schema/Rust，不重开 P3，也不撤销 P0-P6 或既有 P7 证据；历史文档
+和测试中的“C0”默认按 registered/C0-C 解释。以后 Recovery 汇报同时给出主权深度与管理状态。
+prepared/C0-B 与 registered/C0-C 的共同准入门槛是 C0-A2；C0-A1-only 不进入 B/C，C0-A3+ 不阻塞 B/C。
+
+按这一口径，当前微信文件传输助手与收藏第一阶段只达到 C0-A1：记录、URL 和本地可得资源已
+保全，但大量 URL 正文/媒体及缺失必要引用尚未形成 C0-A2 完整性闭环。豆包 MBA 第一阶段已按
+完整消息链和声明附件逐项覆盖，达到 C0-A2。二者都先按真实主权深度汇报，不抢跑 B/C。
+
+P7 的微信正式能力证明只取 10–20 条有界代表样本，文件传输助手和收藏两类都覆盖，优先选择
+URL/文章并带少量本地媒体。Agent 必须逐条取得正文、内嵌媒体和必要附件达到 C0-A2，随后走
+prepared/C0-B、registered/C0-C 和 unchanged 重采；其余第一阶段全量继续保持 C0-A1 Recovery。
+该小样本足以验证新来源/内容形态与受控 Agent，不把全量微信 C0-A2 错列为 P7 阶段门槛。
+
 当前真实情况：
 
 - P2 已在旧 117 文件基础上补齐 20 个 Rust 责任文件和 3 份 Skill 规格，达到 6 个
@@ -943,6 +960,11 @@ WeChatDataAnalysis 1.18.5 从当前 Weixin 4.1.11.55 生成的最新账户整合
 完成新的来源/内容形态、可重采边界和受控 Agent 证据，再收敛 AC-09/TC-09。P7 不再继续豆包
 全量搬运；后续切片同时补齐真实取消、越权拒绝和外围入口对照。抖音和视频号保持延期，
 浏览器书签仍排在最后。
+
+Issue #104 随后把真实回收中已经形成的口径正式写回权威链：拿回资料优先于登记；C0-A1 不等待
+解析或 SQL，C0-A2 只补齐当前内容所需正文/媒体/附件，C0-A3+ 不作为默认爬取；prepared 处理不
+覆盖原始归档。C1/C2 若发现引用缺口，只能提出新的授权取得任务并形成独立记录或关系，不能
+直接改写旧 C0。该定义更新不改变本节任何历史计数或阶段结论。
 
 P7 主要交付 AC-09 和 TC-09。
 
