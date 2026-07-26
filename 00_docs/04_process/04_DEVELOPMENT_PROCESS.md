@@ -39,8 +39,8 @@ P6  核心沉淀、检索、子库与输出                      已完成
   P6.1 核心知识沉淀                                 已完成
   P6.2 发现、检索与关系导航                         已完成
   P6.3 子库与输出                                   已完成
-P7  扩展来源、正式 Skill 与受控 Agent               进行中（真实回收与剩余来源闭合）
-P8  备份、恢复、运维与长期加固                      未开始
+P7  扩展来源、正式 Skill 与受控 Agent               进行中（继续证明更多真实来源与形态）
+P8  全账户回收闭合、备份恢复与长期加固              未开始
 ```
 
 <!-- P2: completed; P2-G1..P2-G7: passed -->
@@ -51,7 +51,7 @@ P8  备份、恢复、运维与长期加固                      未开始
 <!-- P6.2 preflight: Issue #60 common C0 metadata/observations implemented -->
 <!-- P6.2: completed; AC-07 items 1..4,7 and TC-07 steps 1..4 plus search projection rebuild passed; P6.3 later completed the full AC-07/TC-07 -->
 <!-- P6.3: completed; AC-03, AC-07, AC-08 and TC-03, TC-07, TC-08 passed -->
-<!-- P7: in progress; source.evernote/source.onenote/source.doubao and the routed collection Skill have real evidence, but AC-09 and TC-09 remain incomplete -->
+<!-- P7: in progress; source.evernote/source.onenote/source.doubao and babata-collect have real evidence; continue proving more source shapes and close AC-09/TC-09; account-wide Doubao recovery belongs to P8 -->
 
 当前真实情况：
 
@@ -426,7 +426,7 @@ P4 按 `07_P4_FIRST_COLLECTION_PATHS.md` 实现：
   `${BABATA_RECOVERY_HOME}/batches/doubao/20260719-w1-complex/`。预览器下载的
   43 页 PDF 只是豆包转换预览件，不是原件。Issue #88 复核 Recovery manifest、消息内
   MD5、SHA-256 和 DOCX 结构后，把此前缺少的 6 个 DOCX 作为 `original` 附加到既有 ready
-  revision。W1 现在有 7 个 DOCX original 和 1 个 PDF preview；正文仍为 2 revisions，
+  revision。战略领导力W1 现在有 7 个 DOCX original 和 1 个 PDF preview；正文仍为 2 revisions，
   attachment operation/member 为 1/6，没有新 relation 或 C1。当前结论分别是：该明确范围的
   Agent 收集与统一 C0 登记均已完成；豆包其他附件形态和长期自动化未完成。
 - Bilibili：验证根 `p4-bilibili-final-20260718-181500`，20 个观看历史候选中选
@@ -851,11 +851,11 @@ pending/quarantine/journal/orphan 为 0。开发证据位于
 总 Skill 和受控 Agent；按需要进行的 C1 段落切分、语义去重和层级判断另行立项，不计作
 本次 OneNote 收集的未完成部分。
 
-同日 Issue #88 完成第四个切片，但不新增豆包专用 adapter。此前 Agent 已从复杂会话“战略
-领导力W1”拿回并校验 7 个原始 DOCX，其中 1 个已正式登记；本切片只把剩余 6 个原件通过
+同日 Issue #88 完成第四个切片，但不新增豆包专用 adapter。此前 Agent 已从复杂会话
+“战略领导力W1”拿回并校验 7 个原始 DOCX，其中 1 个已正式登记；本切片只把剩余 6 个原件通过
 通用 `capture attach-assets` 操作附加到既有 ready revision。隔离库与活动库都只变化
 `assets`、`asset_attachment_operations`、`asset_attachment_members`；活动库保持
-`7 sources / 199 items / 202 revisions / 1 relation / 342 observations`，资产变为 372，W1
+`7 sources / 199 items / 202 revisions / 1 relation / 342 observations`，资产变为 372，战略领导力W1
 为 7 个 DOCX original 加 1 个 PDF preview。目标正文 hash、所有既有资产、C1 的 17 个
 process runs/16 个 derivatives 均不变，schema v7、`quick_check=ok`、外键异常和所有
 pending/quarantine/journal/orphan 为 0。证据位于
@@ -898,7 +898,8 @@ Issue #96 完成 P7.8 高难样本练手，但不重复写正式活动数据：�
 `--acquisition-handoff` 进入统一 Collector，结果为 1 saved item、1 ready revision、7 original
 assets。刷新页面生成新的 handoff 后，typed recollection 为 `unchanged`、0 新 revision；缺附件
 和篡改字节均在 C0 前失败，最终 metadata 无临时路径，C1 未启动。此切片把 Chrome 取得与
-后续独立 select/recollect 接上，不把 W1 再记作一次正式取回，也不继续围绕该样本扩展范围。
+后续独立 select/recollect 接上，不把战略领导力W1再记作一次正式取回，也不继续围绕该样本扩展
+范围。
 
 Issue #98 随后用第五轮限时练习修正原件取得主链，不再次写正式 C0：OpenCLI 读取完整会话
 并从 `content_type=20` 的消息内嵌 JSON 提取 7 个 DOCX 原始对象键；登录态页面一次调用
@@ -907,12 +908,43 @@ Issue #98 随后用第五轮限时练习修正原件取得主链，不再次写�
 `babata-collect` 的确定性 acquisition 脚本，并修复顶层 `AttachmentKeyCount=0` 掩盖消息内
 文件对象时的 fail-open 判断。消息卡片“查看”仍只产生 PDF preview；云盘下载保持独立备选。
 
+2026-07-26，Issue #100 在 P7 中产出豆包 MBA 第一阶段的有界回收，范围按标题关键词覆盖组织行为学、
+数据安全、战略领导力、财务管理、决策会计、商务沟通、营销管理和供应链。Recovery 审计确认
+34/34 个对话消息链完整，共 220 条消息；对话声明的 219 个附件对象 key 已 219/219 覆盖，
+缺失 0，去重并排除一条无效历史路径后为 192 个有效资产 key。战略领导力W1 延续此前已证明的
+16 条消息与 7/7 个附件 key 完整链。权威审计位于
+`${BABATA_RECOVERY_HOME}/mba-stage1-completion-audit.json`。这些数据先保留在 Recovery，
+不自动写入 C0，也未触发 C1；该结果证明了更广的消息与附件形态，不把全账户豆包回收升级为
+P7 的阶段门槛。
+
+至此 P7 的豆包回收切片收尾。P7 下一步回到 `babata-collect` 的来源能力证明：优先取得微信
+官方 PC UI 中的聊天或收藏其他类型等真实授权样本，或选择另一个仍 disabled 的点名来源，
+完成新的来源/内容形态、可重采边界和受控 Agent 证据，再收敛 AC-09/TC-09。P7 不再继续豆包
+全量搬运；后续切片同时补齐真实取消、越权拒绝和外围入口对照。抖音和视频号保持延期，
+浏览器书签仍排在最后。
+
 P7 主要交付 AC-09 和 TC-09。
 
-## 11. P8：备份、恢复、运维与长期加固
+## 11. P8：全账户回收闭合、备份恢复与长期加固
 
 实现一致快照、加密增量备份、NAS/云端副本、隔离恢复、hash 验证、日志轮转、doctor、
 成本与故障监控。恢复报告区分 C0 损坏、C1 可重建、C2/C3 未重建和凭据重授权。
+
+### 11.1 豆包第二、三阶段回收计划
+
+P8 承担豆包全账户回收与运营闭合，不再把它当成 P7 的新来源能力证明：
+
+1. 第二阶段先枚举登录账户的完整历史，排除主对话 `23419482725122`，并扣除 MBA 第一阶段及
+   已有 Recovery/C0 对话 ID；其余非主对话优先全跑一轮，失败项只重试一次。简要记录共性
+   失败；同一通用问题若出现在 3 个不同对话，立即暂停并汇报，残余难例再由 Agent 逐个处理。
+   每个对话以 ID 对应、消息 ID 去重、末页 `HasMore=false` 和所有嵌套声明附件的逐项清单为
+   回收终点；原件记录 size/hash/结构，preview 不冒充 original。之后再从容决定 Recovery 到
+   C0 的正式登记批次。
+2. 第三阶段按官方 cursor/page 分批推进主对话，不追求单次跑完；同时收回第二阶段跳过、
+   超时和超长的零星对话。最终核对唯一对话 ID、消息链 `HasMore=false`、附件声明与原件覆盖，
+   保留逐段 cursor、响应 hash 和累计唯一消息数；在不触发 C1 的前提下完成 Recovery 到 C0
+   的对账。Recovery 原始响应、完整 JSON、附件 manifest 和尝试 ledger 是回收证据，不冒充
+   P8 的正式备份；最终再把已对账数据纳入一致快照、隔离恢复和完整系统闭环证据。
 
 P8 完成 AC-10、TC-10，并与 P4–P7 的真实路径共同完成 AC-11、TC-11 的完整本地
 raw-to-view 闭环。
@@ -927,7 +959,7 @@ raw-to-view 闭环。
 | P5 | AC-03（C0/C1 子责任）、AC-04 | 真实输入/派生物与忠实清洗；TC-03A/TC-04 |
 | P6 | AC-03（C2 子责任）、AC-05、AC-06、AC-07、AC-08 | TC-03B；核心先于检索/视图/输出 |
 | P7 | AC-09 | 扩展来源、Skill、Agent |
-| P8 | AC-10、AC-11 | 一致恢复与完整系统闭环 |
+| P8 | AC-10、AC-11 | 全账户回收闭合、一致恢复与完整系统闭环 |
 
 ## 13. 提交与验收纪律
 
