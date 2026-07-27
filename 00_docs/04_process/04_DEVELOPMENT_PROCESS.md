@@ -40,7 +40,7 @@ P6  核心沉淀、检索、子库与输出                      已完成
   P6.2 发现、检索与关系导航                         已完成
   P6.3 子库与输出                                   已完成
 P7  扩展来源、正式 Skill 与受控 Agent               已完成
-P8  来源广度、豆包/微信后续阶段与全量 A1             进行中（P8.1 已完成）
+P8  来源广度、豆包/微信后续阶段与全量 A1             进行中（P8.1 为 14/15）
 P9  简单备份同步                                      未开始（本地备份恢复能力已存在）
 ```
 
@@ -73,23 +73,22 @@ prepared/C0-B、registered/C0-C 和 unchanged 重采；其余第一阶段全量�
 
 当前真实情况：
 
-2026-07-27，Issue #114 按最新用户定义完成 P8.1 来源广度最低覆盖。计数只使用真实活动库、
-真实 Recovery 或真实来源候选响应；fixture 与 locator-only 浏览器扩展记录不计。P4 各真实
-验证库中的 `collection_candidates` 已保存飞书 16、语雀 8、Kimi 15、ChatGPT 20、Bilibili 20、
-小红书 20、知乎 27 条真实候选响应；它们属于 C0-A1 表层主权数据，不因当时只选 1 条继续
-正式登记而降为 1。Chrome 近期历史另直接保存 5 条普通网页记录到 Recovery；微信公众号
-Recovery 已有 233 条文章目录。逐来源结果如下，所有计划内来源缺口均为 0：
+2026-07-27，Issue #114 按最新用户定义推进 P8.1 来源广度最低覆盖。计数只使用真实活动库、
+Recovery 或实际取得的来源响应/导出件；fixture、locator-only 浏览器扩展记录，以及
+`prefetched_envelope_json = null` 的 P4 `collection_candidates` 均不计。紧急收集新增飞书、
+语雀、Kimi、Bilibili、小红书和知乎各 4 条真实响应，使这 6 个来源从 1 条补到 5 条；ChatGPT
+两条独立路线均遇到 `ERR_CONNECTION_TIMED_OUT`，按两次上限停止，仍差 4 条。逐来源结果如下：
 
 | 来源 | 已有 C0-A1 或更高数量 | 是否达到 5 条 | 还差多少 | 正常获取路线 |
 | --- | ---: | --- | ---: | --- |
-| 飞书文档、Wiki、知识库 | 16 | 是 | 0 | 官方 `lark-cli` Docs/Wiki/Media API |
-| 语雀 | 8 | 是 | 0 | 登录 Chrome 发现范围，官方 Markdown/整库导出 |
+| 飞书文档、Wiki、知识库 | 5 | 是 | 0 | 官方 `lark-cli` Docs/Wiki/Media API |
+| 语雀 | 5 | 是 | 0 | 登录 Chrome 发现范围，官方 Markdown/整库导出 |
 | 豆包对话 | 317 | 是 | 0 | 登录 Chrome 的历史与结构化会话响应 |
-| Kimi 对话 | 15 | 是 | 0 | 登录 Chrome 的结构化历史与消息响应 |
-| ChatGPT 对话 | 20 | 是 | 0 | 登录 Chrome；账号级可用官方 Data Export |
-| Bilibili 收藏 | 20 | 是 | 0 | 登录 Chrome/OpenCLI；所选媒体再用 `yt-dlp` |
-| 小红书收藏 | 20 | 是 | 0 | 登录 Chrome/OpenCLI 详情与媒体路线 |
-| 知乎收藏 | 27 | 是 | 0 | 登录 Chrome/OpenCLI 收藏与详情路线 |
+| Kimi 对话 | 5 | 是 | 0 | 登录 Chrome 的结构化历史与消息响应 |
+| ChatGPT 对话 | 1 | 否 | 4 | 登录 Chrome；账号级可用官方 Data Export |
+| Bilibili 收藏 | 5 | 是 | 0 | 登录 Chrome/OpenCLI；所选媒体再用 `yt-dlp` |
+| 小红书收藏 | 5 | 是 | 0 | 登录 Chrome/OpenCLI 详情与媒体路线 |
+| 知乎收藏 | 5 | 是 | 0 | 登录 Chrome/OpenCLI 收藏与详情路线 |
 | 浏览器书签/网页 | 5 | 是 | 0 | 明确浏览器范围后由 Agent 读取并遍历 |
 | OneNote | 7（全量） | 是 | 0 | 官方桌面 PDF/MHT 导出 |
 | 印象笔记 / Evernote | 164（全量） | 是 | 0 | 官方整库 `.notes` 导出 |
@@ -101,9 +100,10 @@ Recovery 已有 233 条文章目录。逐来源结果如下，所有计划内来
 | 微信视频号 | non-plan | 不计 | 不计 | 用户重新规划前不动作 |
 
 机器可读账位于
-`BABATA_RECOVERY_HOME/recovery/p8-1-source-breadth-20260727/summary.json`；本轮新增普通网页
-A1 位于 `BABATA_RECOVERY_HOME/batches/browser/20260727-p8-1-history-a1/history.json`。P8.1
-只完成来源广度最低覆盖，没有为这些数据追加 A2/B/C/C1；P8.2/P8.3 仍未启动。
+`BABATA_RECOVERY_HOME/recovery/p8-1-source-breadth-20260727/summary.json`；本轮紧急响应包位于
+`BABATA_RECOVERY_HOME/batches/p8-1/20260727-emergency-a1/`，普通网页 A1 位于
+`BABATA_RECOVERY_HOME/batches/browser/20260727-p8-1-history-a1/history.json`。P8.1 仍在进行中，
+没有为这些数据追加 A2/B/C/C1；P8.2/P8.3 仍未启动。
 
 - P2 已在旧 117 文件基础上补齐 20 个 Rust 责任文件和 3 份 Skill 规格，达到 6 个
   crate、137 个 Rust 源文件；CollectorSession、Knowledge、Sublibrary、Output、
@@ -1031,11 +1031,10 @@ P8 只处理来源取得范围，不把备份恢复或运维扩张混进来源�
 对象出现时暂停汇报。P8.1 只要求 C0-A1，不触发 C0-A2、C0-B、C0-C 或 C1。OneNote、
 印象笔记和微信按已经证明的全量状态直接计入，抖音和视频号为 non-plan。
 
-2026-07-27，Issue #114 直接读取真实数据库、Recovery 与来源候选响应后，15 个计划内来源
-全部达到至少 5 条，逐来源数量见第 1 节现状表，缺口均为 0。唯一新增取得是从 Chrome 返回的
-50 条真实近期网页记录中直接保存 5 条普通网页 A1；微信公众号已有 233 条 Recovery 目录，
-其余平台已有候选响应或更高状态均直接计入，没有机械重采。P8.1 至此完成；P8.2/P8.3 保持
-独立且尚未启动。
+2026-07-27，Issue #114 纠正了把 locator-only 候选当作 C0-A1 的错误。紧急收集把飞书、语雀、
+Kimi、Bilibili、小红书和知乎补到 5 条实际取得响应；Chrome 近期网页、微信公众号与其他
+既有全量来源直接按已取得数量计入。当前 15 个计划内来源中 14 个通过，ChatGPT 因服务连接
+超时仍只有 1 条、还差 4 条。P8.1 保持进行中；P8.2/P8.3 独立且尚未启动。
 
 ### 11.2 P8.2：豆包与微信第二、三阶段回收
 
@@ -1094,7 +1093,7 @@ P9 可复用前置，但不代表 P8.1；P9 只差选定并跑通一个外部复
 | P5 | AC-03（C0/C1 子责任）、AC-04 | 真实输入/派生物与忠实清洗；TC-03A/TC-04 |
 | P6 | AC-03（C2 子责任）、AC-05、AC-06、AC-07、AC-08 | TC-03B；核心先于检索/视图/输出 |
 | P7 | AC-09 | 扩展来源、Skill、Agent |
-| P8 | AC-09（P8.1 最低覆盖）、AC-11 | P8.1 已完成；P8.2/P8.3 与完整系统闭环继续进行 |
+| P8 | AC-09（P8.1 最低覆盖）、AC-11 | P8.1 为 14/15，ChatGPT 还差 4 条；P8.2/P8.3 尚未启动 |
 | P9 | AC-10、TC-10 加一个外部复制/同步目标 | 本地备份恢复能力已存在；NAS/云盘/云 Git 三选一尚未执行 |
 
 ## 14. 提交与验收纪律
