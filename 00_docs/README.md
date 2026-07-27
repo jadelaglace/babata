@@ -27,4 +27,4 @@ Do not introduce a new abstraction before it has a concrete working caller.
 
 Current execution status is maintained only in section 1 of
 `04_process/04_DEVELOPMENT_PROCESS.md`. It uses the single project-phase
-sequence P0–P8; data backup criticality uses C0–C3 instead.
+sequence P0–P9; data backup criticality uses C0–C3 instead.

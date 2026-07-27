@@ -526,7 +526,7 @@ C0-C 回读与 unchanged 重采。微信只读解密数据库/Recovery，未操�
 
 ### TC-10：外部数据根、数据级别与隔离恢复
 
-关联：AC-10，阶段 P3/P8。
+关联：AC-10，阶段 P3/P9。
 
 场景：使用全新数据根通过多个入口产生 C0–C3，创建一致备份，在隔离数据根恢复并
 分别删除/重建各级允许内容。
@@ -558,7 +558,8 @@ fixture 另证明 audit-only 不写盘、目标冲突闭锁且源文件保留。
 验证通过，C1/C2/C3 缺失为 0，凭据重授权状态单独报告。真实篡改一个 1,150 字节 C0 资产后，
 `ops verify-restored` 以不可重试 `integrity_failed` 拒绝并指出准确路径；恢复原字节后的最终
 全量复验再次通过。活动根前后 pending/quarantine/journal/orphan 均为 0。证据位于
-`BABATA_EVIDENCE_HOME/runs/p8-1-backup-20260727-214924/`，P8.1 随之完成。
+`BABATA_EVIDENCE_HOME/runs/p8-1-backup-20260727-214924/`。该结果保留为 P9 可复用的现有
+本地能力，不再作为 P8.1 的定义或完成证据。
 
 ### TC-11：完整本地 raw-to-view 闭环
 
