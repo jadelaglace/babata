@@ -12,6 +12,7 @@ pub mod tools;
 pub mod views;
 
 pub use assets::FileAssetStore;
+pub use backup::ResticBackupDriver;
 pub use capabilities::StaticCapabilityRegistry;
 pub use config::{AppConfig, DataRoot, SqliteOptions, load_config};
 pub use observability::SystemClock;

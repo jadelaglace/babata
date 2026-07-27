@@ -4,19 +4,19 @@ use babata_application::{
     ChangeMapNodeTagCommand, ChangeMapParentCommand, ChangeSemanticMapAssignmentCommand,
     CreateMapNodeCommand, CreateScoreProfileCommand, CreateSublibraryCommand,
     DenseExpressionPreviewService, EvolveMapNodeAction, EvolveMapNodeCommand, ExploreService,
-    KnowledgeService, OutputService, ProcessService, RecordRelevanceScoreCommand,
+    KnowledgeService, OpsService, OutputService, ProcessService, RecordRelevanceScoreCommand,
     RecordSuggestionReviewCommand, RegisterFirstPartySemanticCommand, ReviseSublibraryCommand,
     SearchQuery, SemanticDigestService, SublibraryService, SurfaceQuery, WorkspaceService,
 };
 use babata_domain::{
     DerivativeId, FirstPartySemanticDefinition, ItemId, OutputId, OutputScope, PageCursor,
     PipelineId, QueryFilter, RelevanceComponents, RelevanceTargetKind, RevisionId, RunId,
-    ScoreProfile, ScoreProfileId, SublibraryId, SublibraryOutputScope, UtcTimestamp,
+    ScoreProfile, ScoreProfileId, SnapshotId, SublibraryId, SublibraryOutputScope, UtcTimestamp,
 };
 use babata_infrastructure::{
-    AppConfig, DenseExpressionViewStore, FileAssetStore, OutputViewStore, SqliteReadProjection,
-    StaticCapabilityRegistry, SublibraryViewStore, SystemClock, load_config, open_derived_database,
-    open_job_database, open_knowledge_review_database, open_raw_database,
+    AppConfig, DenseExpressionViewStore, FileAssetStore, OutputViewStore, ResticBackupDriver,
+    SqliteReadProjection, StaticCapabilityRegistry, SublibraryViewStore, SystemClock, load_config,
+    open_derived_database, open_job_database, open_knowledge_review_database, open_raw_database,
     processing::registry::ProcessProviderRouter, raw_status,
 };
 use clap::Parser;
@@ -83,7 +83,29 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         RootCommand::Views(_) => return Err(unavailable("views", "P6")),
         RootCommand::Outputs(command) => execute_outputs(command, &config, cli.json)?,
         RootCommand::Routes(_) => return Err(unavailable("routes", "P4")),
-        RootCommand::Ops(_) => return Err(unavailable("ops.backup", "P8")),
+        RootCommand::Ops(command) => execute_ops(command, &config, cli.json)?,
+    }
+    Ok(())
+}
+
+fn execute_ops(
+    command: crate::commands::OpsCommand,
+    config: &AppConfig,
+    json: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let service = OpsService::new(ResticBackupDriver::from_config(config));
+    match command {
+        crate::commands::OpsCommand::Status => render_value(&service.status()?, json)?,
+        crate::commands::OpsCommand::Doctor => render_value(&service.doctor()?, json)?,
+        crate::commands::OpsCommand::Backup => render_value(&service.backup()?, json)?,
+        crate::commands::OpsCommand::RestoreVerify { snapshot, target } => render_value(
+            &service.restore_verify(&SnapshotId::parse(snapshot)?, target.as_deref())?,
+            json,
+        )?,
+        crate::commands::OpsCommand::VerifyRestored { snapshot, target } => render_value(
+            &service.verify_restored(&SnapshotId::parse(snapshot)?, &target)?,
+            json,
+        )?,
     }
     Ok(())
 }

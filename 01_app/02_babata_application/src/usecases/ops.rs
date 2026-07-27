@@ -1,31 +1,47 @@
-use babata_domain::SnapshotRef;
+use babata_domain::SnapshotId;
 
-use crate::{ApplicationError, BackupOutcome, OperationStatus};
+use crate::{
+    ApplicationError, BackupOutcome, OperationStatus, RestoreVerificationOutcome,
+    ports::BackupDriverPort,
+};
 
-#[derive(Debug, Default, Clone, Copy)]
-pub struct OpsService;
+pub struct OpsService<D> {
+    driver: D,
+}
 
-impl OpsService {
+impl<D> OpsService<D>
+where
+    D: BackupDriverPort,
+{
+    pub fn new(driver: D) -> Self {
+        Self { driver }
+    }
+
     pub fn status(&self) -> Result<OperationStatus, ApplicationError> {
-        unavailable()
+        self.driver.status()
     }
 
     pub fn doctor(&self) -> Result<OperationStatus, ApplicationError> {
-        unavailable()
+        self.driver.doctor()
     }
 
     pub fn backup(&self) -> Result<BackupOutcome, ApplicationError> {
-        unavailable()
+        self.driver.snapshot()
     }
 
     pub fn restore_verify(
         &self,
-        _snapshot: &SnapshotRef,
-    ) -> Result<OperationStatus, ApplicationError> {
-        unavailable()
+        snapshot: &SnapshotId,
+        target: Option<&str>,
+    ) -> Result<RestoreVerificationOutcome, ApplicationError> {
+        self.driver.restore_verify(snapshot, target)
     }
-}
 
-fn unavailable<T>() -> Result<T, ApplicationError> {
-    Err(ApplicationError::capability_unavailable("ops.backup", "P8"))
+    pub fn verify_restored(
+        &self,
+        snapshot: &SnapshotId,
+        target: &str,
+    ) -> Result<RestoreVerificationOutcome, ApplicationError> {
+        self.driver.verify_restored(snapshot, target)
+    }
 }
