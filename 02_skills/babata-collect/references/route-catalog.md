@@ -20,12 +20,12 @@ The authoritative research table is
 | `source.yuque` | 语雀 | disabled | `source-browser-and-ui.md` |
 | `source.wechat_favorites` | 微信收藏 | disabled | `source-browser-and-ui.md` |
 | `source.wechat_articles` | 微信公众号文章 | disabled | `source-browser-and-ui.md` |
-| `source.wechat_channels` | 微信视频号 | disabled by user decision | `source-browser-and-ui.md` |
+| `source.wechat_channels` | 微信视频号 | disabled; non-plan by user decision | `source-browser-and-ui.md` |
 | `source.wechat_chats` | 微信聊天 | disabled | `source-browser-and-ui.md` |
 | `source.zhihu` | 知乎收藏/内容 | disabled | `source-browser-and-ui.md` |
 | `source.bilibili` | Bilibili 收藏/媒体 | disabled | `source-browser-and-ui.md` |
 | `source.xiaohongshu` | 小红书收藏 | disabled | `source-browser-and-ui.md` |
-| `source.douyin` | 抖音收藏 | disabled by user decision | `source-browser-and-ui.md` |
+| `source.douyin` | 抖音收藏 | disabled; non-plan by user decision | `source-browser-and-ui.md` |
 | `source.browser_bookmarks` | browser bookmarks | disabled and last priority | `source-browser-and-ui.md` |
 | `source.browser_pages` | current pages/selections | disabled | `source-browser-and-ui.md` |
 | `source.kimi` | Kimi conversations | disabled | `source-browser-and-ui.md` |

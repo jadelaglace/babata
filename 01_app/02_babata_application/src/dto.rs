@@ -4,10 +4,10 @@ use babata_domain::{
     DerivativeId, DerivativeKind, DerivativeRef, FirstPartySemanticDefinition, HealthState, ItemId,
     LogicalPath, Metadata, OutputKind, OutputScope, PageCursor, PipelineId, ProcessJob, ProcessRun,
     ProcessingState, ProjectionStatus, QueryFilter, RawState, RecollectionState, RecordSummary,
-    RelationKind, RevisionId, RouteCoverage, RunId, ScoreProfile, SemanticCandidatePackage,
-    SemanticPayload, Sha256, SnapshotRef, SourceId, SourceKind, SourceObservationId,
-    SourceObservationKind, SourceRouteId, SublibraryDefinitionInput, SublibraryId,
-    SuggestionDecisionKind, UtcTimestamp, ViewDescriptor, ViewId,
+    RelationKind, RestoreState, RevisionId, RouteCoverage, RunId, ScoreProfile,
+    SemanticCandidatePackage, SemanticPayload, Sha256, SnapshotRef, SourceId, SourceKind,
+    SourceObservationId, SourceObservationKind, SourceRouteId, SublibraryDefinitionInput,
+    SublibraryId, SuggestionDecisionKind, UtcTimestamp, ViewDescriptor, ViewId,
 };
 use serde::{Deserialize, Serialize};
 
@@ -796,4 +796,28 @@ pub struct ViewBuildOutcome {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BackupOutcome {
     pub snapshot: SnapshotRef,
+    pub restic_snapshot_id: String,
+    pub file_count: u64,
+    pub byte_count: u64,
+    pub files_new: u64,
+    pub files_changed: u64,
+    pub files_unmodified: u64,
+    pub data_added: u64,
+    pub elapsed_ms: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RestoreVerificationOutcome {
+    pub snapshot: SnapshotRef,
+    pub restic_snapshot_id: String,
+    pub state: RestoreState,
+    pub target: String,
+    pub verified_files: u64,
+    pub verified_bytes: u64,
+    pub databases_checked: u64,
+    pub c1_rebuildable_missing: Vec<String>,
+    pub c2_views_missing: Vec<String>,
+    pub c3_runtime_missing: Vec<String>,
+    pub credentials_reauthorization_required: bool,
+    pub elapsed_ms: u64,
 }

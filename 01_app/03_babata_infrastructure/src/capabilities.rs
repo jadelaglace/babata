@@ -113,7 +113,15 @@ pub fn all_descriptors() -> Vec<CapabilityDescriptor> {
         },
         CapabilityDescriptor::unavailable("outputs.web", "unplanned"),
         CapabilityDescriptor::unavailable("outputs.obsidian", "unplanned"),
-        CapabilityDescriptor::unavailable("ops.backup", "P8"),
+        CapabilityDescriptor {
+            id: CapabilityId::new("ops.backup"),
+            status: CapabilityStatus::Enabled,
+            activation_phase: "P8.1".to_owned(),
+            reason: Some(
+                "Consistent SQLite snapshots, encrypted incremental restic backup, and isolated restore verification are enabled"
+                    .to_owned(),
+            ),
+        },
     ];
     descriptors.extend(p7_source_descriptors());
     descriptors.extend(crate::processing::registry::processing_descriptors());
