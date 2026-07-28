@@ -40,7 +40,7 @@ P6  核心沉淀、检索、子库与输出                      已完成
   P6.2 发现、检索与关系导航                         已完成
   P6.3 子库与输出                                   已完成
 P7  扩展来源、正式 Skill 与受控 Agent               已完成
-P8  来源广度、豆包/微信后续阶段与全量 A1             进行中（P8.1、豆包第二阶段已完成）
+P8  来源广度、豆包/微信后续阶段与全量 A1             进行中（P8.1、豆包第二/第三阶段已完成）
 P9  简单备份同步                                      未开始（本地备份恢复能力已存在）
 ```
 
@@ -103,7 +103,7 @@ Chrome 恢复后又取得 4 条不同 ChatGPT 会话的完整响应并逐条固�
 `BABATA_RECOVERY_HOME/recovery/p8-1-source-breadth-20260727/summary.json`；本轮紧急响应包位于
 `BABATA_RECOVERY_HOME/batches/p8-1/20260727-emergency-a1/`，普通网页 A1 位于
 `BABATA_RECOVERY_HOME/batches/browser/20260727-p8-1-history-a1/history.json`。P8.1 已完成 15/15，
-没有为这些数据追加 A2/B/C/C1；P8.2 已启动并完成豆包第二阶段，P8.3 尚未启动。
+没有为这些数据追加 A2/B/C/C1；P8.2 已启动并完成豆包第二/第三阶段，P8.3 尚未启动。
 
 - P2 已在旧 117 文件基础上补齐 20 个 Rust 责任文件和 3 份 Skill 规格，达到 6 个
   crate、137 个 Rust 源文件；CollectorSession、Knowledge、Sublibrary、Output、
@@ -1067,7 +1067,20 @@ P8 承担豆包全账户回收与运营闭合，不再把它当成 P7 的新来�
 附件问题的会话。权威批次位于
 `BABATA_RECOVERY_HOME/batches/doubao/p8-2-stage2-20260728/`，以
 `stage2-completion-audit.json` 和 `stage3-residuals.json` 分别证明第二阶段闭合与第三阶段边界。
-豆包第二阶段已完成；P8.2 仍进行中，因为豆包第三阶段及微信第二/第三阶段尚未完成。
+2026-07-28，Issue #118 完成豆包第三阶段。主对话 `23419482725122` 与第二阶段转入的 37 个
+长会话全部沿登录 Chrome 的官方 `chain/single` 分页闭合；请求从 `anchor_index=0` 开始，逐页
+使用响应 `next_index`，服务端实际每页最多返回 50 条。38/38 个会话最终均为
+`HasMore=false`，合计 156 页、5,887 条跨会话唯一消息，跨会话重复 ID 为 0。两个旧滚动输出
+存在 3 条和 6 条分页重叠，均已显式去重且唯一计数与输出账一致；直接分页页的原始响应、
+SHA-256、anchor 与 next_index 均逐页保存并复核通过。
+
+第二阶段留下的 9 个附件残余也已逐项闭账：8 个候选实际是官方 `image_ori` 转码得到的
+全分辨率 PNG 派生物，结构可打开但 MD5 不等于上传原件，继续保留为 derivative，不冒充
+original；唯一 PDF 从完整消息补出真实存储 URI 与 20,556,280 字节声明，但签名已过期，
+两次来源尝试后仍无原件。这 9 项按合同诚实列为 `unrecovered-after-two-source-attempts`。
+权威批次位于 `BABATA_RECOVERY_HOME/batches/doubao/p8-2-stage3-20260728/`，其中
+`stage3-completion-audit.json` 状态为 complete，并明确 Recovery 已闭合、正式 C0 未由本 Issue
+启动、C1 未触发。豆包第二/第三阶段均已完成；P8.2 仍进行中，只剩微信第二/第三阶段。
 
 微信沿用第一阶段已经校验的账户整合归档和 WeChatDataAnalysis 路线，不再重复研究采集工具：
 
@@ -1110,7 +1123,7 @@ P9 可复用前置，但不代表 P8.1；P9 只差选定并跑通一个外部复
 | P5 | AC-03（C0/C1 子责任）、AC-04 | 真实输入/派生物与忠实清洗；TC-03A/TC-04 |
 | P6 | AC-03（C2 子责任）、AC-05、AC-06、AC-07、AC-08 | TC-03B；核心先于检索/视图/输出 |
 | P7 | AC-09 | 扩展来源、Skill、Agent |
-| P8 | AC-09（P8.1 最低覆盖）、AC-11 | P8.1 已完成 15/15；P8.2 中豆包第二阶段已完成，豆包第三阶段及微信第二/第三阶段待推进；P8.3 尚未启动 |
+| P8 | AC-09（P8.1 最低覆盖）、AC-11 | P8.1 已完成 15/15；P8.2 中豆包第二/第三阶段已完成，微信第二/第三阶段待推进；P8.3 尚未启动 |
 | P9 | AC-10、TC-10 加一个外部复制/同步目标 | 本地备份恢复能力已存在；NAS/云盘/云 Git 三选一尚未执行 |
 
 ## 14. 提交与验收纪律

@@ -92,7 +92,7 @@ P2-G7 的完成口径是：00 点名的来源都有真实调查、证据等级�
 | source.douyin | 抖音收藏 | non-plan；保留来源身份，不排入 P8.1/P8.2/P8.3 | 当前无需动作 | E0：错误主路线已撤回，候选路线已核；2026-07-27 用户明确标记非计划 | 只有用户以后明确重新规划才继续；`F2` 和真实样本均未实证 | disabled |
 | source.browser_bookmarks | 浏览器书签 | 最后单独收集；届时由 Agent 按一次明确文件夹范围读取候选并自动遍历网址、收正文/可得附件；实验性窄扩展冻结 | 暂无；最终收集时给出文件夹或集合范围一次 | E1：扩展候选、loopback 和唯一 C0 writer 机制已验证；正式 Chrome 证明当前实现只会手动提交 locator | 延到所有点名来源之后；缺 Agent 自动遍历正文、附件、逐条状态和新鲜重采 | disabled |
 | source.browser_pages | 浏览器当前页面、选区和网页收藏 | 当前存量由 Codex Chrome 自主读取历史/页面；未来快速剪藏入口仅作低优先级补充，保真页面再评估 SingleFile | 给出历史、页面或站点范围一次 | E3：P8.1 从 Chrome 返回的 50 条真实近期网页记录中直接保存 5 条 C0-A1；实验性扩展证据不计 | 正文、附件、保真页面和新鲜重采不属于 P8.1，后续按使用需要推进 | disabled |
-| source.doubao | 豆包对话 | Codex Chrome 一次展开和选择真实历史；OpenCLI 薄命令读取显式 1-20 条批次，逐 item 重采 | Chrome 已登录；给出会话、时间或数量范围 | E3：两个 20 条真实批次中 38 条进入 C0、2 条因分页不完整拒绝，38/38 `unchanged`；W1 的 7 个原始 DOCX 已进入统一 C0 | 普通图片/音频/非 DOCX 附件未覆盖；超长会话需完整分页路线；当前主要慢点为每条重建导航/捕获 | available |
+| source.doubao | 豆包对话 | Codex Chrome 一次展开和选择真实历史；官方 `chain/single` 从 anchor 0 按 `next_index` 逐页读取；已登记范围逐 item 重采 | Chrome 已登录；给出会话、时间或数量范围 | E3：P8.2 第二阶段闭合 377 个非主范围；第三阶段再闭合主对话和其中 37 个长残余，38/38 到 `HasMore=false`；W1 的 7 个原始 DOCX 已进入统一 C0 | 8 个图片仅有全分辨率转码派生物、1 个 PDF 原件缺失；Recovery 不冒充正式 C0 | available |
 | source.kimi | Kimi 对话 | 当前优先 Codex Chrome 调用 Kimi 结构化历史和会话接口；OpenCLI 薄命令只用于任务外重试/重采 | Chrome 已登录；给出会话、时间或数量范围 | E3：15 个真实候选选 1，结构化消息、逐条状态、C0 和 `unchanged` 重采已验证 | 当前样本无附件；全历史和深研产物未覆盖 | disabled |
 | source.chatgpt | ChatGPT 对话 | 日常范围用 Codex Chrome；OpenCLI 薄命令固化已证明的结构化读取；账号级首次回收可用官方 Data Export | Chrome 已登录；全量时只在 Data Controls 确认 | E3：20 个真实候选选 1，2 条角色消息/10 引用、逐条状态、C0 和 `unchanged` 重采已验证 | 当前样本附件为 0，二进制附件和工作区全量资格未验证 | disabled |
 | source.local_files | 本地文件 | Babata 核心文件选择器、拖放或受控目录扫描直接读取 | 选择文件、目录或明确监视范围 | E2：P3 显式 file/export 已通过唯一 C0 提交、资产哈希、回读和故障补偿 | 缺日常文件选择器/目录候选、逐条状态和重收集 | disabled |
@@ -794,8 +794,16 @@ block/signature URL 的 v2 稳定指纹时产生的一次性归一化 revision�
 下一项只优化同一浏览器/捕获生命周期复用；候选完整分页、独立 C0 事务和单 item 故障隔离
 保持不变，不继续并列探索多条未证明路线。
 
-决策：**启用一个总 Skill 内的豆包 recipe：Chrome 一次发现范围，OpenCLI 显式批量读取，
-Babata 逐候选写 C0、逐 item 重采；下一步只优化捕获生命周期复用，附件按真实形态窄补**。
+真实全量续页证据（2026-07-28，Issue #118）：第三阶段在登录 Chrome 中直接复用官方
+`/im/chain/single` 协议，从 `anchor_index=0` 开始，把每次响应的数字型 `next_index` 作为
+下一页 anchor；服务端单页实际最多返回 50 条。主对话和 37 个长会话最终 38/38 均闭合于
+`HasMore=false`，共 156 页、5,887 条跨会话唯一消息。逐页原始响应、SHA-256 与游标已保存，
+不再依赖不稳定的程序化滚动。该实证只完成 Recovery 范围，不把临时采集器升级成持久 adapter，
+也不触发 C0/C1。
+
+决策：**总 Skill 内的豆包 recipe 继续由 Chrome 一次发现范围；完整回收用官方游标分页，
+已登记范围仍由 Babata 逐候选写 C0、逐 item 重采。OpenCLI 薄命令保留作有界读取备选，
+不把第三阶段临时采集器升级为新 adapter；附件按真实形态窄补并保留缺失清单**。
 
 ### 10.2 Kimi
 
