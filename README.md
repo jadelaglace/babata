@@ -4,7 +4,7 @@
 
 **把散落在平台里的个人资料拿回来，保留原貌，逐步沉淀成可检索、可关联、可重建的个人知识宇宙。**
 
-[![Engineering gates](https://github.com/jadelaglace/babata/actions/workflows/engineering-gates.yml/badge.svg)](https://github.com/jadelaglace/babata/actions/workflows/engineering-gates.yml) ![Rust 1.85+](https://img.shields.io/badge/Rust-1.85%2B-000000?logo=rust) ![Local first](https://img.shields.io/badge/data-local--first-0f766e) ![Phase](https://img.shields.io/badge/phase-P7%20in%20progress-2563eb)
+[![Engineering gates](https://github.com/jadelaglace/babata/actions/workflows/engineering-gates.yml/badge.svg)](https://github.com/jadelaglace/babata/actions/workflows/engineering-gates.yml) ![Rust 1.85+](https://img.shields.io/badge/Rust-1.85%2B-000000?logo=rust) ![Local first](https://img.shields.io/badge/data-local--first-0f766e) ![Phase](https://img.shields.io/badge/phase-P8%20in%20progress-2563eb)
 
 <sub>Post-2.0 reboot · Rust-first · single repository · under active development</sub>
 
@@ -15,7 +15,7 @@ Babata 是一个本地优先的个人资料与知识系统。它面向微信、�
 它不是云端笔记服务，也不是先设计协议再寻找用途的框架。当前目标很具体：让属于自己的资料能够被拿回来、留得住、看得懂、找得到、用得起来。
 
 > [!IMPORTANT]
-> Babata 仍处于开发阶段，不是面向普通用户的稳定发行版。当前已经完成 P0-P6：核心知识沉淀、检索/关系导航、版本化子库以及 Markdown/JSON 输出均已通过阶段验收；P7 正在继续证明更多真实来源、内容形态与受控 Agent，豆包 MBA 第一阶段及微信“文件传输助手 + 收藏”Recovery 已完成；P8 尚未开始。
+> Babata 仍处于开发阶段，不是面向普通用户的稳定发行版。当前已经完成 P0-P7 和 P8.1；P8.2/P8.3 继续处理豆包、微信后续阶段与计划内来源全量 C0-A1。简单备份同步属于 P9。
 
 ## 从原件到使用
 
@@ -123,7 +123,8 @@ cargo test --workspace --manifest-path ./01_app/Cargo.toml
 | P6.1 | 完成 | 核心知识沉淀、地图、关系、评分、建议与高密度表达 |
 | P6.2 | 完成 | 搜索投影、多条件检索、评分排序、关系导航与可解释浮现 |
 | P6.3 | 完成 | 版本化子库、可重建物化、Markdown/JSON 输出与只读 manifest |
-| P7 | 进行中 | 印象笔记、OneNote 和豆包真实形态已有闭环证据；豆包 MBA 第一阶段及微信文件传输助手/收藏 Recovery 完成，正式 Skills、更多来源形态与受控 Agent 继续推进 |
-| P8 | 未开始 | 豆包第二/三阶段；微信单聊/私聊粗筛、群聊/其他全量去噪；以及备份恢复、运维与长期加固 |
+| P7 | 完成 | 扩展来源、正式总收集 Skill、真实批次与受控 Agent 合同 |
+| P8 | 进行中 | P8.1 已完成 15/15 个计划内来源；P8.2/P8.3 尚未启动 |
+| P9 | 未开始 | NAS、云盘或云 Git 三选一做简单复制/同步；本地一致快照与隔离恢复能力已存在 |
 
-日常开发从 GitHub Issue 开始，使用 `codex/` 短分支并通过 Pull Request 合并。提交前请阅读[提交与验收纪律](00_docs/04_process/04_DEVELOPMENT_PROCESS.md#13-提交与验收纪律)。
+日常开发从 GitHub Issue 开始，使用 `codex/` 短分支并通过 Pull Request 合并。提交前请阅读[提交与验收纪律](00_docs/04_process/04_DEVELOPMENT_PROCESS.md#14-提交与验收纪律)。
