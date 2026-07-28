@@ -536,6 +536,15 @@ C0-C 回读与 unchanged 重采。微信只读解密数据库/Recovery，未操�
 残余和 3 个仅剩附件问题的会话。该结果只闭合豆包第二阶段，不代表 P8.2、豆包第三阶段、
 微信第二/第三阶段、Recovery 到正式 C0 或 TC-11 已完成。
 
+豆包第三阶段结果（Issue #118）：主对话与 37 个长会话全部通过登录 Chrome 的官方
+`chain/single` 请求按 `next_index` 分页到 `HasMore=false`，合计 38/38 个会话、156 页、
+5,887 条跨会话唯一消息，跨会话重复 ID 为 0。两个旧输出的分页重叠 3/6 条已显式去重；
+直接分页保存的每页原始响应 SHA-256 与游标链复核通过。9 个附件残余中，8 个候选确认为
+全分辨率 PNG derivative 但不匹配上传原件 MD5，1 个 PDF 补出真实存储 URI 和 20,556,280
+字节声明但原件仍缺失；全部保留两次来源尝试与完整性证据，不把 preview/derivative 冒充
+original。`BABATA_RECOVERY_HOME/batches/doubao/p8-2-stage3-20260728/stage3-completion-audit.json`
+为 complete；该结论完成豆包第三阶段的 Recovery，不启动正式 C0、C1、微信阶段或 P8.3。
+
 ### TC-10：外部数据根、数据级别与隔离恢复
 
 关联：AC-10，阶段 P3/P9。
