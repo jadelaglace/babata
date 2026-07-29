@@ -545,6 +545,17 @@ C0-C 回读与 unchanged 重采。微信只读解密数据库/Recovery，未操�
 original。`BABATA_RECOVERY_HOME/batches/doubao/p8-2-stage3-20260728/stage3-completion-audit.json`
 为 complete；该结论完成豆包第三阶段的 Recovery，不启动正式 C0、C1、微信阶段或 P8.3。
 
+微信第二阶段结果（Issue #120）：全量 746 个会话按最新联系人和消息来源证据分出 498 个
+真人单聊候选，排除 132 个群聊、115 个公众号/服务号和第一阶段文件传输助手。候选中 482 个
+保留实质内容、16 个纯通知会话排除；115,261 条保留消息全局 ID 重复为 0，1,394 条好友验证
+或系统提示噪声被移除。逐会话包内的可得媒体与最新账户整合归档第二次补取按资源 ID 归并，
+最终 544 个缺口为表情 234、视频原件 219、文件 91，均保留两次尝试账。482 个会话包经
+17 个修正后 Collector session 全部 `saved`，数据库中正式项、capture 修订和 export 资产各
+482，资产合计 4,149,726,759 字节，`quick_check=ok`，C1 未触发。首次 `text` 内容类型被
+Collector 合同一致拒绝的 session 另行保留，纠正为 `document` 后未重抓源数据。证据位于
+`BABATA_RECOVERY_HOME/batches/wechat/p8-2-stage2-20260729/`；该结果只关闭微信第二阶段，
+微信第三阶段和 P8.3 均未启动。
+
 ### TC-10：外部数据根、数据级别与隔离恢复
 
 关联：AC-10，阶段 P3/P9。
@@ -647,7 +658,8 @@ post-ready read-back 与 cleanup 故障，并联合检查 operation/journal/orph
 | P5 | TC-03A、TC-04 | C1/provider/integrity tests 与真实 asset 证据 |
 | P6 | TC-03B、TC-05、TC-06、TC-07、TC-08 | core/read projection/output tests |
 | P7 | TC-09 | Skill/Agent/extra-source tests |
-| P8 | TC-10、TC-11 | backup/restore/end-to-end evidence |
+| P8 | TC-11 | 来源回收与 end-to-end evidence；P8.2 尚余微信第三阶段 |
+| P9 | TC-10 | 选定一个外部复制/同步目标；本地 backup/restore 能力已存在 |
 
 ## 6. Skill 测试规则
 
