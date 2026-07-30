@@ -666,7 +666,7 @@ post-ready read-back 与 cleanup 故障，并联合检查 operation/journal/orph
 | P5 | TC-03A、TC-04 | C1/provider/integrity tests 与真实 asset 证据 |
 | P6 | TC-03B、TC-05、TC-06、TC-07、TC-08 | core/read projection/output tests |
 | P7 | TC-09 | Skill/Agent/extra-source tests |
-| P8 | TC-11 | 来源回收与 end-to-end evidence；P8.2 微信第三阶段其他范围已完成，132 个群聊按用户决定暂缓 |
+| P8 | TC-11 | 来源回收与 end-to-end evidence；P8.2 微信第三阶段其他范围已完成、132 个群聊按用户决定暂缓；P8.3 已启动并保留飞书 Drive、Bilibili、小红书、知乎和浏览器书签的真实缺口 |
 | P9 | TC-10 | 选定一个外部复制/同步目标；本地 backup/restore 能力已存在 |
 
 ## 6. Skill 测试规则

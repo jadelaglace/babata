@@ -78,23 +78,23 @@ P2-G7 的完成口径是：00 点名的来源都有真实调查、证据等级�
 <!-- P2-G7-SOURCE-TABLE -->
 | source_id | source | normal_route | minimum_authorization | current_evidence | current_gap | current_status |
 | --- | --- | --- | --- | --- | --- | --- |
-| source.feishu | 飞书文档、Wiki、知识库、云文档 | 官方 `lark-cli` 直接调用，Babata 只包授权、范围选择和结果接入 | 一次飞书应用配置与用户 OAuth；以后选择文档/节点/范围 | E3：10 个根候选和 6 个子候选中选 1 篇，正文/8 PNG、真实 failed 后定向 retry 和 `unchanged` 重采已验证 | 嵌入 Sheet/Base/Slides/画板内部数据及其他文档类型未覆盖 | disabled |
-| source.yuque | 语雀 | Codex Chrome 发现范围，单篇用语雀官方 Markdown 导出端点；整库可用官方 PDF/LakeBook；`yuque-dl` 仅作受控批处理候选 | 登录语雀并选择知识库/文档；会员 API/MCP 暂不启用，不要求手抄会话 Token | E3：8 个真实候选选 1 篇，官方 Markdown、22 张图片、C0 和 `unchanged` 重采已验证 | 整库通用格式、文件/表格/画板/评论未覆盖；OpenAPI/MCP 需要超级会员，留待统一决策 | disabled |
+| source.feishu | 飞书文档、Wiki、知识库、云文档 | 官方 `lark-cli` 直接调用，Babata 只包授权、范围选择和结果接入 | 一次飞书应用配置与用户 OAuth；以后选择文档/节点/范围 | E3：P8.3 已全树枚举 2 个 Wiki 空间共 151 节点；既有 1 篇正文/8 PNG、failed/retry 和 `unchanged` 重采仍成立 | Drive 增量 OAuth 已成功，但根目录两次请求在本地参数校验失败并按上限停止；嵌入 Sheet/Base/Slides/画板内部数据不属本轮 A1 | disabled |
+| source.yuque | 语雀 | Codex Chrome 发现范围，单篇用语雀官方 Markdown 导出端点；整库可用官方 PDF/LakeBook；`yuque-dl` 仅作受控批处理候选 | 登录语雀并选择知识库/文档；会员 API/MCP 暂不启用，不要求手抄会话 Token | E3：P8.3 枚举 3 个个人库、8/8 文档、0 个协作库及 13/13 收藏记录；新补 3 篇 Markdown，既有正式样本不重跑 | 收藏记录已达 A1；其中 11 个外部知识库内容不在本轮 A1 递归范围；文件/表格/画板/评论未覆盖 | disabled |
 | source.onenote | OneNote | 官方桌面客户端导出 PDF+MHT 配对或显式 MHT 列表；Rust 窄 adapter 校验每个实际导出，经唯一核心链路保存 C0，并只记录非事实重叠提示 | 客户端已登录；选择明确笔记本/子本范围并完成官方导出 | E3：用户实际交付的 1 对 626 页 PDF/MHT 与 6 个 MHT 全量进入 registered/C0-C，全部重采 unchanged，已知重叠对子无正式 relation | 没有原生 page/section ID；跨新导出来源身份未启用；可选 C1 分段不属于来源缺口 | available |
 | source.evernote | 印象笔记 / Evernote | 官方客户端整库 `.notes` 导出；Babata Rust adapter 逐条认证解密为 ENEX/ENML；网页 DOM 和单篇 MHT 为回退 | 客户端已登录并选择一个明确导出范围；不需要用户密码、Cookie 或第三方账号授权 | E3：用户实际交付的 78,711,776 字节整库 `.notes` 中 163 条正文和 349 个资源全量验证，1 batch + 163 notes 全部进入 registered/C0-C 并 164/164 unchanged | `.notes` 没有 note GUID、updated 或笔记本层级；身份限于 immutable export hash + ordinal，跨新导出匹配未启用 | available |
 | source.wechat_favorites | 微信收藏 | 官方手机记录迁移到 PC 后，用已验证的 WeChatDataAnalysis 本地恢复/导出取得收藏原库与可读分页；正式登记仍须走 Babata Rust Collector | 已登录官方 PC 微信；用户完成手机迁移并明确收藏范围 | Recovery E3：5,025 条全类型收藏随微信第一阶段全量达到 C0-A1；另有 7 条收藏代表样本进入 registered/C0-C 并重采 unchanged | 全量收藏附件与 URL 正文尚未达到 C0-A2；P8.2 再筛选和推进 | disabled |
 | source.wechat_articles | 微信公众号文章 | 公开文章 URL 与已验证只读 Recovery 目录；Agent 保存直接可得目录/响应，后续再按需取正文/媒体 | 公开 URL 无额外授权；禁止默认操作微信 UI | E3：P8.1 已保存 233 条真实公众号文章目录达到 C0-A1；另有 1 篇正文/Markdown/HTML 进入 registered/C0-C 并重采 `unchanged` | 其余文章正文、图片/音视频与批量重采不属于 P8.1 | disabled |
 | source.wechat_channels | 微信视频号 | non-plan；保留来源身份，不排入 P8.1/P8.2/P8.3 | 当前无需动作 | E1：候选工具和权限模型已核；2026-07-27 用户明确标记非计划 | 只有用户以后明确重新规划才继续；不安装代理证书或捕获工具 | disabled |
 | source.wechat_chats | 微信聊天记录 | 官方手机记录迁移到 PC 后，用已验证的 WeChatDataAnalysis 本地恢复/导出会话、消息和可得媒体；正式登记走 Babata Rust Collector | 同网手机确认迁移或 PC 已有记录；明确选择会话和范围 | E3：第一阶段全量 746 个会话/216,449 条消息达到 C0-A1；P8.2 第二阶段从 498 个真人单聊候选保留 482 个、115,261 条唯一消息并 482/482 registered/C0-C；第三阶段其他范围筛完 115 个公众号/服务号会话，111 个、721 条消息进入 registered/C0-C | 132 个群聊、97,232 条消息按用户优先级暂缓；第二阶段最终缺表情 234、视频原件 219、文件 91，均已两次来源尝试并留账 | available |
-| source.zhihu | 知乎收藏与内容 | Codex Chrome 发现范围，OpenCLI 分页/详情/媒体；`Zhihu-Collections-MCP` 仅作后续批量候选 | Chrome 已登录并选择收藏范围；MCP 候选另需实测其登录方式 | E3：27 个候选选 1，正文/HTML/17 原图和 `unchanged` 重采已验证 | 文章、想法、视频、评论及 MCP 候选尚未实证 | disabled |
-| source.bilibili | Bilibili 收藏与媒体 | Codex Chrome 先尝试候选；真实超时后用 OpenCLI + `yt-dlp`/ffmpeg 收所选一条 | Chrome 已登录；选择单条视频范围 | E3：20 个候选选 1，正文/字幕/摘要/视频和 `unchanged` 重采已验证 | 按用户要求只闭合一条，后续收藏范围另选 | disabled |
-| source.xiaohongshu | 小红书收藏 | Codex Chrome 发现范围，OpenCLI 详情/媒体重采；`XHS-Downloader` 仅作后续批量候选 | Chrome 已登录并选择收藏范围；不要求手抄 Cookie | E3：20 个候选选 1，正文/2 媒体和 `unchanged` 重采已验证 | 其他内容形态未覆盖；专用下载器的浏览器 Cookie 读取已失效 | disabled |
+| source.zhihu | 知乎收藏与内容 | Codex Chrome 发现范围，OpenCLI 分页/详情/媒体；`Zhihu-Collections-MCP` 仅作后续批量候选 | Chrome 已登录并选择收藏范围；MCP 候选另需实测其登录方式 | E3：P8.3 枚举 16 个收藏夹、声明 98 条，完整保存 65 条；3 个失败对象均完成最后一次重试 | 5 个收藏夹共缺 33 条，其中两个整页因 `zvideo` 类型拒绝；不再重试 | disabled |
+| source.bilibili | Bilibili 收藏与媒体 | Codex Chrome 先尝试候选；真实超时后用 OpenCLI + `yt-dlp`/ffmpeg 收所选一条 | Chrome 已登录；选择收藏夹或单条视频范围 | E3：P8.3 枚举 33 个收藏夹并保存 96/96 页、3,167 条收藏关系和 3,116 个唯一 URL | 18 个收藏夹声明合计比分页实得多 61 条；同类问题超过 3 个对象后暂停 | disabled |
+| source.xiaohongshu | 小红书收藏 | Codex Chrome 发现范围，OpenCLI 详情/媒体重采；`XHS-Downloader` 仅作后续批量候选 | Chrome 已登录并选择范围；不要求手抄 Cookie | E3：P8.3 页面声明 386 篇笔记、16 个专辑、0 个文件，保存 20 条当前可读卡片和标题 | 至少缺 366 篇笔记，16 个专辑内容未枚举；第二条浏览器路线两次超时后停止 | disabled |
 | source.douyin | 抖音收藏 | non-plan；保留来源身份，不排入 P8.1/P8.2/P8.3 | 当前无需动作 | E0：错误主路线已撤回，候选路线已核；2026-07-27 用户明确标记非计划 | 只有用户以后明确重新规划才继续；`F2` 和真实样本均未实证 | disabled |
-| source.browser_bookmarks | 浏览器书签 | 最后单独收集；届时由 Agent 按一次明确文件夹范围读取候选并自动遍历网址、收正文/可得附件；实验性窄扩展冻结 | 暂无；最终收集时给出文件夹或集合范围一次 | E1：扩展候选、loopback 和唯一 C0 writer 机制已验证；正式 Chrome 证明当前实现只会手动提交 locator | 延到所有点名来源之后；缺 Agent 自动遍历正文、附件、逐条状态和新鲜重采 | disabled |
+| source.browser_bookmarks | 浏览器书签 | 最后单独收集；优先由用户导出 Chrome 书签 HTML，再由 Agent 本地只读解析和遍历；实验性窄扩展冻结 | 用户执行一次 Chrome 书签 HTML 导出并交付文件 | E1：P8.1 已保存 5 条真实网页 A1；P8.3 证实 Browser 安全策略禁止 Agent 访问 `chrome://bookmarks/` | 全量分母未知；禁止绕过安全策略读取浏览器配置，需 HTML 导出 | disabled |
 | source.browser_pages | 浏览器当前页面、选区和网页收藏 | 当前存量由 Codex Chrome 自主读取历史/页面；未来快速剪藏入口仅作低优先级补充，保真页面再评估 SingleFile | 给出历史、页面或站点范围一次 | E3：P8.1 从 Chrome 返回的 50 条真实近期网页记录中直接保存 5 条 C0-A1；实验性扩展证据不计 | 正文、附件、保真页面和新鲜重采不属于 P8.1，后续按使用需要推进 | disabled |
 | source.doubao | 豆包对话 | Codex Chrome 一次展开和选择真实历史；官方 `chain/single` 从 anchor 0 按 `next_index` 逐页读取；已登记范围逐 item 重采 | Chrome 已登录；给出会话、时间或数量范围 | E3：P8.2 第二阶段闭合 377 个非主范围；第三阶段再闭合主对话和其中 37 个长残余，38/38 到 `HasMore=false`；W1 的 7 个原始 DOCX 已进入统一 C0 | 8 个图片仅有全分辨率转码派生物、1 个 PDF 原件缺失；Recovery 不冒充正式 C0 | available |
-| source.kimi | Kimi 对话 | 当前优先 Codex Chrome 调用 Kimi 结构化历史和会话接口；OpenCLI 薄命令只用于任务外重试/重采 | Chrome 已登录；给出会话、时间或数量范围 | E3：15 个真实候选选 1，结构化消息、逐条状态、C0 和 `unchanged` 重采已验证 | 当前样本无附件；全历史和深研产物未覆盖 | disabled |
-| source.chatgpt | ChatGPT 对话 | 日常范围用 Codex Chrome；OpenCLI 薄命令固化已证明的结构化读取；账号级首次回收可用官方 Data Export | Chrome 已登录；全量时只在 Data Controls 确认 | E3：20 个真实候选选 1，2 条角色消息/10 引用、逐条状态、C0 和 `unchanged` 重采已验证 | 当前样本附件为 0，二进制附件和工作区全量资格未验证 | disabled |
+| source.kimi | Kimi 对话 | 当前优先 Codex Chrome 调用 Kimi 结构化历史和会话接口；OpenCLI 薄命令只用于任务外重试/重采 | Chrome 已登录；给出会话、时间或数量范围 | E3：P8.3 当前目录 15/15 会话达到 A1（既有 4、新补 11）；既有正式样本和 `unchanged` 不重跑 | 另 1 个 P4 旧会话已不在当前目录；不计当前用户范围分母 | disabled |
+| source.chatgpt | ChatGPT 对话 | 日常范围用 Codex Chrome；OpenCLI 薄命令固化已证明的结构化读取；账号级首次回收可用官方 Data Export | Chrome 已登录；全量时只在 Data Controls 确认 | E3：P8.3 当前目录 28/28 会话达到 A1（既有 5、新补 23）；没有失败 | 当前目录缺口 0；本轮未触发账号级 Data Export，二进制附件资格仍未单独验证 | disabled |
 | source.local_files | 本地文件 | Babata 核心文件选择器、拖放或受控目录扫描直接读取 | 选择文件、目录或明确监视范围 | E2：P3 显式 file/export 已通过唯一 C0 提交、资产哈希、回读和故障补偿 | 缺日常文件选择器/目录候选、逐条状态和重收集 | disabled |
 | source.first_party | 第一方创作 | Babata 创作入口直接提交同一核心链路 | 明确执行新建、修订或批注 | E2：P3 create/revise/annotate、版本关系、回读和故障补偿已验证 | 缺日常创作入口；不以来源收集状态机替代第一方版本语义 | disabled |
 
@@ -114,7 +114,7 @@ hash、状态和 staging 管理由 Agent/Babata 自主完成，直到范围结�
 | 微信收藏 | PC 微信登录，并在需要补历史时完成一次手机迁移 | 收藏集合、分类或时间范围 | Agent 用已验证本地工具导出原库、可读记录与可得资源，校验 hash 后再交统一 Collector | 第一阶段 5,025 条已进 Recovery；还未走 Rust C0/重采及附件逐项对账 |
 | 公众号文章 | 单篇无授权；批量历史时扫码登录自己的公众号后台 | 链接、公众号、合集或文章范围 | 已知 URL 的正文、Markdown/HTML、可得媒体和重收集 | 单篇已闭合；还缺带媒体样本、批量历史和更多形态 |
 | 微信视频号 | 当前无需动作 | 暂无 | 保留 UI-only 边界，不安装代理证书或捕获工具 | 用户已决定暂时不处理 |
-| 微信聊天 | 用微信官方功能把所选手机记录迁移到电脑 | 会话和日期范围 | Agent 用已验证本地工具导出消息、结构和可得媒体，记录缺口并交统一 Collector | 第一阶段全量取得、第二阶段 482 个单聊已登记；只剩 P8.2 第三阶段群聊和其他内容 |
+| 微信聊天 | 用微信官方功能把所选手机记录迁移到电脑 | 会话和日期范围 | Agent 用已验证本地工具导出消息、结构和可得媒体，记录缺口并交统一 Collector | 第一阶段全量取得、第二阶段 482 个单聊和第三阶段其他范围 111 个会话已登记；只有 132 个群聊按用户决定暂缓 |
 | 知乎 | Chrome 已登录；首次批准当前实例 remote debugging | 收藏夹、条目或时间范围 | 自主列收藏夹、分页、详情、图片和页面快照；必要时调用 OpenCLI | Browser Use/Agent Browser 真实探针 |
 | Bilibili | Chrome 已登录；首次批准 remote debugging | 收藏夹、页、视频或分 P | 自主候选、翻页、元数据、字幕、媒体和附件；按需调用 `yt-dlp` | 通用浏览器探针；`yt-dlp`/ffmpeg 已就绪 |
 | 小红书 | Chrome 已登录；首次批准 remote debugging | 收藏列表、时间或数量范围 | 自主列收藏、正文、评论、图片/视频和重收集；必要时调用 OpenCLI/MCP | 通用浏览器只读低频探针 |
