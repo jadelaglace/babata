@@ -85,7 +85,7 @@ P2-G7 的完成口径是：00 点名的来源都有真实调查、证据等级�
 | source.wechat_favorites | 微信收藏 | 官方手机记录迁移到 PC 后，用已验证的 WeChatDataAnalysis 本地恢复/导出取得收藏原库与可读分页；正式登记仍须走 Babata Rust Collector | 已登录官方 PC 微信；用户完成手机迁移并明确收藏范围 | Recovery E3：5,025 条全类型收藏随微信第一阶段全量达到 C0-A1；另有 7 条收藏代表样本进入 registered/C0-C 并重采 unchanged | 全量收藏附件与 URL 正文尚未达到 C0-A2；P8.2 再筛选和推进 | disabled |
 | source.wechat_articles | 微信公众号文章 | 公开文章 URL 与已验证只读 Recovery 目录；Agent 保存直接可得目录/响应，后续再按需取正文/媒体 | 公开 URL 无额外授权；禁止默认操作微信 UI | E3：P8.1 已保存 233 条真实公众号文章目录达到 C0-A1；另有 1 篇正文/Markdown/HTML 进入 registered/C0-C 并重采 `unchanged` | 其余文章正文、图片/音视频与批量重采不属于 P8.1 | disabled |
 | source.wechat_channels | 微信视频号 | non-plan；保留来源身份，不排入 P8.1/P8.2/P8.3 | 当前无需动作 | E1：候选工具和权限模型已核；2026-07-27 用户明确标记非计划 | 只有用户以后明确重新规划才继续；不安装代理证书或捕获工具 | disabled |
-| source.wechat_chats | 微信聊天记录 | 官方手机记录迁移到 PC 后，用已验证的 WeChatDataAnalysis 本地恢复/导出会话、消息和可得媒体；正式登记走 Babata Rust Collector | 同网手机确认迁移或 PC 已有记录；明确选择会话和范围 | E3：第一阶段全量 746 个会话/216,449 条消息达到 C0-A1；P8.2 第二阶段从 498 个真人单聊候选保留 482 个、115,261 条唯一消息，逐会话完成 Recovery 对账并 482/482 registered/C0-C | 微信第三阶段仍需处理 132 个群聊和其他剩余内容；第二阶段最终缺表情 234、视频原件 219、文件 91，均已两次来源尝试并留账 | available |
+| source.wechat_chats | 微信聊天记录 | 官方手机记录迁移到 PC 后，用已验证的 WeChatDataAnalysis 本地恢复/导出会话、消息和可得媒体；正式登记走 Babata Rust Collector | 同网手机确认迁移或 PC 已有记录；明确选择会话和范围 | E3：第一阶段全量 746 个会话/216,449 条消息达到 C0-A1；P8.2 第二阶段从 498 个真人单聊候选保留 482 个、115,261 条唯一消息并 482/482 registered/C0-C；第三阶段其他范围筛完 115 个公众号/服务号会话，111 个、721 条消息进入 registered/C0-C | 132 个群聊、97,232 条消息按用户优先级暂缓；第二阶段最终缺表情 234、视频原件 219、文件 91，均已两次来源尝试并留账 | available |
 | source.zhihu | 知乎收藏与内容 | Codex Chrome 发现范围，OpenCLI 分页/详情/媒体；`Zhihu-Collections-MCP` 仅作后续批量候选 | Chrome 已登录并选择收藏范围；MCP 候选另需实测其登录方式 | E3：27 个候选选 1，正文/HTML/17 原图和 `unchanged` 重采已验证 | 文章、想法、视频、评论及 MCP 候选尚未实证 | disabled |
 | source.bilibili | Bilibili 收藏与媒体 | Codex Chrome 先尝试候选；真实超时后用 OpenCLI + `yt-dlp`/ffmpeg 收所选一条 | Chrome 已登录；选择单条视频范围 | E3：20 个候选选 1，正文/字幕/摘要/视频和 `unchanged` 重采已验证 | 按用户要求只闭合一条，后续收藏范围另选 | disabled |
 | source.xiaohongshu | 小红书收藏 | Codex Chrome 发现范围，OpenCLI 详情/媒体重采；`XHS-Downloader` 仅作后续批量候选 | Chrome 已登录并选择收藏范围；不要求手抄 Cookie | E3：20 个候选选 1，正文/2 媒体和 `unchanged` 重采已验证 | 其他内容形态未覆盖；专用下载器的浏览器 Cookie 读取已失效 | disabled |
@@ -573,9 +573,17 @@ WeChatDataAnalysis 1.18.5 已成为本机当前版本的实证例外，不再沿
 `${BABATA_RECOVERY_HOME}/batches/wechat/p8-2-stage2-20260729/stage2-completion-audit.json`。
 本结果关闭单聊/私聊第二阶段，不代表群聊和其他内容的第三阶段完成。
 
+2026-07-30，Issue #122 按用户最新优先级把 132 个群聊、97,232 条消息标记为暂缓，先处理
+第三阶段其他范围。115 个公众号/服务号会话全部完成处置：111 个有内容会话保留 721 条消息，
+4 个源导出空会话排除，只移除 1 条系统消息，重复消息 ID 为 0；101 个可得头像预览共
+490,897 字节进入逐会话包，声明媒体最终缺失为 0。111 个自包含包共 1,124,131 字节，经 4 个
+Collector session 首轮 111/111 `saved`，C1 未运行。权威审计位于
+`${BABATA_RECOVERY_HOME}/batches/wechat/p8-2-stage3-other-20260730/stage3-other-completion-audit.json`。
+该结果关闭微信第三阶段的非群聊其他范围；群聊暂缓，不冒充完成，P8.2 继续如实标记进行中。
+
 决策：**官方迁移 + 已验证 WeChatDataAnalysis 本地恢复为批量主路线，官方 PC 微信 UI 为
-回退；不安装代理证书，Recovery 不冒充 C0；单聊/私聊已通过 Rust Collector 正式登记，
-来源为 available，群聊和其他剩余内容继续按第三阶段单独推进**。
+回退；不安装代理证书，Recovery 不冒充 C0；单聊/私聊与第三阶段其他范围已通过 Rust Collector
+正式登记，来源为 available；群聊保留上游与清单并按用户优先级暂缓**。
 
 ## 8. 内容平台
 
