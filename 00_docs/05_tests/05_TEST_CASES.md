@@ -556,6 +556,14 @@ Collector 合同一致拒绝的 session 另行保留，纠正为 `document` 后�
 `BABATA_RECOVERY_HOME/batches/wechat/p8-2-stage2-20260729/`；该结果只关闭微信第二阶段，
 微信第三阶段和 P8.3 均未启动。
 
+微信第三阶段其他范围结果（Issue #122）：按用户最新优先级，132 个群聊、97,232 条消息进入
+可读暂缓清单，不阻塞本批次。115 个公众号/服务号会话全部完成处置，111 个有内容会话保留
+721 条消息，4 个源导出空会话排除，只移除 1 条系统消息，消息 ID 重复为 0。111 个逐会话包
+包含 101 个可得头像预览、490,897 字节，声明媒体缺失为 0；经 4 个 Collector session 首轮
+111/111 `saved`，失败和重试均为 0，C1 未触发。证据位于
+`BABATA_RECOVERY_HOME/batches/wechat/p8-2-stage3-other-20260730/`；该结果关闭第三阶段非群聊
+其他范围，群聊仍为用户暂缓，P8.2 不冒充完成。
+
 ### TC-10：外部数据根、数据级别与隔离恢复
 
 关联：AC-10，阶段 P3/P9。
@@ -658,7 +666,7 @@ post-ready read-back 与 cleanup 故障，并联合检查 operation/journal/orph
 | P5 | TC-03A、TC-04 | C1/provider/integrity tests 与真实 asset 证据 |
 | P6 | TC-03B、TC-05、TC-06、TC-07、TC-08 | core/read projection/output tests |
 | P7 | TC-09 | Skill/Agent/extra-source tests |
-| P8 | TC-11 | 来源回收与 end-to-end evidence；P8.2 尚余微信第三阶段 |
+| P8 | TC-11 | 来源回收与 end-to-end evidence；P8.2 微信第三阶段其他范围已完成，132 个群聊按用户决定暂缓 |
 | P9 | TC-10 | 选定一个外部复制/同步目标；本地 backup/restore 能力已存在 |
 
 ## 6. Skill 测试规则
