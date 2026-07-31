@@ -88,12 +88,12 @@ try {
         Set-SourceFieldEmpty -ResearchPath $research -SourceId 'source.kimi' -CellIndex 4
     }
 
-    Assert-CheckerFails -Name 'e1-bookmarks-marked-available' -ExpectedMessage 'below E3 and must remain disabled' -Mutate {
+    Assert-CheckerFails -Name 'e1-wechat-channels-marked-available' -ExpectedMessage 'below E3 and must remain disabled' -Mutate {
         param($research)
         $lines = @(Get-Content -Encoding utf8 -LiteralPath $research)
-        $index = 0..($lines.Count - 1) | Where-Object { $lines[$_] -match '^\|\s*source\.browser_bookmarks\s*\|' }
+        $index = 0..($lines.Count - 1) | Where-Object { $lines[$_] -match '^\|\s*source\.wechat_channels\s*\|' }
         if (@($index).Count -ne 1) {
-            throw 'Mutation setup expected exactly one source.browser_bookmarks row'
+            throw 'Mutation setup expected exactly one source.wechat_channels row'
         }
         $cells = @($lines[$index].Split('|'))
         $cells[7] = ' available '

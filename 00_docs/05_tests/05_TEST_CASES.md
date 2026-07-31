@@ -620,6 +620,14 @@ fixture 另证明 audit-only 不写盘、目标冲突闭锁且源文件保留。
 预期：四段链路在同一权威体系中成立；C0/C1/人工沉淀/子库定义不因 C2 删除而改变；
 恢复后链路可读；成功项不因局部失败丢失；没有半成品伪装成功。
 
+P8.4 来源深度执行结果（Issue #126，2026-07-31）：总审计逐来源验证 14 个纳入来源各 5 条，
+共 70 条 C0-A2 或更高样本；Bilibili 为 `deferred_by_user` 并排除在分母外。浏览器书签以
+1,560 条/47 文件夹的 Netscape 导出证明身份，选 5 篇正文图片依赖为 0 的文章保存完整文本
+和 HTML；微信收藏公众号文章从 3/5 补到 5/5，两条图片型文章各保存 1 张正文图，头像、
+水印重复图和 UI 资源均排除。所有计入文件均通过字节/hash/零字节和依赖校验，最终
+`pending_sources=0`；Recovery、正式 C0、C1 分离，本轮没有启动 B/C/C1。该结果属于
+TC-11 的来源取得证据，不单独替代完整 raw-to-view 步骤 2–6。
+
 ## 3. P2 工程 Gate 测试
 
 这些测试不映射产品 AC：
@@ -666,7 +674,7 @@ post-ready read-back 与 cleanup 故障，并联合检查 operation/journal/orph
 | P5 | TC-03A、TC-04 | C1/provider/integrity tests 与真实 asset 证据 |
 | P6 | TC-03B、TC-05、TC-06、TC-07、TC-08 | core/read projection/output tests |
 | P7 | TC-09 | Skill/Agent/extra-source tests |
-| P8 | TC-11 | 来源回收与 end-to-end evidence；P8.2 微信第三阶段其他范围已完成、132 个群聊按用户决定暂缓；P8.3 已启动并保留飞书 Drive、Bilibili、小红书、知乎和浏览器书签的真实缺口 |
+| P8 | TC-11 | 来源回收与 end-to-end evidence；P8.2 微信第三阶段其他范围已完成、132 个群聊按用户决定暂缓；P8.3 保留其全量 A1 缺口；P8.4 已完成 14/14 纳入来源、70 条 C0-A2 样本，Bilibili 暂缓且不计分母 |
 | P9 | TC-10 | 选定一个外部复制/同步目标；本地 backup/restore 能力已存在 |
 
 ## 6. Skill 测试规则
