@@ -82,15 +82,15 @@ P2-G7 的完成口径是：00 点名的来源都有真实调查、证据等级�
 | source.yuque | 语雀 | Codex Chrome 发现范围，单篇用语雀官方 Markdown 导出端点；整库可用官方 PDF/LakeBook；`yuque-dl` 仅作受控批处理候选 | 登录语雀并选择知识库/文档；会员 API/MCP 暂不启用，不要求手抄会话 Token | E3：P8.3 枚举 3 个个人库、8/8 文档、0 个协作库及 13/13 收藏记录；新补 3 篇 Markdown，既有正式样本不重跑 | 收藏记录已达 A1；其中 11 个外部知识库内容不在本轮 A1 递归范围；文件/表格/画板/评论未覆盖 | disabled |
 | source.onenote | OneNote | 官方桌面客户端导出 PDF+MHT 配对或显式 MHT 列表；Rust 窄 adapter 校验每个实际导出，经唯一核心链路保存 C0，并只记录非事实重叠提示 | 客户端已登录；选择明确笔记本/子本范围并完成官方导出 | E3：用户实际交付的 1 对 626 页 PDF/MHT 与 6 个 MHT 全量进入 registered/C0-C，全部重采 unchanged，已知重叠对子无正式 relation | 没有原生 page/section ID；跨新导出来源身份未启用；可选 C1 分段不属于来源缺口 | available |
 | source.evernote | 印象笔记 / Evernote | 官方客户端整库 `.notes` 导出；Babata Rust adapter 逐条认证解密为 ENEX/ENML；网页 DOM 和单篇 MHT 为回退 | 客户端已登录并选择一个明确导出范围；不需要用户密码、Cookie 或第三方账号授权 | E3：用户实际交付的 78,711,776 字节整库 `.notes` 中 163 条正文和 349 个资源全量验证，1 batch + 163 notes 全部进入 registered/C0-C 并 164/164 unchanged | `.notes` 没有 note GUID、updated 或笔记本层级；身份限于 immutable export hash + ordinal，跨新导出匹配未启用 | available |
-| source.wechat_favorites | 微信收藏 | 官方手机记录迁移到 PC 后，用已验证的 WeChatDataAnalysis 本地恢复/导出取得收藏原库与可读分页；正式登记仍须走 Babata Rust Collector | 已登录官方 PC 微信；用户完成手机迁移并明确收藏范围 | Recovery E3：5,025 条全类型收藏随微信第一阶段全量达到 C0-A1；另有 7 条收藏代表样本进入 registered/C0-C 并重采 unchanged | 全量收藏附件与 URL 正文尚未达到 C0-A2；P8.2 再筛选和推进 | disabled |
-| source.wechat_articles | 微信公众号文章 | 公开文章 URL 与已验证只读 Recovery 目录；Agent 保存直接可得目录/响应，后续再按需取正文/媒体 | 公开 URL 无额外授权；禁止默认操作微信 UI | E3：P8.1 已保存 233 条真实公众号文章目录达到 C0-A1；另有 1 篇正文/Markdown/HTML 进入 registered/C0-C 并重采 `unchanged` | 其余文章正文、图片/音视频与批量重采不属于 P8.1 | disabled |
+| source.wechat_favorites | 微信收藏 | 官方手机记录迁移到 PC 后，用已验证的 WeChatDataAnalysis 本地恢复/导出取得收藏原库与可读分页；收藏中的公众号 URL 用公共页面正文，图片型文章回退到 Chrome 已加载页面资源；正式登记仍须走 Babata Rust Collector | 已登录官方 PC 微信；用户完成手机迁移并明确收藏范围；禁止默认操作微信 UI | Recovery E3：5,025 条全类型收藏达到 C0-A1；P8.4 的公众号文章范围已有 5 条完整 C0-A2，其中两条图片型文章各归档 1 张正文图；另有 7 条代表样本 registered/C0-C | P8.4 的 5 条样本缺口为 0；未选收藏不冒充全量 A2，`5009` 图片型文章仍保留空壳缺口 | disabled |
+| source.wechat_articles | 微信公众号文章 | 公开文章 URL 与已验证只读 Recovery 目录；Agent 保存正文和使正文成立的直接图片/媒体 | 公开 URL 无额外授权；禁止默认操作微信 UI | E3：233 条真实公众号文章目录达到 C0-A1；P8.4 有 9 条完整候选并选择 5 条 C0-A2；另有 1 篇进入 registered/C0-C 并重采 `unchanged` | P8.4 选样缺口 0；其余目录不冒充全量正文 A2 | disabled |
 | source.wechat_channels | 微信视频号 | non-plan；保留来源身份，不排入 P8.1/P8.2/P8.3 | 当前无需动作 | E1：候选工具和权限模型已核；2026-07-27 用户明确标记非计划 | 只有用户以后明确重新规划才继续；不安装代理证书或捕获工具 | disabled |
 | source.wechat_chats | 微信聊天记录 | 官方手机记录迁移到 PC 后，用已验证的 WeChatDataAnalysis 本地恢复/导出会话、消息和可得媒体；正式登记走 Babata Rust Collector | 同网手机确认迁移或 PC 已有记录；明确选择会话和范围 | E3：第一阶段全量 746 个会话/216,449 条消息达到 C0-A1；P8.2 第二阶段从 498 个真人单聊候选保留 482 个、115,261 条唯一消息并 482/482 registered/C0-C；第三阶段其他范围筛完 115 个公众号/服务号会话，111 个、721 条消息进入 registered/C0-C | 132 个群聊、97,232 条消息按用户优先级暂缓；第二阶段最终缺表情 234、视频原件 219、文件 91，均已两次来源尝试并留账 | available |
 | source.zhihu | 知乎收藏与内容 | Codex Chrome 发现范围，OpenCLI 分页/详情/媒体；`Zhihu-Collections-MCP` 仅作后续批量候选 | Chrome 已登录并选择收藏范围；MCP 候选另需实测其登录方式 | E3：P8.3 枚举 16 个收藏夹、声明 98 条，完整保存 65 条；3 个失败对象均完成最后一次重试 | 5 个收藏夹共缺 33 条，其中两个整页因 `zvideo` 类型拒绝；不再重试 | disabled |
-| source.bilibili | Bilibili 收藏与媒体 | Codex Chrome 先尝试候选；真实超时后用 OpenCLI + `yt-dlp`/ffmpeg 收所选一条 | Chrome 已登录；选择收藏夹或单条视频范围 | E3：P8.3 枚举 33 个收藏夹并保存 96/96 页、3,167 条收藏关系和 3,116 个唯一 URL | 18 个收藏夹声明合计比分页实得多 61 条；同类问题超过 3 个对象后暂停 | disabled |
+| source.bilibili | Bilibili 收藏与媒体 | `deferred_by_user`；保留既有 Chrome/OpenCLI/`yt-dlp` 路线证据，P8.4 不继续任何正文、字幕、评论、弹幕、缩略图或视频补采 | 当前无需动作 | E3：P8.3 已保留 33 个收藏夹、96 页、3,167 条收藏关系和 3,116 个唯一 URL 的范围外 Recovery | 用户已将 Bilibili 整体暂缓并排除在 P8.4 目标、分母和完成率之外；只有重新启用才继续 | disabled |
 | source.xiaohongshu | 小红书收藏 | Codex Chrome 发现范围，OpenCLI 详情/媒体重采；`XHS-Downloader` 仅作后续批量候选 | Chrome 已登录并选择范围；不要求手抄 Cookie | E3：P8.3 页面声明 386 篇笔记、16 个专辑、0 个文件，保存 20 条当前可读卡片和标题 | 至少缺 366 篇笔记，16 个专辑内容未枚举；第二条浏览器路线两次超时后停止 | disabled |
 | source.douyin | 抖音收藏 | non-plan；保留来源身份，不排入 P8.1/P8.2/P8.3 | 当前无需动作 | E0：错误主路线已撤回，候选路线已核；2026-07-27 用户明确标记非计划 | 只有用户以后明确重新规划才继续；`F2` 和真实样本均未实证 | disabled |
-| source.browser_bookmarks | 浏览器书签 | 最后单独收集；优先由用户导出 Chrome 书签 HTML，再由 Agent 本地只读解析和遍历；实验性窄扩展冻结 | 用户执行一次 Chrome 书签 HTML 导出并交付文件 | E1：P8.1 已保存 5 条真实网页 A1；P8.3 证实 Browser 安全策略禁止 Agent 访问 `chrome://bookmarks/` | 全量分母未知；禁止绕过安全策略读取浏览器配置，需 HTML 导出 | disabled |
+| source.browser_bookmarks | 浏览器书签 | 优先读取用户已有的 Netscape 书签 HTML 导出并保留文件夹层级，再由 Chrome 可见页面取得所选正文和直接媒体；实验性窄扩展冻结 | 用户已有可读导出时无需动作；没有导出时只需执行一次浏览器官方导出 | E3：UC Browser 2019 书签备份经 SHA-256 固化，解析出 1,560 条、47 文件夹；P8.4 选 5 篇仍可访问的博客园文章保存完整正文文本/HTML，直接图片依赖均为 0 | P8.4 选样缺口 0；历史记录、普通打开页和一篇超返回上限长文均未计数 | disabled |
 | source.browser_pages | 浏览器当前页面、选区和网页收藏 | 当前存量由 Codex Chrome 自主读取历史/页面；未来快速剪藏入口仅作低优先级补充，保真页面再评估 SingleFile | 给出历史、页面或站点范围一次 | E3：P8.1 从 Chrome 返回的 50 条真实近期网页记录中直接保存 5 条 C0-A1；实验性扩展证据不计 | 正文、附件、保真页面和新鲜重采不属于 P8.1，后续按使用需要推进 | disabled |
 | source.doubao | 豆包对话 | Codex Chrome 一次展开和选择真实历史；官方 `chain/single` 从 anchor 0 按 `next_index` 逐页读取；已登记范围逐 item 重采 | Chrome 已登录；给出会话、时间或数量范围 | E3：P8.2 第二阶段闭合 377 个非主范围；第三阶段再闭合主对话和其中 37 个长残余，38/38 到 `HasMore=false`；W1 的 7 个原始 DOCX 已进入统一 C0 | 8 个图片仅有全分辨率转码派生物、1 个 PDF 原件缺失；Recovery 不冒充正式 C0 | available |
 | source.kimi | Kimi 对话 | 当前优先 Codex Chrome 调用 Kimi 结构化历史和会话接口；OpenCLI 薄命令只用于任务外重试/重采 | Chrome 已登录；给出会话、时间或数量范围 | E3：P8.3 当前目录 15/15 会话达到 A1（既有 4、新补 11）；既有正式样本和 `unchanged` 不重跑 | 另 1 个 P4 旧会话已不在当前目录；不计当前用户范围分母 | disabled |
@@ -116,10 +116,10 @@ hash、状态和 staging 管理由 Agent/Babata 自主完成，直到范围结�
 | 微信视频号 | 当前无需动作 | 暂无 | 保留 UI-only 边界，不安装代理证书或捕获工具 | 用户已决定暂时不处理 |
 | 微信聊天 | 用微信官方功能把所选手机记录迁移到电脑 | 会话和日期范围 | Agent 用已验证本地工具导出消息、结构和可得媒体，记录缺口并交统一 Collector | 第一阶段全量取得、第二阶段 482 个单聊和第三阶段其他范围 111 个会话已登记；只有 132 个群聊按用户决定暂缓 |
 | 知乎 | Chrome 已登录；首次批准当前实例 remote debugging | 收藏夹、条目或时间范围 | 自主列收藏夹、分页、详情、图片和页面快照；必要时调用 OpenCLI | Browser Use/Agent Browser 真实探针 |
-| Bilibili | Chrome 已登录；首次批准 remote debugging | 收藏夹、页、视频或分 P | 自主候选、翻页、元数据、字幕、媒体和附件；按需调用 `yt-dlp` | 通用浏览器探针；`yt-dlp`/ffmpeg 已就绪 |
+| Bilibili | 当前无需动作 | 暂无 | 保留既有路线与 Recovery，不继续补采 | 用户已整体暂缓并排除在 P8.4 分母外 |
 | 小红书 | Chrome 已登录；首次批准 remote debugging | 收藏列表、时间或数量范围 | 自主列收藏、正文、评论、图片/视频和重收集；必要时调用 OpenCLI/MCP | 通用浏览器只读低频探针 |
 | 抖音 | 当前无需动作 | 暂无 | 保留历史路线，不继续安装或探针 | 用户已决定暂时不处理 |
-| 浏览器书签 | 当前无需动作 | 最终单独收集时给出书签文件夹或集合 | Agent 读取层级并自动遍历网址、正文和附件 | 排到最后；当前不继续扩展实现 |
+| 浏览器书签 | 已有 Netscape HTML 备份时无需动作；没有时只执行一次官方导出 | 书签文件夹或集合 | Agent 解析层级并自动遍历网址、正文和直接附件 | P8.4 已用 1,560 条/47 文件夹备份完成 5 条正文 A2；未来持续同步再评估窄扩展 |
 | 当前页/选区 | 首次批准 Chrome remote debugging；长期入口再按需安装 Babata 窄扩展 | 页面、站点或链接范围 | 自主导航/读取；SingleFile 保真 HTML、元数据和缺失报告 | 通用浏览器探针；后续 P4 扩展/SingleFile 接入 |
 | 豆包 | Chrome 已登录；首次批准 remote debugging | 会话、时间或数量范围 | 自主遍历历史、读取消息/附件；OpenCLI 补会议 transcript | 通用浏览器与附件覆盖探针 |
 | Kimi | Chrome 已登录；首次批准读取当前实例 | 会话、时间或数量范围 | 自主列历史、读取长对话和附件；长期工具只在需要时由 Skill 触发 | Codex Chrome 已完成真实历史分页和长正文；全历史、附件/深研产物、状态和重收集留给 P7 |
@@ -517,6 +517,13 @@ UI Automation 仍可用于小范围发现或公共文章链接回退，但不再
 `${BABATA_RECOVERY_HOME}/batches/wechat/20260726-stage1-filehelper-favorites/stage1-audit.json`。
 未运行 Rust C0 或 C1。
 
+2026-07-31 的 P8.4 只统计收藏中的公众号文章正文及使正文成立的图片。既有完整文章 3 条；
+OpenCLI 的 `--site-session persistent` 已实测复用旧登录态，但对 `image_content` 页面仍只
+导出标题和赞赏页脚，不能靠 token 解决。Chrome 可见页面资源清单则能区分正文图、头像、
+水印重复图和 UI 资源，最终为 `5016`、`5020` 各归档 1 张目视核验的正文图，使该范围达到
+5/5 C0-A2。正常图片型回退由此确定为 Chrome 已加载页面资源归档，不操作微信 UI；`5009`
+继续保留空壳缺口但不影响最低 5 条选样。
+
 决策：**官方迁移 + 已验证 WeChatDataAnalysis 本地恢复为全量主路线，官方 PC UI 为小范围
 发现/回退；Recovery 不冒充 C0，正式 capability 在 Rust 接入和重采完成前保持 disabled**。
 
@@ -644,6 +651,10 @@ opencli bilibili download <bvid> --quality ... --page ...
 本机已安装 `yt-dlp 2026.07.04`，并发现现有 ffmpeg 8.1.1；媒体工具链不再需要用户
 配置。当前连接缺口是通用 Agent 浏览器尚未在用户自己的 B 站登录态做真实探针。
 
+2026-07-31 用户把 Bilibili 整体暂缓并明确排除在 P8.4 目标、分母和完成率之外。此前
+P8.3 的 33 个收藏夹、96 页、3,167 条收藏关系和 3,116 个唯一 URL 继续作为范围外 Recovery
+保留；正文、字幕、评论、弹幕、缩略图和视频均不再补采，只有用户重新启用才恢复本节路线。
+
 ### 8.3 小红书
 
 OpenCLI 已实际核到：
@@ -739,7 +750,15 @@ Cookie 或下载解析，不能作为可执行路线。
 SingleFile、Browser Use/Agent Browser 和站点工具自主取得网页原貌，不要求逐条确认。
 重收集以 bookmark node ID、URL、层级和页面 hash 组合判断；书签删除不等于已收 C0 删除。
 
-决策：**官方扩展 API 的窄适配器**。
+2026-07-31 的 P8.4 找到用户 OneDrive 中既有的 UC Browser 2019 Netscape 书签备份，原件
+经 SHA-256 固化后解析为 1,560 条书签、47 个文件夹。Agent 从 `Coding/Java` 和 `Coding/C#`
+选择 5 篇仍可访问且正文图片依赖为 0 的博客园文章，用 Chrome 可见 DOM 保存完整正文文本
+与 HTML；历史记录、普通打开页和一篇超过 HTML 返回上限的长文都没有计入。该实证证明
+Netscape 导出是当前一次性存量回收的更低摩擦正常路线，也避免读取 Chrome profile 或绕过
+`chrome://bookmarks` 安全限制。
+
+决策：**当前存量优先浏览器官方/既有 Netscape HTML 导出；未来持续同步需要时再使用
+官方扩展 API 的窄适配器**。
 
 ### 9.2 当前页面、选区和网页收藏
 
