@@ -21,9 +21,11 @@
 
 ## 2. 总体架构决策
 
-Babata 当前采用一个本地优先的模块化单体和一个代码仓库。Rust 是领域规则、应用
-用例、持久化、迁移、处理编排、来源适配、worker、备份和恢复的默认实现，也是唯一
-可以最终写入权威资料的核心。
+Babata 当前采用一个本地优先的模块化单体和一个代码仓库，并保持 Rust、TypeScript、
+Python 三种现有语言边界；没有真实生命周期或能力缺口前不增加 Go 或第四套工具链。Rust
+是领域规则、应用用例、持久化、迁移、处理编排、worker、备份和恢复的默认实现，也是
+唯一可以最终写入权威资料的核心。稳定且已经证明适合核心内实现的来源适配器可以继续使用
+Rust；易变浏览器、网站和 JSON API 边界不要求默认改写为 Rust。
 
 四段是同一个应用内部的逻辑边界，不是四个仓库、四个网络服务或四套协议：
 
@@ -300,7 +302,7 @@ domain <- application <- infrastructure
 - `domain` 不依赖文件系统、SQLite、HTTP、provider SDK、CLI 或 UI。
 - `application` 定义用例与所需 port，不导入具体数据库、文件系统、HTTP、SDK 或
   进程执行实现。
-- `infrastructure` 实现持久化、资产、来源适配、处理 provider、读模型、视图和备份。
+- `infrastructure` 实现持久化、资产、核心内稳定来源适配、处理 provider、读模型、视图和备份。
 - CLI、local API 和 worker 只做鉴权、输入映射、依赖装配与结果映射，不复制业务规则。
 - 任何 crate 都不能绕过 application 用例另建 C0/C1 写入路径。
 
@@ -327,7 +329,9 @@ domain <- application <- infrastructure
 
 ### 6.2 JavaScript / TypeScript 边界
 
-只在浏览器环境确实最直接时使用：
+在浏览器环境，或易变网站/JSON API 使用现成 TypeScript 生态能够明显缩短真实路径时使用。
+已验证的成熟 CLI 优先于新增定制适配器；TypeScript 可以实现浏览器扩展、user script 或窄的
+候选取得工具，但不形成第二套应用核心。例如浏览器边界为：
 
 ```text
 浏览器扩展 / user script
@@ -336,13 +340,20 @@ domain <- application <- infrastructure
   -> 配对后提交 loopback API
 ```
 
-浏览器端不包含 SQLite driver、数据根写权限、最终资产管理、知识判断或独立队列。
+TypeScript 边界不包含 SQLite driver、数据根写权限、最终资产管理、知识判断或独立权威队列。
 
 ### 6.3 Python 例外边界
 
 只有成熟的 Python-only 工具明显优于 Rust crate、Rust 实现或稳定 CLI 时才使用受控
 子进程。Python 读取明确授权的输入，只能写 C3 暂存区，并输出待校验的候选或处理
 结果；Rust 核心负责哈希、ID、版本、资产最终落盘和 C0/C1 提交。
+
+### 6.4 外围输入信任边界
+
+TypeScript、Python、CLI 和其他外围工具的输出一律是不可信候选。Rust application/core
+按当前候选合同校验协议版本、来源身份、内容、hash、路径和资产声明后，才允许进入 C0/C1
+权威事务；未知版本、字段缺失、hash 不符、路径越界或不满足来源能力声明的输入必须失败，
+不能降级为外围直接写库或落最终资产。
 
 ## 7. 数据根与持久化
 
