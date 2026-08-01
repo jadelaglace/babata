@@ -125,7 +125,8 @@ if ([string]::IsNullOrWhiteSpace($DocsRoot)) {
 $docs = (Resolve-Path -LiteralPath $DocsRoot).Path
 
 $requiredMarkers = @(
-    @('00_requirements/00_REQUIREMENTS.md', '## -1.'),
+    @('00_requirements/-1_USER_WORDING.md', '# -1.'),
+    @('00_requirements/00_REQUIREMENTS.md', '[-1_USER_WORDING.md](-1_USER_WORDING.md)'),
     @('01_prd/01_PRD.md', 'PRD-10'),
     @('02_acceptance/02_ACCEPTANCE_CRITERIA.md', 'AC-11'),
     @('03_architecture/03_ARCHITECTURE.md', 'AC-11'),
@@ -261,4 +262,4 @@ foreach ($id in 1..7) {
     }
 }
 
-Write-Output "Document traceability passed: 00 -> PRD-01..10 -> AC-01..11 -> architecture/process -> TC-01..11; $($requiredP2Sources.Count) required source routes and $($representativeTools.Count) representative tools have structured P2-G7 evidence."
+Write-Output "Document traceability passed: -1 wording evidence -> 00 -> PRD-01..10 -> AC-01..11 -> architecture/process -> TC-01..11; $($requiredP2Sources.Count) required source routes and $($representativeTools.Count) representative tools have structured P2-G7 evidence."

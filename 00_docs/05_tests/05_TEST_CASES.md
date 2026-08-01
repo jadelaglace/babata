@@ -646,12 +646,14 @@ C0-C 或 C1。该结果验证 C0-A2 可在不完成 A3 的情况下进入 C0-B�
 | GT-P2-03 | P2-G3 | domain/application/infrastructure/composition root 依赖单向且可编译 |
 | GT-P2-04 | P2-G4 | 未激活能力统一 unavailable，不启动真实来源/provider/worker |
 | GT-P2-05 | P2-G5 | JS/Python/Skill/provider/view/output 无 C0/C1 直接写入路径 |
-| GT-P2-06 | P2-G6 | 00–05、蓝图、脚本、配置和测试标识追溯一致 |
+| GT-P2-06 | P2-G6 | `-1` 原话证据、00–05、蓝图、脚本、配置和测试标识追溯一致；00 保持当前需求权威并链接独立原话文档 |
 | GT-P2-07 | P2-G7 | 19 个必需 `source_id` 在路线总表中存在且唯一，路线、最小授权、E0-E3 证据、诚实缺口和状态非空；代表性 `tool_id` 有真实状态；未到 E3 的来源保持 disabled；允许未来追加来源 |
 
-`check-doc-traceability.ps1` 解析上述真实表格，不再依赖文末来源或工具 token。
-`test-doc-traceability.ps1` 必须证明删除一个必需来源、清空 Kimi 证据、清空 Kimi 最小授权
-都会失败。
+`check-doc-traceability.ps1` 解析上述真实表格，并检查独立 `-1_USER_WORDING.md` 与 00 的入口，
+不再依赖文末来源或工具 token。`test-doc-traceability.ps1` 必须证明删除 `-1` 原话权威、删除
+一个必需来源、清空 Kimi 证据、清空 Kimi 最小授权都会失败。`check-doc-provenance.ps1` 从
+独立 `-1` 文档校验必需用户原话 hash；对应 mutation test 必须证明改写原话、混淆 Builder/
+用户来源、写入本地 UUID 或敏感 token 均 fail closed。
 
 ## 4. P3 Phase Gate 测试
 

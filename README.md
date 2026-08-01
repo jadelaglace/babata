@@ -72,7 +72,7 @@ flowchart LR
 08_adapters/    浏览器和受控外围适配边界
 ```
 
-先从[文档索引](00_docs/README.md)进入。产品意图在[原始需求](00_docs/00_requirements/00_REQUIREMENTS.md)，系统边界在[架构](00_docs/03_architecture/03_ARCHITECTURE.md)，P6 设计在[个人知识宇宙蓝图](00_docs/03_architecture/09_P6_PERSONAL_KNOWLEDGE_UNIVERSE_BLUEPRINT.md)。
+先从[文档索引](00_docs/README.md)进入。产品意图在[原始需求](00_docs/00_requirements/00_REQUIREMENTS.md)，精选用户原话证据在[负一号文档](00_docs/00_requirements/-1_USER_WORDING.md)，系统边界在[架构](00_docs/03_architecture/03_ARCHITECTURE.md)，P6 设计在[个人知识宇宙蓝图](00_docs/03_architecture/09_P6_PERSONAL_KNOWLEDGE_UNIVERSE_BLUEPRINT.md)。
 
 ## 本地构建
 

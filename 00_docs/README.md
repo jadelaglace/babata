@@ -1,6 +1,8 @@
 # Babata Documentation Chain
 
-The numbered documents govern the reboot in order:
+Raw intent evidence and the numbered documents govern the reboot in order:
+
+- `-1` `00_requirements/-1_USER_WORDING.md` — curated verbatim user wording used to detect drift and recover intent; not a second interpreted requirements authority
 
 1. `00_requirements/00_REQUIREMENTS.md` — intent and non-negotiable constraints
 2. `01_prd/01_PRD.md` — user-facing product behaviour and source scope
@@ -9,7 +11,8 @@ The numbered documents govern the reboot in order:
 5. `04_process/04_DEVELOPMENT_PROCESS.md` — implementation order, phase gates, and verification commands
 6. `05_tests/05_TEST_CASES.md` — verification cases
 
-Requirements are the upstream product authority. Later documents interpret and deliver them but must not
+The `-1` document preserves selected direct wording. Requirements remain the upstream interpreted product authority.
+Later documents interpret and deliver them but must not
 silently replace them. External research and AI conversations are reference material unless the user explicitly
 adopts a conclusion. The user owns requirements, priorities, progress judgement, and acceptance; Agents maintain
 the affected downstream chain, implementation, verification, evidence, and routine technical review.
