@@ -2,27 +2,34 @@
 
 Closes #
 
-## Change
+## User outcome
 
-Describe the concrete result and why it belongs in this PR.
+Describe what the user can now do or what delivery risk is now removed.
+
+## Actual result
+
+List what was actually completed. Distinguish implemented behavior, documentation, fixtures, and real authorized evidence.
 
 ## Verification
 
-List commands and evidence. Distinguish fixture/mechanism checks from real authorized route evidence.
+List the exact checks and evidence that passed. Distinguish fixture/mechanism checks from real authorized route evidence.
 
-## Risk and boundaries
+## Authority and documentation
 
-- Data or credential impact:
-- Persistence or authority impact:
-- Compatibility or rollback considerations:
+- Highest authority changed:
+- Downstream documents changed:
+- Reviewed but unchanged:
 
-## Documentation
+## Runtime and risk boundaries
 
-List affected requirements, PRD, acceptance, architecture, process, or test documents. Write `None` only when reviewed and not applicable.
+- Real data, database, media, log, or generated output touched:
+- Credential or authorization impact:
+- `BABATA_DATA_HOME` / Evidence / Recovery impact:
+- Persistence, compatibility, or rollback considerations:
 
 ## Remaining work
 
-List known follow-up work or `None`.
+List anything not completed and why, or write `None`.
 
 ## Checklist
 
@@ -30,4 +37,5 @@ List known follow-up work or `None`.
 - [ ] No real source data, secrets, runtime state, databases, logs, or generated views are committed.
 - [ ] Applicable phase gates and AC/TC references are included.
 - [ ] Relevant checks pass and their evidence is recorded above.
+- [ ] Changed authority and reviewed-but-unchanged downstream documents are stated explicitly.
 - [ ] The PR does not claim a real route or product outcome from scaffold/fixture evidence alone.

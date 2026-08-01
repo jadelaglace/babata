@@ -1286,6 +1286,8 @@ Babata 即使由单人开发，也使用 GitHub Issue 和 Pull Request 保留问
 
 - 小型文档修正、研究结论、依赖升级和紧急修复同样走 Issue/PR；真正需要立即止损的
   紧急修复可以先开短 Issue 和最小 PR，但不能事后没有记录。
+- 多项不改变语义的小型措辞、状态同步和链接修正可以进入同一个 housekeeping Issue/PR；
+  需求语义、验收口径、架构/数据权威边界、schema、writer、安全或权限变化必须独立立项。
 - P3 以后每项功能的 Issue、commit 和 PR 引用对应 phase gate 与 AC/TC。
 - 功能阶段发现接口不对，先在同一 Issue/PR 更新 03 架构补充与 P2 蓝图，再改代码。
 - 真实数据、授权信息、数据库、模型输出和日志不进入 Git 或 Issue/PR 附件。
