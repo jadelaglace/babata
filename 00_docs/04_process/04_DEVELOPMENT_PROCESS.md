@@ -40,7 +40,7 @@ P6  核心沉淀、检索、子库与输出                      已完成
   P6.2 发现、检索与关系导航                         已完成
   P6.3 子库与输出                                   已完成
 P7  扩展来源、正式 Skill 与受控 Agent               已完成
-P8  来源广度、后续阶段、全量 A1 与存量准备             进行中（新增抓取暂停；P8.5 样本 C0-B 已完成）
+P8  来源广度、后续阶段、全量 A1 与存量登记             进行中（新增抓取暂停；P8.6 权威存量 70/70 C0-C）
 P9  简单备份同步                                      未开始（本地备份恢复能力已存在）
 ```
 
@@ -1206,6 +1206,27 @@ Kimi、ChatGPT、小红书、知乎、浏览器书签、微信收藏公众号文
 没有通过外围脚本写 SQLite 或 managed assets，没有新增 registered/C0-C，也未触发 C1。
 该完成范围仅是 P8.4 的每来源 5 条样本，不代表全来源 A2/B，亦不关闭 P8.3 的全量 A1 缺口。
 
+### 11.6 P8.6：权威存量全部登记到 C0-C
+
+2026-08-01，Issue #132 按用户最新决定把 P8.5 的 70 条权威存量全部推进到正式 C0。
+25 条既有 registered/C0-C 保持不变；其余 45 条来自飞书、语雀、Kimi、ChatGPT、小红书、
+知乎、浏览器书签、微信收藏公众号文章和微信公众号文章，各 5 条。执行前重新校验 45 个
+prepared manifest 及其 549 个上游文件、283,283,690 字节，存在性、大小和 SHA-256 错误均为 0。
+
+登记复用已有 Rust `capture export` 和 `attach-assets`，以来源 object ID 建立稳定 identity，
+选择正文或主要原件作为 export，并把 prepared manifest、其余正文、来源清单和直接依赖附到
+同一 ready revision。外围脚本只负责预检、调用 Rust CLI、写 receipt 和只读复核，不直接写
+SQLite 或 managed assets。权威批次位于
+`BABATA_RECOVERY_HOME/batches/p8-6/20260801-stock-c0-c/`；`registration-manifest.json` 是总账，
+`registration-summary.md` 是摘要，`receipts/` 保存 45 个逐项回读结果。
+
+45/45 新登记对象均从 raw SQLite 回读为 ready，九个来源各 5 条；加上 25 条既有正式 C0，
+权威存量为 70/70 registered/C0-C。全批次幂等复跑前后均为 1,639 items、1,864 revisions、
+2,381 assets、66 个附件操作，没有新增 item、revision、asset 或附件操作；最终 orphan、pending、
+quarantine 均为 0。写入前已形成一致加密恢复点 `snapshot_01KYXGYHNKVMJXKVEE1MQ8QFVD`，
+覆盖 1,879 个文件、25,513,914,563 字节。九个来源的新抓取 route 仍 disabled；本轮没有新增
+抓取、A1-only 越级、A3 或 C1，也不关闭 P8.3 的全量 A1 缺口。
+
 ## 12. P9：简单备份同步
 
 P9 只从 NAS、云盘或云 Git 中选一个可用目标，对需要保护的本地结果做纯复制或同步。Issue
@@ -1225,7 +1246,7 @@ P9 可复用前置，但不代表 P8.1；P9 只差选定并跑通一个外部复
 | P5 | AC-03（C0/C1 子责任）、AC-04 | 真实输入/派生物与忠实清洗；TC-03A/TC-04 |
 | P6 | AC-03（C2 子责任）、AC-05、AC-06、AC-07、AC-08 | TC-03B；核心先于检索/视图/输出 |
 | P7 | AC-09 | 扩展来源、Skill、Agent |
-| P8 | AC-09（P8.1 最低覆盖）、AC-11 | P8.1 已完成 15/15；P8.2 已完成除 132 个暂缓群聊外的用户范围；P8.3 暂停新增抓取并保留真实缺口；P8.4 已完成 14/14、70 条 A2 样本；P8.5 已判定 70/70 条当前无需 A3，并把 45 条 captured A2 推进到 prepared/C0-B，另 25 条保持 C0-C |
+| P8 | AC-09（P8.1 最低覆盖）、AC-11 | P8.1 已完成 15/15；P8.2 已完成除 132 个暂缓群聊外的用户范围；P8.3 暂停新增抓取并保留真实缺口；P8.4 已完成 14/14、70 条 A2 样本；P8.5 已判定 70/70 条当前无需 A3 并完成 45 条 C0-B；P8.6 已把同一权威存量 70/70 推进到 registered/C0-C |
 | P9 | AC-10、TC-10 加一个外部复制/同步目标 | 本地备份恢复能力已存在；NAS/云盘/云 Git 三选一尚未执行 |
 
 ## 14. 提交与验收纪律
