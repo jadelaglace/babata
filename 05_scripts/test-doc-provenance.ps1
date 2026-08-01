@@ -55,7 +55,7 @@ try {
 
     Assert-CheckerFails -Name 'mutated-user-wording' -ExpectedMessage 'missing or changed a required verbatim excerpt' -Mutate {
         param($caseDocs)
-        $path = Join-Path $caseDocs '00_requirements\00_REQUIREMENTS.md'
+        $path = Join-Path $caseDocs '00_requirements\-1_USER_WORDING.md'
         $lines = @(Get-Content -Encoding utf8 -LiteralPath $path)
         $targetHash = 'ef88a5a23026a980540f196a3342da8bf2ebcc24d2c43f3da113b6a419365581'
         $matchingIndexes = @()

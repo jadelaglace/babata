@@ -262,7 +262,8 @@ P0 已完成。
 P1 交付链：
 
 ```text
-00_REQUIREMENTS.md（含精选保真的用户原话证据）
+-1_USER_WORDING.md（精选保真的用户原话证据）
+  -> 00_REQUIREMENTS.md（当前需求权威）
   -> 01_PRD.md
   -> 02_ACCEPTANCE_CRITERIA.md
   -> 03_ARCHITECTURE.md

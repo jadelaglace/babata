@@ -25,9 +25,10 @@ if ([string]::IsNullOrWhiteSpace($DocsRoot)) {
 }
 $docs = (Resolve-Path -LiteralPath $DocsRoot).Path
 $requirementsPath = Join-Path $docs '00_requirements\00_REQUIREMENTS.md'
+$userWordingPath = Join-Path $docs '00_requirements\-1_USER_WORDING.md'
 $blueprintPath = Join-Path $docs '03_architecture\09_P6_PERSONAL_KNOWLEDGE_UNIVERSE_BLUEPRINT.md'
 
-foreach ($path in @($requirementsPath, $blueprintPath)) {
+foreach ($path in @($requirementsPath, $userWordingPath, $blueprintPath)) {
     if (-not (Test-Path -LiteralPath $path)) {
         throw "Missing provenance authority document: $path"
     }
@@ -81,16 +82,16 @@ $requiredVerbatimHashes = @(
     '10e53d50bf3ed4ccecafacdb424d64adae4e85b4775859318b0d43398979000b',
     '224af42c8c5488acf2ff52c7bf89eb82a70f72f9c7f118f2419c9105408e9871'
 )
-$requirementsLines = @(Get-Content -Encoding utf8 -LiteralPath $requirementsPath)
+$userWordingLines = @(Get-Content -Encoding utf8 -LiteralPath $userWordingPath)
 $verbatimHashes = @{}
-foreach ($line in $requirementsLines) {
+foreach ($line in $userWordingLines) {
     if ($line.StartsWith('> ')) {
         $verbatimHashes[(Get-Utf8Sha256 -Value $line)] = $true
     }
 }
 foreach ($hash in $requiredVerbatimHashes) {
     if (-not $verbatimHashes.ContainsKey($hash)) {
-        throw "Requirements are missing or changed a required verbatim excerpt: sha256=$hash"
+        throw "User wording evidence is missing or changed a required verbatim excerpt: sha256=$hash"
     }
 }
 
@@ -114,4 +115,4 @@ if (($decisionNumbers -join ',') -ne '1,2,3,4,5,6,7,8,9') {
     throw 'P6 blueprint decision rows must cover 1 through 9 exactly once'
 }
 
-Write-Output 'Document provenance passed: required P6 user wording hashes match, Builder questions and confirmed conclusions are distinguished, authority docs contain no UUID-shaped runtime IDs, and sensitive token patterns are absent.'
+Write-Output 'Document provenance passed: the dedicated -1 authority keeps required P6 user wording hashes, Builder questions and confirmed conclusions are distinguished, authority docs contain no UUID-shaped runtime IDs, and sensitive token patterns are absent.'

@@ -48,7 +48,7 @@ function Assert-CheckerFails {
     $caseDocs = Join-Path $tempRoot $Name
     Copy-Item -LiteralPath $docs -Destination $caseDocs -Recurse
     $research = Join-Path $caseDocs '03_architecture\08_SOURCE_TOOL_RESEARCH.md'
-    & $Mutate $research
+    & $Mutate $research $caseDocs
 
     $failedAsExpected = $false
     try {
@@ -67,6 +67,11 @@ function Assert-CheckerFails {
 
 try {
     & $checker -DocsRoot $docs | Out-Null
+
+    Assert-CheckerFails -Name 'missing-user-wording-authority' -ExpectedMessage 'Missing authority document: 00_requirements/-1_USER_WORDING.md' -Mutate {
+        param($research, $caseDocs)
+        Remove-Item -LiteralPath (Join-Path $caseDocs '00_requirements\-1_USER_WORDING.md') -Force
+    }
 
     Assert-CheckerFails -Name 'missing-required-source' -ExpectedMessage 'exactly one required source_id: source.feishu' -Mutate {
         param($research)
@@ -101,7 +106,7 @@ try {
         Set-Content -Encoding utf8 -LiteralPath $research -Value $lines
     }
 
-    Write-Output 'Document traceability mutation tests passed: missing/empty source fields and below-E3 availability promotion all fail closed.'
+    Write-Output 'Document traceability mutation tests passed: a missing -1 wording authority, missing/empty source fields, and below-E3 availability promotion all fail closed.'
 }
 finally {
     if (Test-Path -LiteralPath $tempRoot) {
