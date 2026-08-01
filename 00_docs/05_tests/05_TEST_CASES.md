@@ -628,6 +628,13 @@ P8.4 来源深度执行结果（Issue #126，2026-07-31）：总审计逐来源�
 `pending_sources=0`；Recovery、正式 C0、C1 分离，本轮没有启动 B/C/C1。该结果属于
 TC-11 的来源取得证据，不单独替代完整 raw-to-view 步骤 2–6。
 
+P8.5 存量准备执行结果（Issue #128，2026-08-01）：冻结新增抓取后，对同一 70 条样本逐项
+检查 A3 必要性，70/70 已判断、0 条当前需要 A3；25 条既有 registered/C0-C 保持不变，45 条
+C0-A2 captured 生成逐项 prepared/C0-B manifest。验证器重算 45 个 manifest 及其 549 个
+上游引用文件、283,283,690 字节的存在性、大小和 SHA-256，错误为 0；逐来源直接依赖数量和
+字节与 P8.4 总账一致。所有路径保持仓库外只读引用，未写 SQLite/managed assets，未新增
+C0-C 或 C1。该结果验证 C0-A2 可在不完成 A3 的情况下进入 C0-B，同时不扩大成全量 A2/B。
+
 ## 3. P2 工程 Gate 测试
 
 这些测试不映射产品 AC：
@@ -674,7 +681,7 @@ post-ready read-back 与 cleanup 故障，并联合检查 operation/journal/orph
 | P5 | TC-03A、TC-04 | C1/provider/integrity tests 与真实 asset 证据 |
 | P6 | TC-03B、TC-05、TC-06、TC-07、TC-08 | core/read projection/output tests |
 | P7 | TC-09 | Skill/Agent/extra-source tests |
-| P8 | TC-11 | 来源回收与 end-to-end evidence；P8.2 微信第三阶段其他范围已完成、132 个群聊按用户决定暂缓；P8.3 保留其全量 A1 缺口；P8.4 已完成 14/14 纳入来源、70 条 C0-A2 样本，Bilibili 暂缓且不计分母 |
+| P8 | TC-11 | 来源回收与 end-to-end evidence；P8.3 暂停新增抓取并保留全量 A1 缺口；P8.4 已完成 14/14、70 条 A2 样本；P8.5 已判定 70/70 当前无需 A3，45 条 captured A2 进入 prepared/C0-B，25 条保持 C0-C |
 | P9 | TC-10 | 选定一个外部复制/同步目标；本地 backup/restore 能力已存在 |
 
 ## 6. Skill 测试规则
