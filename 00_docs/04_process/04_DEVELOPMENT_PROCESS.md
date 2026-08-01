@@ -40,7 +40,7 @@ P6  核心沉淀、检索、子库与输出                      已完成
   P6.2 发现、检索与关系导航                         已完成
   P6.3 子库与输出                                   已完成
 P7  扩展来源、正式 Skill 与受控 Agent               已完成
-P8  来源广度、后续阶段、全量 A1 与存量登记             进行中（新增抓取暂停；P8.6 权威存量 70/70 C0-C）
+P8  来源广度、后续阶段、全量 A1 与存量处理             进行中（新增抓取暂停；P8.7 MBA 小批验证已收尾并停队列）
 P9  简单备份同步                                      未开始（本地备份恢复能力已存在）
 ```
 
@@ -1227,6 +1227,38 @@ quarantine 均为 0。写入前已形成一致加密恢复点 `snapshot_01KYXGYH
 覆盖 1,879 个文件、25,513,914,563 字节。九个来源的新抓取 route 仍 disabled；本轮没有新增
 抓取、A1-only 越级、A3 或 C1，也不关闭 P8.3 的全量 A1 缺口。
 
+### 11.7 P8.7：本地 MBA 小批 C1 与受控停点
+
+2026-08-01，Issue #144 以 `omba25/%` 的本地 MBA 正式 C0 为输入，按用户最后确认的范围只把
+“每种实际模态最多 2 个样本、完善工具链与非覆盖临时清洗”作为当前完成目标。权威范围为
+247 个文件、14,728,536,423 字节：PDF 136、DOCX 22、XLSX 7、PPTX 3、PNG 1、MP4 78，
+视频约 40.7547 小时。全字节审计与 append-only 修复后，247/247 均能在同 authoritative item
+找到 ready、`sha256_v1` 且实际字节一致的 C0 binding；旧错误 revision 保留历史，不 UPDATE、
+删除或覆盖原件。写入前恢复点为 `snapshot_01KYXVFGHVW78E1GEW0PQ2530F`。
+
+小批选择 PDF、DOCX、XLSX、PPTX、MP4 各 2 个，PNG 1 个，共 11 个对象。11/11 完成本地、
+非覆盖预处理，10/11 有百炼结果，20/20 正式 C1 run succeeded。PDF 保留全页文本层提取和
+无损临时 clean PDF，低文本密度样本只做首/中代表页 OCR；Office 分别提取段落/表格、
+sheet/row/value/formula 和 slide text shape；PNG 保持比例缩至最长边 2048；MP4 的全时长第一
+音轨转为 16 kHz mono s16 FLAC，解码 PCM SHA 与源规范化 PCM SHA 一致。长 DOCX 的百炼摘要
+两次后停止，但本地 extracted text 已正式登记。`bl`、npm 最新版与 skill 均为 1.13.0，
+FFmpeg/ffprobe 为 8.1.2。
+
+用户收回全量目标前，非视频批次已经自然完成，故保留为额外真实进展但不冒充小批目标或全量
+C1 完成：169 个非视频对象完成本地预处理，161 个非试点文档百炼处理 161/161 成功、191 次
+调用无失败。当前 171/247 个 item 至少有一个正式 C1，共 240 个 succeeded run；另有 134 个
+百炼输出只在 C3 staging，未登记为正式 C1。用户要求“不打断当前原子操作，但是队列不要
+继续”后，登记调度器在 `full-0094` Rust 子操作完成后停止并补齐 manifest，下一项
+`full-0096` 未启动；76 个非试点 MP4 没有开始全量 FLAC/ASR。
+
+最终 `current-stop-audit.json` 逐 run 复核 item/revision/asset/input SHA、状态和 managed output
+SHA，错误为 0；raw/derived SQLite `quick_check=ok`、外键错误 0，raw pending/quarantine 为 0。
+运行证据位于
+`BABATA_DATA_HOME/04_runtime/staging/model-workspaces/omba25-full-c1-20260801/`，其中
+`PILOT_REPORT.md`、`CURRENT_STOP_REPORT.md`、`OPTIMIZATIONS.md` 和
+`current-stop-audit.json` 分别保存试点、停点、优化和审计。Issue #144 保持 OPEN；只有用户
+重新启用时才从该停点恢复，不能重跑已完成试点、文档预处理或正式 run。
+
 ## 12. P9：简单备份同步
 
 P9 只从 NAS、云盘或云 Git 中选一个可用目标，对需要保护的本地结果做纯复制或同步。Issue
@@ -1246,7 +1278,7 @@ P9 可复用前置，但不代表 P8.1；P9 只差选定并跑通一个外部复
 | P5 | AC-03（C0/C1 子责任）、AC-04 | 真实输入/派生物与忠实清洗；TC-03A/TC-04 |
 | P6 | AC-03（C2 子责任）、AC-05、AC-06、AC-07、AC-08 | TC-03B；核心先于检索/视图/输出 |
 | P7 | AC-09 | 扩展来源、Skill、Agent |
-| P8 | AC-09（P8.1 最低覆盖）、AC-11 | P8.1 已完成 15/15；P8.2 已完成除 132 个暂缓群聊外的用户范围；P8.3 暂停新增抓取并保留真实缺口；P8.4 已完成 14/14、70 条 A2 样本；P8.5 已判定 70/70 条当前无需 A3 并完成 45 条 C0-B；P8.6 已把同一权威存量 70/70 推进到 registered/C0-C |
+| P8 | AC-09（P8.1 最低覆盖）、AC-11 | P8.1 已完成 15/15；P8.2 已完成除 132 个暂缓群聊外的用户范围；P8.3 暂停新增抓取并保留真实缺口；P8.4 已完成 14/14、70 条 A2 样本；P8.5 已判定 70/70 条当前无需 A3 并完成 45 条 C0-B；P8.6 已把同一权威存量 70/70 推进到 registered/C0-C；P8.7 已完成 MBA 11 个多模态样本和 20 个正式 C1 run，并按用户要求停队列，当前 171/247 item 有正式 C1，剩余不冒充完成 |
 | P9 | AC-10、TC-10 加一个外部复制/同步目标 | 本地备份恢复能力已存在；NAS/云盘/云 Git 三选一尚未执行 |
 
 ## 14. 提交与验收纪律
