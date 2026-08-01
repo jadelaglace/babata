@@ -635,6 +635,16 @@ C0-A2 captured 生成逐项 prepared/C0-B manifest。验证器重算 45 个 mani
 字节与 P8.4 总账一致。所有路径保持仓库外只读引用，未写 SQLite/managed assets，未新增
 C0-C 或 C1。该结果验证 C0-A2 可在不完成 A3 的情况下进入 C0-B，同时不扩大成全量 A2/B。
 
+P8.6 存量登记执行结果（Issue #132，2026-08-01）：先在隔离数据根分别登记 1 个最小 ChatGPT
+包和 1 个包含 180 个文件、约 69 MB 的最大扇出语雀包，验证命令分块、ready read-back 和
+幂等；最小包重复执行后仍为 1 item、1 revision、2 assets、1 个附件操作。活动库写入前建立
+一致加密恢复点 `snapshot_01KYXGYHNKVMJXKVEE1MQ8QFVD`。随后 45/45 prepared 包经唯一 Rust
+writer 登记，逐项 receipt 和独立 SQLite 复核证明每个预期 hash 均存在于 ready asset，所有
+revision/attachment 均 ready。全批次重复执行前后数据库计数完全相同：1,639 items、1,864
+revisions、2,381 assets、66 个附件操作；最终运行态 0 pending、0 orphan、0 quarantine。
+加上 25 条既有正式 C0，P8.5 权威范围现为 70/70 registered/C0-C；未新增抓取、未提升
+C0-A1-only 材料、未触发 A3/C1，且不扩大成全来源 A2/C。
+
 ## 3. P2 工程 Gate 测试
 
 这些测试不映射产品 AC：
@@ -683,7 +693,7 @@ post-ready read-back 与 cleanup 故障，并联合检查 operation/journal/orph
 | P5 | TC-03A、TC-04 | C1/provider/integrity tests 与真实 asset 证据 |
 | P6 | TC-03B、TC-05、TC-06、TC-07、TC-08 | core/read projection/output tests |
 | P7 | TC-09 | Skill/Agent/extra-source tests |
-| P8 | TC-11 | 来源回收与 end-to-end evidence；P8.3 暂停新增抓取并保留全量 A1 缺口；P8.4 已完成 14/14、70 条 A2 样本；P8.5 已判定 70/70 当前无需 A3，45 条 captured A2 进入 prepared/C0-B，25 条保持 C0-C |
+| P8 | TC-11 | 来源回收与 end-to-end evidence；P8.3 暂停新增抓取并保留全量 A1 缺口；P8.4 已完成 14/14、70 条 A2 样本；P8.5 已判定 70/70 当前无需 A3 并完成 45 条 C0-B；P8.6 已把同一权威范围 70/70 登记为 C0-C 并完成幂等/运行态复核 |
 | P9 | TC-10 | 选定一个外部复制/同步目标；本地 backup/restore 能力已存在 |
 
 ## 6. Skill 测试规则

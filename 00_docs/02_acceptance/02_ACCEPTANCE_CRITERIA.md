@@ -407,6 +407,14 @@ manifest 共回读并重新校验 549 个上游文件、283,283,690 字节，缺
 均为 0；原件没有被覆盖。对应来源 runtime route 仍 disabled，因此没有新增正式 C0，C1
 也未触发。该结论只覆盖 P8.4 样本，不代表全来源 A2/B 或 P8.3 全量 A1 完成。
 
+P8.6 存量正式登记证据（2026-08-01）：同一 70 条权威存量现为 70/70 registered/C0-C。
+25 条既有正式 C0 未重跑；45 条 prepared 包在全量重验 549 个文件、283,283,690 字节和 hash
+后，经唯一 Rust `capture export`/`attach-assets` 路径登记，并从 raw SQLite 逐条回读 ready
+item、revision、asset 和 attachment。45 条 receipt 齐全，九个来源各 5 条；全批次第二次
+执行前后均为 1,639 items、1,864 revisions、2,381 assets、66 个附件操作，证明幂等且没有
+新增版本或附件操作。最终 pending、orphan 和 quarantine 均为 0；未新增抓取、未提升 A1-only
+材料、未触发 A3/C1。该结果只把 P8.5 权威样本范围推进到正式 C0，不扩大成全来源 A2/C。
+
 ## 4. PRD 追溯
 
 | PRD | 直接验收 | 系统级验收 |
