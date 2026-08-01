@@ -645,6 +645,17 @@ revisions、2,381 assets、66 个附件操作；最终运行态 0 pending、0 or
 加上 25 条既有正式 C0，P8.5 权威范围现为 70/70 registered/C0-C；未新增抓取、未提升
 C0-A1-only 材料、未触发 A3/C1，且不扩大成全来源 A2/C。
 
+P8.7 本地 MBA 小批执行结果（Issue #144，2026-08-01）：`omba25/%` 权威范围 247 个文件、
+14,728,536,423 字节经全字节核验后为 247/247 同 authoritative item 的有效 C0 binding。
+试点按实际格式选择 PDF、DOCX、XLSX、PPTX、MP4 各 2 个和 PNG 1 个，11/11 完成非覆盖
+预处理，10/11 有百炼结果，20/20 正式 C1 run succeeded；视频 FLAC 解码 PCM 与源规范化 PCM
+SHA 一致，PDF 临时 clean 版本逐页文本一致，原件均未覆盖。用户收回全量目标前自然完成的
+文档结果单独报告：当前 171/247 item 有正式 C1、240 个 succeeded run，134 个百炼结果仍是
+C3 staging，76 个非试点 MP4 未启动。停队列时只让当前 Rust 子操作完成，下一项未启动。
+`current-stop-audit.json` 逐 run 验证输入 item/revision/asset/hash 与 managed output hash，错误
+为 0；raw/derived `quick_check=ok`、外键错误 0，raw pending/quarantine 0。该证据证明 TC-11
+步骤 2 的真实多模态清洗和 C0/C1 边界，不把小批、文档部分进展或 staging 扩大成 247/247 C1。
+
 ## 3. P2 工程 Gate 测试
 
 这些测试不映射产品 AC：
@@ -693,7 +704,7 @@ post-ready read-back 与 cleanup 故障，并联合检查 operation/journal/orph
 | P5 | TC-03A、TC-04 | C1/provider/integrity tests 与真实 asset 证据 |
 | P6 | TC-03B、TC-05、TC-06、TC-07、TC-08 | core/read projection/output tests |
 | P7 | TC-09 | Skill/Agent/extra-source tests |
-| P8 | TC-11 | 来源回收与 end-to-end evidence；P8.3 暂停新增抓取并保留全量 A1 缺口；P8.4 已完成 14/14、70 条 A2 样本；P8.5 已判定 70/70 当前无需 A3 并完成 45 条 C0-B；P8.6 已把同一权威范围 70/70 登记为 C0-C 并完成幂等/运行态复核 |
+| P8 | TC-11 | 来源回收与 end-to-end evidence；P8.3 暂停新增抓取并保留全量 A1 缺口；P8.4 已完成 14/14、70 条 A2 样本；P8.5 已判定 70/70 当前无需 A3 并完成 45 条 C0-B；P8.6 已把同一权威范围 70/70 登记为 C0-C 并完成幂等/运行态复核；P8.7 已证明 11 个 MBA 多模态样本的非覆盖预处理和 20 个正式 C1 run，额外文档进展、staging 与 76 个未启动视频分开报告并已停队列 |
 | P9 | TC-10 | 选定一个外部复制/同步目标；本地 backup/restore 能力已存在 |
 
 ## 6. Skill 测试规则
