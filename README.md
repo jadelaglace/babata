@@ -76,7 +76,8 @@ flowchart LR
 
 ## 本地构建
 
-前置条件：Git、PowerShell 7，以及 Rust `1.85` 或更高版本。
+前置条件：Git、PowerShell 7、Rust `1.85` 或更高版本、Node.js 24 和 Python 3.11
+或更高版本。首次检查前，在 `08_adapters/01_browser_extension` 运行一次 `npm ci`。
 
 ```powershell
 git clone https://github.com/jadelaglace/babata.git
@@ -103,16 +104,18 @@ $env:BABATA_RECOVERY_HOME = 'D:\BabataRecovery'
 C0-A1/C0-A2 captured 或 prepared 主权材料，但它们还不是 registered C0-C；
 活动 `BABATA_DATA_HOME` 顶层只保留 `00_inbox` 至 `05_logs` 六个编号分区。
 
-仓库级验证：
+日常快速反馈默认运行 `check-fast`；可以用 `-RustPackage <crate>` 只检查和测试受影响的
+Rust package。边界变更运行 `check-boundary`，合并前运行 `check-full`：
 
 ```powershell
-cargo fmt --all --check --manifest-path ./01_app/Cargo.toml
-cargo clippy --workspace --all-targets --manifest-path ./01_app/Cargo.toml -- -D warnings
-cargo test --workspace --manifest-path ./01_app/Cargo.toml
-./05_scripts/check-rust-boundaries.ps1
-./05_scripts/check-no-secondary-writer.ps1
-./05_scripts/check-doc-traceability.ps1
+./05_scripts/check-fast.ps1
+./05_scripts/check-fast.ps1 -RustPackage babata-domain
+./05_scripts/check-boundary.ps1
+./05_scripts/check-full.ps1
 ```
+
+三个入口都会输出分组耗时；GitHub Actions 同样通过这些入口执行 Rust、TypeScript、Python
+和架构/文档门禁，避免本地与 CI 命令漂移。
 
 ## 路线图
 

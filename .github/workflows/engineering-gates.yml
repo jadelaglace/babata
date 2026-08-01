@@ -21,12 +21,32 @@ jobs:
         uses: dtolnay/rust-toolchain@1.94.0
         with:
           components: clippy, rustfmt
-      - name: Check formatting
-        run: cargo fmt --all --check --manifest-path ./01_app/Cargo.toml
-      - name: Run Clippy
-        run: cargo clippy --workspace --all-targets --manifest-path ./01_app/Cargo.toml -- -D warnings
-      - name: Run workspace tests
-        run: cargo test --workspace --manifest-path ./01_app/Cargo.toml
+      - name: Run full Rust checks
+        shell: pwsh
+        run: ./05_scripts/check-full.ps1 -Scope Rust
+
+  adapters:
+    name: TypeScript and Python adapters
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ./08_adapters/01_browser_extension/package-lock.json
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install TypeScript dependencies
+        working-directory: ./08_adapters/01_browser_extension
+        run: npm ci
+      - name: Run full adapter checks
+        shell: pwsh
+        run: ./05_scripts/check-full.ps1 -Scope Adapters
 
   architecture:
     name: Architecture and docs
@@ -37,42 +57,6 @@ jobs:
       - name: Install architecture check dependencies
         shell: pwsh
         run: choco install ripgrep --no-progress --yes
-      - name: Check P2 skeleton inventory
+      - name: Run architecture and document boundary checks
         shell: pwsh
-        run: ./05_scripts/check-p2-skeleton-inventory.ps1
-      - name: Check P3 raw inventory
-        shell: pwsh
-        run: ./05_scripts/check-p3-raw-inventory.ps1
-      - name: Check interface ownership
-        shell: pwsh
-        run: ./05_scripts/check-interface-ownership.ps1
-      - name: Check Rust boundaries
-        shell: pwsh
-        run: ./05_scripts/check-rust-boundaries.ps1
-      - name: Check storage ownership
-        shell: pwsh
-        run: ./05_scripts/check-no-secondary-writer.ps1
-      - name: Check document traceability
-        shell: pwsh
-        run: ./05_scripts/check-doc-traceability.ps1
-      - name: Test document traceability checker
-        shell: pwsh
-        run: ./05_scripts/test-doc-traceability.ps1
-      - name: Check routed collection Skill
-        shell: pwsh
-        run: ./05_scripts/check-collection-skill.ps1
-      - name: Test routed collection Skill checker
-        shell: pwsh
-        run: ./05_scripts/test-collection-skill.ps1
-      - name: Check P6 document provenance
-        shell: pwsh
-        run: ./05_scripts/check-doc-provenance.ps1
-      - name: Test P6 document provenance checker
-        shell: pwsh
-        run: ./05_scripts/test-doc-provenance.ps1
-      - name: Check data-root boundaries
-        shell: pwsh
-        run: ./05_scripts/check-data-root-boundaries.ps1
-      - name: Test auxiliary data-root migration
-        shell: pwsh
-        run: ./05_scripts/test-auxiliary-data-root-migration.ps1
+        run: ./05_scripts/check-boundary.ps1
