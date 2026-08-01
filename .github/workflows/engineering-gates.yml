@@ -21,6 +21,10 @@ jobs:
         uses: dtolnay/rust-toolchain@1.94.0
         with:
           components: clippy, rustfmt
+      - name: Restore Rust build cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ./01_app -> target
       - name: Run full Rust checks
         shell: pwsh
         run: ./05_scripts/check-full.ps1 -Scope Rust
