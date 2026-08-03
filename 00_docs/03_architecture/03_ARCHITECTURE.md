@@ -92,13 +92,15 @@ CollectionSelection
 ```text
 C0 revision
   -> 用户选择或明确范围的处理任务
-  -> 本地解析器 / Bailian CLI / 后续 Bailian API
+  -> Babata 清洗编排
+  -> 本地解析器 / QianWen Skills / Bailian CLI / 后续可替换或互补的处理 adapter
   -> 处理运行记录
   -> C1 派生物
 ```
 
-处理器不接收权威数据库写权限。它只读取批准的输入，在受控暂存区产生输出，再由
-Rust 核心校验和登记。失败、重试或重跑都不修改 C0。
+Babata 永远是集成者，拥有范围、路由、候选合同、登记、重试与审计。处理 adapter 不接收
+权威数据库写权限；它只读取批准的输入，在受控暂存区产生候选输出，再由 Rust 核心校验和
+登记。切换、组合、失败、重试或重跑 adapter 都不修改 C0，也不产生第二 C1 writer。
 
 C1 通过稳定 input revision/asset 引用知道其 C0 输入，并可在收集完成后的任意时间独立
 运行、重跑或永不运行。处理器可以按文档、图片、音频、视频等模态选择实现，但来源名称

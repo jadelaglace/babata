@@ -1,0 +1,4 @@
+interface:
+  display_name: "Babata Clean"
+  short_description: "Route replaceable processors into traceable Babata C1"
+  default_prompt: "Use $babata-clean to inspect this C0 scope, route each modality through suitable local or remote adapters, and register only validated results as traceable C1."

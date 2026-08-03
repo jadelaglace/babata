@@ -4,7 +4,7 @@
 
 ```json
 {
-  "task": "omba25-week1-miniv",
+  "task": "gaodun-mba-c1-pilot",
   "created_at": "ISO-8601",
   "source_root": "C:/path/to/originals",
   "output_root": "C:/path/to/BabataData/04_runtime/staging/model-workspaces/...",
@@ -17,7 +17,15 @@
       "c0_item_id": "item_... or null",
       "media_type": "pdf",
       "local_preprocess": [{"tool": "pypdf", "note": "extract text pages 1-3"}],
-      "bailian": [{"cmd": "text chat", "model": "qwen..."}],
+      "processing": [
+        {
+          "service": "dashscope",
+          "adapter": "qianwen_skill",
+          "capability": "text_summary",
+          "model": "qwen...",
+          "credential_source": "environment"
+        }
+      ],
       "derivatives": ["results/02-pdf-text.md"],
       "c1_registrations": [
         {
@@ -58,8 +66,11 @@ babata --json process register \
   --pipeline agent_import \
   --revision rev_... \
   --kind summary \
-  --provider bailian_cli \
+  --provider <local_extract|qianwen_skill|bailian_cli> \
+  --model <exact-model-or-parser> \
+  --tool-version <exact-version> \
   --input-sha256 <64hex> \
+  --params-json '{"service":"dashscope-or-local","adapter":"<adapter>","credential_source":"environment-or-none"}' \
   --text-file results/<id>.md
 ```
 
@@ -68,7 +79,7 @@ babata --json process register \
 1. 范围与样本表  
 2. 本地规范化摘要  
 3. 各类型结果要点（可引用 md）  
-4. 视频 ASR 能力观察（时间戳/说话人/语言）  
+4. Adapter/模型选择与视频 ASR 能力观察（时间戳/说话人/语言）
 5. **C1 登记表**（revision / kind / run_id / 是否成功）  
 6. 失败与缺口  
 7. 建议的下一步批量策略  
