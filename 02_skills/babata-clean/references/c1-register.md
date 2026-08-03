@@ -70,6 +70,21 @@ media_metadata
 
 `--usage-json` 只在 provider 真实返回用量时填写；没有就保留 `{}`，不得估算。
 
+`--provider` 记录实际 adapter，而不是笼统写“AI”。当前约定为 `local_extract`、
+`qianwen_skill` 或 `bailian_cli`。对于两个远程 adapter，在 `--params-json` 同时记录：
+
+```json
+{
+  "service": "dashscope",
+  "adapter": "qianwen_skill or bailian_cli",
+  "credential_source": "environment",
+  "provider_input_sha256": "<normalized-input-sha256>",
+  "preprocessing": []
+}
+```
+
+不得记录环境变量值。模型选择建议本身不是 C1，只有实际处理结果才能登记。
+
 ## 正式文件规则
 
 推荐把可读文本或 JSON 同时作为内联内容和受控文件登记：
@@ -80,14 +95,14 @@ babata --json process register \
   --revision rev_... \
   --item item_... \
   --kind ocr_text \
-  --provider bailian_cli \
-  --model qwen-vl-plus \
-  --tool-version 1.10.0 \
+  --provider qianwen_skill \
+  --model qwen-vl-ocr \
+  --tool-version <skill-or-script-version> \
   --input-sha256 <C0-asset-sha256> \
   --input-asset-id asset_... \
   --text-file path/to/results/image-ocr.md \
   --output-file path/to/results/image-ocr.md \
-  --params-json '{"provider_input_sha256":"<hash>","preprocessing":[]}' \
+  --params-json '{"service":"dashscope","adapter":"qianwen_skill","credential_source":"environment","provider_input_sha256":"<hash>","preprocessing":[]}' \
   --language zh \
   --loss-notes "layout not reconstructed"
 ```
@@ -128,12 +143,12 @@ babata --json process register \
   --pipeline agent_import \
   --revision rev_... --item item_... \
   --kind transcript \
-  --provider bailian_cli --model fun-asr --tool-version 1.10.0 \
+  --provider bailian_cli --model <selected-asr-model> --tool-version <bl-version> \
   --input-sha256 <video-asset-sha256> --input-asset-id asset_... \
   --text-file results/video-transcript.md --output-file results/video-transcript.md \
-  --params-json '{"provider_input_sha256":"<wav-sha256>","preprocessing":["first 180 seconds","16kHz mono WAV"]}' \
+  --params-json '{"service":"dashscope","adapter":"bailian_cli","credential_source":"environment","provider_input_sha256":"<audio-sha256>","preprocessing":["authorized duration","16kHz mono lossless audio"]}' \
   --language en \
-  --loss-notes "source limited to first 180 seconds; final low-confidence segment retained"
+  --loss-notes "native ASR limitations retained; post-processing identified separately"
 ```
 
 ASR 原始 JSON 另建一个 run，使用同一个 C0 视频身份：
@@ -143,10 +158,10 @@ babata --json process register \
   --pipeline agent_import \
   --revision rev_... --item item_... \
   --kind structured_result \
-  --provider bailian_cli --model fun-asr --tool-version 1.10.0 \
+  --provider bailian_cli --model <selected-asr-model> --tool-version <bl-version> \
   --input-sha256 <video-asset-sha256> --input-asset-id asset_... \
   --json-file results/video-asr.json --output-file results/video-asr.json \
-  --params-json '{"provider_input_sha256":"<wav-sha256>","preprocessing":["first 180 seconds","16kHz mono WAV"]}'
+  --params-json '{"service":"dashscope","adapter":"bailian_cli","credential_source":"environment","provider_input_sha256":"<audio-sha256>","preprocessing":["authorized duration","16kHz mono lossless audio"]}'
 ```
 
 ## 失败与重试
@@ -158,9 +173,9 @@ babata --json process register-failure \
   --pipeline agent_import \
   --revision rev_... --item item_... \
   --kind transcript \
-  --provider bailian_cli --model fun-asr --tool-version 1.10.0 \
+  --provider bailian_cli --model <selected-asr-model> --tool-version <bl-version> \
   --input-sha256 <video-asset-sha256> --input-asset-id asset_... \
-  --params-json '{"provider_input_sha256":"<wav-sha256>","preprocessing":["first 180 seconds","16kHz mono WAV"]}' \
+  --params-json '{"service":"dashscope","adapter":"bailian_cli","credential_source":"environment","provider_input_sha256":"<audio-sha256>","preprocessing":["authorized duration","16kHz mono lossless audio"]}' \
   --error-code provider_timeout \
   --error-message "ASR request timed out"
 ```
@@ -233,8 +248,9 @@ babata --json process cancel job_...
   登记到 C1；job 只引用 `result_run_id`，不成为第二 C1 writer。
 - retry 新建 job，并让新的 C1 run 指向旧 failed run；父 job/run 均保留。
 - provider task/request ID、实际 usage 和 queue job ID 进入 C1 的非敏感处理元数据；鉴权输出不进入。
-- `bailian_ocr`、`bailian_transcript`、`bailian_visual_description` 尚无 queue provider 时明确
-  unavailable；继续由本 Skill 完成真实多模态调用并用 `agent_import` 登记。
+- `bailian_ocr`、`bailian_transcript`、`bailian_visual_description` 是既有 adapter-specific
+  queue 名称；尚无 queue provider 时明确 unavailable。当前 provider-neutral Skill 通过所选
+  adapter 取得候选，并统一用 `agent_import` 登记，不因此制造第二 writer。
 
 Provider 原始 JSON 还必须检查并移除：
 

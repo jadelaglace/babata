@@ -7,7 +7,7 @@ $requiredMarkers = @{
         'BABATA_RECOVERY_HOME',
         '04_runtime/staging/model-workspaces/'
     )
-    '02_skills/babata-bailian-clean/SKILL.md' = @(
+    '02_skills/babata-clean/SKILL.md' = @(
         '04_runtime/staging/model-workspaces/'
     )
     '05_scripts/migrate-auxiliary-data-roots.ps1' = @(

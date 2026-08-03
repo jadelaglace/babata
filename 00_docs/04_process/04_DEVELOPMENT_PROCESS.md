@@ -577,7 +577,8 @@ inventory、P3 raw inventory（29 个活跃文件、59 个 raw 功能测试）�
 
 1. 百炼 CLI（`bl`）可安装、鉴权，并作为首个多模态处理路径使用。
 2. 对本机课程样例做了每类型最小验证：图 OCR、PDF/DOCX/XLSX/PPTX 结构化摘要、视频截帧与 ASR 转写（含时间戳；说话人字段在单讲师样本中可见）。
-3. Agent 引导 Skill 已入库：`02_skills/babata-bailian-clean/`（原件只读、本地规范化、百炼路由、派生物契约、**正式 C1 登记步骤**）。
+3. Agent 引导 Skill 已入库，现为 `02_skills/babata-clean/`（原件只读、本地规范化、
+   provider-neutral 路由、派生物契约、**正式 C1 登记步骤**）。
 4. C1 登记路径已激活：`derived.sqlite`（`process_runs`/`derivatives`）、`babata process list-pipelines|register|show-run|list-runs|delete-result`；只有 failed run 可重试，新 attempt 不覆盖旧结果；逻辑删除保留失效时间/理由，重建创建新 run。
 5. Skill 默认用 `pipeline=agent_import` 把 staging 结果 `process register` 进 C1；`references/c1-register.md` 定义字段映射与核验口径。
 6. AC-03 的 P5 C0/C1 子责任与 TC-03A 已通过；Provider 作业队列的
@@ -1256,8 +1257,36 @@ SHA，错误为 0；raw/derived SQLite `quick_check=ok`、外键错误 0，raw p
 运行证据位于
 `BABATA_DATA_HOME/04_runtime/staging/model-workspaces/omba25-full-c1-20260801/`，其中
 `PILOT_REPORT.md`、`CURRENT_STOP_REPORT.md`、`OPTIMIZATIONS.md` 和
-`current-stop-audit.json` 分别保存试点、停点、优化和审计。Issue #144 保持 OPEN；只有用户
-重新启用时才从该停点恢复，不能重跑已完成试点、文档预处理或正式 run。
+`current-stop-audit.json` 分别保存试点、停点、优化和审计。2026-08-03，Issue #144 因 MBA
+权威来源已经迁移到网站 C0 而以 superseded 关闭；本节继续保留历史试点证据，不能据此
+重跑已完成试点、文档预处理或正式 run。
+
+### 11.8 P8.8：网站权威 MBA C1 与 provider-neutral Babata 清洗
+
+2026-08-03，Issue #149 取代旧本地 MBA 分母。高顿网站恢复树
+`BABATA_RECOVERY_HOME/mba/gaodun-complete-website-tree/` 已形成 763 个 ready 的
+`gaodun_mba` C0 item/revision/asset；旧 `local_files` MBA item 为 0，已有 244 个 MBA C1 run
+全部重绑到网站 revision，orphan C1 为 0。后续不能直接以 `763 - 244` 推算缺口，而要先按
+C0 item、active derivative 和 kind 建覆盖账；已有完整 C1 不因处理器策略变化而重跑。
+
+清洗 Skill 从 provider-specific 的 `babata-bailian-clean` 重命名为 `babata-clean`。Babata
+固定拥有范围、路由、候选合同、Rust 唯一登记、重试和审计；本地解析器、QianWen Skills、
+Bailian CLI 及后续 provider 只作为可替换或互补 adapter。正文先本地保真提取，再按价值选择
+QianWen 文本模型；扫描页按需走 QianWen OCR/视觉；视频 ASR 优先由官方 `bl speech recognize`
+取得，并在财务管理、供应链和决策会计代表样本上比较 `qwen3-asr-flash` 与 `fun-asr` 后再扩量。
+所有候选仍先进入 C3 staging，只有 `babata process register --pipeline agent_import` 成功才是 C1。
+
+本机旧 `bailian-cli` npm 包、命令 shim、`~/.bailian` 明文配置/Console token/telemetry 和旧第三方
+Skill 已清理，再按 `https://bailian.aliyun.com/cli/install.md` 用 npm 重装 CLI 与官方 Skill。
+Node.js 为 24.14.0，npm 为 11.9.0，CLI、npm latest 和官方 Skill 均为 1.13.0；`bl`/`bailian`
+均可从 PATH 解析。认证只读取用户级 `DASHSCOPE_API_KEY`，masked status 为 authenticated、
+source=env，验证后没有生成 `.bailian/config.json`，也没有调用模型。QianWen 与 Bailian adapter
+共享该变量，但 C1 仍分别记录真实 adapter、service、model、tool version、input/output hash、
+usage 和限制，不把凭据值写入 Git、staging、日志或 C1。
+
+Issue #149 当前只完成工作流、工具和认证底座更新；763 项逐 item C1 覆盖审计、三门优先课程
+的 ASR A/B 和后续全量处理尚未启动。本轮不新增抓取、不触发 A3、不操作微信 UI 或 Bilibili，
+也不启动 C2。
 
 ## 12. P9：简单备份同步
 
@@ -1278,7 +1307,7 @@ P9 可复用前置，但不代表 P8.1；P9 只差选定并跑通一个外部复
 | P5 | AC-03（C0/C1 子责任）、AC-04 | 真实输入/派生物与忠实清洗；TC-03A/TC-04 |
 | P6 | AC-03（C2 子责任）、AC-05、AC-06、AC-07、AC-08 | TC-03B；核心先于检索/视图/输出 |
 | P7 | AC-09 | 扩展来源、Skill、Agent |
-| P8 | AC-09（P8.1 最低覆盖）、AC-11 | P8.1 已完成 15/15；P8.2 已完成除 132 个暂缓群聊外的用户范围；P8.3 暂停新增抓取并保留真实缺口；P8.4 已完成 14/14、70 条 A2 样本；P8.5 已判定 70/70 条当前无需 A3 并完成 45 条 C0-B；P8.6 已把同一权威存量 70/70 推进到 registered/C0-C；P8.7 已完成 MBA 11 个多模态样本和 20 个正式 C1 run，并按用户要求停队列，当前 171/247 item 有正式 C1，剩余不冒充完成 |
+| P8 | AC-09（P8.1 最低覆盖）、AC-11 | P8.1 已完成 15/15；P8.2 已完成除 132 个暂缓群聊外的用户范围；P8.3 暂停新增抓取并保留真实缺口；P8.4 已完成 14/14、70 条 A2 样本；P8.5 已判定 70/70 条当前无需 A3 并完成 45 条 C0-B；P8.6 已把同一权威存量 70/70 推进到 registered/C0-C；P8.7 保留旧本地 MBA 试点历史；P8.8 以 763 个网站 C0 和 244 个已迁移 C1 为新起点，已完成 provider-neutral `babata-clean` 与统一 DashScope 环境变量底座，逐项 C1 覆盖和新模型处理尚未启动 |
 | P9 | AC-10、TC-10 加一个外部复制/同步目标 | 本地备份恢复能力已存在；NAS/云盘/云 Git 三选一尚未执行 |
 
 ## 14. 提交与验收纪律
