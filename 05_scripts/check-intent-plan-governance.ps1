@@ -15,7 +15,8 @@ function Read-RequiredFile {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
         throw "Intent/plan governance is missing required file: $RelativePath"
     }
-    return Get-Content -LiteralPath $path -Raw -Encoding utf8
+    $text = Get-Content -LiteralPath $path -Raw -Encoding utf8
+    return $text.Replace("`r`n", "`n")
 }
 
 function Assert-Contains {
@@ -149,7 +150,7 @@ if ($recoveryHeadings.Count -eq 0 -or $recoveryHeadings[-1].Index -gt $captureIn
 $latestCapture = $recovery.Substring($captureIndex)
 $captureMetadata = [regex]::Match(
     $latestCapture,
-    '(?m)^capture time：`(?<time>[^`]+)`。来源：(?<source>[^\r\n。]+)。$'
+    '(?m)^capture time：`(?<time>[^`]+)`。来源：(?<source>[^\r\n。]+)。\r?$'
 )
 if (-not $captureMetadata.Success -or [string]::IsNullOrWhiteSpace($captureMetadata.Groups['source'].Value)) {
     throw 'Intent/plan governance latest capture has invalid or empty time/source metadata.'
