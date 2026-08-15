@@ -80,18 +80,31 @@ $repeatable = ([string][char]0x957F) + [char]0x671F + [char]0x91CD + [char]0x590
 Assert-Contains $contract "**$acquired**" 'the acquired-material report layer'
 Assert-Contains $contract "**$registered**" 'the formal-C0 report layer'
 Assert-Contains $contract "**$repeatable**" 'the repeatability report layer'
-Assert-Matches $catalog '(?m)^\| `source\.onenote` \|.*\| enabled \|' 'enabled OneNote route'
-Assert-Matches $catalog '(?m)^\| `source\.evernote` \|.*\| enabled \|' 'enabled Evernote route'
-Assert-Matches $catalog '(?m)^\| `source\.doubao` \|.*\| enabled \|' 'enabled Doubao route'
+Assert-Contains $catalog 'babata --json capabilities list' 'runtime capability truth'
+Assert-Contains $catalog 'Do not copy their current status or counts into this index.' 'no duplicated route status'
+if ($catalog -match '(?m)^\|.*\|\s*(?:enabled|disabled|unavailable|absent)\s*\|\s*$') {
+    throw 'Collection Skill route catalog duplicates runtime status'
+}
+Assert-Matches $catalog '(?m)^\| `source\.onenote` \| `source-onenote\.md` \|' 'OneNote recipe navigation'
+Assert-Matches $catalog '(?m)^\| `source\.evernote` \| `source-evernote\.md` \|' 'Evernote recipe navigation'
+Assert-Matches $catalog '(?m)^\| `source\.doubao` \| `source-doubao\.md` \|' 'Doubao recipe navigation'
 Assert-Contains $onenote 'pair:<absolute-path-to.mht>|<absolute-path-to.pdf>' 'OneNote pair source shape'
 Assert-Contains $onenote 'mht-list:<absolute-path-a.mht>|<absolute-path-b.mht>|...' 'OneNote MHT-list source shape'
 Assert-Contains $evernote 'notes:<absolute-path-to-export.notes>' 'Evernote source shape'
-Assert-Contains $doubao 'Current status is **enabled**' 'Doubao proven status'
+Assert-Contains $doubao 'Query runtime capability before use' 'Doubao runtime preflight'
 Assert-Contains $doubao 'conversations:<id>,<id>,...' 'Doubao explicit batch scope'
-Assert-Contains $doubao 'HasMore=true' 'Doubao incomplete-pagination refusal'
+Assert-Contains $doubao 'has_more=false' 'Doubao pagination completion condition'
+Assert-Contains $doubao 'complete pagination with no repeated/missing message IDs' 'Doubao pagination integrity condition'
 Assert-Contains $doubao 'recollect --item <item_id>' 'Doubao per-item recollection boundary'
-Assert-Contains $doubao 'stable, accurate, and real' 'the stable-accurate-real-fast order'
+Assert-Contains $skill 'stable, accurate, real, then fast' 'the stable-accurate-real-fast order'
 Assert-Contains $metadata 'Use $babata-collect' 'Skill UI invocation prompt'
+Assert-Contains $metadata 'display_name: "Babata Collect"' 'consistent Skill UI name'
+$shortDescriptionMatch = [regex]::Match($metadata, '(?m)^\s*short_description:\s*"([^"]+)"\s*$')
+if (-not $shortDescriptionMatch.Success -or
+    $shortDescriptionMatch.Groups[1].Value.Length -lt 25 -or
+    $shortDescriptionMatch.Groups[1].Value.Length -gt 64) {
+    throw 'Collection Skill UI short_description must contain 25-64 characters'
+}
 
 $commandLines = @($skill -split "`r?`n" | Where-Object {
     $_.Trim() -match '^(babata|cargo\s+run\b).*(process|knowledge)\b'
@@ -106,4 +119,4 @@ foreach ($marker in @('sqlite3 ', 'Connection::open(', 'rusqlite::')) {
     }
 }
 
-Write-Output 'Collection Skill check passed: one routed entry, honest capabilities, unified C0, no C1 command.'
+Write-Output 'Collection Skill check passed: one routed entry, runtime-owned capability status, unified C0, no C1 command.'

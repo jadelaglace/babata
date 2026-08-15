@@ -55,7 +55,7 @@ try {
 
     Assert-CheckerFails -Name 'mutated-user-wording' -ExpectedMessage 'missing or changed a required verbatim excerpt' -Mutate {
         param($caseDocs)
-        $path = Join-Path $caseDocs '00_requirements\-1_USER_WORDING.md'
+        $path = Join-Path $caseDocs '00_requirements\00_c_USER_WORDING_RECOVERY.md'
         $lines = @(Get-Content -Encoding utf8 -LiteralPath $path)
         $targetHash = 'ef88a5a23026a980540f196a3342da8bf2ebcc24d2c43f3da113b6a419365581'
         $matchingIndexes = @()
@@ -74,13 +74,13 @@ try {
 
     Assert-CheckerFails -Name 'local-thread-id' -ExpectedMessage 'UUID-shaped local/runtime identifier' -Mutate {
         param($caseDocs)
-        $path = Join-Path $caseDocs '03_architecture\09_P6_PERSONAL_KNOWLEDGE_UNIVERSE_BLUEPRINT.md'
+        $path = Join-Path $caseDocs '03_architecture\03_e_PERSONAL_KNOWLEDGE_UNIVERSE.md'
         Add-Content -Encoding utf8 -LiteralPath $path -Value ("`nLocal turn: {0}" -f [guid]::NewGuid())
     }
 
     Assert-CheckerFails -Name 'builder-as-user-wording' -ExpectedMessage 'missing provenance distinction' -Mutate {
         param($caseDocs)
-        $path = Join-Path $caseDocs '03_architecture\09_P6_PERSONAL_KNOWLEDGE_UNIVERSE_BLUEPRINT.md'
+        $path = Join-Path $caseDocs '03_architecture\03_e_PERSONAL_KNOWLEDGE_UNIVERSE.md'
         $content = Get-Content -Raw -Encoding utf8 -LiteralPath $path
         $content = $content.Replace(
             '<!-- P6-TREE-PROVENANCE: builder-summary; user-confirmed; not-verbatim -->',
@@ -91,7 +91,7 @@ try {
 
     Assert-CheckerFails -Name 'sensitive-token' -ExpectedMessage 'possible bearer token' -Mutate {
         param($caseDocs)
-        $path = Join-Path $caseDocs '03_architecture\09_P6_PERSONAL_KNOWLEDGE_UNIVERSE_BLUEPRINT.md'
+        $path = Join-Path $caseDocs '03_architecture\03_e_PERSONAL_KNOWLEDGE_UNIVERSE.md'
         Add-Content -Encoding utf8 -LiteralPath $path -Value ("`nBearer {0}" -f ('a' * 32))
     }
 

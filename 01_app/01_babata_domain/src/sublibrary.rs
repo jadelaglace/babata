@@ -27,6 +27,8 @@ pub struct SublibraryDefinitionInput {
     pub selection: QueryFilter,
     pub manual_include: Vec<String>,
     pub manual_exclude: Vec<String>,
+    pub course_refs: Vec<String>,
+    pub map_node_refs: Vec<String>,
     pub organisation_rules: Vec<SublibraryOrganisationRule>,
     pub include_unreviewed: bool,
 }
@@ -39,6 +41,8 @@ impl Default for SublibraryDefinitionInput {
             selection: QueryFilter::default(),
             manual_include: Vec::new(),
             manual_exclude: Vec::new(),
+            course_refs: Vec::new(),
+            map_node_refs: Vec::new(),
             organisation_rules: vec![SublibraryOrganisationRule::ManualFirst],
             include_unreviewed: false,
         }
@@ -51,6 +55,8 @@ impl SublibraryDefinitionInput {
         require_text("sublibrary purpose", &self.purpose)?;
         validate_record_ids("manual_include", &self.manual_include)?;
         validate_record_ids("manual_exclude", &self.manual_exclude)?;
+        validate_course_refs(&self.course_refs)?;
+        validate_map_node_refs(&self.map_node_refs)?;
         let includes = self.manual_include.iter().collect::<HashSet<_>>();
         if self
             .manual_exclude
@@ -195,6 +201,45 @@ fn validate_record_ids(field: &'static str, values: &[String]) -> Result<(), Dom
             return Err(DomainError::Invalid {
                 field,
                 value: format!("duplicate record ID {value}"),
+            });
+        }
+    }
+    Ok(())
+}
+
+fn validate_course_refs(values: &[String]) -> Result<(), DomainError> {
+    let mut unique = HashSet::new();
+    for value in values {
+        let valid = value
+            .strip_prefix("course:")
+            .and_then(|body| body.rsplit_once('@'))
+            .is_some_and(|(key, version)| {
+                !key.is_empty()
+                    && key.bytes().all(|byte| {
+                        byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-'
+                    })
+                    && version.parse::<u32>().is_ok_and(|value| value > 0)
+            });
+        if !valid || !unique.insert(value) {
+            return Err(DomainError::Invalid {
+                field: "course_refs",
+                value: value.clone(),
+            });
+        }
+    }
+    Ok(())
+}
+
+fn validate_map_node_refs(values: &[String]) -> Result<(), DomainError> {
+    let mut unique = HashSet::new();
+    for value in values {
+        if !value.starts_with("mapnode_")
+            || value.len() != "mapnode_".len() + 26
+            || !unique.insert(value)
+        {
+            return Err(DomainError::Invalid {
+                field: "map_node_refs",
+                value: value.clone(),
             });
         }
     }

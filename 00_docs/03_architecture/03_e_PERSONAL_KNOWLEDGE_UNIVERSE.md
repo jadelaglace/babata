@@ -1,15 +1,17 @@
-# P6 个人知识宇宙蓝图
+# 个人知识宇宙设计基线
 
-<!-- P6-BLUEPRINT-STATUS: in-progress -->
+<!-- DOC-ID: DOC-KNOWLEDGE-UNIVERSE -->
+<!-- P6-BLUEPRINT-STATUS: adopted-design-baseline -->
+<!-- DOC-AUTHORITY-BOUNDARY: adopted-design-baseline -->
 
 ## 1. 文档职责与状态
 
 本文把 Babata 1.0 原始归档中有关个人知识宇宙的意图，连同 2026-07-20 已确认的九项
-决定，翻译为 P6 的产品与架构基线。它继承 `00_REQUIREMENTS.md`、`01_PRD.md`、
-`02_ACCEPTANCE_CRITERIA.md` 和 `03_ARCHITECTURE.md`，不能覆盖上游决定。
+决定，翻译为 P6 的产品与架构基线。它继承 `00_a_REQUIREMENTS.md`、`01_a_PRD.md`、
+`02_a_ACCEPTANCE_CRITERIA.md` 和 `03_a_ARCHITECTURE.md`，不能覆盖上游决定。
 
-本文是设计基线，不是实现证据。2026-07-20，P6.1 已启动首个纵向切片；只有对应验收
-标准和测试用例用真实资料通过后，相关 P6 子阶段才可完成。
+本文是已采用的设计基线，不是实现、当前状态或执行证据。P6 和后续使用完成度只由
+`../04_process/04_b_USAGE_STATUS.md` 与 Git 外 receipt 证明。
 
 ## 2. P6 的产品定义
 
@@ -35,7 +37,7 @@ C0 原件 / 第一方版本 + C1 清洗结果 / 模型建议
 本对照形成于 2026-07-20 P6 产品讨论：Builder 在用户要求“把完整结构发出来看看”后，
 根据 Babata 1.0 原始归档和当日逐项回答整理出本树；用户随后纠正其来源不是自己的逐字
 原话，同时明确确认“这个树很准”并要求合理落盘。本树由 Builder 整理，用户确认准确，
-不是用户逐字原话。各项权威依据仍是 `00_requirements/-1_USER_WORDING.md` 中的 1.0 人类原文、P6 九项决定、
+不是用户逐字原话。各项逐字依据仍是 `00_requirements/00_c_USER_WORDING_RECOVERY.md` 中的 1.0 人类原文、P6 九项决定、
 四基石确认，以及最新三大界和版本语义纠偏。
 
 ```text
@@ -170,9 +172,21 @@ P6 个人知识宇宙
 | 物质 | 宏观宇宙、恒星、微观粒子、肉身与生物学 |
 | 意识 | 心理学、认知科学、自我、思维模型、模拟理论 |
 
+四基石是定义严谨、稳定、可重叠的 worldview lenses，不是互斥且强制穷尽的四个内容桶。
+时间/空间更接近观察条件，物质/意识更接近存在形态；它们在本模型中共同提供世界观坐标，
+不声称任何知识必须四选一。对象可以关联零个、一个或多个基石；零个表示尚未判断或证据不足，
+不是第五个隐式分类。
+
 学科和分支不是固定枚举，可以随认知发展创建、改名、合并、停用或建立关系。一个学科、
 分支或内容可以归属多个上层节点，例如博弈论可以同时关联数学、社会学和意识。归属关系
 有来源，实际改变时保留必要历史，不通过复制内容实现多重归属。
+
+地图是受约束的多父 DAG，不是任意无类型网：
+
+- foundation 到 discipline、discipline 到 branch 的父边只表达 `subfield_of`/本体归属，并拒绝环；
+- 只有所有父边具有同一 `subfield_of` 语义时才使用多父；默认展示路径、汇总和去重不得制造重复内容；
+- `intersects_with`、`draws_from`、`applies_to`、`prerequisite_of` 等跨学科语义进入类型化关系；
+- 标签服务宽松发现和临时策展，不承担继承、汇总或权威归属。
 
 四根是当前已确认的 P6 世界观模型，不等同于对“物质是否存在、宇宙是否存在、人是否
 存在、虚无是否存在”等哲学问题的回答。若未来改变四根，必须创建新的 WorldviewMap
@@ -215,7 +229,22 @@ P6 个人知识宇宙
 关系是可追溯记录，不把“反向链接”只留给某个展示工具临时计算。删除 C2 视图后，关系
 仍完整存在。
 
-### 3.4 新内容、关系、再分析和真实修订
+### 3.4 课程、专业分支与跨学科集合
+
+`Branch` 是稳定专业方向，`Course` 是带来源、学期/版本、课纲内容和交付状态的教学单元，二者
+身份和生命周期分开。课程通过有方向的 `covers` 关系覆盖一个或多个稳定 `Branch`；同一 branch
+可以被多门课程覆盖。课程名称恰好与 branch 同名时仍保留两种身份，不以目录、tag 或同名推断
+它们相等。
+
+MBA 当前建模为版本化 `SublibraryDefinition`/lens：它引用并组织跨学科的课程、分支和 semantic
+内容，但不拥有这些对象，不作为 discipline，也不成为它们唯一父节点。只有系统确实需要表达
+培养目标、学分、必修/选修、院校和年度方案时，才新增正式 Program/ProgramVersion 语义；此前
+不创建空壳服务、跨模块 API 或第二套集合权威。
+
+课程内脑图是 C2 学习视图，可以选定一个局部 MECE 主分类轴；宇宙级地图是跨内容、跨学科的
+正式关系图。局部视图的互斥分组不反写或压扁宇宙级多重归属。
+
+### 3.5 新内容、关系、再分析和真实修订
 
 P6 必须根据动作的真实含义写入，不能统一折叠成线性版本：
 
@@ -234,7 +263,18 @@ Git、NAS、快照和备份承担同步、容灾和时间点恢复；它们不�
 
 ## 4. 动态相关度评分
 
-### 4.1 三个维度
+基石归属等级/强度与本节“兴趣、战略、共识”评分是两个不同测量合同，不共用字段或权重 profile。
+
+### 4.1 基石交叉强度
+
+正式归属首先是有类型的关系。需要表达程度时，使用 `primary/secondary/contextual`，或为每个基石
+分别记录独立强度；每项至少携带对象、基石、值/等级、含义、依据、作者/模型、时间和方法版本。
+判断置信度独立记录，不能用高强度冒充高置信度。各基石强度默认不要求相加为 `100%`。
+
+若特定 C2 视图需要饼图，可声明分母和归一化方法，从独立强度派生百分比；该百分比是可删除、
+可重建的视图，不得回写正式 assignment、覆盖原始强度或冒充知识事实。
+
+### 4.2 三个动态相关度维度
 
 任何地图节点或内容都可以有三个独立分量：
 
@@ -253,7 +293,7 @@ relevance = 0.40 * interest + 0.35 * strategy + 0.25 * consensus
 具体分值范围在实现前由测试夹具和 UI 精度共同确定；不能因为范围尚未锁定而改变三维
 含义或默认权重。
 
-### 4.2 版本与真实数据调节
+### 4.3 版本与真实数据调节
 
 每次评分至少保留对象、三个原始分量、综合分、依据、作者/模型、时间和所用 profile
 版本。历史评分不因重新计算而覆盖。
@@ -345,6 +385,9 @@ Obsidian 只是可选的阅读/展示 builder。对 Obsidian 文件的外部编�
 `SublibraryDefinition` 是版本化 first-party C0，保存用途、范围、规则、人工纳入/排除和
 组织方式。其物化目录、搜索投影和展示文件是 C2，可删除重建。
 
+MBA lens 使用该机制聚合多个 discipline、branch、course 和 semantic entry。其定义保存用途、
+纳入/排除与组织规则；物化结果不得创建、删除或改写课程身份、地图父边、内容归属或课程验收状态。
+
 输出读取明确范围内的 C0、C1 和人工沉淀，并生成 manifest，至少记录输入版本、builder/
 template/profile 版本、时间、状态、限制和回溯路径。输出可以选择是否包含未审阅建议；
 包含时必须保留标识。报告、卡片、文章、网页、Obsidian 和供其他应用消费的结构化结果
@@ -386,21 +429,8 @@ P6 实现前不在本文冻结最终 SQL 表数或万能图谱 schema。任何�
 
 通过 AC-07 的检索、浮现和关系部分后才完成。
 
-完成状态（2026-07-22）：Issue #74 已完成该切片。`SqliteReadProjection` 在
-`03_views/search/index/search.sqlite` 建立可整体删除重建的 C2，把 raw item 与 semantic
-entry 投影到统一检索面，同时保留各自的来源、版本、资产、派生物、地图、标签、评分、
-审阅和关系身份。重建只读附加 raw/derived 权威库，并在单一事务内替换投影；source
-fingerprint 覆盖影响检索结果的 C0/C1、知识核心、评分/审阅、关系和处理记录。
-
-同一个 `ExploreService` 支撑 CLI 的 rebuild/delete/status/search/show/traverse/surface 和
-本地 API 搜索。未审阅、accepted、rejected 内容都可搜索；rejected/modified 原建议不进入
-主动浮现。浮现只返回有合格评分的 semantic entry，每项明确给出 direction、relevance、
-time、relation 四类原因。fixture 完整覆盖媒体/附件/受限/缺失等边界，真实数据另证明
-27 个 raw、3 个 semantic、14 条导航关系的投影与删除重建，且权威库摘要不变。
-
-因此 P6.2 已完成，AC-07 第 1–4、7 项及 TC-07 第 1–4 步和搜索投影重建部分已通过。
-在 P6.2 收口当时，AC-07 第 5–6 项、TC-07 第 5 步与子库物化重建仍属于 P6.3，因此
-AC-07/TC-07 整体不得提前宣称通过；现已由下述 P6.3 证据补齐。
+具体实现、fixture/真实数据计数和 P6.2 完成证据不在本蓝图维护；它们由 architecture、TC、
+usage status 和 receipt 承担。
 
 ### P6.3 子库与输出
 
@@ -408,18 +438,6 @@ AC-07/TC-07 整体不得提前宣称通过；现已由下述 P6.3 证据补齐�
 2. 生成至少一种人类可读输出和一种结构化输出。
 3. 保留 manifest、输入版本、建议状态和只读边界。
 4. 完成 C2 删除重建与 C0/C1 不变证据。
-
-执行状态（2026-07-23）：已完成。`SublibraryDefinition` 的用途、选择规则、人工纳入/排除、
-组织规则和未审阅策略以 `babata.sublibrary/v1` first-party C0 正文追加保存；raw v7 在数据库
-层校验来源、版本序号和父版本，并拒绝正文原地修改或删除。C2 子库物化位于
-`03_views/sublibraries/`，Markdown/JSON 输出位于 `03_views/outputs/`；二者均保存 manifest、
-输入 hash/身份、builder/template/profile、状态和限制，并支持 verify/delete/rebuild。
-
-fixture 覆盖两版定义、人工纳入/排除、组织规则、unreviewed 纳入开关、CLI/API 同一服务、
-篡改、删除重建和未实现类型。真实数据使用现有 1 条 machine/unreviewed Knowledge 形成
-明确范围子库和两类输出，保持 `human_judgment=false`、`confirmed_fact=false`；C2 操作
-前后 46 张 raw/knowledge 表和 4 张 derived 表摘要不变。证据位于
-`BABATA_EVIDENCE_HOME/runs/p6-3-sublibrary-output-20260723-200352/`。
 
 通过 AC-03 的 C2 子责任、AC-07/AC-08、TC-03B/TC-07/TC-08 后才完成。
 
@@ -439,13 +457,13 @@ fixture 覆盖两版定义、人工纳入/排除、组织规则、unreviewed 纳
 
 来源链如下：
 
-- `00_requirements/-1_USER_WORDING.md` 的“Babata 1.0 原始归档”保存最早的完整产品结构原文；
+- `00_requirements/00_c_USER_WORDING_RECOVERY.md` 的“Babata 1.0 原始归档”保存最早的完整产品结构原文；
 - 同一附录的“P6 回到 1.0 原始意图”和“P6 九项决定”保存问题形成背景与用户逐项回答；
 - “四基石确认与哲学旁注”保存第 3 项的补充确认，并明确旁注不属于 P6 第 3 项；
 - “P6 三大界、自动入库与版本语义纠偏”保存后续写入语义纠正；
 - “Builder 整理结果的来源纠正（2026-07-20 P6 产品讨论）”保存用户对 0–10 树来源的纠正、
   准确性确认和落盘要求；
-- 用户原话证据只保存在 `00_requirements/-1_USER_WORDING.md`；本节完整保存 Builder
+- 逐字用户原话证据只保存在 `00_requirements/00_c_USER_WORDING_RECOVERY.md`；本节完整保存 Builder
   的九个问题和经后续纠偏更新的当前有效答案，不把 Builder 整理冒充用户逐字原话。
 
 | # | Builder 提问 | 当前有效答案（含后续纠偏） |
@@ -463,10 +481,9 @@ fixture 覆盖两版定义、人工纳入/排除、组织规则、unreviewed 纳
 本轮新增纠偏不推翻九项答案，而是收紧第 4、6 项的写入语义：评论、附件、日志、感悟、
 Agent 再分析和真实作品改写是不同动作；只有后者才形成同一 first-party 作品的新 revision。
 
-## 14. 仍待实现时决定的事项
+## 14. 实现约束与开放选择
 
-九项产品问题已经足够闭环，不再阻塞 P6 设计。Issue #65 已由真实资料锁定以下 P6.1
-实现选择：
+九项产品问题已经足够闭环，不再阻塞 P6 设计。实现必须遵守以下稳定约束：
 
 - 三个分量均使用 `0..100` 整数；综合分按 profile 权重计算并以 `0..10000` 整数保存，
   避免浮点漂移；展示层可以除以 100；
@@ -475,7 +492,7 @@ Agent 再分析和真实作品改写是不同动作；只有后者才形成同�
   `derived.sqlite`，核心规范化记录必须引用 derivative ID 与 output hash；
 - 机器候选以 `p6-semantic-candidate/v1` JSON 合同进入核心，一次事务同时落 suggestion、
   三级地图节点/边、语义条目、多重归属、标签、关系、高密度表达和评分；
-- 首个真实自动消化 provider 为已鉴权百炼 CLI 的 `qwen-plus`，prompt/version、C0 revision、
+- 自动消化保持 provider 无关；每次运行的 provider/model/version、prompt/version、C0 revision、
   C1 evidence ID/hash、task/usage、输出 hash、限制和未审阅身份均保留；
 - first-party Log/Insight 必须先形成 ready C0，且登记正文必须与该 C0 原文完全一致；核心
   只保存语义登记和关系，不允许 JSON/CLI 另造一份“用户原话”。
@@ -485,12 +502,16 @@ Agent 再分析和真实作品改写是不同动作；只有后者才形成同�
 - 学科和分支使用稳定节点身份与当前生命周期；新增、改名、停用、合并、父边变化、内容
   归属变化和地图标签变化均追加事件。合并只迁移当前父边、子边、内容归属和标签，不删除
   旧节点、旧评分或历史；P6 baseline 的四基石由应用与数据库共同拒绝静默修改；
+- 当前 map node/edge 与 semantic assignment 已支持多父和多重归属，但尚无 map-node 层
+  `intersects_with/draws_from/applies_to/prerequisite_of` 等非父边类型化关系、独立 Course identity、
+  typed `covers`、MBA lens 对 course/branch 的正式引用，也没有基石强度/置信度合同。以上为已采用、
+  待实现的后继核心语义；在对应 migration/domain/application/CLI/TC 完成前，不得用 tag、同名 branch、
+  sidecar 或现有兴趣/战略/共识字段模拟完成；
 - 相关度评分目标统一支持语义内容和地图节点；每次评分读回 profile、三个分量、综合分、
   依据、作者身份和时间。新 profile 追加而不覆盖旧 profile 或旧评分；
-- P6.1 启用一项窄 C2：从核心高密度文本生成带 source/output hash 和 manifest 的 Markdown
-  预览，支持校验、删除和重建，不反写 C0、C1 或核心；P6.2 已启用独立搜索/浮现投影。
-  P6.3 已启用版本化子库、Markdown 人读输出和 JSON 结构化输出；Web、Obsidian 和其他
-  builder 仍保持 unavailable，等待真实用途逐项启用。
+- C2 可以从核心高密度文本生成带 source/output hash 和 manifest 的 Markdown 预览，并支持
+  校验、删除和重建，不反写 C0、C1 或核心；搜索/浮现投影、版本化子库及其他输出按各自
+  AC/TC 和真实用途启用，当前启用状态不在本蓝图维护。
 
 以下实现选择仍未锁定，不是产品意图空缺：
 
@@ -498,6 +519,8 @@ Agent 再分析和真实作品改写是不同动作；只有后者才形成同�
 - 窄 UI 的具体框架和移动端/桌面端优先级；
 - 首个内容浮现界面的节奏和排序细节；
 - Markdown/JSON 以外输出形态的真实用途、模板和依赖。
+- Course/typed relation/foundation intensity 的具体表布局与 ID 命名；实现必须满足本章身份、版本、
+  关系语义、writer、历史和可重建边界，不能退回 course=branch 或万能无类型 edge。
 
 这些选择必须由真实资料、真实调用者和对应测试推动，不能反向改变本文已确定的语义。
 
@@ -600,9 +623,9 @@ FTS/BM25 精确词项召回
 评分或分析建议仍按 C1 保存其输入证据和机器身份，不需要把向量本身提升为知识权威。
 
 实现保持 provider 无关和本地优先。默认优先评估本地 embedding；使用云端 provider 时必须
-服从来源访问限制，restricted 内容不得未经授权发送到外部。截至 2026-07-24 已审阅的百炼
-CLI Skill v1.10.0 未提供直接 embedding 生成命令；百炼 API 是否适用必须在实现前另行调查和
-真实探测，不能根据用量分类或平台印象宣称现成可用。
+服从来源访问限制，restricted 内容不得未经授权发送到外部。任何 provider/CLI/API 的当前
+可用性必须在实现前进入 source/tool research 重新调查和真实探测，不能把带日期的供应商能力
+快照固化为本设计基线。
 
 在当前数据规模下可以先使用本地精确相似度计算，不预设独立向量数据库、服务或仓库。只有
 真实规模和性能证据证明需要时，才评估 FAISS、HNSW 或 SQLite 向量扩展等 ANN 方案。

@@ -1,4 +1,11 @@
-# Babata P2 全系统骨架蓝图
+# Babata P2 系统骨架设计记录
+
+<!-- DOC-ID: DOC-ARCH-SKELETON -->
+<!-- DOC-AUTHORITY-BOUNDARY: architecture-design-record -->
+
+本文保留 P2 关闭时采用的责任位置与 gate 设计。文中的 crate/文件数量是当时的目标快照，
+不是当前代码 inventory 或产品完成状态；当前稳定 ownership 以 `DOC-ARCH` 为准，phase 状态以
+`DOC-USAGE` 为准。
 
 ## 1. P2 的目的
 
@@ -415,7 +422,7 @@ P2 使用工程交付门，不使用产品 AC/TC 冒充骨架验收：
 | P2-G4 能力诚实 | 未激活能力统一 unavailable，不启动真实来源/provider/worker 或生成真实视图 |
 | P2-G5 单一写入 | JS、Python、Skill、provider、view/output builder 均无 C0/C1 直接写入路径 |
 | P2-G6 文档同步 | 00–05 与蓝图、脚本、配置和测试位置没有旧编号或旧责任冲突 |
-| P2-G7 工具路线 | `08_SOURCE_TOOL_RESEARCH.md` 覆盖 00 列出的全部来源；每条来源都有证据等级、最小授权、直接使用/薄包装/窄适配/回退决策和诚实缺口；可在当前机器调用的代表性官方/通用工具有实际调用或连接证据 |
+| P2-G7 工具路线 | `03_d_SOURCE_ROUTE_REGISTRY.md` 覆盖 00 列出的全部来源；每条来源都有证据等级、最小授权、直接使用/薄包装/窄适配/回退决策和诚实缺口；可在当前机器调用的代表性官方/通用工具有实际调用或连接证据 |
 
 现有 raw capture 代码可以作为 P3 提前工作保留，但它不能替代任何 P2 gate，也不能
 证明 P3 完成。137 文件、接口和工程检查全部通过后，如果逐来源调查、路线决策或代表性
@@ -431,4 +438,4 @@ P2 使用工程交付门，不使用产品 AC/TC 冒充骨架验收：
 - P7：扩展来源、正式 Skill 和受控 Agent；
 - P8：备份、恢复、运维与长期加固。
 
-具体状态和阶段门只由 `04_DEVELOPMENT_PROCESS.md` 维护。
+具体状态和阶段门只由 `04_a_DEVELOPMENT_PROCESS.md` 维护。

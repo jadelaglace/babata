@@ -1,13 +1,14 @@
 use babata_domain::{
     AssetAttachmentId, AssetId, AssetIntegrityMethod, AssetRole, BuildTarget, CandidateEnvelope,
     CandidateSummary, CollectionId, CollectionSessionId, CommonSourceMetadata, ContentType,
-    DerivativeId, DerivativeKind, DerivativeRef, FirstPartySemanticDefinition, HealthState, ItemId,
-    LogicalPath, Metadata, OutputKind, OutputScope, PageCursor, PipelineId, ProcessJob, ProcessRun,
-    ProcessingState, ProjectionStatus, QueryFilter, RawState, RecollectionState, RecordSummary,
-    RelationKind, RestoreState, RevisionId, RouteCoverage, RunId, ScoreProfile,
-    SemanticCandidatePackage, SemanticPayload, Sha256, SnapshotRef, SourceId, SourceKind,
-    SourceObservationId, SourceObservationKind, SourceRouteId, SublibraryDefinitionInput,
-    SublibraryId, SuggestionDecisionKind, UtcTimestamp, ViewDescriptor, ViewId,
+    CourseRegistrationDefinition, DerivativeId, DerivativeKind, DerivativeRef,
+    FirstPartySemanticDefinition, HealthState, ItemId, LogicalPath, Metadata, OutputKind,
+    OutputScope, PageCursor, PipelineId, ProcessJob, ProcessRun, ProcessingState, ProjectionStatus,
+    QueryFilter, RawState, RecollectionState, RecordSummary, RelationKind, RestoreState,
+    RevisionId, RouteCoverage, RunId, ScoreProfile, SemanticCandidatePackage, SemanticPayload,
+    Sha256, SnapshotRef, SourceId, SourceKind, SourceObservationId, SourceObservationKind,
+    SourceRouteId, SublibraryDefinitionInput, SublibraryId, SuggestionDecisionKind, UtcTimestamp,
+    ViewDescriptor, ViewId,
 };
 use serde::{Deserialize, Serialize};
 
@@ -672,6 +673,18 @@ pub struct RecordSuggestionReviewCommand {
 #[derive(Debug, Clone)]
 pub struct CreateScoreProfileCommand {
     pub profile: ScoreProfile,
+}
+
+#[derive(Debug, Clone)]
+pub struct RegisterCourseCommand {
+    pub definition: CourseRegistrationDefinition,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CourseRegistrationDetail {
+    pub course_id: String,
+    pub definition_sha256: Sha256,
+    pub definition: CourseRegistrationDefinition,
 }
 
 #[derive(Debug, Clone)]

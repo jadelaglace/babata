@@ -4,7 +4,7 @@ $repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $app = Join-Path $repo '01_app'
 $inventory = [ordered]@{
     '01_babata_domain' = @'
-lib.rs ids.rs kinds.rs entities.rs value.rs error.rs capability.rs route.rs collection.rs processing.rs knowledge.rs query.rs sublibrary.rs output.rs view.rs ops.rs
+lib.rs ids.rs kinds.rs entities.rs value.rs error.rs capability.rs route.rs collection.rs processing.rs knowledge.rs course.rs query.rs sublibrary.rs output.rs view.rs ops.rs
 '@
     '02_babata_application' = @'
 lib.rs dto.rs error.rs ports/mod.rs ports/raw_repository.rs ports/asset_store.rs ports/derived_repository.rs ports/dense_expression_preview.rs ports/job_repository.rs ports/collection_repository.rs ports/process_provider.rs ports/source_adapter.rs ports/candidate_runner.rs ports/read_projection.rs ports/view_builder.rs ports/output_builder.rs ports/sublibrary_definition.rs ports/sublibrary_materializer.rs ports/backup_driver.rs ports/capability_registry.rs ports/clock.rs ports/knowledge_core_repository.rs ports/semantic_digest_provider.rs usecases/mod.rs usecases/collector.rs usecases/capture.rs usecases/workspace.rs usecases/knowledge.rs usecases/dense_expression_preview.rs usecases/semantic_digest.rs usecases/process.rs usecases/explore.rs usecases/sublibraries.rs usecases/views.rs usecases/outputs.rs usecases/routes.rs usecases/ops.rs usecases/capabilities.rs
@@ -36,7 +36,7 @@ $actualRust = Get-ChildItem -File -Recurse $app -Filter '*.rs' |
     ForEach-Object { $_.FullName.Substring($app.Length + 1).Replace('\', '/') }
 $difference = Compare-Object ($expectedRust | Sort-Object) ($actualRust | Sort-Object)
 if ($difference) { throw "P2 Rust inventory mismatch: $($difference | Out-String)" }
-if ($actualRust.Count -ne 158) { throw "Expected 158 current Rust source files, found $($actualRust.Count)" }
+if ($actualRust.Count -ne 159) { throw "Expected 159 current Rust source files, found $($actualRust.Count)" }
 
 $required = @'
 08_adapters/01_browser_extension/package.json
@@ -80,4 +80,4 @@ foreach ($relative in $required) {
     }
 }
 
-Write-Output 'P2 skeleton inventory passed: 137-file P2 baseline plus 21 post-P2 activation files, 6 crates, and corrected peripheral skeletons.'
+Write-Output 'P2 skeleton inventory passed: 137-file P2 baseline plus 22 post-P2 activation files, 6 crates, and corrected peripheral skeletons.'

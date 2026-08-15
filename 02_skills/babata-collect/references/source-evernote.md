@@ -1,6 +1,7 @@
 # Evernote / 印象笔记 Recipe
 
-Route: `source.evernote`. The enabled shape is one explicit official `.notes` export.
+Route: `source.evernote`. This recipe covers one explicit official `.notes` export. Query runtime
+capability before use.
 
 ## Authorised Scope
 

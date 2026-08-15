@@ -1,59 +1,48 @@
 # Route Catalog
 
-## Runtime Rule
+## Runtime rule
 
-Run `babata --json capabilities list` before collection. The runtime descriptor overrides this
-snapshot. Treat repository documentation status `available` as runtime `enabled`. Stop on
-`disabled`, `unavailable`, a missing descriptor, or an unknown source.
+Run `babata --json capabilities list` before collection. Runtime is the execution truth. Stop when the
+exact `source.*` route is `disabled`, `unavailable`, absent, or unknown, even if historical evidence or a
+browser can read the source.
 
-The authoritative research table is
-`00_docs/03_architecture/08_SOURCE_TOOL_RESEARCH.md` when working in the Babata repository.
+In this repository, `DOC-ROUTES` at
+`00_docs/03_architecture/03_d_SOURCE_ROUTE_REGISTRY.md` owns route evidence, authorization and gaps.
+`DOC-USAGE` owns concrete source completion. Do not copy their current status or counts into this index.
 
-## Current User Routes
+## Recipe routing
 
-| Route | Source | Current recipe status | Load |
-| --- | --- | --- | --- |
-| `source.onenote` | OneNote official PDF/MHT exports | enabled | `source-onenote.md` |
-| `source.evernote` | Evernote / 印象笔记 `.notes` export | enabled | `source-evernote.md` |
-| `source.doubao` | 豆包 explicit conversation batches; proven DOCX attachments | enabled | `source-doubao.md` |
-| `source.feishu` | 飞书 Docs/Wiki/knowledge | disabled | `source-browser-and-ui.md` |
-| `source.yuque` | 语雀 | disabled | `source-browser-and-ui.md` |
-| `source.wechat_favorites` | 微信收藏 | disabled | `source-browser-and-ui.md` |
-| `source.wechat_articles` | 微信公众号文章 | disabled | `source-browser-and-ui.md` |
-| `source.wechat_channels` | 微信视频号 | disabled; non-plan by user decision | `source-browser-and-ui.md` |
-| `source.wechat_chats` | 微信聊天 | disabled | `source-browser-and-ui.md` |
-| `source.zhihu` | 知乎收藏/内容 | disabled | `source-browser-and-ui.md` |
-| `source.bilibili` | Bilibili 收藏/媒体 | disabled | `source-browser-and-ui.md` |
-| `source.xiaohongshu` | 小红书收藏 | disabled | `source-browser-and-ui.md` |
-| `source.douyin` | 抖音收藏 | disabled; non-plan by user decision | `source-browser-and-ui.md` |
-| `source.browser_bookmarks` | browser bookmarks | disabled and last priority | `source-browser-and-ui.md` |
-| `source.browser_pages` | current pages/selections | disabled | `source-browser-and-ui.md` |
-| `source.kimi` | Kimi conversations | disabled | `source-browser-and-ui.md` |
-| `source.chatgpt` | ChatGPT conversations | disabled | `source-browser-and-ui.md` |
-| `source.local_files` | local files/directories | disabled as a daily route | `source-browser-and-ui.md` |
-| `source.first_party` | user-authored content | use Workspace semantics, not collection | `source-browser-and-ui.md` |
+| Source identity | Load |
+| --- | --- |
+| `source.onenote` | `source-onenote.md` |
+| `source.evernote` | `source-evernote.md` |
+| `source.doubao` | `source-doubao.md` |
+| Website, browser, desktop app, unknown or any other named platform | `source-browser-and-ui.md` |
 
-An adapter class existing in source code does not enable a route. Likewise, an E3 case proves only
-its tested shape until the capability registry exposes the route as enabled.
+Only load one source reference after reading the shared collection contract. A source-specific recipe is
+an internal acquisition procedure, not a separate user Skill or data layer.
 
-## Tool Selection Order
+## Tool selection order
 
 Use the first complete, lawful option:
 
-1. official free bulk migration or export;
-2. existing maintained plugin or script export;
-3. Agent-led low-touch export;
-4. small development for a repeatable bulk route;
-5. paid/VIP capability after explicit user decision;
+1. official free migration, export or API;
+2. maintained existing plugin, CLI, SDK or script;
+3. Agent-led low-touch export through an authorized browser/app;
+4. narrow development for a repeatable proven gap;
+5. paid capability after explicit user decision;
 6. heavy development or complex tool flow;
 7. continuous human/Agent collaboration;
 8. manual-only fallback.
 
-Browser and desktop control are execution tools, never generic replacements for platform routes.
-When a platform is unknown, first investigate its official export/API/CLI and mature Agent tooling,
-then open a normal Babata Issue to add evidence and a recipe. Do not silently use
-`source.browser_pages` to claim platform support.
+Evaluate the chosen route in this order: stable, accurate, real, fast. Once the first three pass, measure
+the run and optimize only the proven bottleneck. Browser and desktop control are tools inside a route;
+they never turn `source.browser_pages` into generic support for a named platform.
 
-Evaluate a chosen route in this order: stable, accurate, real, fast. Do not trade the first three
-for throughput. Once they pass, measure elapsed time, collapse indecisive branches, and optimise the
-single proven bottleneck instead of continuing tool research without a demonstrated failure.
+## Adding or widening a route
+
+1. Update `DOC-ROUTES` with evidence, authorization and gap.
+2. Add or update one source recipe for acquisition/fidelity behavior.
+3. Add real authorized capability tests and activate the runtime descriptor only when they pass.
+4. Keep historical run counts in `DOC-USAGE`/receipt, not in this catalog or recipe.
+5. Create a new route only for a distinct source identity or authorization boundary, never for a file type.

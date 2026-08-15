@@ -28,6 +28,26 @@ formal C1 only after the Rust application/core accepts it through `babata proces
 6. Never put credentials, real model output, media, databases, or runtime logs in Git.
 7. Do not reacquire source material merely because C1 exposes a gap. Record a separate acquisition
    request and wait for authorization.
+8. End a general cleaning task at validated C1. When C1B/C2B is explicitly in scope, end at a formal
+   C1B handoff. A C2B builder must not use this Skill to reread external originals, create
+   knowledge-universe assignments, render course maps, or publish Obsidian output.
+
+## C1B to C2B handoff
+
+`C2B-DOCS-FIRST-GATE` applies before changing a downstream C2B capability: follow the single authority
+order in `00_docs/README.md`, review each affected role, and update only changed semantics or contracts
+before changing a builder, registration script, or publisher.
+
+The handoff contains complete validated C1 text, essence judgments, retained modality assets or rebuild
+recipes, C0/C1 identities and hashes, and honest loss notes. Downstream C2B consumes only that handoff and
+formal core records; it does not ask `babata-clean` to become an output writer and does not reread the
+external sovereign original to fill media gaps. Knowledge-universe registration and package-owned course
+maps remain responsibilities of the output/core path.
+
+`C1B-FORMAL-HANDOFF-GATE` applies at promotion: staging decisions are not formal C1B. Reuse the unique
+active complete-C1 derivative, register each essence decision and retained media derivative through the
+Rust core, read back managed paths and hashes, and emit a `registered` ledger. A formal C2B builder must
+reject a missing, partial, duplicated or hash-inconsistent ledger.
 
 ## Workflow
 
@@ -40,7 +60,7 @@ formal C1 only after the Rust application/core accepts it through `babata proces
 6. Normalize only the provider input; never replace the C0 original
 7. Run a representative sample before expanding a new route
 8. Sanitize and validate staging Markdown/JSON plus its manifest
-9. Register accepted output through `agent_import`
+9. Register accepted output through `babata process register --pipeline agent_import`
 10. Read the run back and audit C0/C1 integrity
 ```
 
@@ -54,7 +74,7 @@ Default staging layout:
   REPORT.md
 ```
 
-Read [references/output-contract.md](references/output-contract.md) before creating the manifest and
+Read [references/c1-staging-contract.md](references/c1-staging-contract.md) before creating the manifest and
 [references/c1-register.md](references/c1-register.md) before any formal registration.
 
 ## Adapter selection
@@ -73,75 +93,25 @@ Prefer deterministic local work before remote interpretation.
 Use [references/media-routing.md](references/media-routing.md) for local probes and
 [references/provider-recipes.md](references/provider-recipes.md) only for the selected adapter.
 
-## DashScope authentication
+## Provenance and registration
 
-For the current local workflow, QianWen Skills and Bailian CLI share the user-level
-`DASHSCOPE_API_KEY`. Do not copy it into `.bailian/config.json`, a repository `.env`, prompts,
-manifests, or C1 metadata. Record only `credential_source: environment`.
+Keep provider, adapter, model and tool version as separate truthful identities. Always record the
+authoritative C0 hash, normalized provider-input hash, preprocessing, usage when actually returned,
+sanitization and loss notes. Never label model selection, staging or an unregistered candidate as C1.
 
-Check authentication without printing credentials. Do not make a second model call merely to prove
-an adapter after an authenticated task has already succeeded.
+Follow [references/c1-register.md](references/c1-register.md) for commands, required identities, managed
+paths, failure/retry semantics, deletion and read-back. The authoritative registered input remains the C0
+text/asset hash even when the provider receives rendered pages, chunks, clips or transcoded media.
 
-## Provenance convention
+Use `register-failure` only after a real provider attempt created a stable run identity. Parameter validation
+before run creation is not a provider failure; rebuilding an invalidated derivative is not a retry.
 
-Keep the adapter identity honest in `--provider` and put the underlying service and credential source
-in `--params-json`:
+## Modality completion
 
-```json
-{
-  "service": "dashscope",
-  "adapter": "bailian_cli",
-  "credential_source": "environment",
-  "provider_input_sha256": "<normalized-input-sha256>",
-  "preprocessing": ["16kHz mono FLAC"]
-}
-```
-
-Examples of adapter identities are `local_extract`, `qianwen_skill`, and `bailian_cli`. The exact
-model and adapter version remain separate required fields. Never label a model-selection suggestion
-or a staging file as formal C1.
-
-## Registration
-
-For a file-derived result:
-
-```bash
-babata --json process register \
-  --pipeline agent_import \
-  --revision rev_... \
-  --item item_... \
-  --kind <extracted_text|ocr_text|transcript|summary|structured_result|tags> \
-  --provider <local_extract|qianwen_skill|bailian_cli> \
-  --model <exact-model-or-parser> \
-  --tool-version <exact-version> \
-  --input-sha256 <C0-asset-sha256> \
-  --input-asset-id asset_... \
-  --text-file results/result.md \
-  --output-file results/result.md \
-  --params-json <sanitized-json> \
-  --language zh \
-  --loss-notes <honest-limitations>
-```
-
-The C0 hash remains the registered input hash even when an adapter receives normalized audio,
-rendered pages, chunks, or a resized image. Record the normalized input hash and transformation in
-`params-json`.
-
-Use `register-failure` only after a real provider attempt created a stable processing identity. A retry
-must reference the failed run and keep the same target identity. Parameter validation failures occur
-before run creation and are not provider retries. Rebuilding an invalidated result creates a new run.
-
-## Video and audio
-
-For course or meeting video, prioritize full-duration ASR over generic video summaries:
-
-1. Inspect duration and audio streams with `ffprobe`.
-2. Extract a loss-controlled mono 16 kHz provider input and record its hash.
-3. Test a short representative segment when the adapter/model route is new.
-4. Process the full authorized duration before claiming transcript completion.
-5. Preserve native timestamps, speakers, confidence, and segmentation when available.
-6. Mark model-created headings or paragraphs as post-processing, not native ASR fields.
-7. Use frame OCR or vision only to supplement slides, boards, charts, or visual-only evidence.
+Follow [references/media-routing.md](references/media-routing.md). For audio/video, complete the authorized
+duration before claiming transcript coverage; preserve native timestamps/speakers/confidence when available,
+and label model-created structure as post-processing. Use visual processing only for evidence that text/ASR
+does not preserve.
 
 ## Batch discipline
 

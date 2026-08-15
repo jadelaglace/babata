@@ -1,5 +1,6 @@
 param(
-    [string]$DocsRoot
+    [string]$DocsRoot,
+    [string]$RepoReadmePath
 )
 
 $ErrorActionPreference = 'Stop'
@@ -119,25 +120,50 @@ function Assert-LegalEvidence {
     return [int]$tokens[0].Groups[1].Value
 }
 
+function Assert-NotMatches {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Text,
+        [Parameter(Mandatory)]
+        [string]$Pattern,
+        [Parameter(Mandatory)]
+        [string]$Label
+    )
+
+    if ($Text -match $Pattern) {
+        throw "Document authority boundary violation: $Label"
+    }
+}
+
 if ([string]::IsNullOrWhiteSpace($DocsRoot)) {
     $DocsRoot = Join-Path $PSScriptRoot '..\00_docs'
 }
 $docs = (Resolve-Path -LiteralPath $DocsRoot).Path
+if ([string]::IsNullOrWhiteSpace($RepoReadmePath)) {
+    $candidateRepoReadme = Join-Path (Split-Path -Parent $docs) 'README.md'
+    if (Test-Path -LiteralPath $candidateRepoReadme -PathType Leaf) {
+        $RepoReadmePath = $candidateRepoReadme
+    }
+}
 
 $requiredMarkers = @(
-    @('00_requirements/-1_USER_WORDING.md', '# -1.'),
-    @('00_requirements/00_REQUIREMENTS.md', '[-1_USER_WORDING.md](-1_USER_WORDING.md)'),
-    @('01_prd/01_PRD.md', 'PRD-10'),
-    @('02_acceptance/02_ACCEPTANCE_CRITERIA.md', 'AC-11'),
-    @('03_architecture/03_ARCHITECTURE.md', 'AC-11'),
-    @('03_architecture/04_SYSTEM_SKELETON_BLUEPRINT.md', '137'),
-    @('03_architecture/05_RAW_FOUNDATION_BLUEPRINT.md', 'P3-G6'),
-    @('03_architecture/06_RAW_FOUNDATION_EXECUTION_PLAN.md', 'P3-G6'),
-    @('03_architecture/07_P4_FIRST_COLLECTION_PATHS.md', 'P4-G6'),
-    @('03_architecture/08_SOURCE_TOOL_RESEARCH.md', 'P2-G7: passed'),
-    @('03_architecture/09_P6_PERSONAL_KNOWLEDGE_UNIVERSE_BLUEPRINT.md', 'P6-BLUEPRINT-STATUS: in-progress'),
-    @('04_process/04_DEVELOPMENT_PROCESS.md', 'P2: completed; P2-G1..P2-G7: passed'),
-    @('05_tests/05_TEST_CASES.md', 'GT-P2-07')
+    @('00_requirements/00_b_USER_WORDING.md', '# Babata 当前有效用户意图集'),
+    @('00_requirements/00_c_USER_WORDING_RECOVERY.md', '# Babata 用户原话与必要 Agent 上下文恢复账本'),
+    @('00_requirements/00_a_REQUIREMENTS.md', '[00_c_USER_WORDING_RECOVERY.md](00_c_USER_WORDING_RECOVERY.md)'),
+    @('01_prd/01_a_PRD.md', 'PRD-10'),
+    @('02_acceptance/02_a_ACCEPTANCE_CRITERIA.md', 'AC-11'),
+    @('03_architecture/03_a_ARCHITECTURE.md', 'AC-11'),
+    @('03_architecture/03_b_P2_SYSTEM_SKELETON.md', 'P2-G1'),
+    @('03_architecture/03_c_P3_RAW_FOUNDATION.md', 'P3-G6'),
+    @('04_process/04_d_P3_RAW_FOUNDATION_PLAN.md', 'P3-G6'),
+    @('04_process/04_e_P4_COLLECTION_PLAN.md', 'P4-G6'),
+    @('03_architecture/03_d_SOURCE_ROUTE_REGISTRY.md', 'P2-G7: passed'),
+    @('03_architecture/03_e_PERSONAL_KNOWLEDGE_UNIVERSE.md', 'P6-BLUEPRINT-STATUS: adopted-design-baseline'),
+    @('04_process/04_a_DEVELOPMENT_PROCESS.md', 'P2-G7'),
+    @('04_process/04_b_USAGE_STATUS.md', '唯一的当前使用与交付状态权威'),
+    @('04_process/04_f_ACTIVE_PLAN.md', '唯一的当前执行计划与进度控制面'),
+    @('04_process/04_g_INTENT_AND_PLAN_GOVERNANCE.md', '三层恢复结构'),
+    @('05_tests/05_a_TEST_CASES.md', 'GT-P2-07')
 )
 
 foreach ($check in $requiredMarkers) {
@@ -150,10 +176,170 @@ foreach ($check in $requiredMarkers) {
     }
 }
 
-$prd = Get-Content -Raw -Encoding utf8 (Join-Path $docs '01_prd/01_PRD.md')
-$acceptance = Get-Content -Raw -Encoding utf8 (Join-Path $docs '02_acceptance/02_ACCEPTANCE_CRITERIA.md')
-$architecture = Get-Content -Raw -Encoding utf8 (Join-Path $docs '03_architecture/03_ARCHITECTURE.md')
-$tests = Get-Content -Raw -Encoding utf8 (Join-Path $docs '05_tests/05_TEST_CASES.md')
+$requiredRoleMarkers = @(
+    @('README.md', 'DOC-AUTHORITY-BOUNDARY: index'),
+    @('00_requirements/00_b_USER_WORDING.md', 'DOC-AUTHORITY-BOUNDARY: curated-current-intent'),
+    @('00_requirements/00_c_USER_WORDING_RECOVERY.md', 'DOC-AUTHORITY-BOUNDARY: intent-recovery-evidence'),
+    @('00_requirements/00_a_REQUIREMENTS.md', 'DOC-AUTHORITY-BOUNDARY: current-requirements'),
+    @('01_prd/01_a_PRD.md', 'DOC-AUTHORITY-BOUNDARY: product-behavior'),
+    @('02_acceptance/02_a_ACCEPTANCE_CRITERIA.md', 'DOC-AUTHORITY-BOUNDARY: acceptance'),
+    @('03_architecture/03_a_ARCHITECTURE.md', 'DOC-AUTHORITY-BOUNDARY: architecture'),
+    @('03_architecture/03_b_P2_SYSTEM_SKELETON.md', 'DOC-AUTHORITY-BOUNDARY: architecture-design-record'),
+    @('03_architecture/03_c_P3_RAW_FOUNDATION.md', 'DOC-AUTHORITY-BOUNDARY: architecture-supplement'),
+    @('03_architecture/03_d_SOURCE_ROUTE_REGISTRY.md', 'DOC-AUTHORITY-BOUNDARY: source-route-research'),
+    @('03_architecture/03_e_PERSONAL_KNOWLEDGE_UNIVERSE.md', 'DOC-AUTHORITY-BOUNDARY: adopted-design-baseline'),
+    @('03_architecture/03_f_EXTERNAL_SOVEREIGN_LIBRARIES_CANDIDATE.md', 'DOC-AUTHORITY-BOUNDARY: architecture-candidate'),
+    @('03_architecture/03_g_C1B_C2B_MODALITY_LADDER.md', 'DOC-AUTHORITY-BOUNDARY: architecture-supplement'),
+    @('04_process/04_a_DEVELOPMENT_PROCESS.md', 'DOC-AUTHORITY-BOUNDARY: delivery-process'),
+    @('04_process/04_b_USAGE_STATUS.md', 'DOC-AUTHORITY-BOUNDARY: usage-status'),
+    @('04_process/04_c_MBA_C2B_ROLLOUT.md', 'DOC-AUTHORITY-BOUNDARY: delivery-plan'),
+    @('04_process/04_d_P3_RAW_FOUNDATION_PLAN.md', 'DOC-AUTHORITY-BOUNDARY: delivery-plan'),
+    @('04_process/04_e_P4_COLLECTION_PLAN.md', 'DOC-AUTHORITY-BOUNDARY: delivery-plan'),
+    @('04_process/04_f_ACTIVE_PLAN.md', 'DOC-AUTHORITY-BOUNDARY: active-plan-progress'),
+    @('04_process/04_g_INTENT_AND_PLAN_GOVERNANCE.md', 'DOC-AUTHORITY-BOUNDARY: delivery-governance'),
+    @('05_tests/05_a_TEST_CASES.md', 'DOC-AUTHORITY-BOUNDARY: verification-procedure')
+)
+foreach ($check in $requiredRoleMarkers) {
+    $path = Join-Path $docs $check[0]
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+        throw "Missing authority document: $($check[0])"
+    }
+    if (-not (Select-String -SimpleMatch $check[1] -Path $path -Quiet)) {
+        throw "Missing document authority role '$($check[1])' in $($check[0])"
+    }
+}
+
+$requiredDocIds = @(
+    @('README.md', 'DOC-INDEX'),
+    @('00_requirements/00_b_USER_WORDING.md', 'DOC-WORDING'),
+    @('00_requirements/00_c_USER_WORDING_RECOVERY.md', 'DOC-WORDING-RECOVERY'),
+    @('00_requirements/00_a_REQUIREMENTS.md', 'DOC-REQ'),
+    @('01_prd/01_a_PRD.md', 'DOC-PRD'),
+    @('02_acceptance/02_a_ACCEPTANCE_CRITERIA.md', 'DOC-AC'),
+    @('03_architecture/03_a_ARCHITECTURE.md', 'DOC-ARCH'),
+    @('03_architecture/03_b_P2_SYSTEM_SKELETON.md', 'DOC-ARCH-SKELETON'),
+    @('03_architecture/03_c_P3_RAW_FOUNDATION.md', 'DOC-ARCH-RAW'),
+    @('03_architecture/03_d_SOURCE_ROUTE_REGISTRY.md', 'DOC-ROUTES'),
+    @('03_architecture/03_e_PERSONAL_KNOWLEDGE_UNIVERSE.md', 'DOC-KNOWLEDGE-UNIVERSE'),
+    @('03_architecture/03_f_EXTERNAL_SOVEREIGN_LIBRARIES_CANDIDATE.md', 'DOC-EXT-SOVEREIGN-CANDIDATE'),
+    @('03_architecture/03_g_C1B_C2B_MODALITY_LADDER.md', 'DOC-MODALITY-LADDER'),
+    @('04_process/04_a_DEVELOPMENT_PROCESS.md', 'DOC-PROCESS'),
+    @('04_process/04_b_USAGE_STATUS.md', 'DOC-USAGE'),
+    @('04_process/04_c_MBA_C2B_ROLLOUT.md', 'DOC-MBA-ROLLOUT'),
+    @('04_process/04_d_P3_RAW_FOUNDATION_PLAN.md', 'DOC-P3-PLAN'),
+    @('04_process/04_e_P4_COLLECTION_PLAN.md', 'DOC-P4-PLAN'),
+    @('04_process/04_f_ACTIVE_PLAN.md', 'DOC-ACTIVE-PLAN'),
+    @('04_process/04_g_INTENT_AND_PLAN_GOVERNANCE.md', 'DOC-INTENT-PLAN-GOVERNANCE'),
+    @('05_tests/05_a_TEST_CASES.md', 'DOC-TC')
+)
+$index = Get-Content -Raw -Encoding utf8 (Join-Path $docs 'README.md')
+foreach ($entry in $requiredDocIds) {
+    $path = Join-Path $docs $entry[0]
+    $marker = "DOC-ID: $($entry[1])"
+    if (-not (Select-String -SimpleMatch $marker -Path $path -Quiet)) {
+        throw "Missing stable document ID '$($entry[1])' in $($entry[0])"
+    }
+    if (-not $index.Contains("``$($entry[1])``")) {
+        throw "Document registry is missing stable ID: $($entry[1])"
+    }
+    if (-not $index.Contains($entry[0])) {
+        throw "Document registry is missing current path: $($entry[0])"
+    }
+}
+foreach ($marker in @('DOC-REGISTRY: v1', '## 5. 核心术语词典', 'Product behavior', 'Full-scope run')) {
+    if (-not $index.Contains($marker)) {
+        throw "Document control plane is missing registry/glossary marker: $marker"
+    }
+}
+
+$namingRules = @(
+    @{ directory = '00_requirements'; pattern = '^(?:00_[bc]_USER_WORDING(?:_RECOVERY)?|00_a_REQUIREMENTS)\.md$' },
+    @{ directory = '01_prd'; pattern = '^01_a_PRD\.md$' },
+    @{ directory = '02_acceptance'; pattern = '^02_a_ACCEPTANCE_CRITERIA\.md$' },
+    @{ directory = '03_architecture'; pattern = '^03_[a-z]_[A-Z0-9_]+\.md$' },
+    @{ directory = '04_process'; pattern = '^04_[a-z]_[A-Z0-9_]+\.md$' },
+    @{ directory = '05_tests'; pattern = '^05_a_TEST_CASES\.md$' }
+)
+foreach ($rule in $namingRules) {
+    $directory = Join-Path $docs $rule.directory
+    foreach ($file in Get-ChildItem -LiteralPath $directory -File -Filter '*.md') {
+        if ($file.Name -notmatch $rule.pattern) {
+            throw "Invalid intra-folder document number/name: $($rule.directory)/$($file.Name)"
+        }
+    }
+}
+
+$docIdOwners = @{}
+foreach ($file in Get-ChildItem -LiteralPath $docs -Recurse -File -Filter '*.md') {
+    $text = Get-Content -Raw -Encoding utf8 -LiteralPath $file.FullName
+    foreach ($match in [regex]::Matches($text, '<!--\s*DOC-ID:\s*([A-Z0-9-]+)\s*-->')) {
+        $id = $match.Groups[1].Value
+        if ($docIdOwners.ContainsKey($id)) {
+            throw "Duplicate stable document ID '$id' in $($docIdOwners[$id]) and $($file.FullName)"
+        }
+        $docIdOwners[$id] = $file.FullName
+    }
+}
+
+$requirements = Get-Content -Raw -Encoding utf8 (Join-Path $docs '00_requirements/00_a_REQUIREMENTS.md')
+$prd = Get-Content -Raw -Encoding utf8 (Join-Path $docs '01_prd/01_a_PRD.md')
+$acceptance = Get-Content -Raw -Encoding utf8 (Join-Path $docs '02_acceptance/02_a_ACCEPTANCE_CRITERIA.md')
+$architecture = Get-Content -Raw -Encoding utf8 (Join-Path $docs '03_architecture/03_a_ARCHITECTURE.md')
+$tests = Get-Content -Raw -Encoding utf8 (Join-Path $docs '05_tests/05_a_TEST_CASES.md')
+$process = Get-Content -Raw -Encoding utf8 (Join-Path $docs '04_process/04_a_DEVELOPMENT_PROCESS.md')
+$usage = Get-Content -Raw -Encoding utf8 (Join-Path $docs '04_process/04_b_USAGE_STATUS.md')
+$deliveryPlans = [ordered]@{
+    mba_rollout = Get-Content -Raw -Encoding utf8 (Join-Path $docs '04_process/04_c_MBA_C2B_ROLLOUT.md')
+    p3_plan = Get-Content -Raw -Encoding utf8 (Join-Path $docs '04_process/04_d_P3_RAW_FOUNDATION_PLAN.md')
+    p4_plan = Get-Content -Raw -Encoding utf8 (Join-Path $docs '04_process/04_e_P4_COLLECTION_PLAN.md')
+}
+
+$stableProductDocuments = [ordered]@{
+    requirements = $requirements
+    prd = $prd
+    acceptance = $acceptance
+    process = $process
+    tests = $tests
+}
+foreach ($entry in $stableProductDocuments.GetEnumerator()) {
+    Assert-NotMatches $entry.Value '(?m)\b20[0-9]{2}-[0-9]{2}-[0-9]{2}\b' "dated execution result in $($entry.Key)"
+    Assert-NotMatches $entry.Value '(?i)\bIssue\s*#\d+' "Issue-specific execution state in $($entry.Key)"
+    Assert-NotMatches $entry.Value '(?i)D:\\BabataData\\|mba-[a-z0-9-]+-20[0-9]{6}' "concrete runtime batch path in $($entry.Key)"
+    Assert-NotMatches $entry.Value '(?i)obsidian://open\?' "concrete live Obsidian URI in $($entry.Key)"
+}
+foreach ($entry in $deliveryPlans.GetEnumerator()) {
+    Assert-NotMatches $entry.Value '(?m)\b20[0-9]{2}-[0-9]{2}-[0-9]{2}\b' "dated execution result in $($entry.Key)"
+    Assert-NotMatches $entry.Value '(?i)\bIssue\s*#\d+' "Issue-specific execution state in $($entry.Key)"
+    Assert-NotMatches $entry.Value '(?i)D:\\BabataData\\|mba-[a-z0-9-]+-20[0-9]{6}' "concrete runtime batch path in $($entry.Key)"
+    Assert-NotMatches $entry.Value '(?i)obsidian://open\?' "concrete live Obsidian URI in $($entry.Key)"
+}
+Assert-NotMatches $deliveryPlans.mba_rollout '(?i)Bilibili|[0-9]+\s*个[^\r\n|]{0,30}暂缓' 'concrete deferred scope in MBA rollout plan'
+if (-not [string]::IsNullOrWhiteSpace($RepoReadmePath)) {
+    if (-not (Test-Path -LiteralPath $RepoReadmePath -PathType Leaf)) {
+        throw "Missing repository README: $RepoReadmePath"
+    }
+    $repoReadme = Get-Content -Raw -Encoding utf8 -LiteralPath $RepoReadmePath
+    Assert-NotMatches $repoReadme '(?im)\bP[0-9]+(?:\.[0-9]+)?\b[^\r\n|]{0,80}\b(?:已完成|完成|进行中|未开始)\b' 'live phase snapshot in repository README'
+    Assert-NotMatches $repoReadme '(?m)\b[0-9]+/[0-9]+\b' 'usage ratio in repository README'
+}
+
+foreach ($marker in @('试跑 / dry-run', '试点 / pilot', '模板 / profile', '明确范围全量运行')) {
+    if (-not $prd.Contains($marker)) {
+        throw "PRD is missing reusable product-behavior boundary: $marker"
+    }
+}
+if (-not $prd.Contains('具体试跑、试点、模板接受和全量运行结果统一记录在 usage/evidence，不反向改写产品行为')) {
+    throw 'PRD is missing product behavior versus usage result boundary'
+}
+if (-not $process.Contains('某个明确范围全量跑通是 usage 事实，不能反向写入 PRD 或改变 phase 定义')) {
+    throw 'Process is missing phase versus product authority boundary'
+}
+if (-not $tests.Contains('本文定义可重复的验证场景、步骤和预期结果。它不维护“当前通过/失败”')) {
+    throw 'Tests are missing reusable-procedure versus execution-result boundary'
+}
+if (-not $usage.Contains('obsidian://open?vault=Obsidian%20Vault&file=Babata%2FMBA%2Fmba_finance_c2b_latest%2Findex.md')) {
+    throw 'Usage status is missing the current live Obsidian URI'
+}
 
 foreach ($id in 1..10) {
     $marker = 'PRD-{0:D2}' -f $id
@@ -170,12 +356,22 @@ foreach ($id in 1..11) {
     if (-not $tests.Contains($tc)) { throw "Tests are missing marker: $tc" }
 }
 
-$skeleton = Get-Content -Raw -Encoding utf8 (Join-Path $docs '03_architecture/04_SYSTEM_SKELETON_BLUEPRINT.md')
-$rawBlueprint = Get-Content -Raw -Encoding utf8 (Join-Path $docs '03_architecture/05_RAW_FOUNDATION_BLUEPRINT.md')
-$rawPlan = Get-Content -Raw -Encoding utf8 (Join-Path $docs '03_architecture/06_RAW_FOUNDATION_EXECUTION_PLAN.md')
-$collection = Get-Content -Raw -Encoding utf8 (Join-Path $docs '03_architecture/07_P4_FIRST_COLLECTION_PATHS.md')
-$sourceResearch = Get-Content -Raw -Encoding utf8 (Join-Path $docs '03_architecture/08_SOURCE_TOOL_RESEARCH.md')
-$process = Get-Content -Raw -Encoding utf8 (Join-Path $docs '04_process/04_DEVELOPMENT_PROCESS.md')
+$skeleton = Get-Content -Raw -Encoding utf8 (Join-Path $docs '03_architecture/03_b_P2_SYSTEM_SKELETON.md')
+$rawBlueprint = Get-Content -Raw -Encoding utf8 (Join-Path $docs '03_architecture/03_c_P3_RAW_FOUNDATION.md')
+$rawPlan = Get-Content -Raw -Encoding utf8 (Join-Path $docs '04_process/04_d_P3_RAW_FOUNDATION_PLAN.md')
+$collection = Get-Content -Raw -Encoding utf8 (Join-Path $docs '04_process/04_e_P4_COLLECTION_PLAN.md')
+$sourceResearch = Get-Content -Raw -Encoding utf8 (Join-Path $docs '03_architecture/03_d_SOURCE_ROUTE_REGISTRY.md')
+
+Assert-NotMatches $sourceResearch '(?i)\bIssue\s*#\d+|\bP8\.[0-9]+\b|\b20[0-9]{2}-[0-9]{2}-[0-9]{2}\b|mba-[a-z0-9-]+-20[0-9]{6}' 'usage or batch history in source route registry'
+Assert-NotMatches $sourceResearch '用户(?:整体)?暂缓|当前分母|不进入[^\r\n|]{0,20}分母' 'user-scope status in source route registry'
+foreach ($entry in ([ordered]@{
+    architecture = $architecture
+    process = $process
+    p4_plan = $collection
+    source_routes = $sourceResearch
+}).GetEnumerator()) {
+    Assert-NotMatches $entry.Value '(?i)\bavailable\b' "legacy available route status in $($entry.Key)"
+}
 
 $requiredP2Sources = @(
     'source.feishu', 'source.yuque', 'source.onenote', 'source.evernote',
@@ -200,11 +396,11 @@ foreach ($row in $sourceRows) {
         throw "Invalid source_id: $($row.source_id)"
     }
     $evidenceLevel = Assert-LegalEvidence -Id $row.source_id -Evidence $row.current_evidence
-    if ($row.current_status -notin @('disabled', 'available')) {
+    if ($row.current_status -notin @('enabled', 'disabled', 'unavailable', 'absent')) {
         throw "Source '$($row.source_id)' has invalid current status: $($row.current_status)"
     }
-    if ($evidenceLevel -lt 3 -and $row.current_status -ne 'disabled') {
-        throw "Source '$($row.source_id)' is below E3 and must remain disabled"
+    if ($evidenceLevel -lt 3 -and $row.current_status -eq 'enabled') {
+        throw "Source '$($row.source_id)' is below E3 and cannot be enabled"
     }
 }
 $duplicateSources = @($sourceRows | Group-Object source_id | Where-Object Count -gt 1)
@@ -262,4 +458,4 @@ foreach ($id in 1..7) {
     }
 }
 
-Write-Output "Document traceability passed: -1 wording evidence -> 00 -> PRD-01..10 -> AC-01..11 -> architecture/process -> TC-01..11; $($requiredP2Sources.Count) required source routes and $($representativeTools.Count) representative tools have structured P2-G7 evidence."
+Write-Output "Document traceability passed: DOC-WORDING-RECOVERY -> DOC-WORDING -> DOC-REQ -> PRD-01..10 -> AC-01..11 -> architecture/process/active-plan -> TC-01..11; $($requiredP2Sources.Count) required source routes and $($representativeTools.Count) representative tools have structured P2-G7 evidence."

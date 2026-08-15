@@ -68,6 +68,24 @@ const KNOWLEDGE_MIGRATIONS: &[(&str, &str)] = &[
             "../../../../03_migrations/05_knowledge/0005_lock_baseline_foundation_transition.sql"
         ),
     ),
+    (
+        "0006_normalize_legacy_utc_timestamps.sql",
+        include_str!(
+            "../../../../03_migrations/05_knowledge/0006_normalize_legacy_utc_timestamps.sql"
+        ),
+    ),
+    (
+        "0007_complete_legacy_utc_timestamp_repair.sql",
+        include_str!(
+            "../../../../03_migrations/05_knowledge/0007_complete_legacy_utc_timestamp_repair.sql"
+        ),
+    ),
+    (
+        "0008_course_relationship_contract.sql",
+        include_str!(
+            "../../../../03_migrations/05_knowledge/0008_course_relationship_contract.sql"
+        ),
+    ),
 ];
 
 pub fn migrate_raw(connection: &Connection) -> Result<(), ApplicationError> {
@@ -622,7 +640,122 @@ mod tests {
                     |row| row.get::<_, i64>(0)
                 )
                 .unwrap(),
-            5
+            8
+        );
+    }
+
+    fn legacy_knowledge_timestamp_fixture() -> Connection {
+        let connection = Connection::open_in_memory().unwrap();
+        connection
+            .execute_batch(
+                "CREATE TABLE model_suggestions (suggestion_id TEXT PRIMARY KEY, generated_at TEXT NOT NULL, created_at TEXT NOT NULL);
+                 CREATE TABLE semantic_entries (semantic_id TEXT PRIMARY KEY, created_at TEXT NOT NULL);
+                 CREATE TABLE semantic_map_assignment_events (semantic_map_event_id TEXT PRIMARY KEY, created_at TEXT NOT NULL);
+                 CREATE TABLE semantic_map_assignments (semantic_id TEXT PRIMARY KEY, created_at TEXT NOT NULL);
+                 CREATE TABLE semantic_tags (tag_id TEXT PRIMARY KEY, created_at TEXT NOT NULL);
+                 CREATE TABLE semantic_tag_assignments (semantic_id TEXT PRIMARY KEY, created_at TEXT NOT NULL);
+                 CREATE TABLE dense_expressions (expression_id TEXT PRIMARY KEY, created_at TEXT NOT NULL);
+                 CREATE TABLE relevance_scores (score_id TEXT PRIMARY KEY, created_at TEXT NOT NULL);
+                 CREATE TRIGGER model_suggestions_immutable_update BEFORE UPDATE ON model_suggestions
+                 BEGIN SELECT RAISE(ABORT, 'model suggestions are immutable'); END;
+                 CREATE TRIGGER relevance_scores_immutable_update BEFORE UPDATE ON relevance_scores
+                 BEGIN SELECT RAISE(ABORT, 'relevance scores are immutable'); END;
+                 INSERT INTO model_suggestions VALUES ('suggestion_legacy', '08/15/2026 06:37:24', '08/15/2026 06:37:24');
+                 INSERT INTO semantic_entries VALUES ('semantic_legacy', '08/15/2026 06:37:24');
+                 INSERT INTO semantic_map_assignment_events VALUES ('event_legacy', '08/15/2026 06:37:24');
+                 INSERT INTO semantic_map_assignments VALUES ('assignment_legacy', '08/15/2026 06:37:24');
+                 INSERT INTO semantic_tags VALUES ('tag_legacy', '08/15/2026 06:37:24');
+                 INSERT INTO semantic_tag_assignments VALUES ('tag_assignment_legacy', '08/15/2026 06:37:24');
+                 INSERT INTO dense_expressions VALUES ('expression_legacy', '08/15/2026 06:37:24');
+                 INSERT INTO relevance_scores VALUES ('score_legacy', '08/15/2026 06:37:24');",
+            )
+            .unwrap();
+        connection
+    }
+
+    #[test]
+    fn legacy_localized_knowledge_timestamps_are_normalized() {
+        let connection = legacy_knowledge_timestamp_fixture();
+
+        connection.execute_batch(KNOWLEDGE_MIGRATIONS[6].1).unwrap();
+        for (table, id_column, id, timestamp_column) in [
+            (
+                "model_suggestions",
+                "suggestion_id",
+                "suggestion_legacy",
+                "generated_at",
+            ),
+            (
+                "model_suggestions",
+                "suggestion_id",
+                "suggestion_legacy",
+                "created_at",
+            ),
+            (
+                "semantic_entries",
+                "semantic_id",
+                "semantic_legacy",
+                "created_at",
+            ),
+            (
+                "semantic_map_assignment_events",
+                "semantic_map_event_id",
+                "event_legacy",
+                "created_at",
+            ),
+            (
+                "semantic_map_assignments",
+                "semantic_id",
+                "assignment_legacy",
+                "created_at",
+            ),
+            ("semantic_tags", "tag_id", "tag_legacy", "created_at"),
+            (
+                "semantic_tag_assignments",
+                "semantic_id",
+                "tag_assignment_legacy",
+                "created_at",
+            ),
+            (
+                "dense_expressions",
+                "expression_id",
+                "expression_legacy",
+                "created_at",
+            ),
+            ("relevance_scores", "score_id", "score_legacy", "created_at"),
+        ] {
+            let value: String = connection
+                .query_row(
+                    &format!("SELECT {timestamp_column} FROM {table} WHERE {id_column} = ?1"),
+                    [id],
+                    |row| row.get(0),
+                )
+                .unwrap();
+            assert_eq!(value, "2026-08-15T06:37:24Z");
+        }
+
+        connection.execute_batch(KNOWLEDGE_MIGRATIONS[6].1).unwrap();
+        let count: i64 = connection
+            .query_row(
+                "SELECT COUNT(*) FROM model_suggestions WHERE created_at = '2026-08-15T06:37:24Z'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(count, 1);
+        assert!(
+            connection
+                .execute("UPDATE model_suggestions SET created_at = created_at", [],)
+                .unwrap_err()
+                .to_string()
+                .contains("model suggestions are immutable")
+        );
+        assert!(
+            connection
+                .execute("UPDATE relevance_scores SET created_at = created_at", [])
+                .unwrap_err()
+                .to_string()
+                .contains("relevance scores are immutable")
         );
     }
 

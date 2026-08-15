@@ -58,9 +58,8 @@ rewrite an old C0 record directly; each newly acquired result follows this contr
 or reference.
 
 A bounded representative scope may advance to C0-A2/B/C while the rest of a recovered source remains
-C0-A1. The report must preserve both scopes. For the P7 WeChat proof, select 10-20 representative items
-across both File Transfer Assistant and Favorites, prioritise URL/article items with a small local-media
-cross-section, and require body, embedded media, and required attachments before preparation or registration.
+C0-A1. The report must preserve both scopes. Sample composition and concrete counts belong to the applicable
+TC/usage receipt, not this reusable contract.
 
 ## Scope and Authorisation
 

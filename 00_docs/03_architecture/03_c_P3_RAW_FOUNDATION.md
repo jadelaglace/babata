@@ -1,8 +1,15 @@
-# Babata P3 C0 原始资料底座蓝图
+# Babata P3 C0 原始资料底座设计
+
+<!-- DOC-ID: DOC-ARCH-RAW -->
+<!-- DOC-AUTHORITY-BOUNDARY: architecture-supplement -->
 
 ## 1. 文档定位
 
-P2 先建立 `04_SYSTEM_SKELETON_BLUEPRINT.md` 定义的 137 文件全系统骨架。P3 只激活
+本文是 P3 采用的 C0/first-party 详细设计，不是当前代码 inventory 或 phase 状态权威。
+下文的文件数量是 P3 交付时的目标快照；稳定 ownership 以 `DOC-ARCH` 为准，当前状态以
+`DOC-USAGE` 为准。
+
+P2 先建立 `03_b_P2_SYSTEM_SKELETON.md` 定义的 137 文件全系统骨架。P3 只激活
 其中与 C0 原件、第一方版本和统一写入底座直接相关的 29 个既有 Rust 文件。
 
 这 29 个文件是实现子集，不是全系统清单。它们可以作为提前工作存在，但只有 P2

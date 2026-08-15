@@ -24,11 +24,12 @@ if ([string]::IsNullOrWhiteSpace($DocsRoot)) {
     $DocsRoot = Join-Path $PSScriptRoot '..\00_docs'
 }
 $docs = (Resolve-Path -LiteralPath $DocsRoot).Path
-$requirementsPath = Join-Path $docs '00_requirements\00_REQUIREMENTS.md'
-$userWordingPath = Join-Path $docs '00_requirements\-1_USER_WORDING.md'
-$blueprintPath = Join-Path $docs '03_architecture\09_P6_PERSONAL_KNOWLEDGE_UNIVERSE_BLUEPRINT.md'
+$requirementsPath = Join-Path $docs '00_requirements\00_a_REQUIREMENTS.md'
+$currentIntentPath = Join-Path $docs '00_requirements\00_b_USER_WORDING.md'
+$userWordingPath = Join-Path $docs '00_requirements\00_c_USER_WORDING_RECOVERY.md'
+$blueprintPath = Join-Path $docs '03_architecture\03_e_PERSONAL_KNOWLEDGE_UNIVERSE.md'
 
-foreach ($path in @($requirementsPath, $userWordingPath, $blueprintPath)) {
+foreach ($path in @($requirementsPath, $currentIntentPath, $userWordingPath, $blueprintPath)) {
     if (-not (Test-Path -LiteralPath $path)) {
         throw "Missing provenance authority document: $path"
     }
@@ -115,4 +116,4 @@ if (($decisionNumbers -join ',') -ne '1,2,3,4,5,6,7,8,9') {
     throw 'P6 blueprint decision rows must cover 1 through 9 exactly once'
 }
 
-Write-Output 'Document provenance passed: the dedicated -1 authority keeps required P6 user wording hashes, Builder questions and confirmed conclusions are distinguished, authority docs contain no UUID-shaped runtime IDs, and sensitive token patterns are absent.'
+Write-Output 'Document provenance passed: DOC-WORDING-RECOVERY keeps required verbatim excerpts, current intent remains separate, Builder questions and confirmed conclusions are distinguished, authority docs contain no UUID-shaped runtime IDs, and sensitive token patterns are absent.'
