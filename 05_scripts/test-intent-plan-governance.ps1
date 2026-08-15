@@ -218,17 +218,17 @@ try {
     }
     Assert-CheckerFails 'active-plan-keeps-successful-terminal' 'forbids successful terminal items' {
         param($caseRoot)
-        Replace-Once $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md' '当前状态：`in_progress / governance-repair-and-validation`' '当前状态：`completed / no-follow-up`'
+        Replace-Once $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md' '当前状态：`in_progress / docs-authority-audit-planning`' '当前状态：`completed / no-follow-up`'
     }
     Assert-CheckerFails 'blocked-item-loses-terminal-fields' 'abnormal terminal field: 终态原因' {
         param($caseRoot)
-        Replace-Once $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md' '当前状态：`in_progress / governance-repair-and-validation`' '当前状态：`blocked / waiting-user`'
+        Replace-Once $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md' '当前状态：`in_progress / docs-authority-audit-planning`' '当前状态：`blocked / waiting-user`'
     }
     Assert-CheckerPasses 'blocked-item-keeps-recovery-contract' {
         param($caseRoot)
         $path = Join-Path $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md'
         $text = Get-Content -LiteralPath $path -Raw -Encoding utf8
-        $text = $text.Replace('当前状态：`in_progress / governance-repair-and-validation`', '当前状态：`blocked`')
+        $text = $text.Replace('当前状态：`in_progress / docs-authority-audit-planning`', '当前状态：`blocked`')
         $text = $text.Replace(
             '## 3. 下次开工队列（禁止恢复时自动执行）',
             "- 终态原因：等待外部决定。`n- 下一授权/决定：用户确认范围。`n- 恢复入口：DOC-ACTIVE-PLAN。`n`n## 3. 下次开工队列（禁止恢复时自动执行）"

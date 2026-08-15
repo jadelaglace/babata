@@ -34,19 +34,20 @@ Requirements/PRD 拥有，实际交付状态由 `DOC-USAGE` 拥有，完成证�
 
 ### AP-20260815-05：修复恢复漂移并重整浅层 Docs 治理入口
 
-- 来源锚点：`DFC-20260815-02`；2026-08-15 用户明确要求停止做课，先修复所有恢复边界的 Goal
-  漂移，并全面检查根目录浅层入口、Docs 杂冗与边界，先将当前批次建 PR，再从干净 Issue 分支继续。
+- 来源锚点：`DFC-20260815-02`、GitHub Issue `#152`；用户明确要求停止做课，先修复所有恢复边界的
+  Goal 漂移，并全面检查根目录浅层入口、Docs 杂冗与 authority 边界。前序候选已由 PR `#151`
+  合并到 `main@67c1a68`，当前在干净分支 `codex/152-docs-recovery-governance` 继续 AP05。
 - Goal 锚点：当前 Goal API 返回空值，按 `unknown` 处理；以最新明确用户指令作为持久化 Goal，
   不从交接摘要、最近可见子话题或工具断点推断其他 Goal。
 - 状态转换依据：用户明确覆盖原课程 Goal，授权暂停 AP03 并把本治理修复设为唯一 active；这不是
   blocker、自主重排或从旧 resolved 项推导出的重开。
-- 当前状态：`in_progress / governance-repair-and-validation`。
+- 当前状态：`in_progress / docs-authority-audit-planning`。
 - 用户目标：修复 Agent 在信息不完整时擅自重开 terminal、切换 active 的漏洞；让根目录 AGENTS/
   README 或等价浅层入口对恢复必读权威形成强制钩子；全面去除 03/04 与跨文档杂冗、理清 authority
   边界，并把可复用方法反哺 product-docs Skill。
-- 目标终端：先完成当前候选批次 gate、commit/push/PR；再从最新 `main` 建立关联 Issue 的干净分支；
-  在新分支完成浅层强制恢复钩子、Docs 全链审计与去冗余、authority 边界修复、checker/负向测试和
-  product-docs 反哺；所有恢复边界保持 Goal/current AP/terminal 约束，最终向用户报告并等待决定。
+- 目标终端：在 Issue `#152` 分支完成浅层强制恢复钩子、Docs 全链审计与去冗余、authority 边界
+  修复、checker/负向测试和 product-docs 反哺；所有恢复边界保持 Goal/current AP/terminal 约束，
+  通过完整 gate 并形成独立 PR，最终向用户报告并等待决定。
 - 不改变：本轮不继续 successor Rust、决策会计 C1B/C2B 或任何课程构建；不重开已 resolved 的
   恢复条目；不改财务/供应链成果、外部主权数据、Git 提交状态或冻结前代。
 
@@ -56,16 +57,20 @@ Requirements/PRD 拥有，实际交付状态由 `DOC-USAGE` 拥有，完成证�
    Agent 自身审计判断越权当作切换 active 的授权。
 2. 先前被非法重开的 recovery capture 已恢复为 `resolved`，竞争 AP 已撤销；任何 terminal 重开
    必须保留原终态并追加 `reopened_by`、新证据和影响范围。
-3. 正式 docs 与 product-docs Skill 已覆盖新 session、Agent/任务交接、Agent 或工具中断、长暂停、
-   上下文压缩和明确“继续/恢复/接着做”指令；正在补齐 checker 的逐边界负向保护并跑完整治理 gate。
-4. `DFC-20260815-02` 将浅层恢复钩子、Docs 去冗余/边界重整和“先 PR 后干净 Issue 分支”加入本
-   active；旧课程 AP 降为次优先队列项并保留恢复入口，明确用户恢复前不得晋升或执行。
+3. 前序候选已通过 GitHub Architecture/docs、Rust、Adapters 三个 gate，并由 PR `#151` 合并为
+   `main@67c1a68`；CI 已补齐 `sqlite3` 依赖，intent checker 已统一 CRLF/LF 解析。
+4. Issue `#152` 保持 open；旧本地分支无独立提交，已从最新 `main@67c1a68` 重建为干净分支。
+5. 正式 docs 与 product-docs Skill 已覆盖新 session、Agent/任务交接、Agent 或工具中断、长暂停、
+   上下文压缩和明确“继续/恢复/接着做”指令；下一轮先完整审计浅层入口和 03/04 authority/重复，
+   到审计终端形成统一缺陷账本后再集中修复。
+6. 旧课程 AP 保持次优先队列项并保留恢复入口；明确用户恢复前不得晋升或执行。
 
-- 下一步：修正剩余 mutation fixture，跑当前批次完整 gate，审计 diff 后 commit/push/PR；PR 成功后
-  创建/关联 Issue，从最新 `main` 建干净分支，再进行全面 Docs 重整，不启动课程工作。
+- 下一步：冻结 AP05 审计范围和验收矩阵，逐文件建立根 `AGENTS.md`/README、Docs index、03/04、
+  checker 与 product-docs 的 authority/重复/浅层入口缺陷账本；完成整轮审计前不做零碎修补，
+  不启动课程工作。
 - 证据入口：`DOC-WORDING-RECOVERY`、`DOC-INTENT-PLAN-GOVERNANCE`、本文件、
   `05_scripts/check-intent-plan-governance.ps1`、`05_scripts/test-intent-plan-governance.ps1`、外部
-  product-docs `SKILL.md` 与 `references/intent-plan-lifecycle.md`。
+  product-docs `SKILL.md` 与 `references/intent-plan-lifecycle.md`、GitHub PR `#151`、Issue `#152`。
 
 ## 3. 下次开工队列（禁止恢复时自动执行）
 
