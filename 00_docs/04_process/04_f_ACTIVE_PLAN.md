@@ -43,7 +43,7 @@ Requirements/PRD 拥有，实际交付状态由 `DOC-USAGE` 拥有，完成证�
   不从交接摘要、最近可见子话题或工具断点推断其他 Goal。
 - 状态转换依据：用户明确覆盖原课程 Goal，授权暂停 AP03 并把本治理修复设为唯一 active；这不是
   blocker、自主重排或从旧 resolved 项推导出的重开。
-- 当前状态：`in_progress / submission`。
+- 当前状态：`in_progress / pr-open-awaiting-review`。
 - 用户目标：修复 Agent 在信息不完整时擅自重开 terminal、切换 active 的漏洞；让根目录 AGENTS/
   README 或等价浅层入口对恢复必读权威形成强制钩子；全面去除 03/04 与跨文档杂冗、理清 authority
   边界，并把可复用方法反哺 product-docs Skill。
@@ -77,9 +77,12 @@ Requirements/PRD 拥有，实际交付状态由 `DOC-USAGE` 拥有，完成证�
    Agent 前向验证也正确恢复 AP05、保持 AP03 queued，并识别根钩子不具产品 authority。
 10. `check-boundary.ps1` 与 `check-full.ps1` 已从头通过；完整 gate 覆盖 Rust fmt/check/clippy/tests、
     TypeScript typecheck/tests/build、Python smoke、Docs/authority/batch/data-root boundary 和 mutation。
+11. 实施提交 `d68bb90` 已推送，ready PR `#153` 已创建并关联关闭 Issue `#152`；PR 打开不等于已
+    合并，AP05 和 DFC02 在 review/merge 前保持 active，不能因此晋升 AP03。
 
-- 下一步：审查最终 diff，提交、推送并为 Issue `#152` 创建独立 PR；PR 创建成功后维护 AP05/DFC02
-  terminal。AP03 始终保持 queued，不因提交或 PR 自动晋升。
+- 下一步：等待并核对 PR `#153` 的 GitHub gates，修复新的可验证回归；全部通过后保持 ready，等待
+  review/merge 决定。只有 PR 合并并完成终端提升后，才维护 AP05/DFC02 terminal；AP03 仍须用户明确
+  恢复，不能自动晋升。
 - 证据入口：`DOC-WORDING-RECOVERY`、`DOC-INTENT-PLAN-GOVERNANCE`、本文件、
   `05_scripts/check-intent-plan-governance.ps1`、`05_scripts/test-intent-plan-governance.ps1`、外部
   product-docs `SKILL.md` 与 `references/intent-plan-lifecycle.md`、
