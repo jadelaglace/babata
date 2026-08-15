@@ -46,7 +46,7 @@ function Replace-CurrentInProgressState {
     param([string]$CaseRoot, [string]$Replacement)
     $path = Join-Path $CaseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md'
     $text = Get-Content -LiteralPath $path -Raw -Encoding utf8
-    $pattern = '(?m)^- 当前状态：`in_progress(?: / [^`]+)*`。$'
+    $pattern = '(?m)^- 当前状态：`in_progress(?: / [^`]+)*`。\r?$'
     $matches = @([regex]::Matches($text, $pattern))
     if ($matches.Count -ne 1) {
         throw "Mutation fixture requires exactly one in-progress current state, found $($matches.Count)."
@@ -249,6 +249,13 @@ try {
     }
     Assert-CheckerFails 'active-plan-keeps-successful-terminal' 'forbids successful terminal items' {
         param($caseRoot)
+        Replace-CurrentInProgressState $caseRoot 'completed / no-follow-up'
+    }
+    Assert-CheckerFails 'crlf-current-state-mutation' 'forbids successful terminal items' {
+        param($caseRoot)
+        $path = Join-Path $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md'
+        $text = (Get-Content -LiteralPath $path -Raw -Encoding utf8).Replace("`r`n", "`n").Replace("`n", "`r`n")
+        Set-Content -LiteralPath $path -Value $text -Encoding utf8 -NoNewline
         Replace-CurrentInProgressState $caseRoot 'completed / no-follow-up'
     }
     Assert-CheckerFails 'blocked-item-loses-terminal-fields' 'abnormal terminal field: 终态原因' {

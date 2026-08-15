@@ -43,7 +43,7 @@ Requirements/PRD 拥有，实际交付状态由 `DOC-USAGE` 拥有，完成证�
   不从交接摘要、最近可见子话题或工具断点推断其他 Goal。
 - 状态转换依据：用户明确覆盖原课程 Goal，授权暂停 AP03 并把本治理修复设为唯一 active；这不是
   blocker、自主重排或从旧 resolved 项推导出的重开。
-- 当前状态：`in_progress / pr-open-awaiting-review`。
+- 当前状态：`in_progress / github-gate-repair`。
 - 用户目标：修复 Agent 在信息不完整时擅自重开 terminal、切换 active 的漏洞；让根目录 AGENTS/
   README 或等价浅层入口对恢复必读权威形成强制钩子；全面去除 03/04 与跨文档杂冗、理清 authority
   边界，并把可复用方法反哺 product-docs Skill。
@@ -79,10 +79,13 @@ Requirements/PRD 拥有，实际交付状态由 `DOC-USAGE` 拥有，完成证�
     TypeScript typecheck/tests/build、Python smoke、Docs/authority/batch/data-root boundary 和 mutation。
 11. 实施提交 `d68bb90` 已推送，ready PR `#153` 已创建并关联关闭 Issue `#152`；PR 打开不等于已
     合并，AP05 和 DFC02 在 review/merge 前保持 active，不能因此晋升 AP03。
+12. PR `#153` 首轮 GitHub adapters gate 通过；Architecture/docs 因 Windows CRLF checkout 使新
+    mutation helper 的行尾正则未匹配而失败，非治理语义回归。helper 已兼容 CRLF/LF，并新增显式
+    CRLF current-state mutation；focused intent checker/mutation 已通过。
 
-- 下一步：等待并核对 PR `#153` 的 GitHub gates，修复新的可验证回归；全部通过后保持 ready，等待
-  review/merge 决定。只有 PR 合并并完成终端提升后，才维护 AP05/DFC02 terminal；AP03 仍须用户明确
-  恢复，不能自动晋升。
+- 下一步：提交并推送 CRLF 修复，等待并核对 PR `#153` 的新一轮 GitHub gates；全部通过后保持
+  ready，等待 review/merge 决定。只有 PR 合并并完成终端提升后，才维护 AP05/DFC02 terminal；
+  AP03 仍须用户明确恢复，不能自动晋升。
 - 证据入口：`DOC-WORDING-RECOVERY`、`DOC-INTENT-PLAN-GOVERNANCE`、本文件、
   `05_scripts/check-intent-plan-governance.ps1`、`05_scripts/test-intent-plan-governance.ps1`、外部
   product-docs `SKILL.md` 与 `references/intent-plan-lifecycle.md`、
