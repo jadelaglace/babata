@@ -5,10 +5,9 @@
 <!-- C1B-C2B-STATUS: adopted-architecture -->
 <!-- DOC-AUTHORITY-BOUNDARY: architecture-supplement -->
 
-本文记录已确认的 C1A/C1B、C2A/C2B 稳定边界；它不替代
-`00_a_REQUIREMENTS.md`、`03_a_ARCHITECTURE.md` 的通用基础约束。它与
-`03_f_EXTERNAL_SOVEREIGN_LIBRARIES_CANDIDATE.md` 配套：外部主权库保留原始结构和完整原件，
-Babata 只维护可追溯的派生物和可重建导航。
+本文只记录已确认的 C1A/C1B、C2A/C2B 模态差异、派生和删除边界；它不替代
+`00_a_REQUIREMENTS.md`、`03_a_ARCHITECTURE.md` 的通用分级与 writer 约束。外部主权库保留原始
+结构和完整原件的前提已由上游采用，不依赖任何 navigator candidate。
 
 ## 1. 核心判断
 
@@ -35,29 +34,9 @@ Babata 只维护可追溯的派生物和可重建导航。
 - C1A 只表示文字证据已抽取；C1B 表示本质判断已完成。C1B 即使没有新增媒体，也生成 C2B，
   不因为“没有片段”退回 C2A。
 
-### 已批准模板的保真直通路径
-
-当用户已经认可某门课的语义导航版时，该模板就是 C2B 的结构和正文基线，不得由新的
-builder 重新生成一个最小节点集合。执行顺序固定为：
-
-```text
-全量 C1A -> C1B 完整文字保留与模态判断 -> 已批准语义模板 -> C2B 只追加必要片段
-```
-
-- 全量 C1 文字必须逐项进入 staging，并作为模板保真检查的内容基线；C1B 判断不能以
-  essence 摘要替换它。
-- C2B 的模块叶文档是内容入口：manifest 明确列出的每个模块叶必须物化对应的完整 C1 文字，
-  正文优先；来源/C0 字段放在文末折叠区。语义知识笔记仍以批准模板为基线，只允许在 manifest
-  明确列出的知识笔记中追加图片、音频、视频或附件引用；未列入允许变化集合的正文、标题、层级
-  和链接差异直接失败。
-- 模块叶完整不等于语义节点内容合格。语义节点若只有一句摘要和来源回链，仍属于
-  `content_quality_pending`，不能因为模板文件齐全就登记为正式 C2B。
-- 原始目录、完整文件和记忆上下文仍由外部主权库保存。C2B 不复刻网站树，也不要求
-  每个片段回链到一个独立原件；片段自己的 hash、格式和处理记录是其派生证据。
-- builder 必须校验模板树 hash，禁止生成“三门课程”合并节点或以技术说明污染知识正文。
-
-媒体数量由内容判断决定，不能由文件类型或旧 decision 默认归零。财务管理的具体运行数字、
-被否决批次和当前 formal package 只在 usage status/receipt 中维护，不属于架构事实。
+模板树、课程叶文档、正文质量、profile hash 和发布步骤属于 output spec/profile、`DOC-PROCESS` 与
+MBA rollout，不在本架构补充维护。这里唯一约束是：模板不能绕过 C1B 本质/模态判断，媒体数量由
+内容不可替代性决定，C2B builder 不得回到外部原件自行补证据或成为第二 writer。
 
 ### C1B 的边界
 

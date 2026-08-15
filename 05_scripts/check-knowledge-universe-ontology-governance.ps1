@@ -43,6 +43,18 @@ function Assert-Matches {
     }
 }
 
+function Assert-NotMatches {
+    param(
+        [Parameter(Mandatory)][string]$Text,
+        [Parameter(Mandatory)][string]$Pattern,
+        [Parameter(Mandatory)][string]$Label
+    )
+
+    if ($Text -match $Pattern) {
+        throw "Knowledge-universe ontology governance contains forbidden $Label"
+    }
+}
+
 function Assert-NotContains {
     param(
         [Parameter(Mandatory)][string]$Text,
@@ -103,12 +115,13 @@ Assert-Contains $acceptance '默认不强制总和为 `100%`' 'non-normalized fo
 Assert-Contains $profile 'These display domains are not ontology `Branch`' 'display-domain/Branch separation in profile'
 Assert-Contains $outputs 'Display domains are not universe ontology branches' 'display-domain/ontology separation in output contract'
 
-# The adopted successor and accepted historical instances must remain different state claims.
+# The architecture owns stable successor semantics; implementation state stays in Usage/output contracts.
 Assert-Contains $outputs 'Successor MBA universe-registration contract (adopted, not yet implemented or enabled for new formal' 'successor contract implementation status'
-Assert-Contains $architecture '以上为已采用、' 'adopted successor architecture state'
-Assert-Contains $architecture '待实现的后继核心语义' 'not-yet-implemented successor architecture state'
-Assert-Contains $architecture '`intersects_with/draws_from/applies_to/prerequisite_of` 等非父边类型化关系' 'unimplemented map-node typed-relation scope in architecture'
-Assert-Contains $rollout 'map-node 非父边类型化关系、course/branch 分离' 'map-node typed-relation rollout scope'
+Assert-Contains $architecture '本设计基线只定义 P6 稳定语义、writer 和数据关系，不维护实施切片、当前缺口或完成状态' 'architecture current-status ownership boundary'
+Assert-Contains $architecture '当前实现覆盖与缺口只查 `DOC-USAGE`' 'architecture Usage routing'
+Assert-Contains $architecture '`intersects_with`、`draws_from`、`applies_to`、`prerequisite_of` 等跨学科语义进入类型化关系' 'typed relation semantics in architecture'
+Assert-NotMatches $architecture '(?m)^(?!.*(?:不维护|只查|不是|不得)).*(?:当前已支持|当前尚未|尚无|待实现)' 'competing current implementation claim in architecture'
+Assert-Contains $rollout '任何课程 registrar 合同都必须支持本节的 course/branch 分离、typed `covers`、多重 assignment' 'stable successor registrar rollout contract'
 Assert-Contains $outputs 'complete map-node non-parent typed relations' 'map-node typed-relation successor output contract'
 Assert-Contains $process '历史 baseline 退出' 'versioned P6 baseline closure'
 Assert-Contains $process '作为 P8.9 当前交付缺口' 'ontology successor delivery phase'
@@ -117,9 +130,9 @@ Assert-Contains $usage 'map-node 非父边类型化关系、course/branch 分离
 Assert-Contains $usage '使用历史单路径 `意识 -> 管理学 -> 财务管理`，不证明当前已采用的 course/branch 分离' 'finance acceptance/ontology separation'
 Assert-Contains $usage '使用历史单路径 `意识 -> 管理学 -> 供应链管理`，不证明当前已采用的 course/branch 分离' 'supply-chain acceptance/ontology separation'
 
-# The historical v1 path remains reconstructable evidence, but cannot register another formal course.
-Assert-Contains $rollout '当前 `babata.mba-course-c2b-plan/v1` 和 `register-mba-course-c2b-knowledge.ps1`' 'historical registrar identification'
-Assert-Contains $rollout '不得用于新增课程的正式宇宙归属或宣称新架构 conformance' 'new-registration prohibition'
+# The reusable output contract owns the historical-v1 compatibility boundary.
+Assert-Contains $outputs 'Historical MBA rollout path: `babata.mba-course-c2b-plan/v1` and the current generic scripts' 'historical registrar identification'
+Assert-Contains $outputs 'registration is not conformant for new formal registrations' 'new-registration prohibition'
 Assert-Contains $tests '既有 C1B、内容、媒体、profile、package/live、用户验收和' 'historical acceptance dimensions in TC'
 Assert-Matches $legacyRegistrar '\$foundationId\s*=.*\[string\]\$universe\.foundation_id' 'singular foundation_id behavior in historical registrar'
 Assert-Contains $legacyRegistrar 'function Assert-ExactParent' 'exact-parent behavior in historical registrar'

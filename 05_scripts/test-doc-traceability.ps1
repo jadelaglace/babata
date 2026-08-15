@@ -167,6 +167,17 @@ try {
         $text = $text.Replace('## 5. 核心术语词典', '## Terms removed')
         Set-Content -Encoding utf8 -LiteralPath $path -Value $text
     }
+    Assert-CheckerFails -Name 'registry-doc-id-path-mismatch' -ExpectedMessage 'registry row for DOC-MODALITY-LADDER is missing current path' -Mutate {
+        param($research, $caseDocs)
+        $path = Join-Path $caseDocs 'README.md'
+        $text = Get-Content -Raw -Encoding utf8 -LiteralPath $path
+        $text = $text.Replace('03_architecture/03_g_C1B_C2B_MODALITY_LADDER.md', '03_architecture/03_x_WRONG.md')
+        Set-Content -Encoding utf8 -LiteralPath $path -Value $text
+    }
+    Assert-CheckerFails -Name 'architecture-redefines-phase-gate' -ExpectedMessage 'competing phase-gate definition in p2_design' -Mutate {
+        param($research, $caseDocs)
+        Add-Content -Encoding utf8 -LiteralPath (Join-Path $caseDocs '03_architecture\03_b_P2_SYSTEM_SKELETON.md') -Value "`n- P2-G2: competing architecture definition.`n"
+    }
 
     Assert-CheckerFails -Name 'prd-concrete-current-batch' -ExpectedMessage 'concrete runtime batch path in prd' -Mutate {
         param($research, $caseDocs)

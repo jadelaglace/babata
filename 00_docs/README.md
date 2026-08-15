@@ -6,6 +6,21 @@
 本文是文档导航、稳定 ID 注册表、编号规则和术语词典。它不定义产品行为、完成口径、架构或
 当前进度；这些内容必须进入各自权威文档。
 
+## 强制恢复入口
+
+<!-- BABATA-DOCS-RECOVERY-ENTRY: v1 -->
+
+恢复边界包括新 session、上下文压缩、Agent/任务交接、Agent 或工具中断、长暂停，以及用户明确
+说“继续”“恢复”“接着做”。每次都先调用环境可用的 Goal/task-state API，再立即读取
+[`DOC-ACTIVE-PLAN`](04_process/04_f_ACTIVE_PLAN.md)，并且只执行其唯一 `CURRENT-ACTIVE`。空 Goal 或
+缺失上下文只记为 `unknown`，不能重开 terminal、切换 active 或晋升队列。队列只保存未来恢复入口；
+标记 `requires-explicit-resume` 的项目必须等待用户明确恢复。
+
+稳定状态机和终端维护只由
+[`DOC-INTENT-PLAN-GOVERNANCE`](04_process/04_g_INTENT_AND_PLAN_GOVERNANCE.md) 拥有。根 `AGENTS.md`、
+根 `README.md` 和本节只是指向同一权威的浅层钩子，不维护竞争副本。完成恢复身份核对后，才按下列
+权威链解释产品与交付内容。
+
 ## 1. 权威链
 
 ```mermaid
@@ -63,11 +78,9 @@ Usage。00_c 是严重阻塞/漂移/冲突时才使用的逐字恢复证据，�
 | `DOC-ARCH-RAW` | [`03_architecture/03_c_P3_RAW_FOUNDATION.md`](03_architecture/03_c_P3_RAW_FOUNDATION.md) | P3 C0/first-party architecture supplement | phase 完成结论 |
 | `DOC-ROUTES` | [`03_architecture/03_d_SOURCE_ROUTE_REGISTRY.md`](03_architecture/03_d_SOURCE_ROUTE_REGISTRY.md) | live route-research registry；逐来源证据/授权/能力状态 | 用户资料全量完成度 |
 | `DOC-KNOWLEDGE-UNIVERSE` | [`03_architecture/03_e_PERSONAL_KNOWLEDGE_UNIVERSE.md`](03_architecture/03_e_PERSONAL_KNOWLEDGE_UNIVERSE.md) | adopted design baseline | 实现状态、当前 usage |
-| `DOC-EXT-SOVEREIGN-CANDIDATE` | [`03_architecture/03_f_EXTERNAL_SOVEREIGN_LIBRARIES_CANDIDATE.md`](03_architecture/03_f_EXTERNAL_SOVEREIGN_LIBRARIES_CANDIDATE.md) | non-adopted candidate | 覆盖 current requirements/architecture |
+| `DOC-EXT-SOVEREIGN-NAVIGATOR-CANDIDATE` | [`03_architecture/03_f_EXTERNAL_SOVEREIGN_NAVIGATOR_CANDIDATE.md`](03_architecture/03_f_EXTERNAL_SOVEREIGN_NAVIGATOR_CANDIDATE.md) | non-adopted navigator/snapshot/promotion candidate；外部主权原则本身已采用 | 覆盖 current requirements/architecture，或把 adopted premise 降级为 candidate |
 | `DOC-MODALITY-LADDER` | [`03_architecture/03_g_C1B_C2B_MODALITY_LADDER.md`](03_architecture/03_g_C1B_C2B_MODALITY_LADDER.md) | adopted architecture supplement | 批次、课程完成状态 |
 | `DOC-MBA-ROLLOUT` | [`04_process/04_c_MBA_C2B_ROLLOUT.md`](04_process/04_c_MBA_C2B_ROLLOUT.md) | 可重复逐课程 rollout 方法 | 当前课程进度 |
-| `DOC-P3-PLAN` | [`04_process/04_d_P3_RAW_FOUNDATION_PLAN.md`](04_process/04_d_P3_RAW_FOUNDATION_PLAN.md) | P3 migration/transaction/verification 交付顺序 | 稳定架构、当前状态 |
-| `DOC-P4-PLAN` | [`04_process/04_e_P4_COLLECTION_PLAN.md`](04_process/04_e_P4_COLLECTION_PLAN.md) | P4 真实候选/选择/重采交付流 | route 当前状态、历史运行结果 |
 | `DOC-ACTIVE-PLAN` | [`04_process/04_f_ACTIVE_PLAN.md`](04_process/04_f_ACTIVE_PLAN.md) | 唯一当前执行计划、临时子计划与恢复入口 | 产品意图、当前 usage、长期完成历史 |
 | `DOC-INTENT-PLAN-GOVERNANCE` | [`04_process/04_g_INTENT_AND_PLAN_GOVERNANCE.md`](04_process/04_g_INTENT_AND_PLAN_GOVERNANCE.md) | 输入捕获、阶段结论、终端提升与清理合同 | 当前任务、产品需求、usage |
 

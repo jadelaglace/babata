@@ -5,8 +5,8 @@
 
 ## 1. 文档职责
 
-本文定义如何把已经验证的财务管理 C1B/C2B/profile 模式扩展到供应链、决策会计和其余 MBA
-课程。它是交付计划，不是 requirements、PRD、AC、architecture 或当前状态权威。
+本文定义如何把已验证的 C1B/C2B/profile 模式复用于明确授权的 MBA 课程。它是专项交付计划，
+不是 requirements、PRD、AC、architecture、当前优先级或当前状态权威。
 
 - 当前完成到哪门课程、分母和证据：`04_b_USAGE_STATUS.md`；
 - 通用产品行为：PRD-04、PRD-05、PRD-08；
@@ -88,9 +88,9 @@ hash-verified publisher
 1. 从外部主权覆盖账确定课程、课次、课件、视频和正式 C1 分母；
 2. 记录 missing、restricted、OCR candidate、低质量和不适用对象；
 3. 已存在完整 C1 的对象不重跑；hash/identity 不一致时先修输入权威；
-4. 为本轮记录唯一 round identity、代码/配置身份、全新 staging root 和输入指纹；
-5. 冻结阶段列表、目标终端、退出矩阵和 fail-fast 类别。技术候选轮的正常终端是 package、
-   terminal gate 与唯一 live 全部完成，状态保持 `pending_user_acceptance`。
+4. 按 `DOC-PROCESS` 的完整执行轮合同记录 round identity、代码/配置身份、全新 staging root、输入
+   指纹、阶段列表、目标终端、退出矩阵和 fail-fast 类别。技术候选轮的正常终端是 package、terminal
+   gate 与唯一 live 全部完成，状态保持 `pending_user_acceptance`。
 
 课程批次使用 `05_scripts/invoke-babata-execution-round.ps1` 及 Git 外
 `babata.execution-round-plan/v1`/`babata.execution-round-ledger/v1` 留证；课程 plan、source map、
@@ -126,10 +126,8 @@ registrar、checker、publisher 或 closure verifier。
 6. Obsidian frontmatter、目录或 sidecar 不能代替正式归属；
 7. 课程 index 只负责本课，可保持课程内单轴 MECE，不修改宇宙级大 Index。
 
-当前 `babata.mba-course-c2b-plan/v1` 和 `register-mba-course-c2b-knowledge.ps1` 的单
-`foundation_id/discipline_id/branch_name`、exact-parent 和清除其他 assignment 行为不满足本节。
-在后继 course/relationship contract、兼容迁移和负向测试完成前，它们只保留为历史 accepted
-instance 的可重建证据，不得用于新增课程的正式宇宙归属或宣称新架构 conformance。
+任何课程 registrar 合同都必须支持本节的 course/branch 分离、typed `covers`、多重 assignment、
+MBA lens 和独立基石强度/置信度语义；当前实现覆盖与缺口只查 `DOC-USAGE`，不得写回本计划。
 
 ### 5.5 Profile materialization
 
@@ -153,9 +151,7 @@ instance 的可重建证据，不得用于新增课程的正式宇宙归属或�
 - 第二个新 staging root 的确定性差异；
 - 外部主权库、C0/C1/核心关系不变。
 
-本节检查在轮内只产生证据和缺陷记录，不触发边跑边改。内容密度、链接、视觉、媒体或普通兼容性
-问题不使后续步骤失去意义时，继续到声明终端；只有数据/权威/授权/安全风险、输入漂移或使后续
-证据整体失效的合同错误按 `BATCH-ROUND-TERMINAL-GATE` 立即终止并禁止发布。
+本节观察遵守 `DOC-PROCESS` 的完整执行轮和失效性终止规则，不在此复制通用状态机。
 
 ### 5.7 发布与人工验收
 
@@ -171,49 +167,25 @@ instance 的可重建证据，不得用于新增课程的正式宇宙归属或�
 
 ### 5.8 终端缺陷收敛与新轮复验
 
-1. 技术候选轮到达 `pending_user_acceptance` 终端后，一次性汇总所有阶段结果和缺陷；
-2. 按输入、C1B、正文生成、知识登记、materialize、脑图、publisher、closure 等共同根因聚类，
-   避免同一根因被拆成多个临时补丁；
-3. 冻结一个有界修复集并运行对应目标测试；目标测试通过只表示可以开新轮；
-4. 新轮不得读取旧 C2B、旧 package、旧 live 或旧轮 sidecar 作为内容/状态输入；
-5. 新轮从 5.1 完整推进到声明终端，再运行课程 terminal gate。只有终端矩阵通过后才交给用户；
-6. 用户明确接受后的 closure 是独立终端动作，不反写不可变的 pending package 快照。
+通用终端、缺陷聚类、修复和新轮规则只由 `DOC-PROCESS` 拥有。MBA 专项聚类维度是输入、C1B、
+正文生成、知识登记、materialize、脑图、publisher 和 closure；新轮仍不得把旧 C2B/package/live/
+sidecar 当内容或状态输入，用户接受后的 closure 不反写不可变 pending package 快照。
 
-## 6. MBA 展开顺序
+## 6. MBA 展开与当前优先级边界
 
-1. 财务管理：仅作为 accepted benchmark/profile 的证明来源；当前状态见 usage status。
-2. 供应链：按完整课程分母独立执行全部步骤。
-3. 先完成 map-node 非父边类型化关系、course/branch 分离、多重归属、MBA lens、基石强度/置信度
-   和现有单路径实例的兼容迁移合同及测试。
-4. 决策会计：按新合同和完整课程分母独立执行全部步骤。
-5. 其余 MBA：按课程批次展开，先暴露共性缺陷，再固化 builder；不一键标记完成。
-6. 所有课程关闭且知识宇宙归属符合当前模型后，才汇总 MBA 范围的全量使用状态。
+本文不维护课程先后、下一门课或 successor 实现状态。唯一当前优先级和恢复入口只查
+`DOC-ACTIVE-PLAN`，已完成课程和当前缺口只查 `DOC-USAGE`。每门课程可以共享代码/profile，但不能
+共享完成状态；一个执行轮可以覆盖多门明确授权课程，每门仍独立到终态、验收和关闭。
 
-这个顺序是交付优先级，不是 PRD 功能层级。每门课程可以共享代码/profile，但不能共享完成状态。
-执行轮次可以覆盖一门或多门明确列出的课程；每门课仍独立到终态、独立验收和关闭，但不把
-“独立关闭”误解为完成一门的每个小步骤后才允许另一门继续。
+## 7. 试跑、试点、模板与全量边界
 
-## 7. 试跑、试点、模板与全量的使用方式
+通用定义和运行规则只查 PRD 与 `DOC-PROCESS`。MBA 专项只增加一条：课程全量按冻结课程分母逐项
+报告，MBA 全量只在纳入范围内每门课分别关闭后成立。具体结果只写 Usage/run ledger。
 
-- **试跑**：只预览输入、动作、成本、限制和预计产物，不发布正式结果。
-- **试点**：用一门/一小范围真实课程验证新能力，明确不可外推项。
-- **模板/profile**：固化已接受的结构、视觉和发布合同，不固化课程知识或完成数字。
-- **课程全量**：处理该课程冻结分母内每个对象，逐项报告 success/failure/skipped/gap。
-- **MBA 全量**：只有全部纳入课程分别关闭后才成立；财务管理通过不等于 MBA 全量。
+外部主权 navigator 是独立 candidate，不属于 MBA rollout；其合同与验证条件只查
+`DOC-EXT-SOVEREIGN-NAVIGATOR-CANDIDATE`。
 
-具体结果只写 usage status/run ledger，不回填 PRD、AC 或 TC。
-
-## 8. Backs 与外部主权兼容层
-
-MBA 课程标杆展开后，再验证外部主权库/Backs 的只读导航兼容：
-
-- 外部库继续拥有完整原件、目录和记忆上下文；
-- Babata 只读取稳定 snapshot/locator，形成可删重建导航；
-- 只在明确价值和授权下选择性提升到 Babata C0/C1；
-- 不建立第二 writer，不强迫外部库重排为 Babata 目录；
-- 该兼容层有独立试点和关闭状态，不与 MBA C2B 完成混说。
-
-## 9. 变更规则
+## 8. 变更规则
 
 只有交付顺序、课程级退出条件或稳定复用步骤改变时更新本文。当前数量、批次、模型、成本、
 accepted/rejected 实例和用户验收结果只更新 usage status/receipt。若 profile 合同改变，先更新

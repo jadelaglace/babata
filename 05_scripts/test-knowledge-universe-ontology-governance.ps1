@@ -133,9 +133,17 @@ try {
         param($caseRoot)
         Replace-Once $caseRoot '02_skills\00_specs\09_outputs.md' 'Successor MBA universe-registration contract (adopted, not yet implemented or enabled for new formal' 'Successor MBA universe-registration contract (adopted and enabled for new formal'
     }
-    Assert-CheckerFails 'architecture-omits-typed-map-relation-gap' 'unimplemented map-node typed-relation scope in architecture' {
+    Assert-CheckerFails 'architecture-omits-typed-map-relation-semantics' 'typed relation semantics in architecture' {
         param($caseRoot)
-        Replace-Once $caseRoot '00_docs\03_architecture\03_e_PERSONAL_KNOWLEDGE_UNIVERSE.md' '`intersects_with/draws_from/applies_to/prerequisite_of` 等非父边类型化关系' '额外关系'
+        Replace-Once $caseRoot '00_docs\03_architecture\03_e_PERSONAL_KNOWLEDGE_UNIVERSE.md' '`intersects_with`、`draws_from`、`applies_to`、`prerequisite_of` 等跨学科语义进入类型化关系' '跨学科语义进入未定义关系'
+    }
+    Assert-CheckerFails 'architecture-reintroduces-current-status' 'competing current implementation claim in architecture' {
+        param($caseRoot)
+        Add-Content -LiteralPath (Join-Path $caseRoot '00_docs\03_architecture\03_e_PERSONAL_KNOWLEDGE_UNIVERSE.md') -Value "`n当前已支持全部后继语义。`n" -Encoding utf8
+    }
+    Assert-CheckerFails 'rollout-loses-stable-registrar-contract' 'stable successor registrar rollout contract' {
+        param($caseRoot)
+        Replace-Once $caseRoot '00_docs\04_process\04_c_MBA_C2B_ROLLOUT.md' '任何课程 registrar 合同都必须支持本节的 course/branch 分离、typed `covers`、多重 assignment' '课程 registrar 可以沿用单一路径归属'
     }
     Assert-CheckerFails 'process-promotes-current-p6-conformance' 'versioned P6 baseline closure' {
         param($caseRoot)
@@ -153,9 +161,9 @@ try {
         param($caseRoot)
         Replace-Once $caseRoot '00_docs\04_process\04_b_USAGE_STATUS.md' '使用历史单路径 `意识 -> 管理学 -> 供应链管理`，不证明当前已采用的 course/branch 分离' '使用历史单路径 `意识 -> 管理学 -> 供应链管理`，并证明当前已采用的 course/branch 分离'
     }
-    Assert-CheckerFails 'rollout-reenables-v1' 'new-registration prohibition' {
+    Assert-CheckerFails 'outputs-reenable-v1' 'new-registration prohibition' {
         param($caseRoot)
-        Replace-Once $caseRoot '00_docs\04_process\04_c_MBA_C2B_ROLLOUT.md' '不得用于新增课程的正式宇宙归属或宣称新架构 conformance' '可以用于新增课程的正式宇宙归属并宣称新架构 conformance'
+        Replace-Once $caseRoot '02_skills\00_specs\09_outputs.md' 'registration is not conformant for new formal registrations' 'registration is conformant for new formal registrations'
     }
     Assert-CheckerFails 'tests-narrow-historical-protection' 'historical acceptance dimensions in TC' {
         param($caseRoot)

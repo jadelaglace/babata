@@ -699,18 +699,16 @@ BackupDriver 通过数据库一致快照机制复制索引，冻结本次资产�
   worker、工具与测试位置。它必须补齐 CollectorSession、Knowledge、Sublibrary 和
   Output 责任；旧的 8 service/11 port/117 文件清单若与本文冲突，以本文为准并重新
   计算，不为保持数字而漏掉产品能力。
-- `03_c_P3_RAW_FOUNDATION.md` 负责 P3 C0 原始入库架构；
-  `../04_process/04_d_P3_RAW_FOUNDATION_PLAN.md` 负责迁移、事务和验证顺序。
-  它们可以先实现外部原件和第一方版本，但不得把 C0 永久缩窄
+- `03_c_P3_RAW_FOUNDATION.md` 负责 P3 C0 原始入库架构。稳定 phase/gate 定义只在
+  `DOC-PROCESS`，可重复验证只在 TC；不得把 C0 永久缩窄
   成“导入表”；后续人工知识记录继续使用同一权威与版本原则。
-- `../04_process/04_e_P4_COLLECTION_PLAN.md` 负责首批真实收集交付流。它必须以来源
-  上下文候选、用户选择和真实连接为正常路径；手工导出只能是恢复或暂时回退路径。
 - `03_d_SOURCE_ROUTE_REGISTRY.md` 负责逐来源现有工具调查、实际证据、最小授权和路线
   决策。没有该证据，不允许用 adapter、协议或手工导出替代来源规划。
 - `03_e_PERSONAL_KNOWLEDGE_UNIVERSE.md` 负责 P6 的语义模型、三维相关度、
   三级地图、高密度表达、非阻塞建议、浮现/检索、子库和输出设计基线；实现/状态不由该文维护。
-- `03_f_EXTERNAL_SOVEREIGN_LIBRARIES_CANDIDATE.md` 是尚未正式采用的外部主权兼容候选；试点结果
-  不能自动升级它，采用时必须回写 requirements/AC/本文。
+- `03_f_EXTERNAL_SOVEREIGN_NAVIGATOR_CANDIDATE.md` 只保存尚未采用的外部主权 navigator、snapshot
+  和 promotion 兼容口候选；外部主权库继续拥有原件和原生结构的已采用原则由 Requirements/本文
+  拥有，不能因 candidate 文件存在而降级。
 - `03_g_C1B_C2B_MODALITY_LADDER.md` 是已采用的 C1A/C1B、C2A/C2B 架构补充；运行批次和
   当前课程状态不在该文维护。
 

@@ -246,14 +246,9 @@ capability/phase/usage 完成。结果进入 runtime receipt，不写 PRD/AC/TC�
 
 ## 7. 文档与实现顺序
 
-0. **最新输入先持久化**：收到会约束后续工作的用户输入时，先判断其权威归属并写入可恢复载体，
-   再检索、分析、实现或回溯。Babata 产品意图、判断、纠正和开放问题原样 append 到
-   `DOC-WORDING-RECOVERY`；跨项目通用工作协议或待办若改变当前路线则写当前活动项，否则插入
-   `DOC-ACTIVE-PLAN` 的下次开工队列顶部。Agent 形成会改变路线的阶段结论或到达轮次终端后回写
-   临时子计划。每次新 session、Agent/任务交接、Agent 或工具中断、长暂停、上下文压缩，或用户以
-   “继续/恢复/接着做”等明确恢复指令再入场时，先核对
-   线程/外部 Goal 与当前活动项；未知信息不得用于重开 terminal 项或切换 active。稳定读写/清理合同见
-   `DOC-INTENT-PLAN-GOVERNANCE`。
+0. **恢复与最新输入**：每次恢复边界先按根浅层钩子执行 Goal/task-state ->
+   `DOC-ACTIVE-PLAN` 的 `CURRENT-ACTIVE`，再处理新输入。输入捕获、held queue、阶段结论和终端清理
+   的唯一稳定合同见 `DOC-INTENT-PLAN-GOVERNANCE`；本文不复制该状态机。
 1. current intent：任务终端后维护 00_b 当前有效意图，不把整理文本伪装成逐字引文；
 2. requirements：更新当前结果/约束；
 3. PRD：仅当可重复产品行为改变时更新；
