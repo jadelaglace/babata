@@ -1,18 +1,24 @@
 # Babata 全局技术架构
 
+<!-- DOC-ID: DOC-ARCH -->
+
+<!-- DOC-AUTHORITY-BOUNDARY: architecture -->
+
 ## 1. 架构职责与依据
 
 本文承接：
 
 ```text
--1_USER_WORDING.md（原话证据）
-  -> 00_REQUIREMENTS.md（当前需求权威）
-  -> 01_PRD.md
-  -> 02_ACCEPTANCE_CRITERIA.md
-  -> 03_ARCHITECTURE.md（本文）
+00_c_USER_WORDING_RECOVERY.md（逐字恢复证据）
+  -> 00_b_USER_WORDING.md（当前有效意图集）
+  -> 00_a_REQUIREMENTS.md（当前需求权威）
+  -> 01_a_PRD.md
+  -> 02_a_ACCEPTANCE_CRITERIA.md
+  -> 03_a_ARCHITECTURE.md（本文）
 ```
 
--1 保留用于发现漂移和恢复语境的精选原话；00 决定当前真实目的和不可丢失的约束，01 决定用户可见行为，02 决定可观察的完成结果。
+00_c 保留最后关头恢复语境的逐字证据；00_b 提供日常读取的当前有效意图；00_a 决定当前真实目的和不可丢失的约束，
+01_a 决定用户可见行为，02_a 决定可观察的完成结果。
 本文只回答：信息如何流动、哪些模块承担责任、每类数据由谁拥有、哪些技术边界防止
 产品意图再次被实现细节缩窄。
 
@@ -146,13 +152,21 @@ C0 + C1 + 可重建读模型
 | 级别 | 权威内容 | 允许的写入者 | 删除与重建规则 |
 | --- | --- | --- | --- |
 | C0 | 外部原件、原始媒体、来源快照、第一方正文及版本、批注、人工判断、人工关系/分类/模型/评分/分析、子库定义 | Rust 应用用例 | 内容不原地覆盖；修改追加版本或新事件；最高优先备份 |
-| C1 | 提取文本、OCR、转写、字幕、关键帧、视觉描述、摘要、标签、结构化结果、模型建议、处理运行记录 | Rust 应用用例登记处理器输出 | 可并存、比较、删除后重建；必须引用 C0 输入和处理身份 |
+| C1 | C1A 文字证据；C1B 完成内容判断后的清洗本质（文字及按需保留的图片、音频、视频片段或附件），以及处理运行记录 | Rust 应用用例登记处理器输出 | 可并存、比较、删除后重建；记录可得的输入/来源身份，但 C1B 片段不要求复制原件或建立独立原文件回链 |
 | C2 | 搜索投影、子库物化、Datasette/Obsidian、网页、报告、卡片、导出包及其他生成视图 | Rust 控制的只读 builder | 可整体删除重建；不拥有 C0/C1，不接受反向编辑 |
 | C3 | 候选会话、队列租约、缓存、临时文件、日志、运行指标和能力状态 | Rust runtime；外围仅能持有本地临时会话 | 可清理；终态收集/处理结果需归档到对应 C0/C1 溯源记录 |
 | 机密配置 | 来源令牌、API 密钥、本地 API 凭据和隐私授权 | 受保护配置组件 | 不进入 Git、候选包、日志、视图或备份明文清单 |
 
 所有数据类都使用稳定标识和相对数据根的逻辑资产键。真实资料只有一条最终持久化
 路径；外围产生的临时副本不因存在文件就成为权威。
+
+### 4.0 C1A/C1B 与 C2A/C2B
+
+C1A 是抽取、OCR、ASR 和结构化文字等确定性文字证据；C1B 是完成内容判断后的清洗本质，
+可以复用 C1A 文字，也可以从 PPT、视频、长 PDF 或附件中直接裁剪/抽取必要片段，新增媒体
+可以为零。C1B 不承担外部主权库的原件保存和原始目录维护。新的 C2 默认消费 C1B 生成 C2B；
+只有用户明确要求纯文字导航时才生成 C2A。C2A 升级到 C2B 必须先完成 C1B 判断（必要时
+生成增量），再由只读 builder 重建 C2。
 
 ### 4.1 C0 的版本规则
 
@@ -329,6 +343,30 @@ domain <- application <- infrastructure
 来源适配器、处理 provider 和 output builder 都不能获得可写数据库连接或资产最终
 落盘权限。
 
+处理 provider 的模型选择必须可复现且可审计：运行记录使用具体可调用模型 ID 或快照，
+并同时记录 provider、service/endpoint、地域、thinking/effort、CLI/API 版本、prompt/schema
+版本、输入范围与 hash、输出 hash、usage、耗时、成本、fallback 和限制。未解析的泛化别名
+只能作为用户界面输入或历史标签，不能作为实验或 C2 版本的唯一模型身份；任何 fallback
+必须显式登记，禁止静默替换。模型目录、公开 benchmark 与 Babata 真任务评测分别记录为
+能力证据、候选证据和采用决定，不能相互冒充。
+
+处理请求和输出契约必须分开 control context 与 content payload。范围、试点状态、数据权威、
+外部主权库职责、provider、成本、审阅状态和验收规则只进入 control context、manifest、YAML
+或验证报告；课程概念、公式、框架、案例、问题和来源引用才进入 content payload。C2 builder
+在物化前执行元话语污染检查，命中工作要求、系统自述或发布状态说明时拒绝生成知识正文。
+
+C1 到 C2 的混合执行不采用“API 和 Agent 各自完整重读一遍”的默认双跑。批量 API/Skill 可
+生成带引用的结构化 map；Agent 审校先读取 map、验证结果和被引用片段，只对失败 claim、
+低置信或高价值范围回读对应 C1。课程级 reduce 消费已验证 map。若直接由 Agent 生成，则
+该 Agent 是本次 producer，不再预先运行同范围 API；独立 critic 只核验抽样或失败范围。
+provider 账分别使用 `qianwen_api`、`qianwen_skill`、`bailian_cli`、`codex_agent` 等实际身份，
+不得把 Skill、CLI、服务和底层模型混成一个字段。
+
+成本账至少汇总每次请求和整个 run 的输入、缓存、输出、推理和总 token，记录单价来源、
+查询时间、币种、上下文计费阶梯、Batch/缓存折扣、估算金额与实际账单核对状态。没有单价
+快照时可以保留精确 usage 并标为 `amount_pending_reconciliation`，但不能称为成本已完整记录；
+Codex Agent 的订阅/席位成本与按量 API 费用分账，不从本地耗时或不可见 token 强行估算。
+
 ### 6.2 JavaScript / TypeScript 边界
 
 在浏览器环境，或易变网站/JSON API 使用现成 TypeScript 生态能够明显缩短真实路径时使用。
@@ -470,16 +508,17 @@ SQLite 使用外键、WAL、有限 busy timeout 和短写事务。初始拓扑�
 
 ### 8.1 来源能力状态
 
-每条来源路径维护：
+每条来源路径分开维护证据成熟度和 runtime 状态：
 
 ```text
-planned -> scaffolded -> disabled -> available
-                         \-> unavailable（带原因）
+route evidence: E0 -> E1 -> E2 -> E3
+runtime status: absent | disabled | enabled | unavailable(reason)
 ```
 
-代码或夹具存在最多证明 `scaffolded`。只有用户授权的真实路径验证了候选发现、内容、
-上下文、附件、限制、失败与重收集，才进入 `available`。能力状态由核心登记，适配器
-不能自报成功。
+代码、fixture 或工具名不能单独达到 E3。只有用户授权的真实路径验证了适用的候选发现、内容、
+上下文、附件、限制、失败与重收集，才可能达到 E3；E3 仍不自动把 runtime 切为 `enabled`。
+能力状态由核心登记，适配器不能自报成功。当前逐来源证据、状态和缺口只由 `DOC-ROUTES`
+维护，实际执行以 `babata --json capabilities list` 为准。
 
 ### 8.2 收集路线选择顺序
 
@@ -503,12 +542,11 @@ Agent 浏览器、MCP 或站点工具要按它们在当前范围内真正提供�
 时先把已验证步骤组织为 Skill 或薄调用；只有真实重复使用暴露稳定性、批量、重试或恢复
 缺口时，才进入第四级及以后的开发路线。
 
-不为了来源数量先造重型爬虫，不绕过访问控制。首批 `available` 目标是飞书文档/Wiki/
-知识库、通过正式 Chrome 登录态读取的具体 Kimi 对话，以及独立的浏览器页面/书签。
-浏览器是工具层，不能替代其他点名平台的 `source_id`、收藏/会话范围和真实证据；具体
-来源工具与限制在来源路径补充文档中维护。
+不为了来源数量先造重型爬虫，不绕过访问控制。稳定架构不写死“首批 enabled 来源”；浏览器
+只是工具层，不能替代其他点名平台的 `source_id`、收藏/会话范围和真实证据。当前具体来源、
+工具与限制只在 `DOC-ROUTES` 和 runtime capability 中维护。
 
-选择任何路线前必须完成 `08_SOURCE_TOOL_RESEARCH.md` 的逐来源调查并保留官方文档、
+选择任何路线前必须完成 `03_d_SOURCE_ROUTE_REGISTRY.md` 的逐来源调查并保留官方文档、
 项目维护状态、实际调用、最小授权、数据覆盖和限制证据。网页登录来源必须先证明通用
 Agent 浏览器路线的可行或不可行，不能未经验证就为每个站点另写爬虫。provider 文件、
 候选协议、本地 fixture 和“可能可用”的工具名都不能代替调查。现有工具能够完成时，
@@ -536,7 +574,7 @@ adapter 只负责调用和规范化；不能为了统一内部形状重写已有
 ## 10. 核心沉淀架构
 
 核心区不等同于 `create/revise/annotate` 三个写作命令。P6 的完整产品和领域基线见
-`09_P6_PERSONAL_KNOWLEDGE_UNIVERSE_BLUEPRINT.md`；总架构至少承载以下领域概念：
+`03_e_PERSONAL_KNOWLEDGE_UNIVERSE.md`；总架构至少承载以下领域概念：
 
 ```text
 FirstPartyContent      笔记、草稿、反思和正文版本
@@ -657,32 +695,35 @@ BackupDriver 通过数据库一致快照机制复制索引，冻结本次资产�
 
 ## 15. 架构补充文档的继承关系
 
-- `04_SYSTEM_SKELETON_BLUEPRINT.md` 负责 P2 目录、文件、service、port、命令、API、
+- `03_b_P2_SYSTEM_SKELETON.md` 负责 P2 目录、文件、service、port、命令、API、
   worker、工具与测试位置。它必须补齐 CollectorSession、Knowledge、Sublibrary 和
   Output 责任；旧的 8 service/11 port/117 文件清单若与本文冲突，以本文为准并重新
   计算，不为保持数字而漏掉产品能力。
-- `05_RAW_FOUNDATION_BLUEPRINT.md` 与 `06_RAW_FOUNDATION_EXECUTION_PLAN.md` 负责
-  P3 C0 原始入库细节。它们可以先实现外部原件和第一方版本，但不得把 C0 永久缩窄
+- `03_c_P3_RAW_FOUNDATION.md` 负责 P3 C0 原始入库架构；
+  `../04_process/04_d_P3_RAW_FOUNDATION_PLAN.md` 负责迁移、事务和验证顺序。
+  它们可以先实现外部原件和第一方版本，但不得把 C0 永久缩窄
   成“导入表”；后续人工知识记录继续使用同一权威与版本原则。
-- `07_P4_FIRST_COLLECTION_PATHS.md` 负责飞书与浏览器真实收集路径。它必须以来源
+- `../04_process/04_e_P4_COLLECTION_PLAN.md` 负责首批真实收集交付流。它必须以来源
   上下文候选、用户选择和真实连接为正常路径；手工导出只能是恢复或暂时回退路径。
-- `08_SOURCE_TOOL_RESEARCH.md` 负责逐来源现有工具调查、实际证据、最小授权和路线
+- `03_d_SOURCE_ROUTE_REGISTRY.md` 负责逐来源现有工具调查、实际证据、最小授权和路线
   决策。没有该证据，不允许用 adapter、协议或手工导出替代来源规划。
-- `09_P6_PERSONAL_KNOWLEDGE_UNIVERSE_BLUEPRINT.md` 负责 P6 的语义模型、三维相关度、
-  三级地图、高密度表达、非阻塞建议、浮现/检索、子库和输出边界；它不代表 P6 已实现。
+- `03_e_PERSONAL_KNOWLEDGE_UNIVERSE.md` 负责 P6 的语义模型、三维相关度、
+  三级地图、高密度表达、非阻塞建议、浮现/检索、子库和输出设计基线；实现/状态不由该文维护。
+- `03_f_EXTERNAL_SOVEREIGN_LIBRARIES_CANDIDATE.md` 是尚未正式采用的外部主权兼容候选；试点结果
+  不能自动升级它，采用时必须回写 requirements/AC/本文。
+- `03_g_C1B_C2B_MODALITY_LADDER.md` 是已采用的 C1A/C1B、C2A/C2B 架构补充；运行批次和
+  当前课程状态不在该文维护。
 
 补充文档不能新增产品决定，也不能以阶段已实现的局部能力覆盖 00–03 的全局边界。
 
 ## 16. 保持开放的架构决定
 
-以下决定等待真实 raw-to-view 闭环提供证据：
+以下决定仍等待足够真实使用证据：
 
 - 核心区审阅、关联、建模和长期管理的具体 UI 技术与交互形态；
 - 输出能力是否长期留在同一应用，或在出现独立部署/消费者后拆分；
-- 飞书和浏览器之后的来源顺序及每个来源的具体工具；
 - 哪些人工触发可以升级为人工确认或受控定时运行；
-- C0 人工知识记录的最终表结构、评分计算细节和读投影策略；
 - 哪些本地 API 路由确实有浏览器扩展或窄 UI 调用者。
 
-这些开放项不阻止 P2 建立完整责任位置，但 P2 只能建立可演化骨架，不能用未验证
-的复杂协议、通用知识模型或空服务替用户提前做决定。
+这些开放项不能用未验证的复杂协议、空服务或候选工具替用户提前做决定；当前使用状态和
+来源优先级由 usage status/source research 管理，不属于架构开放项。

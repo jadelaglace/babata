@@ -1,15 +1,16 @@
 use babata_domain::{
     DerivativeId, DerivativeKind, DerivativeRef, ItemId, LogicalPath, ProcessingState, RevisionId,
-    Sha256,
+    Sha256, UtcTimestamp,
 };
 
 use crate::{
     ApplicationError, ChangeMapNodeTagCommand, ChangeMapParentCommand,
-    ChangeSemanticMapAssignmentCommand, CreateMapNodeCommand, CreateScoreProfileCommand,
-    EvolveMapNodeCommand, FirstPartySemanticOutcome, IngestSemanticCandidateCommand,
-    KnowledgeReviewContext, MapNodeDetail, RecordRelevanceScoreCommand,
-    RecordSuggestionReviewCommand, RegisterFirstPartySemanticCommand, RelevanceScoreDetail,
-    SemanticCoreSnapshot, SemanticEntryDetail, SemanticIngestOutcome, ShowProcessRunOutcome,
+    ChangeSemanticMapAssignmentCommand, CourseRegistrationDetail, CreateMapNodeCommand,
+    CreateScoreProfileCommand, EvolveMapNodeCommand, FirstPartySemanticOutcome,
+    IngestSemanticCandidateCommand, KnowledgeReviewContext, MapNodeDetail,
+    RecordRelevanceScoreCommand, RecordSuggestionReviewCommand, RegisterCourseCommand,
+    RegisterFirstPartySemanticCommand, RelevanceScoreDetail, SemanticCoreSnapshot,
+    SemanticEntryDetail, SemanticIngestOutcome, ShowProcessRunOutcome,
     ports::{
         AssetStorePort, DerivedRepositoryPort, KnowledgeCoreRepositoryPort, RawRepositoryPort,
     },
@@ -93,8 +94,7 @@ where
                 "semantic derivative {derivative_id} output no longer matches its hash"
             )));
         }
-        let package: babata_domain::SemanticCandidatePackage = serde_json::from_str(package_json)
-            .map_err(|error| {
+        let package = parse_semantic_candidate_package(package_json).map_err(|error| {
             ApplicationError::Integrity(format!(
                 "semantic derivative {derivative_id} is not a candidate package: {error}"
             ))
@@ -215,6 +215,30 @@ where
         self.raw.record_relevance_score(command)
     }
 
+    pub fn register_course(
+        &self,
+        command: &RegisterCourseCommand,
+    ) -> Result<CourseRegistrationDetail, ApplicationError> {
+        command
+            .definition
+            .validate()
+            .map_err(ApplicationError::from)?;
+        self.raw.register_course(command)
+    }
+
+    pub fn show_course(
+        &self,
+        course_key: &str,
+        version: u32,
+    ) -> Result<CourseRegistrationDetail, ApplicationError> {
+        if course_key.trim().is_empty() || version == 0 {
+            return Err(ApplicationError::Integrity(
+                "course key and positive version are required".to_owned(),
+            ));
+        }
+        self.raw.load_course(course_key, version)
+    }
+
     fn ready_revision(
         &self,
         revision_id: &RevisionId,
@@ -326,5 +350,62 @@ where
             )));
         }
         Ok(())
+    }
+}
+
+fn parse_semantic_candidate_package(
+    package_json: &str,
+) -> Result<babata_domain::SemanticCandidatePackage, serde_json::Error> {
+    let mut value: serde_json::Value = serde_json::from_str(package_json)?;
+    if let Some(generated_at) = value
+        .get("generated_at")
+        .and_then(serde_json::Value::as_str)
+        .and_then(normalize_legacy_utc_timestamp)
+    {
+        value["generated_at"] = serde_json::Value::String(generated_at);
+    }
+    serde_json::from_value(value)
+}
+
+fn normalize_legacy_utc_timestamp(value: &str) -> Option<String> {
+    let bytes = value.as_bytes();
+    if bytes.len() != 19
+        || bytes[2] != b'/'
+        || bytes[5] != b'/'
+        || bytes[10] != b' '
+        || bytes[13] != b':'
+        || bytes[16] != b':'
+        || bytes
+            .iter()
+            .enumerate()
+            .any(|(index, byte)| !matches!(index, 2 | 5 | 10 | 13 | 16) && !byte.is_ascii_digit())
+    {
+        return None;
+    }
+    let canonical = format!(
+        "{}-{}-{}T{}Z",
+        &value[6..10],
+        &value[0..2],
+        &value[3..5],
+        &value[11..19]
+    );
+    UtcTimestamp::parse(&canonical)
+        .ok()
+        .map(|timestamp| timestamp.as_str().to_owned())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::normalize_legacy_utc_timestamp;
+
+    #[test]
+    fn legacy_semantic_package_timestamp_normalization_is_narrow() {
+        assert_eq!(
+            normalize_legacy_utc_timestamp("08/15/2026 06:37:24").as_deref(),
+            Some("2026-08-15T06:37:24Z")
+        );
+        assert!(normalize_legacy_utc_timestamp("13/40/2026 06:37:24").is_none());
+        assert!(normalize_legacy_utc_timestamp("2026-08-15T06:37:24Z").is_none());
+        assert!(normalize_legacy_utc_timestamp("8/15/2026 06:37:24").is_none());
     }
 }

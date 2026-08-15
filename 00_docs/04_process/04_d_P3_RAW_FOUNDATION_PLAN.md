@@ -1,8 +1,11 @@
-# Babata P3 C0 原始资料底座执行细则
+# Babata P3 C0 原始资料底座交付计划
+
+<!-- DOC-ID: DOC-P3-PLAN -->
+<!-- DOC-AUTHORITY-BOUNDARY: delivery-plan -->
 
 ## 1. 前置条件与范围
 
-本文只规定 `05_RAW_FOUNDATION_BLUEPRINT.md` 的实施顺序、migration 所有权、事务、
+本文只规定 `03_c_P3_RAW_FOUNDATION.md` 的实施顺序、migration 所有权、事务、
 测试和工程命令。P3 必须在修正后的 P2 骨架门通过后开始；已经存在的 29 文件实现
 属于提前工作，需按本文重新审阅，不能作为 P3 已完成的证据。
 

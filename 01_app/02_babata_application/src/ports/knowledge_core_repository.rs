@@ -2,9 +2,10 @@ use babata_domain::ScoreProfile;
 
 use crate::{
     ApplicationError, ChangeMapNodeTagCommand, ChangeMapParentCommand,
-    ChangeSemanticMapAssignmentCommand, CreateMapNodeCommand, CreateScoreProfileCommand,
-    EvolveMapNodeCommand, FirstPartySemanticOutcome, IngestSemanticCandidateCommand, MapNodeDetail,
-    RecordRelevanceScoreCommand, RecordSuggestionReviewCommand, RegisterFirstPartySemanticCommand,
+    ChangeSemanticMapAssignmentCommand, CourseRegistrationDetail, CreateMapNodeCommand,
+    CreateScoreProfileCommand, EvolveMapNodeCommand, FirstPartySemanticOutcome,
+    IngestSemanticCandidateCommand, MapNodeDetail, RecordRelevanceScoreCommand,
+    RecordSuggestionReviewCommand, RegisterCourseCommand, RegisterFirstPartySemanticCommand,
     SemanticCoreSnapshot, SemanticEntryDetail, SemanticIngestOutcome,
 };
 
@@ -59,4 +60,13 @@ pub trait KnowledgeCoreRepositoryPort {
         &self,
         command: &RecordRelevanceScoreCommand,
     ) -> Result<crate::RelevanceScoreDetail, ApplicationError>;
+    fn register_course(
+        &self,
+        command: &RegisterCourseCommand,
+    ) -> Result<CourseRegistrationDetail, ApplicationError>;
+    fn load_course(
+        &self,
+        course_key: &str,
+        version: u32,
+    ) -> Result<CourseRegistrationDetail, ApplicationError>;
 }

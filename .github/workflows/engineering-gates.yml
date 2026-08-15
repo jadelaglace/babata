@@ -60,7 +60,7 @@ jobs:
         uses: actions/checkout@v5
       - name: Install architecture check dependencies
         shell: pwsh
-        run: choco install ripgrep --no-progress --yes
+        run: choco install ripgrep sqlite --no-progress --yes
       - name: Run architecture and document boundary checks
         shell: pwsh
         run: ./05_scripts/check-boundary.ps1

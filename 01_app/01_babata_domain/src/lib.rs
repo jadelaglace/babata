@@ -1,5 +1,6 @@
 pub mod capability;
 pub mod collection;
+pub mod course;
 pub mod entities;
 pub mod error;
 pub mod ids;
@@ -22,14 +23,19 @@ pub use collection::{
     SourceAuthor, SourceHierarchyNode, SourceLimitation, SourceMediaEntry, SourceMediaMetadata,
     SourceObservationKind,
 };
+pub use course::{
+    COURSE_REGISTRATION_SCHEMA_V1, CourseAcceptanceState, CourseBranchCover, CourseClosureState,
+    CourseLensRef, CourseMapAssignment, CourseRegistrationDefinition, CourseSemanticModule,
+    MapAssignmentRole, TypedMapRelation, TypedMapRelationKind,
+};
 pub use entities::{AssetRef, RawItem, RawRevision, Relation, SourceRef};
 pub use error::DomainError;
 pub use ids::{
-    AssetAttachmentId, AssetId, CollectionId, CollectionSessionId, DenseExpressionId, DerivativeId,
-    ItemId, JobId, KnowledgeId, MapEdgeEventId, MapNodeEventId, MapNodeId, MapTagEventId, OutputId,
-    RelationId, RevisionId, RunId, ScoreId, ScoreProfileId, SemanticId, SemanticMapEventId,
-    SemanticRelationId, SnapshotId, SourceId, SourceObservationId, SublibraryId, SuggestionId,
-    SuggestionReviewId, TagId, ViewId,
+    AssetAttachmentId, AssetId, CollectionId, CollectionSessionId, CourseId, DenseExpressionId,
+    DerivativeId, ItemId, JobId, KnowledgeId, MapEdgeEventId, MapNodeEventId, MapNodeId,
+    MapRelationId, MapTagEventId, OutputId, RelationId, RevisionId, RunId, ScoreId, ScoreProfileId,
+    SemanticId, SemanticMapEventId, SemanticRelationId, SnapshotId, SourceId, SourceObservationId,
+    SublibraryId, SuggestionId, SuggestionReviewId, TagId, ViewId,
 };
 pub use kinds::{
     AssetIntegrityMethod, AssetRole, ContentType, DerivativeKind, ProcessingState, RawState,

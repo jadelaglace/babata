@@ -37,19 +37,25 @@ try {
     New-Item -ItemType Directory -Path $tempRoot | Out-Null
     & $checker -SkillRoot $sourceSkill | Out-Null
 
-    Assert-CheckerFails -Name 'doubao-falsely-disabled' -ExpectedMessage 'enabled Doubao route' -Mutate {
+    Assert-CheckerFails -Name 'missing-runtime-preflight' -ExpectedMessage 'runtime capability truth' -Mutate {
         param($caseRoot)
         $path = Join-Path $caseRoot 'references\route-catalog.md'
         $text = Get-Content -Raw -Encoding utf8 -LiteralPath $path
-        $text = $text -replace '(?m)^(\| `source\.doubao` \|.*\| )enabled( \|.*)$', '${1}disabled${2}'
+        $text = $text.Replace('babata --json capabilities list', 'babata capabilities')
         Set-Content -Encoding utf8 -LiteralPath $path -Value $text
     }
 
-    Assert-CheckerFails -Name 'doubao-allows-incomplete-pagination' -ExpectedMessage 'incomplete-pagination refusal' -Mutate {
+    Assert-CheckerFails -Name 'catalog-duplicates-runtime-status' -ExpectedMessage 'duplicates runtime status' -Mutate {
+        param($caseRoot)
+        $path = Join-Path $caseRoot 'references\route-catalog.md'
+        Add-Content -Encoding utf8 -LiteralPath $path -Value "`n| source | status |`n| --- | --- |`n| doubao | enabled |`n"
+    }
+
+    Assert-CheckerFails -Name 'doubao-allows-incomplete-pagination' -ExpectedMessage 'pagination completion condition' -Mutate {
         param($caseRoot)
         $path = Join-Path $caseRoot 'references\source-doubao.md'
         $text = Get-Content -Raw -Encoding utf8 -LiteralPath $path
-        $text = $text.Replace('`HasMore=true`', '`pagination flag`')
+        $text = $text.Replace('`has_more=false`', '`pagination flag`')
         Set-Content -Encoding utf8 -LiteralPath $path -Value $text
     }
 
@@ -66,6 +72,14 @@ try {
         $path = Join-Path $caseRoot 'SKILL.md'
         $text = Get-Content -Raw -Encoding utf8 -LiteralPath $path
         $text = $text.Replace('Never call `babata process`', 'Do not usually call processing')
+        Set-Content -Encoding utf8 -LiteralPath $path -Value $text
+    }
+
+    Assert-CheckerFails -Name 'ui-description-too-long' -ExpectedMessage 'short_description must contain 25-64 characters' -Mutate {
+        param($caseRoot)
+        $path = Join-Path $caseRoot 'agents\openai.yaml'
+        $text = Get-Content -Raw -Encoding utf8 -LiteralPath $path
+        $text = [regex]::Replace($text, '(?m)^\s*short_description:.*$', '  short_description: "This collection skill description is deliberately much longer than sixty four characters"')
         Set-Content -Encoding utf8 -LiteralPath $path -Value $text
     }
 

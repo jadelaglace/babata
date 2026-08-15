@@ -1,7 +1,7 @@
 # OneNote Recipe
 
-Route: `source.onenote`. Current verified shapes are one same-export PDF/MHT pair and an explicit
-list of standalone MHT exports.
+Route: `source.onenote`. This recipe covers one same-export PDF/MHT pair or an explicit list of
+standalone MHT exports. Query runtime capability before use.
 
 ## Authorised Scope
 

@@ -550,6 +550,8 @@ mod tests {
                 manual_exclude: Vec::new(),
                 organisation_rules: vec![SublibraryOrganisationRule::Title],
                 include_unreviewed,
+                course_refs: Vec::new(),
+                map_node_refs: Vec::new(),
             },
             author: "fixture-user".to_owned(),
             created_at: timestamp(),

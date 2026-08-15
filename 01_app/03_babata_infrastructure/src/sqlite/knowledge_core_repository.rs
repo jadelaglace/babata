@@ -3,21 +3,22 @@ use std::collections::{BTreeSet, HashMap};
 use babata_application::ports::KnowledgeCoreRepositoryPort;
 use babata_application::{
     ApplicationError, AssignmentChange, ChangeMapNodeTagCommand, ChangeMapParentCommand,
-    ChangeSemanticMapAssignmentCommand, CreateMapNodeCommand, CreateScoreProfileCommand,
-    DenseExpressionDetail, EvolveMapNodeAction, EvolveMapNodeCommand, FirstPartySemanticOutcome,
-    IngestSemanticCandidateCommand, MapEdgeEventDetail, MapNodeDetail, MapNodeEventDetail,
-    MapNodeTagEventDetail, ModelSuggestionDetail, RecordRelevanceScoreCommand,
-    RecordSuggestionReviewCommand, RegisterFirstPartySemanticCommand, RelevanceScoreDetail,
-    SemanticCoreSnapshot, SemanticEntryDetail, SemanticIngestOutcome,
+    ChangeSemanticMapAssignmentCommand, CourseRegistrationDetail, CreateMapNodeCommand,
+    CreateScoreProfileCommand, DenseExpressionDetail, EvolveMapNodeAction, EvolveMapNodeCommand,
+    FirstPartySemanticOutcome, IngestSemanticCandidateCommand, MapEdgeEventDetail, MapNodeDetail,
+    MapNodeEventDetail, MapNodeTagEventDetail, ModelSuggestionDetail, RecordRelevanceScoreCommand,
+    RecordSuggestionReviewCommand, RegisterCourseCommand, RegisterFirstPartySemanticCommand,
+    RelevanceScoreDetail, SemanticCoreSnapshot, SemanticEntryDetail, SemanticIngestOutcome,
     SemanticMapAssignmentEventDetail, SemanticRelationDetail, SuggestionDownstreamEligibility,
     SuggestionDownstreamUse, SuggestionReviewDetail,
 };
 use babata_domain::{
-    DenseExpressionId, DenseExpressionKind, DerivativeId, ItemId, KnowledgeKind, KnowledgeRealm,
-    MapEdgeEventId, MapNodeEventId, MapNodeId, MapNodeLevel, MapNodeLifecycle, MapTagEventId,
+    CourseAcceptanceState, CourseClosureState, CourseId, DenseExpressionId, DenseExpressionKind,
+    DerivativeId, ItemId, KnowledgeKind, KnowledgeRealm, MapAssignmentRole, MapEdgeEventId,
+    MapNodeEventId, MapNodeId, MapNodeLevel, MapNodeLifecycle, MapRelationId, MapTagEventId,
     RelevanceTargetKind, RevisionId, ScoreId, ScoreProfile, SemanticId, SemanticMapEventId,
-    SemanticRelationId, Sha256, SuggestionDecisionKind, SuggestionId, SuggestionReviewId, TagId,
-    UtcTimestamp,
+    SemanticRelationId, Sha256, SublibraryDefinition, SuggestionDecisionKind, SuggestionId,
+    SuggestionReviewId, TagId, TypedMapRelationKind, UtcTimestamp,
 };
 use rusqlite::{OptionalExtension, Transaction, params};
 
@@ -1248,6 +1249,397 @@ impl KnowledgeCoreRepositoryPort for SqliteRawRepository {
             suggestion_id: None,
             created_at: command.created_at.clone(),
         })
+    }
+
+    #[allow(clippy::too_many_lines)]
+    fn register_course(
+        &self,
+        command: &RegisterCourseCommand,
+    ) -> Result<CourseRegistrationDetail, ApplicationError> {
+        command
+            .definition
+            .validate()
+            .map_err(ApplicationError::from)?;
+        let definition_json = serde_json::to_string_pretty(&command.definition).map_err(json)?;
+        let definition_sha256 = Sha256::of_bytes(definition_json.as_bytes());
+        let mut connection = self.lock()?;
+        let transaction = connection.transaction().map_err(storage)?;
+
+        let existing = transaction
+            .query_row(
+                "SELECT course_id, definition_sha256 FROM courses
+                 WHERE course_key = ?1 AND course_version = ?2",
+                params![command.definition.course_key, command.definition.version],
+                |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)),
+            )
+            .optional()
+            .map_err(storage)?;
+        if let Some((course_id, existing_sha256)) = existing {
+            if existing_sha256 != definition_sha256.as_str() {
+                return Err(ApplicationError::Conflict(format!(
+                    "course {}/{} already has a different definition",
+                    command.definition.course_key, command.definition.version
+                )));
+            }
+            drop(transaction);
+            return load_course_detail(&connection, &course_id);
+        }
+
+        validate_course_lens(&transaction, &command.definition)?;
+        for branch in &command.definition.branches {
+            let (level, _, lifecycle) =
+                load_map_identity(&transaction, &branch.branch_map_node_id)?;
+            if level != MapNodeLevel::Branch || lifecycle != MapNodeLifecycle::Active {
+                return Err(ApplicationError::Conflict(format!(
+                    "covered node is not an active branch: {}",
+                    branch.branch_map_node_id
+                )));
+            }
+        }
+        for module in &command.definition.modules {
+            validate_semantic_exists(&transaction, &module.semantic_id)?;
+            for assignment in &module.assignments {
+                let (_, _, lifecycle) = load_map_identity(&transaction, &assignment.map_node_id)?;
+                if lifecycle != MapNodeLifecycle::Active {
+                    return Err(ApplicationError::Conflict(format!(
+                        "course assignment targets an inactive map node: {}",
+                        assignment.map_node_id
+                    )));
+                }
+            }
+        }
+        for relation in &command.definition.map_relations {
+            for map_node_id in [&relation.from_map_node_id, &relation.to_map_node_id] {
+                let (_, _, lifecycle) = load_map_identity(&transaction, map_node_id)?;
+                if lifecycle != MapNodeLifecycle::Active {
+                    return Err(ApplicationError::Conflict(format!(
+                        "typed map relation targets an inactive map node: {map_node_id}"
+                    )));
+                }
+            }
+        }
+
+        let course_id = CourseId::new();
+        transaction
+            .execute(
+                "INSERT INTO courses
+                 (course_id, course_key, course_version, title, source, term,
+                  acceptance_state, closure_state, definition_sha256, definition_json,
+                  author_kind, author, created_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)",
+                params![
+                    course_id.to_string(),
+                    command.definition.course_key,
+                    command.definition.version,
+                    command.definition.title.trim(),
+                    command.definition.source.trim(),
+                    command.definition.term.trim(),
+                    course_acceptance(command.definition.acceptance_state),
+                    course_closure(command.definition.closure_state),
+                    definition_sha256.as_str(),
+                    definition_json,
+                    command.definition.author_kind,
+                    command.definition.author.trim(),
+                    command.definition.created_at.as_str(),
+                ],
+            )
+            .map_err(storage)?;
+
+        for branch in &command.definition.branches {
+            transaction
+                .execute(
+                    "INSERT INTO course_branch_covers
+                     (course_id, branch_map_node_id, relation_kind, rationale, created_at)
+                     VALUES (?1, ?2, 'covers', ?3, ?4)",
+                    params![
+                        course_id.to_string(),
+                        branch.branch_map_node_id,
+                        branch.rationale.trim(),
+                        command.definition.created_at.as_str(),
+                    ],
+                )
+                .map_err(storage)?;
+        }
+
+        let assignment_provenance = if command.definition.author_kind == "first_party" {
+            "first_party"
+        } else {
+            "machine"
+        };
+        for module in &command.definition.modules {
+            transaction
+                .execute(
+                    "INSERT INTO course_semantic_modules
+                     (course_id, module_id, semantic_id, chapter_id, created_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5)",
+                    params![
+                        course_id.to_string(),
+                        module.module_id.trim(),
+                        module.semantic_id,
+                        module.chapter_id.trim(),
+                        command.definition.created_at.as_str(),
+                    ],
+                )
+                .map_err(storage)?;
+            for assignment in &module.assignments {
+                let inserted = transaction
+                    .execute(
+                        "INSERT OR IGNORE INTO semantic_map_assignments
+                         (semantic_id, map_node_id, provenance_kind, suggestion_id, created_at)
+                         VALUES (?1, ?2, ?3, NULL, ?4)",
+                        params![
+                            module.semantic_id,
+                            assignment.map_node_id,
+                            assignment_provenance,
+                            command.definition.created_at.as_str(),
+                        ],
+                    )
+                    .map_err(storage)?;
+                if inserted == 1 {
+                    insert_semantic_map_event(
+                        &transaction,
+                        &module.semantic_id,
+                        &assignment.map_node_id,
+                        "assigned",
+                        &assignment.rationale,
+                        assignment_provenance,
+                        &command.definition.author,
+                        None,
+                        &command.definition.created_at,
+                    )?;
+                }
+                transaction
+                    .execute(
+                        "INSERT INTO course_semantic_map_assignments
+                         (course_id, semantic_id, map_node_id, assignment_role, strength,
+                          confidence, rationale, method_version, created_at)
+                         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+                        params![
+                            course_id.to_string(),
+                            module.semantic_id,
+                            assignment.map_node_id,
+                            map_assignment_role(assignment.role),
+                            assignment.strength,
+                            assignment.confidence,
+                            assignment.rationale.trim(),
+                            assignment.method_version.trim(),
+                            command.definition.created_at.as_str(),
+                        ],
+                    )
+                    .map_err(storage)?;
+            }
+        }
+
+        for relation in &command.definition.map_relations {
+            transaction
+                .execute(
+                    "INSERT INTO course_map_node_relations
+                     (map_relation_id, course_id, from_map_node_id, relation_kind,
+                      to_map_node_id, rationale, author_kind, author, created_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+                    params![
+                        MapRelationId::new().to_string(),
+                        course_id.to_string(),
+                        relation.from_map_node_id,
+                        typed_map_relation(relation.kind),
+                        relation.to_map_node_id,
+                        relation.rationale.trim(),
+                        command.definition.author_kind,
+                        command.definition.author.trim(),
+                        command.definition.created_at.as_str(),
+                    ],
+                )
+                .map_err(storage)?;
+        }
+        transaction
+            .execute(
+                "INSERT INTO course_lens_memberships
+                 (course_id, sublibrary_id, definition_version, created_at)
+                 VALUES (?1, ?2, ?3, ?4)",
+                params![
+                    course_id.to_string(),
+                    command.definition.lens.sublibrary_id,
+                    command.definition.lens.definition_version,
+                    command.definition.created_at.as_str(),
+                ],
+            )
+            .map_err(storage)?;
+        transaction.commit().map_err(storage)?;
+        load_course_detail(&connection, course_id.as_str())
+    }
+
+    fn load_course(
+        &self,
+        course_key: &str,
+        version: u32,
+    ) -> Result<CourseRegistrationDetail, ApplicationError> {
+        let connection = self.lock()?;
+        let course_id = connection
+            .query_row(
+                "SELECT course_id FROM courses WHERE course_key = ?1 AND course_version = ?2",
+                params![course_key, version],
+                |row| row.get::<_, String>(0),
+            )
+            .optional()
+            .map_err(storage)?
+            .ok_or_else(|| ApplicationError::NotFound(format!("course:{course_key}@{version}")))?;
+        load_course_detail(&connection, &course_id)
+    }
+}
+
+fn validate_semantic_exists(
+    connection: &rusqlite::Connection,
+    semantic_id: &str,
+) -> Result<(), ApplicationError> {
+    if connection
+        .query_row(
+            "SELECT 1 FROM semantic_entries WHERE semantic_id = ?1",
+            params![semantic_id],
+            |_| Ok(()),
+        )
+        .optional()
+        .map_err(storage)?
+        .is_none()
+    {
+        return Err(ApplicationError::NotFound(semantic_id.to_owned()));
+    }
+    Ok(())
+}
+
+fn validate_course_lens(
+    connection: &rusqlite::Connection,
+    definition: &babata_domain::CourseRegistrationDefinition,
+) -> Result<(), ApplicationError> {
+    let raw_text = connection
+        .query_row(
+            "SELECT raw_text FROM revisions
+             WHERE state = 'ready'
+               AND json_valid(raw_text)
+               AND json_extract(raw_text, '$.schema_version') = 'babata.sublibrary/v1'
+               AND json_extract(raw_text, '$.id') = ?1
+               AND CAST(json_extract(raw_text, '$.version') AS INTEGER) = ?2",
+            params![
+                definition.lens.sublibrary_id,
+                definition.lens.definition_version
+            ],
+            |row| row.get::<_, String>(0),
+        )
+        .optional()
+        .map_err(storage)?
+        .ok_or_else(|| {
+            ApplicationError::NotFound(format!(
+                "{}@{}",
+                definition.lens.sublibrary_id, definition.lens.definition_version
+            ))
+        })?;
+    let lens: SublibraryDefinition = serde_json::from_str(&raw_text).map_err(json)?;
+    if !lens
+        .definition
+        .course_refs
+        .contains(&definition.course_ref())
+    {
+        return Err(ApplicationError::Integrity(
+            "MBA lens does not contain the registered course reference".to_owned(),
+        ));
+    }
+    for branch in &definition.branches {
+        if !lens
+            .definition
+            .map_node_refs
+            .contains(&branch.branch_map_node_id)
+        {
+            return Err(ApplicationError::Integrity(format!(
+                "MBA lens does not contain covered branch {}",
+                branch.branch_map_node_id
+            )));
+        }
+    }
+    Ok(())
+}
+
+fn load_course_detail(
+    connection: &rusqlite::Connection,
+    course_id: &str,
+) -> Result<CourseRegistrationDetail, ApplicationError> {
+    let (definition_sha256, definition_json) = connection
+        .query_row(
+            "SELECT definition_sha256, definition_json FROM courses WHERE course_id = ?1",
+            params![course_id],
+            |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)),
+        )
+        .optional()
+        .map_err(storage)?
+        .ok_or_else(|| ApplicationError::NotFound(course_id.to_owned()))?;
+    let definition: babata_domain::CourseRegistrationDefinition =
+        serde_json::from_str(&definition_json).map_err(json)?;
+    definition.validate().map_err(ApplicationError::from)?;
+    let actual_sha256 = Sha256::of_bytes(definition_json.as_bytes());
+    if actual_sha256.as_str() != definition_sha256 {
+        return Err(ApplicationError::Integrity(format!(
+            "course definition hash mismatch: {course_id}"
+        )));
+    }
+
+    let expected_assignments = definition
+        .modules
+        .iter()
+        .map(|module| module.assignments.len())
+        .sum::<usize>();
+    for (table, expected) in [
+        ("course_branch_covers", definition.branches.len()),
+        ("course_semantic_modules", definition.modules.len()),
+        ("course_semantic_map_assignments", expected_assignments),
+        ("course_map_node_relations", definition.map_relations.len()),
+        ("course_lens_memberships", 1),
+    ] {
+        let count = connection
+            .query_row(
+                &format!("SELECT COUNT(*) FROM {table} WHERE course_id = ?1"),
+                params![course_id],
+                |row| row.get::<_, i64>(0),
+            )
+            .map_err(storage)?;
+        if count != expected as i64 {
+            return Err(ApplicationError::Integrity(format!(
+                "course read-back count mismatch for {table}: {count}/{expected}"
+            )));
+        }
+    }
+    Ok(CourseRegistrationDetail {
+        course_id: course_id.to_owned(),
+        definition_sha256: Sha256::parse(definition_sha256).map_err(ApplicationError::from)?,
+        definition,
+    })
+}
+
+const fn course_acceptance(value: CourseAcceptanceState) -> &'static str {
+    match value {
+        CourseAcceptanceState::PendingUserAcceptance => "pending_user_acceptance",
+        CourseAcceptanceState::Accepted => "accepted",
+    }
+}
+
+const fn course_closure(value: CourseClosureState) -> &'static str {
+    match value {
+        CourseClosureState::Open => "open",
+        CourseClosureState::Closed => "closed",
+    }
+}
+
+const fn map_assignment_role(value: MapAssignmentRole) -> &'static str {
+    match value {
+        MapAssignmentRole::Primary => "primary",
+        MapAssignmentRole::Secondary => "secondary",
+        MapAssignmentRole::Contextual => "contextual",
+    }
+}
+
+const fn typed_map_relation(value: TypedMapRelationKind) -> &'static str {
+    match value {
+        TypedMapRelationKind::IntersectsWith => "intersects_with",
+        TypedMapRelationKind::DrawsFrom => "draws_from",
+        TypedMapRelationKind::AppliesTo => "applies_to",
+        TypedMapRelationKind::PrerequisiteOf => "prerequisite_of",
     }
 }
 

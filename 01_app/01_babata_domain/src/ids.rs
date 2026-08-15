@@ -86,6 +86,8 @@ opaque_id!(MapNodeEventId, "map_event_");
 opaque_id!(MapEdgeEventId, "map_edge_event_");
 opaque_id!(SemanticMapEventId, "semantic_map_event_");
 opaque_id!(MapTagEventId, "map_tag_event_");
+opaque_id!(CourseId, "course_");
+opaque_id!(MapRelationId, "map_relation_");
 opaque_id!(SublibraryId, "sublibrary_");
 opaque_id!(OutputId, "output_");
 

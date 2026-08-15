@@ -2,7 +2,7 @@ $ErrorActionPreference = 'Stop'
 
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $requiredMarkers = @{
-    '00_docs/03_architecture/03_ARCHITECTURE.md' = @(
+    '00_docs/03_architecture/03_a_ARCHITECTURE.md' = @(
         'BABATA_EVIDENCE_HOME',
         'BABATA_RECOVERY_HOME',
         '04_runtime/staging/model-workspaces/'
@@ -48,7 +48,12 @@ $trackedText = @(
                 $_.StartsWith('06_config/')) -and
             $_ -match '\.(?:md|toml|ps1)$'
         } |
-        ForEach-Object { Join-Path $repo $_ }
+        ForEach-Object {
+            $path = Join-Path $repo $_
+            if (Test-Path -LiteralPath $path -PathType Leaf) {
+                $path
+            }
+        }
 )
 foreach ($path in $trackedText) {
     $content = Get-Content -LiteralPath $path -Raw -Encoding utf8
