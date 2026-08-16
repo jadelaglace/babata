@@ -48,7 +48,7 @@ Phase 完成只表示该 Phase 关闭时适用的 gate 和 AC/TC 有足够证据
 | P8.6 | 完成 | 同一 70/70 权威存量进入 registered/C0-C | 未触发新增抓取或 C1 |
 | P8.7 | 历史试点 | 本地 MBA 小批 C1 和停队列证据保留 | 不是当前 MBA 权威输入 |
 | P8.8 | 完成 | MBA 网站权威 C1 为 763/763，课件 369、视频 394 | 真实数据继续留在外部数据根 |
-| P8.9 | 进行中 | 财务管理与供应链的 C1B、课程内容/视觉、package/live 和用户验收已关闭 | 两课宇宙归属仍是历史单路径模型；map-node 非父边类型化关系、course/branch 分离、多重归属、MBA lens、基石强度/置信度、兼容迁移及其余课程未完成 |
+| P8.9 | 进行中 | 财务管理、供应链和决策会计已关闭；执行商务沟通已发布并待全课程统一验收 | 已关闭两课的宇宙归属仍是历史单路径模型；其余课程交付、全课程统一验收及适用的 closure 尚未完成 |
 
 “全量”永远绑定本行声明的明确范围。70/70、763/763 或一门课程完整跑通，都只是对应使用范围
 的完成事实，不进入 PRD，也不自动扩大为整个产品、全部来源或全部 MBA 已完成。
@@ -131,7 +131,22 @@ Phase 完成只表示该 Phase 关闭时适用的 gate 和 AC/TC 有足够证据
 上述 accepted/closed 证明本门决策会计课程在声明的 33 个模块范围内完成内容、媒体、知识归属、
 package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也不改变其他课程的历史状态。
 
-## 7. 试跑、试点、模板与全量使用
+## 7. 执行商务沟通当前正式成果
+
+- 正式课程分母与 C1B：19/19 完整 C1、19/19 本质判断、16/16 必要媒体登记。
+- 正式 C2B：19/19 知识条目已注册；学习正文为 8 章、课程总览和 3 份课程专属学习工具，共 12 份。
+- 当前候选批次：
+  `D:\BabataData\04_runtime\staging\model-workspaces\mba-executive-business-communication-c2b-20260816-v3`。
+- 唯一用户 live：
+  `C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\mba_executive_business_communication_c2b_latest`。
+- package/live：33/33，逐文件 hash 相等；14 个 Markdown、17 个媒体文件、Wiki/Markdown 链接检查通过。
+- 当前状态：整轮无缺陷到达 `pending_user_acceptance`；按全课程 Goal 不单独请求验收、不运行 closure verifier，待所有未关闭课程发布后统一请求一次内容与视觉确认。
+- 终端证据：`D:\BabataData\04_runtime\staging\execution-rounds\mba-executive-business-communication-20260816-v3\round-ledger.json`，status `passed`、actual terminal `pending_user_acceptance`；发布回执位于 `D:\BabataData\04_runtime\receipts\mba-course-c2b\executive-business-communication\`。
+
+该状态只证明本门课程的正式 C1B、内容、知识登记和唯一 live 已到待验收终端，不代表用户已经
+验收、课程已经 closed 或全部 MBA 已完成。
+
+## 8. 试跑、试点、模板与全量使用
 
 | 名称 | 在产品文档中的位置 | 在本文中的状态含义 |
 | --- | --- | --- |
@@ -143,7 +158,7 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 一个试跑结果、试点结果或模板验收可以成为能力成熟度证据，但它们的数字、批次名、日期和
 当前完成状态属于本文或运行回执，不属于 PRD/AC/TC 正文。
 
-## 8. 证据索引
+## 9. 证据索引
 
 | 使用事实 | 主要证据位置 |
 | --- | --- |
@@ -159,6 +174,9 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 | 决策会计 C1B 正式登记 | `mba-decision-accounting-c1b-registration-20260816-v1/c1b-registration-ledger.json` |
 | 决策会计知识宇宙登记 | `mba-decision-accounting-knowledge-20260816-v2/knowledge-universe-registration.json` |
 | 决策会计 C2B 当前关闭 | v8 `manifest.json`、`verification.json`、`closure-verification.json` 与唯一 live |
+| 执行商务沟通 C1B 正式登记 | `mba-executive-business-communication-c1b-registration-20260816-v3/c1b-registration-ledger.json` |
+| 执行商务沟通知识宇宙登记 | `mba-executive-business-communication-knowledge-20260816-v3/knowledge-universe-registration.json` |
+| 执行商务沟通待统一验收 | v3 execution `round-ledger.json`、C2B `manifest.json`、`verification.json`、publish receipt 与唯一 live |
 
 历史被否决的候选、旧批次和逐次调参记录保留在 Git 外 staging/archive 和 Git 历史中，只用于
 追溯，不作为当前状态或产品定义。本文只在当前事实、范围或证据定位发生变化时更新。

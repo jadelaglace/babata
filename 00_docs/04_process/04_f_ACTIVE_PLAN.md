@@ -42,18 +42,18 @@ Goal 或本文尚未回写，只补终端状态、证据和清理，不重跑业
 - Goal 锚点：Goal API 当前为 `active`，目标覆盖 MBA 全部课程逐门独立闭环；既有课程顺序与已关闭状态保持有效。
 - 状态转换类型：`user-explicit-goal-start`
 - 状态转换依据：用户明确启动已暂停的 MBA 全课程 Goal，满足本项 `requires-explicit-resume` 条件并授权按既定课程顺序继续。
-- 当前状态：`in_progress / mba-course-sequence / executive-communication-c2b`。
-- 用户目标：MBA 所有课程逐门闭环，一课一课执行，每门发布后统一请求用户内容与视觉确认。
-- 目标终端：全部 13 门课程分别完成 C1 覆盖、C1B、C2B 内容与知识登记、package/live、用户内容与视觉确认及 closure verifier；DOC-USAGE 逐门记录 `accepted / closed`。
-- 不改变/保护边界：不重跑已关闭课程；不重做执行商务沟通已完成的 `19/19` C1B 准备；每门未取得用户确认不得关闭或推进下一门；先导课仍计为独立一课。
+- 当前状态：`in_progress / mba-course-sequence / mba-primer-c2b`。
+- 用户目标：MBA 所有课程按既定顺序一课一课执行；所有待做课程都到达 `pending_user_acceptance` 后，只统一请求一次内容与视觉确认。
+- 目标终端：全部 13 门课程分别完成 C1 覆盖、C1B、C2B 内容与知识登记、package/live；所有待验收课程一次性取得用户内容与视觉确认后，分别运行 closure verifier 并由 DOC-USAGE 记录 `accepted / closed`。
+- 不改变/保护边界：不重跑已关闭课程；不重做执行商务沟通已完成的 `19/19` C1B 准备；单课到达 `pending_user_acceptance` 后不打断用户、不等待逐门确认，直接按顺序推进下一门；先导课仍计为独立一课。
 - 临时子计划与阶段结论：
   1. [完成] 13 门课程顺序、分母与既有 closure 状态已经冻结；决策会计、财务管理、全球供应链和可持续运营已关闭。
-  2. [完成] 执行商务沟通 C1B 已正式登记 `19/19` essence decisions 与 `16/16` retained media；v1 round 随后因通用 builder 将 `09-公式与决策工具` 写死而 fail-closed，下游知识登记/package/live 均未运行。
-  3. [进行中] builder/materializer 已改为从课程 plan 解析 `09-/10-/11-` 学习文档并通过定向测试；v2 正确复用了正式 C1B，但首个 QianWen digest 因 prompt 未声明长度而得到 `1491 < 1800`，在下游前 fail-closed；已补充至少 2200 字符的证据整理合同，使用全新 v3 做该对象的第二次且最后一次尝试。
-  4. [待执行] 发布后停在 `pending_user_acceptance`，统一请求用户确认内容与视觉；确认后运行 closure verifier。
-  5. [待执行] 每门关闭后更新 DOC-USAGE 和课程路线，再按既定顺序推进下一门，直至 13 门全部关闭。
-- 下一步：启动全新 v3 execution round，从 fingerprint 复用 C1B 开始跑到唯一 live，不使用 v1/v2 learning 或 C2B 输出作为输入。
-- 证据入口：`D:\BabataData\04_runtime\staging\execution-rounds\mba-executive-business-communication-20260816-v2\round-ledger.json`、`D:\BabataData\04_runtime\staging\model-workspaces\mba-executive-business-communication-c1b-registration-20260816-v2\c1b-registration-ledger.json`。
+  2. [完成] 执行商务沟通 v3 execution round 无缺陷到达 `pending_user_acceptance`：C1B `19/19`、必要媒体 `16/16`、知识条目 `19/19`、学习文档 12 份、package/live 33/33；唯一 live 已发布，当前不运行 closure verifier。
+  3. [完成] 通用 builder/materializer 已改为从课程 plan 解析 `09-/10-/11-` 学习文档并通过课程专属名称定向测试；证据整理合同明确至少 2200 字符，v3 已证明修复后的整轮交付。
+  4. [进行中] 按冻结顺序回到第 1 门“美国加州多明尼克大学 MBA 先导课”（C1 119），建立本课计划并从正式 C1B 跑到唯一 live；单课发布后记录 `pending_user_acceptance` 并继续下一门。
+  5. [待执行] 所有待做课程均发布后，一次性汇总内容与视觉请求用户统一确认；确认后逐课运行 closure verifier、更新 DOC-USAGE 并关闭全量 Goal。
+- 下一步：盘点先导课 119/119 正式 C1 与已有 course-plan/C1B 状态，冻结本课输入和 `pending_user_acceptance` 终端后启动新 execution round；不把执行商务沟通的课程内容或失败 v1/v2 输出带入本课。
+- 证据入口：执行商务沟通终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-executive-business-communication-20260816-v3\round-ledger.json`，唯一 live 为 `C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\mba_executive_business_communication_c2b_latest`；当前先导课从 MBA 763/763 权威 C1 覆盖账定位。
 
 ## 3. 下次开工队列（禁止恢复时自动执行）
 
