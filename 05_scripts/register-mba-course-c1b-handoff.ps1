@@ -13,6 +13,13 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
+# sqlite3 and babata emit UTF-8 JSON. Hidden/non-console Windows runners can
+# otherwise decode native stdout with an OEM code page and corrupt Chinese
+# fingerprint fields before ConvertFrom-Json and canonical comparison.
+$utf8NoBom = [Text.UTF8Encoding]::new($false)
+$OutputEncoding = $utf8NoBom
+[Console]::OutputEncoding = $utf8NoBom
+
 $pipelineId = 'agent_import'
 $provider = 'local_extract'
 $toolVersion = '1.0.0'

@@ -26,6 +26,7 @@ foreach ($required in @(
     'partial-registration.json',
     'Write-JsonAtomic',
     'ConvertFrom-Json -DateKind String',
+    '[Console]::OutputEncoding = $utf8NoBom',
     'Require-Rfc3339Utc',
     'timestamp self-test passed',
     '[IO.File]::Move($temporary, $Path, $true)',
