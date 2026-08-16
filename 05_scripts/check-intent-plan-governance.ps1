@@ -44,18 +44,66 @@ function Get-PlanItemBlocks {
     ) | ForEach-Object { $_.Value })
 }
 
-function Get-PlanState {
+function Get-PlanStateInfo {
     param([string]$Item)
     $match = [regex]::Match(
         $Item,
-        '(?m)^- 当前状态：`(?<base>[a-z_]+)(?:\s*/[^`]*)?`。?\s*$'
+        '(?m)^- 当前状态：`(?<value>[^`]+)`。?\s*$'
     )
     if (-not $match.Success) {
         throw 'Intent/plan governance plan item is missing a valid current-state field.'
     }
-    return $match.Groups['base'].Value
+    $parts = @($match.Groups['value'].Value -split '/' | ForEach-Object { $_.Trim() })
+    if ($parts.Count -eq 0 -or $parts[0] -notmatch '^[a-z_]+$') {
+        throw 'Intent/plan governance plan item has an invalid base state.'
+    }
+    $qualifiers = @($parts | Select-Object -Skip 1)
+    foreach ($qualifier in $qualifiers) {
+        if ($qualifier -notmatch '^[a-z0-9_-]+$') {
+            throw "Intent/plan governance plan item has an invalid state qualifier: $qualifier"
+        }
+    }
+    return [pscustomobject]@{
+        Base = $parts[0]
+        Qualifiers = $qualifiers
+    }
 }
 
+function Assert-ShallowRecoveryHook {
+    param([string]$Text, [string]$Label)
+    $openMarker = '<!-- BABATA-RECOVERY-HOOK: v1 -->'
+    $closeMarker = '<!-- /BABATA-RECOVERY-HOOK: v1 -->'
+    $openMarkers = @([regex]::Matches($Text, [regex]::Escape($openMarker)))
+    $closeMarkers = @([regex]::Matches($Text, [regex]::Escape($closeMarker)))
+    if ($openMarkers.Count -ne 1 -or $closeMarkers.Count -ne 1) {
+        throw "Intent/plan governance requires exactly one bounded v1 recovery hook in $Label."
+    }
+    $open = $openMarkers[0]
+    $close = $closeMarkers[0]
+    $hookStart = $open.Index + $open.Length
+    if ($close.Index -le $hookStart) {
+        throw "Intent/plan governance requires a non-empty bounded recovery hook in $Label."
+    }
+    $hook = $Text.Substring($hookStart, $close.Index - $hookStart)
+    foreach ($value in @(
+        'Goal/task-state',
+        '00_docs/04_process/04_f_ACTIVE_PLAN.md',
+        'CURRENT-ACTIVE',
+        'unknown',
+        'requires-explicit-resume',
+        '00_docs/04_process/04_g_INTENT_AND_PLAN_GOVERNANCE.md'
+    )) {
+        Assert-Contains $hook $value "$Label recovery hook value: $value"
+    }
+    $goalIndex = $hook.IndexOf('Goal/task-state API', [StringComparison]::Ordinal)
+    $activePlanIndex = $hook.IndexOf('00_docs/04_process/04_f_ACTIVE_PLAN.md', [StringComparison]::Ordinal)
+    if ($goalIndex -lt 0 -or $activePlanIndex -lt 0 -or $goalIndex -ge $activePlanIndex) {
+        throw "Intent/plan governance requires Goal/task-state API before Active Plan in the bounded $Label recovery hook."
+    }
+}
+
+$rootAgents = Read-RequiredFile 'AGENTS.md'
+$rootReadme = Read-RequiredFile 'README.md'
 $index = Read-RequiredFile '00_docs\README.md'
 $currentIntent = Read-RequiredFile '00_docs\00_requirements\00_b_USER_WORDING.md'
 $recovery = Read-RequiredFile '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md'
@@ -64,6 +112,16 @@ $process = Read-RequiredFile '00_docs\04_process\04_a_DEVELOPMENT_PROCESS.md'
 $usage = Read-RequiredFile '00_docs\04_process\04_b_USAGE_STATUS.md'
 $activePlan = Read-RequiredFile '00_docs\04_process\04_f_ACTIVE_PLAN.md'
 $governance = Read-RequiredFile '00_docs\04_process\04_g_INTENT_AND_PLAN_GOVERNANCE.md'
+
+Assert-ShallowRecoveryHook $rootAgents 'root AGENTS.md'
+Assert-ShallowRecoveryHook $rootReadme 'root README.md'
+Assert-Contains $index '<!-- BABATA-DOCS-RECOVERY-ENTRY: v1 -->' 'Docs index recovery entry'
+foreach ($value in @('Goal/task-state API', '04_process/04_f_ACTIVE_PLAN.md', 'CURRENT-ACTIVE', 'requires-explicit-resume')) {
+    Assert-Contains $index $value "Docs index recovery value: $value"
+}
+if ($governance -match '(?im)^(?!\s*>).*?(?:信息缺失|unknown)[^\r\n]*(?:可以|允许)[^\r\n]*(?:重开|切换|晋升)') {
+    throw 'Intent/plan governance contains a rule that treats unknown information as transition authority.'
+}
 
 Assert-Contains $currentIntent 'DOC-AUTHORITY-BOUNDARY: curated-current-intent' 'current-intent role'
 Assert-Contains $currentIntent '允许不改变原意的标点/格式整理、明显错字修正、非文明表达纠偏和逻辑去冗余' 'permitted current-intent curation'
@@ -289,17 +347,35 @@ foreach ($queueItem in $queueItems) {
     Assert-Contains $queueItem '用户目标' 'queue user goal'
     Assert-Contains $queueItem '下一步' 'queue next action'
     Assert-Contains $queueItem '恢复入口' 'queue recovery entry'
-    if ((Get-PlanState $queueItem) -ne 'queued') {
+    $queueState = Get-PlanStateInfo $queueItem
+    if ($queueState.Base -ne 'queued') {
         throw 'Intent/plan governance queue items must use queued as their base state.'
+    }
+    $promotionQualifiers = @($queueState.Qualifiers | Where-Object {
+        $_ -in @('auto-promote', 'requires-explicit-resume')
+    })
+    if ($promotionQualifiers.Count -ne 1) {
+        throw 'Intent/plan governance queue items require exactly one promotion qualifier: auto-promote or requires-explicit-resume.'
+    }
+    foreach ($forbidden in @('auto-resume', 'completed', 'resolved', 'closed', 'succeeded')) {
+        if ($queueState.Qualifiers -contains $forbidden) {
+            throw "Intent/plan governance queue item uses a forbidden qualifier: $forbidden"
+        }
     }
 }
 if ($currentItems.Count -eq 0 -and $queueItems.Count -gt 0) {
-    throw 'Intent/plan governance forbids a queued item without an explicit current active decision.'
+    $autoPromoteItems = @($queueItems | Where-Object {
+        (Get-PlanStateInfo $_).Qualifiers -contains 'auto-promote'
+    })
+    if ($autoPromoteItems.Count -gt 0) {
+        throw 'Intent/plan governance forbids an auto-promote queue while CURRENT-ACTIVE is none.'
+    }
+    Assert-Contains $activePlan '当前无活动项' 'explicit held-queue active state'
 }
 if ($currentItems.Count -eq 0 -and $queueItems.Count -eq 0) {
     Assert-Contains $activePlan '当前无活动项' 'explicit empty active-plan state'
 }
-else {
+if ($currentItems.Count -eq 1) {
     $currentItem = $currentItems[0]
     Assert-Contains $currentItem '来源锚点' 'active-plan source anchor'
     Assert-Contains $currentItem 'Goal 锚点' 'active-plan external goal anchor'
@@ -311,7 +387,13 @@ else {
     Assert-Contains $currentItem '临时子计划与阶段结论' 'active-plan temporary subplan'
     Assert-Contains $currentItem '下一步' 'active-plan next action'
     Assert-Contains $currentItem '证据入口' 'active-plan evidence entry'
-    $currentState = Get-PlanState $currentItem
+    $currentStateInfo = Get-PlanStateInfo $currentItem
+    $currentState = $currentStateInfo.Base
+    foreach ($forbidden in @('queued', 'completed', 'resolved', 'closed', 'succeeded', 'auto-promote', 'requires-explicit-resume')) {
+        if ($currentStateInfo.Qualifiers -contains $forbidden) {
+            throw "Intent/plan governance current item uses a forbidden qualifier: $forbidden"
+        }
+    }
     if ($currentState -in @('succeeded', 'completed', 'resolved', 'closed')) {
         throw 'Intent/plan governance forbids successful terminal items from accumulating in the active plan.'
     }
@@ -323,6 +405,33 @@ else {
             Assert-Contains $currentItem $field "abnormal terminal field: $field"
         }
     }
+    $goalAnchor = [regex]::Match($currentItem, '(?m)^- Goal 锚点：(?<value>.+)$')
+    $transitionType = [regex]::Match($currentItem, '(?m)^- 状态转换类型：`(?<value>[a-z0-9-]+)`$')
+    $transition = [regex]::Match($currentItem, '(?m)^- 状态转换依据：(?<value>.+)$')
+    if (-not $goalAnchor.Success -or -not $transitionType.Success -or -not $transition.Success) {
+        throw 'Intent/plan governance current item is missing structured Goal/transition values.'
+    }
+    if ($goalAnchor.Groups['value'].Value -match '摘要推断|最近消息推断' -or
+        $transition.Groups['value'].Value -match 'Agent 自主|摘要推断|最近消息推断') {
+        throw 'Intent/plan governance Goal/transition fields use an unauthorized inference source.'
+    }
+    if ($goalAnchor.Groups['value'].Value.Contains('unknown') -and
+        -not $goalAnchor.Groups['value'].Value.Contains('Goal API')) {
+        throw 'Intent/plan governance unknown Goal anchor must identify the Goal API result.'
+    }
+    $transitionPrefixes = @{
+        'user-explicit-goal-override' = '用户明确覆盖'
+        'legal-terminal-auto-promote' = '当前项到达合法终端后晋升'
+        'authority-approved-blocker-replan' = '出现真实阻断并由用户或既定 authority 明确授权重排'
+    }
+    $transitionTypeValue = $transitionType.Groups['value'].Value
+    if (-not $transitionPrefixes.ContainsKey($transitionTypeValue)) {
+        throw "Intent/plan governance current transition type is not an allowed enum: $transitionTypeValue"
+    }
+    $requiredPrefix = $transitionPrefixes[$transitionTypeValue]
+    if (-not $transition.Groups['value'].Value.StartsWith($requiredPrefix, [StringComparison]::Ordinal)) {
+        throw 'Intent/plan governance current transition must use an affirmative source matching its structured type.'
+    }
 }
 for ($captureNumber = 0; $captureNumber -lt $captureMarkers.Count; $captureNumber++) {
     $marker = $captureMarkers[$captureNumber]
@@ -333,6 +442,28 @@ for ($captureNumber = 0; $captureNumber -lt $captureMarkers.Count; $captureNumbe
         $recovery.Length
     }
     $captureBlock = $recovery.Substring($marker.Index, $nextIndex - $marker.Index)
+    $captureBlockId = $marker.Groups['id'].Value
+    $blockMetadata = [regex]::Match(
+        $captureBlock,
+        '(?m)^capture time：`(?<time>[^`]+)`。来源：(?<source>[^\r\n。]+)。\r?$'
+    )
+    if (-not $blockMetadata.Success -or [string]::IsNullOrWhiteSpace($blockMetadata.Groups['source'].Value)) {
+        throw "Intent/plan governance capture $captureBlockId has invalid or empty time/source metadata."
+    }
+    $blockTime = [DateTimeOffset]::MinValue
+    if (-not [DateTimeOffset]::TryParse($blockMetadata.Groups['time'].Value, [ref]$blockTime)) {
+        throw "Intent/plan governance capture $captureBlockId has an unparseable capture time."
+    }
+    $blockPhraseLine = [regex]::Match($captureBlock, '(?m)^极简检索词：(?<phrases>.*)$')
+    $blockPhrases = @([regex]::Matches($blockPhraseLine.Groups['phrases'].Value, '`(?<phrase>[^`]+)`') |
+        ForEach-Object { $_.Groups['phrase'].Value })
+    if ($blockPhrases.Count -lt 3 -or $blockPhrases.Count -gt 8 -or
+        $blockPhrases.Count -ne @($blockPhrases | Select-Object -Unique).Count) {
+        throw "Intent/plan governance capture $captureBlockId requires 3-8 unique retrieval phrases."
+    }
+    if ($captureBlock -notmatch '(?m)^>') {
+        throw "Intent/plan governance capture $captureBlockId is missing direct verbatim wording."
+    }
     $statusMatch = [regex]::Match(
         $captureBlock,
         '(?m)^状态：`(?<status>active|superseded|resolved|recovery-only)`。$'
@@ -340,13 +471,36 @@ for ($captureNumber = 0; $captureNumber -lt $captureMarkers.Count; $captureNumbe
     if (-not $statusMatch.Success) {
         throw "Intent/plan governance capture $($marker.Groups['id'].Value) has an invalid or missing base status."
     }
-    $itemId = $marker.Groups['id'].Value
+    $itemId = $captureBlockId
     $itemStatus = $statusMatch.Groups['status'].Value
-    if ($itemStatus -eq 'active' -and -not $activePlan.Contains($itemId)) {
-        throw 'Intent/plan governance active recovery capture is not anchored in the active plan.'
+    switch ($itemStatus) {
+        'active' {
+            if ($captureBlock -notmatch '(?m)^(目标去向|无覆盖关系)[:：]') {
+                throw "Intent/plan governance active capture $itemId is missing a target relationship."
+            }
+        }
+        'resolved' { Assert-Contains $captureBlock '`resolved_by`：' "resolved capture relationship: $itemId" }
+        'superseded' { Assert-Contains $captureBlock '`superseded_by`：' "superseded capture relationship: $itemId" }
+        'recovery-only' {
+            if ($captureBlock -notmatch '(?m)^(`resolved_by`|`superseded_by`|无覆盖关系)[:：]') {
+                throw "Intent/plan governance recovery-only capture $itemId is missing a relationship."
+            }
+        }
     }
-    if ($itemStatus -ne 'active' -and $activePlan.Contains($itemId)) {
-        throw 'Intent/plan governance terminal recovery capture still appears as an active-plan obligation.'
+    $blockIndexRows = @($recoveryIndexRows | Where-Object {
+        $cell = $_.Groups['phrases'].Value
+        @($blockPhrases | Where-Object { -not $cell.Contains($_) }).Count -eq 0
+    })
+    if ($blockIndexRows.Count -ne 1 -or $blockIndexRows[0].Groups['status'].Value -ne $itemStatus) {
+        throw "Intent/plan governance capture $itemId does not match exactly one fast-index row and status."
+    }
+    $sourceAnchorPattern = '(?m)^- 来源锚点：[^\r\n]*' + [regex]::Escape($itemId) + '[^\r\n]*$'
+    $structuredPlanLinks = @([regex]::Matches($activePlan, $sourceAnchorPattern)).Count
+    if ($itemStatus -eq 'active' -and $structuredPlanLinks -ne 1) {
+        throw 'Intent/plan governance active recovery capture is not structurally anchored in the active plan.'
+    }
+    if ($itemStatus -ne 'active' -and $structuredPlanLinks -ne 0) {
+        throw 'Intent/plan governance terminal recovery capture still appears as an active-plan source obligation.'
     }
 }
 $activePlanLines = @($activePlan -split "`r?`n").Count
@@ -354,12 +508,15 @@ if ($activePlanLines -gt 250) {
     throw "Intent/plan governance active plan exceeds the 250-line maintenance threshold: $activePlanLines"
 }
 
+if ($governance -notmatch '(?s)在任何状态写入前先调用环境可用的\s+Goal/task-state API，再立即读取\s+`DOC-ACTIVE-PLAN` 并核对唯一 `CURRENT-ACTIVE`') {
+    throw 'Intent/plan governance is missing the Goal -> active-plan recovery order.'
+}
+
 foreach ($marker in @(
     '新产品输入 append-first 原样捕获',
     'Agent 不记录全部思维过程',
     '摘要、断点或最近可见片段未包含的信息一律视为',
     '恢复边界不是新任务授权',
-    '环境提供 Goal/task-state API 时必须先调用',
     '“继续/恢复”只授权继续既有 Goal',
     '当前 active goal/item 和 `resolved/superseded/closed` terminal 状态默认不可变',
     '用户明确覆盖当前 Goal',
@@ -369,19 +526,18 @@ foreach ($marker in @(
     '建议保持在约 200 行内',
     '将 adopted decision、当前需求、稳定架构、实际 usage、运行证据和仍未解决的义务提升',
     '纯通用待办没有 00_c 条目时不得为满足流程',
-    '若队列非空，把顶部条目晋升为',
+    '只晋升排序最前且明确标记',
+    '`requires-explicit-resume` 项继续排队',
     '失败、阻塞、中断或仍有交接：保留活动项',
-    '线程/外部 Goal（若可用） -> DOC-INDEX -> DOC-ACTIVE-PLAN 当前项 -> 队列首项 -> DOC-WORDING'
+    '线程/外部 Goal（若可用） -> DOC-ACTIVE-PLAN 的 CURRENT-ACTIVE -> DOC-INDEX -> DOC-WORDING'
 )) {
     Assert-Contains $governance $marker "governance lifecycle marker: $marker"
 }
 
-Assert-Contains $process '`DOC-WORDING-RECOVERY`' 'process recovery routing'
 Assert-Contains $process '`DOC-ACTIVE-PLAN`' 'process active-plan routing'
 Assert-Contains $process '`DOC-INTENT-PLAN-GOVERNANCE`' 'process governance routing'
-Assert-Contains $process '下次开工队列顶部' 'process next-start queue routing'
-Assert-Contains $process '每次新 session、Agent/任务交接、Agent 或工具中断、长暂停、上下文压缩' 'process recovery-boundary goal guard'
-Assert-Contains $process '“继续/恢复/接着做”等明确恢复指令再入场时' 'process explicit-resume goal guard'
+Assert-Contains $process 'Goal/task-state ->' 'process shallow recovery routing'
+Assert-Contains $process '`CURRENT-ACTIVE`' 'process current-active routing'
 Assert-Contains $index '`DOC-WORDING-RECOVERY`' 'recovery registry entry'
 Assert-Contains $index '`DOC-ACTIVE-PLAN`' 'active-plan registry entry'
 Assert-Contains $index '`DOC-INTENT-PLAN-GOVERNANCE`' 'governance registry entry'

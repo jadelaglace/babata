@@ -410,32 +410,8 @@ P2 的架构与契约测试只证明边界和壳存在；产品 TC 在对应功�
 | `yt-dlp` | 获授权媒体候选/输入 | SourceAdapter/CommandRunner | P7，或真实需求提前证明后 |
 | Restic | 加密增量备份 | BackupDriver | P8 |
 
-## 12. P2 交付门槛
+## 12. 交付权威边界
 
-P2 使用工程交付门，不使用产品 AC/TC 冒充骨架验收：
-
-| Gate | 完成证据 |
-| --- | --- |
-| P2-G1 清单完整 | 6 crate、137 个目标 Rust 源文件和外围规格位置全部存在 |
-| P2-G2 责任完整 | 12 service、13 port、13 CLI 模块、local API/worker/adapter 位置均有唯一 owner |
-| P2-G3 依赖正确 | workspace 编译，domain/application 无 IO 反向依赖，composition root 无业务规则 |
-| P2-G4 能力诚实 | 未激活能力统一 unavailable，不启动真实来源/provider/worker 或生成真实视图 |
-| P2-G5 单一写入 | JS、Python、Skill、provider、view/output builder 均无 C0/C1 直接写入路径 |
-| P2-G6 文档同步 | 00–05 与蓝图、脚本、配置和测试位置没有旧编号或旧责任冲突 |
-| P2-G7 工具路线 | `03_d_SOURCE_ROUTE_REGISTRY.md` 覆盖 00 列出的全部来源；每条来源都有证据等级、最小授权、直接使用/薄包装/窄适配/回退决策和诚实缺口；可在当前机器调用的代表性官方/通用工具有实际调用或连接证据 |
-
-现有 raw capture 代码可以作为 P3 提前工作保留，但它不能替代任何 P2 gate，也不能
-证明 P3 完成。137 文件、接口和工程检查全部通过后，如果逐来源调查、路线决策或代表性
-工具实证仍缺失，P2 仍然只能标记进行中。P2-G7 不要求每个具体来源先达到 E3；真实候选、
-正文/附件、逐条状态和重收集属于 P4/P7，不能反过来成为进入 P3 的前置条件。
-
-## 13. P2 完成后的激活顺序
-
-- P3：C0 原件与 first-party 版本的统一写入底座；
-- P4：飞书与浏览器上下文候选、选择、状态和重收集；
-- P5：C1 多模态清洗与百炼；
-- P6：核心语义沉淀、检索、子库和输出；
-- P7：扩展来源、正式 Skill 和受控 Agent；
-- P8：备份、恢复、运维与长期加固。
-
-具体状态和阶段门只由 `04_a_DEVELOPMENT_PROCESS.md` 维护。
+本文只保留 P2 关闭时采用的架构位置与责任快照，不定义或编号 phase gate，也不决定后续阶段
+优先级。P2 的稳定 gate、阶段顺序和状态分别只查 `DOC-PROCESS`、TC 和 `DOC-USAGE`；当前工作只查
+`DOC-ACTIVE-PLAN`。历史文件/接口数量不能替代任何当前 gate 或完成证据。

@@ -200,34 +200,13 @@ quarantine，不自动销毁。
 
 duplicate 只产生信号或关系，不删除新的收集/导入事件。
 
-## 10. P3 交付门槛
+## 10. 交付与验证边界
 
-| Gate | 完成证据 |
-| --- | --- |
-| P3-G1 数据根 | 新临时数据根产生正确编号分区，Git 无真实运行数据 |
-| P3-G2 C0 写入 | text、file、export 各形成可回读版本、原件、哈希和上下文 |
-| P3-G3 First-party | create/revise/annotate 保留版本和独立批注关系 |
-| P3-G4 故障完整性 | stage、transaction、finalise 的失败不会留下伪 ready；journal/orphan 可诊断 |
-| P3-G5 单一写入 | CLI 只 composition；DB 和资产写入只有 infrastructure owner |
-| P3-G6 回归 | P2 架构门继续通过，新增 P3 行为没有激活其他阶段能力 |
+本文不定义 P3 gate、phase 状态或后续阶段优先级。稳定 gate 与阶段顺序只由 `DOC-PROCESS` 拥有，
+验证步骤只由 TC 拥有，当前结果只由 `DOC-USAGE` 拥有。P3 的显式 CLI 是底座与恢复入口，不能描述
+成日常收集产品；任何后续能力仍必须经过同一 C0 writer 和本文件的事务/恢复边界。
 
-P3 为 AC-03、AC-06 和 AC-10 提供底座证据；AC-03 还需要 P5 的真实派生物，AC-10
-还需要 P8 的一致备份恢复，不能在 P3 提前宣布这些产品验收全部完成。
-
-## 11. 后续能力激活条件
-
-| 能力 | P2 位置 | 激活条件 |
-| --- | --- | --- |
-| CollectorSession / 真实来源 | `collector.rs`、SourceAdapter、browser/local API | P3 C0 提交稳定，真实来源获得授权 |
-| Derived / Process | C1 ports、process use case、processing providers | 一个真实清洗样本和隐私范围获批准 |
-| Knowledge | knowledge domain/use case | 原件与 C1 聚合读取稳定，核心工作例明确 |
-| Explore / Sublibrary / Output | read projection、sublibrary/output use case 和 builders | 核心人工资料存在并有真实检索/输出用途 |
-| Skill / Agent | specs、Capability registry | 对应底层能力通过自己的 AC/TC |
-| Backup | Ops/BackupDriver | 真实 C0 需要受保护恢复 |
-
-每次激活先更新对应架构补充、开发流程和测试映射，再把 unavailable 壳替换为真实实现。
-
-## 12. 禁止模式
+## 11. 禁止模式
 
 ```text
 infrastructure 之外打开 SQLite 或 finalise 资产

@@ -8,9 +8,9 @@
 解释用户随后采用决定的极少量 Agent/Builder 上下文。逐字引文不润色、不翻译；Agent、Builder、
 外部 AI 和视觉观察必须明确归因，永远不能伪装成用户原话。
 
-本文件不是当前需求权威，也不是日常开工入口。正常工作先核对可用的线程/外部 Goal，再读
-`DOC-ACTIVE-PLAN` 当前项与队列首项、`00_b_USER_WORDING.md` 和 Requirements；只有出现严重阻塞、
-恢复后目标漂移、当前权威无法解释冲突、唯一决定
+本文件不是当前需求权威，也不是日常开工入口。恢复工作先核对可用的线程/外部 Goal，再立即读
+`DOC-ACTIVE-PLAN` 并只执行其 `CURRENT-ACTIVE`；随后才按 `DOC-INDEX` 进入 00_b、Requirements 和
+所需下游权威。队列不是恢复时可执行目标。只有出现严重阻塞、恢复后目标漂移、当前权威无法解释冲突、唯一决定
 依据争议或恢复/审计失败时才回到这里。新输入先原样追加，任务终端后再补 capture time/source、
 极简检索词、`active/superseded/resolved/recovery-only` 状态和覆盖关系；不得在捕获前先清洗原话。
 覆盖关系使用 `superseded_by` 或 `resolved_by` 指向当前决定/权威；没有覆盖关系时明确留空，不能靠
@@ -868,6 +868,8 @@ Agent 视觉观察（非用户原话）：参考图是用户提供的视觉验�
 
 capture time：`2026-08-15T22:05:55.2960002+08:00`。来源：当前用户对话。
 
+verbatim sha256：`586537b1ce516210aa4aa1b1031e89a92dc58a191f1655f858699891fd311056`。
+
 极简检索词：`00_b 当前意图`；`00_c 逐字恢复`；`临时子计划`；`阶段结论`；`终端提升清理`。
 
 状态：`resolved`。
@@ -896,6 +898,8 @@ Agent 终态恢复说明（非用户原话）：本条曾完成并标为 `resolv
 <!-- DOCS-FIRST-CAPTURE: DFC-20260815-02; schema=v1 -->
 
 capture time：`2026-08-15T23:43:42.3115117+08:00`。来源：当前用户对话。
+
+verbatim sha256：`1ea0fead6bdc9a8089e0141ad87e3c023bf80e27a64813a1cfb15252576fd530`。
 
 极简检索词：`浅层强制钩子`；`根目录 AGENTS/README`；`Docs 去冗余`；`先 PR 后干净分支`；`恢复入口`。
 

@@ -71,6 +71,13 @@ try {
         $lines[$matchingIndexes[0]] += ' [mutated]'
         Set-Content -Encoding utf8 -LiteralPath $path -Value $lines
     }
+    Assert-CheckerFails -Name 'mutated-structured-dfc-wording' -ExpectedMessage 'DFC verbatim hash mismatch: DFC-20260815-02' -Mutate {
+        param($caseDocs)
+        $path = Join-Path $caseDocs '00_requirements\00_c_USER_WORDING_RECOVERY.md'
+        $text = Get-Content -Raw -Encoding utf8 -LiteralPath $path
+        $text = $text.Replace('你自己读读04f 假设', '你自己检查04f 假设')
+        Set-Content -Encoding utf8 -LiteralPath $path -Value $text
+    }
 
     Assert-CheckerFails -Name 'local-thread-id' -ExpectedMessage 'UUID-shaped local/runtime identifier' -Mutate {
         param($caseDocs)

@@ -31,22 +31,11 @@
 只有 E3 route 才可能 `enabled`，但 E3 不自动启用 runtime；产品 registry 仍可因适配器、授权、
 完整性或维护原因保持 `disabled`。低于 E3 必须 disabled。
 
-## 3. 路线决策顺序
+## 3. 稳定政策依赖
 
-```text
-官方 API / 官方导出 / 官方客户端
-  -> 成熟 CLI / SDK / MCP / 插件
-  -> 通用 Agent 浏览器或桌面工具
-  -> 只补已证明缺口的窄适配器
-  -> 付费能力（用户明确决定）
-  -> 手工导出/复制/截图（最后回退）
-```
-
-选择路线时依次优化：稳定、准确、真实、速度。前三项未证明前不为吞吐牺牲保真；前三项成立
-后只优化已测得的瓶颈，不保留多条无调用者的 speculative branch。
-
-所有 acquisition 工具只产生候选、Recovery 或输入 package。正式 ID、revision、asset、hash、
-observation 和状态仍由 Rust application/core 唯一写入。
+路线选择顺序、保真优先级和 acquisition/writer 边界只由 Requirements 与 `DOC-ARCH` 定义。本文不
+复制该政策，只为每个 source/tool 记录当前证据、最小授权、诚实缺口和 runtime capability；政策
+改变时先更新上游，再重新评价本注册表各行。
 
 ## 4. 来源路线注册表
 

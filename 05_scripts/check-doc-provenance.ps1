@@ -96,6 +96,35 @@ foreach ($hash in $requiredVerbatimHashes) {
     }
 }
 
+$recoveryText = (Get-Content -Raw -Encoding utf8 -LiteralPath $userWordingPath).Replace("`r`n", "`n")
+$captureMarkers = @([regex]::Matches(
+    $recoveryText,
+    '<!-- DOCS-FIRST-CAPTURE: (?<id>DFC-[0-9]{8}-[0-9]+); schema=v1 -->'
+))
+foreach ($captureIndex in 0..($captureMarkers.Count - 1)) {
+    $marker = $captureMarkers[$captureIndex]
+    $nextIndex = if ($captureIndex + 1 -lt $captureMarkers.Count) {
+        $captureMarkers[$captureIndex + 1].Index
+    }
+    else { $recoveryText.Length }
+    $capture = $recoveryText.Substring($marker.Index, $nextIndex - $marker.Index)
+    $declaredHash = [regex]::Match(
+        $capture,
+        '(?m)^verbatim sha256：`(?<hash>[0-9a-f]{64})`。$'
+    )
+    if (-not $declaredHash.Success) {
+        throw "DFC verbatim hash is missing or malformed: $($marker.Groups['id'].Value)"
+    }
+    $quoteLines = @($capture -split "`n" | Where-Object { $_.StartsWith('>') })
+    if ($quoteLines.Count -eq 0) {
+        throw "DFC has no verbatim lines: $($marker.Groups['id'].Value)"
+    }
+    $actualHash = Get-Utf8Sha256 -Value ($quoteLines -join "`n")
+    if ($actualHash -ne $declaredHash.Groups['hash'].Value) {
+        throw "DFC verbatim hash mismatch: $($marker.Groups['id'].Value)"
+    }
+}
+
 $blueprint = Get-Content -Raw -Encoding utf8 -LiteralPath $blueprintPath
 $requiredBlueprintMarkers = @(
     '<!-- P6-TREE-PROVENANCE: builder-summary; user-confirmed; not-verbatim -->',

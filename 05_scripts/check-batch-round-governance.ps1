@@ -40,8 +40,18 @@ $documents = [ordered]@{
 $runner = Read-RequiredFile '05_scripts\invoke-babata-execution-round.ps1'
 $runnerTests = Read-RequiredFile '05_scripts\test-babata-execution-round.ps1'
 
-foreach ($entry in $documents.GetEnumerator()) {
+foreach ($entry in ([ordered]@{
+    requirements = $documents.requirements
+    prd = $documents.prd
+    acceptance = $documents.acceptance
+    process = $documents.process
+    tests = $documents.tests
+}).GetEnumerator()) {
     Assert-Contains -Text $entry.Value -Value 'BATCH-ROUND-TERMINAL-GATE' -Label "BATCH-ROUND-TERMINAL-GATE in $($entry.Key)"
+}
+Assert-Contains $documents.rollout '本节观察遵守 `DOC-PROCESS` 的完整执行轮和失效性终止规则，不在此复制通用状态机' 'MBA rollout routing to the process-owned round contract'
+if ($documents.rollout.Contains('BATCH-ROUND-TERMINAL-GATE')) {
+    throw 'Batch round governance forbids a competing generic round-gate definition in MBA rollout.'
 }
 Assert-Contains $runner 'babata.execution-round-plan/v1' 'round plan schema'
 Assert-Contains $runner 'babata.execution-round-ledger/v1' 'round ledger schema'

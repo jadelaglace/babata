@@ -22,8 +22,10 @@ Requirements/PRD 拥有，实际交付状态由 `DOC-USAGE` 拥有，完成证�
 当前 active 默认不可变，`resolved/superseded/closed` 默认不得重开。
 
 活动项结束时，先把长期有效的决定、产品语义、状态、证据和未决义务提升到各自权威；成功且
-无遗留义务的临时活动项随后删除，再把队列首项晋升为当前活动项。失败、阻塞、中断或仍需交接时
-保留并标明终态、原因和恢复入口。本文不积累已完成任务编年史；Git 历史和正式权威承担长期追溯。
+无遗留义务的临时活动项随后删除。只自动晋升明确允许 `auto-promote` 的队列项；
+`requires-explicit-resume` 项继续留在队列。若没有可自动晋升项，写 `CURRENT-ACTIVE: none` 并等待
+用户决定。失败、阻塞、中断或仍需交接时保留并标明终态、原因和恢复入口。本文不积累已完成任务
+编年史；Git 历史和正式权威承担长期追溯。
 
 ## 2. 当前活动项（恢复时先读，最多一个）
 
@@ -34,19 +36,21 @@ Requirements/PRD 拥有，实际交付状态由 `DOC-USAGE` 拥有，完成证�
 
 ### AP-20260815-05：修复恢复漂移并重整浅层 Docs 治理入口
 
-- 来源锚点：`DFC-20260815-02`；2026-08-15 用户明确要求停止做课，先修复所有恢复边界的 Goal
-  漂移，并全面检查根目录浅层入口、Docs 杂冗与边界，先将当前批次建 PR，再从干净 Issue 分支继续。
+- 来源锚点：`DFC-20260815-02`、GitHub Issue `#152`；用户明确要求停止做课，先修复所有恢复边界的
+  Goal 漂移，并全面检查根目录浅层入口、Docs 杂冗与 authority 边界。前序候选已由 PR `#151`
+  合并到 `main@67c1a68`，当前在干净分支 `codex/152-docs-recovery-governance` 继续 AP05。
 - Goal 锚点：当前 Goal API 返回空值，按 `unknown` 处理；以最新明确用户指令作为持久化 Goal，
   不从交接摘要、最近可见子话题或工具断点推断其他 Goal。
+- 状态转换类型：`user-explicit-goal-override`
 - 状态转换依据：用户明确覆盖原课程 Goal，授权暂停 AP03 并把本治理修复设为唯一 active；这不是
   blocker、自主重排或从旧 resolved 项推导出的重开。
-- 当前状态：`in_progress / governance-repair-and-validation`。
+- 当前状态：`in_progress / pr-ready-awaiting-review`。
 - 用户目标：修复 Agent 在信息不完整时擅自重开 terminal、切换 active 的漏洞；让根目录 AGENTS/
   README 或等价浅层入口对恢复必读权威形成强制钩子；全面去除 03/04 与跨文档杂冗、理清 authority
   边界，并把可复用方法反哺 product-docs Skill。
-- 目标终端：先完成当前候选批次 gate、commit/push/PR；再从最新 `main` 建立关联 Issue 的干净分支；
-  在新分支完成浅层强制恢复钩子、Docs 全链审计与去冗余、authority 边界修复、checker/负向测试和
-  product-docs 反哺；所有恢复边界保持 Goal/current AP/terminal 约束，最终向用户报告并等待决定。
+- 目标终端：在 Issue `#152` 分支完成浅层强制恢复钩子、Docs 全链审计与去冗余、authority 边界
+  修复、checker/负向测试和 product-docs 反哺；所有恢复边界保持 Goal/current AP/terminal 约束，
+  通过完整 gate 并形成独立 PR，最终向用户报告并等待决定。
 - 不改变：本轮不继续 successor Rust、决策会计 C1B/C2B 或任何课程构建；不重开已 resolved 的
   恢复条目；不改财务/供应链成果、外部主权数据、Git 提交状态或冻结前代。
 
@@ -56,16 +60,50 @@ Requirements/PRD 拥有，实际交付状态由 `DOC-USAGE` 拥有，完成证�
    Agent 自身审计判断越权当作切换 active 的授权。
 2. 先前被非法重开的 recovery capture 已恢复为 `resolved`，竞争 AP 已撤销；任何 terminal 重开
    必须保留原终态并追加 `reopened_by`、新证据和影响范围。
-3. 正式 docs 与 product-docs Skill 已覆盖新 session、Agent/任务交接、Agent 或工具中断、长暂停、
-   上下文压缩和明确“继续/恢复/接着做”指令；正在补齐 checker 的逐边界负向保护并跑完整治理 gate。
-4. `DFC-20260815-02` 将浅层恢复钩子、Docs 去冗余/边界重整和“先 PR 后干净 Issue 分支”加入本
-   active；旧课程 AP 降为次优先队列项并保留恢复入口，明确用户恢复前不得晋升或执行。
+3. 前序候选已通过 GitHub Architecture/docs、Rust、Adapters 三个 gate，并由 PR `#151` 合并为
+   `main@67c1a68`；CI 已补齐 `sqlite3` 依赖，intent checker 已统一 CRLF/LF 解析。
+4. Issue `#152` 保持 open；旧本地分支无独立提交，已从最新 `main@67c1a68` 重建为干净分支。
+5. `AP05-DOCS-AUDIT-20260816-01` 已按冻结范围完成根入口、00_b/00_c、03_a–03_g、04_a–04_g、
+   provenance/traceability/intent checker 与 mutation、外部 product-docs Skill 的只读审计；终端为
+   `completed_with_defects`，完整矩阵和 28 条统一缺陷账在 Git 外 evidence。
+6. 审计确认四组共同根因：浅层入口没有强制恢复链；队列默认晋升与 `requires-explicit-resume`
+   竞争；03/04 的 gate、当前状态和交付顺序存在多 owner；checker 主要保护固定文案而非状态组合。
+7. 集中修复分为四批：B1 统一 Goal -> Active Plan、current-before-queue 和 held queue 状态机并建立
+   根入口；B2 做结构化 checker/mutation；B3 去除 03/04 竞争 authority；B4 反哺并前向验证
+   product-docs Skill，最后运行完整仓库 gate。
+8. 旧课程 AP 保持次优先队列项并保留恢复入口；即使 AP05 到达 terminal，AP03 的
+   `requires-explicit-resume` 也禁止自动晋升，必须等待用户明确恢复课程。
+9. B1–B4 集中修复已完成：四组 focused governance checker/mutation 全部通过；旧路径、旧 DOC-ID
+   和非法默认晋升语义已清理；外部 product-docs Skill 通过 `quick_validate.py`，最小上下文随行
+   Agent 前向验证也正确恢复 AP05、保持 AP03 queued，并识别根钩子不具产品 authority。
+10. `check-boundary.ps1` 与 `check-full.ps1` 已从头通过；完整 gate 覆盖 Rust fmt/check/clippy/tests、
+    TypeScript typecheck/tests/build、Python smoke、Docs/authority/batch/data-root boundary 和 mutation。
+11. 实施提交 `d68bb90` 已推送，ready PR `#153` 已创建并关联关闭 Issue `#152`；PR 打开不等于已
+    合并，AP05 和 DFC02 在 review/merge 前保持 active，不能因此晋升 AP03。
+12. PR `#153` 首轮 GitHub adapters gate 通过；Architecture/docs 因 Windows CRLF checkout 使新
+    mutation helper 的行尾正则未匹配而失败，非治理语义回归。helper 已兼容 CRLF/LF，并新增显式
+    CRLF current-state mutation；focused intent checker/mutation 已通过。
+13. CRLF 修复提交 `c6dbf76` 已推送；PR `#153` 新一轮 GitHub Architecture/docs、Rust、
+    TypeScript/Python 三组 gate 全部通过，PR 保持 ready。
+14. PR `#153` review 发现两项合并前 P2：浅层 hook checker 从 marker 扫到文件末尾且只检查
+    关键词存在，未保护 Goal API -> Active Plan 的顺序；状态转换依据也只做正向关键词匹配，
+    否定句可伪装成合法来源。两项属于同一 checker/fixture 修复批次，必须增加显式 hook 区块、
+    顺序断言、结构化转换类型/肯定式来源断言和反向 mutation；其余审查未发现产品意图或
+    03/04 authority 断链。
+15. P2 修复已完成：AGENTS/README hook 现在有显式起止边界并在区块内强制 Goal/task-state API
+    先于 Active Plan；Active Plan 使用结构化转换类型并要求与肯定式来源前缀一致；新增 AGENTS
+    与 README 各自的顺序反转、缺失边界、缺失类型和否定来源 mutation。五组治理 mutation、boundary 和完整仓库 gate
+    全部通过；外部 product-docs Skill 已同步该模式并通过 `quick_validate.py` 与最小上下文前向验证。
+16. PR `#153` 的两条 P2 inline review thread 已逐条回复并标记 `resolved`；提交 `63f82c9` 的
+    Architecture/docs、Rust、TypeScript/Python 三组 GitHub gate 全部通过，当前无未解决 review
+    comment。PR 仍保持 open/mergeable，合并需要明确的用户或维护者决定。
 
-- 下一步：修正剩余 mutation fixture，跑当前批次完整 gate，审计 diff 后 commit/push/PR；PR 成功后
-  创建/关联 Issue，从最新 `main` 建干净分支，再进行全面 Docs 重整，不启动课程工作。
+- 下一步：等待 PR `#153` 的合并决定；不得擅自合并。合并前保持 AP05/DFC02 active，AP03 仍须
+  用户明确恢复，不能自动晋升。
 - 证据入口：`DOC-WORDING-RECOVERY`、`DOC-INTENT-PLAN-GOVERNANCE`、本文件、
   `05_scripts/check-intent-plan-governance.ps1`、`05_scripts/test-intent-plan-governance.ps1`、外部
-  product-docs `SKILL.md` 与 `references/intent-plan-lifecycle.md`。
+  product-docs `SKILL.md` 与 `references/intent-plan-lifecycle.md`、
+  `BABATA_EVIDENCE_HOME/ap05-docs-authority-audit-20260816/audit-ledger.md`、GitHub PR `#151`、Issue `#152`。
 
 ## 3. 下次开工队列（禁止恢复时自动执行）
 
