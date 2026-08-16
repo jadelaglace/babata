@@ -50,6 +50,11 @@ function Get-GenericMbaPathStatus {
             'course-plan-schema' = 'babata.mba-course-c2b-plan/v1'
             'pending-user-acceptance' = 'pending_user_acceptance'
             'fresh-staging-root' = 'Use a fresh MBA course staging root'
+            'fingerprint-candidate-selector' = 'select-mba-course-c1-candidate.ps1'
+        }
+        '05_scripts\select-mba-course-c1-candidate.ps1' = [ordered]@{
+            'same-fingerprint-deduplication' = 'Repeated successful runs with the same managed content are one C1 identity.'
+            'divergent-fingerprint-rejection' = 'divergent fingerprints'
         }
         '05_scripts\build-mba-course-learning-docs.ps1' = [ordered]@{
             'course-plan-schema' = 'babata.mba-course-c2b-plan/v1'
@@ -60,6 +65,7 @@ function Get-GenericMbaPathStatus {
             'course-plan-schema' = 'babata.mba-course-c2b-plan/v1'
             'formal-process-registration' = "'process','register'"
             'registered-ledger-schema' = 'babata.mba-course-c1b-registration/v1'
+            'fingerprint-candidate-selector' = 'Select-MbaCourseC1Candidate'
         }
         '05_scripts\register-mba-course-c2b-knowledge.ps1' = [ordered]@{
             'course-plan-schema' = 'babata.mba-course-c2b-plan/v1'
@@ -101,6 +107,7 @@ function Get-GenericMbaPathStatus {
         }
     }
     $dedicatedTests = @(
+        '05_scripts\test-select-mba-course-c1-candidate.ps1',
         '05_scripts\test-register-mba-course-c1b-handoff.ps1',
         '05_scripts\test-register-mba-course-c2b-knowledge.ps1',
         '05_scripts\test-mba-course-c2b-package.ps1'

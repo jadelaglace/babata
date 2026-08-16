@@ -21,6 +21,7 @@ foreach ($required in @(
     'mba-course-c1b-essence-registrar',
     'Find-ExactFingerprint',
     'Select-ExactFingerprintRows',
+    'Select-MbaCourseC1Candidate',
     'ConvertTo-CanonicalJsonValue',
     'Confirm-RegisteredRun',
     'partial-registration.json',

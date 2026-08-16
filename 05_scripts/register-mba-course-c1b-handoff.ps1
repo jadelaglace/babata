@@ -5,6 +5,7 @@ param(
     [Parameter(Mandatory=$true)][string]$StagingRoot,
     [string]$BabataExe = (Join-Path $PSScriptRoot '..\01_app\target\debug\babata.exe'),
     [string]$DataHome = $env:BABATA_DATA_HOME,
+    [string]$CandidateSelector = (Join-Path $PSScriptRoot 'select-mba-course-c1-candidate.ps1'),
     [switch]$Resume,
     [switch]$PreflightOnly,
     [switch]$SelfTest
@@ -393,6 +394,8 @@ if ($SelfTest) {
 }
 
 if ([string]::IsNullOrWhiteSpace($DataHome)) { throw 'BABATA_DATA_HOME or -DataHome is required' }
+$candidateSelectorPath = Resolve-InputFile $CandidateSelector 'C1 candidate selector'
+. $candidateSelectorPath
 $script:data = [IO.Path]::GetFullPath($DataHome)
 $env:BABATA_DATA_HOME = $script:data
 $planPath = Resolve-InputFile $CoursePlanPath 'course plan'
@@ -604,8 +607,7 @@ foreach ($decision in $decisions) {
     $c1Rows = if ($script:c1Cache.ContainsKey($c1Key)) {
         @($script:c1Cache[$c1Key] | Where-Object { [string]$_.output_sha256 -ceq $c1Sha })
     } else { @() }
-    if ($c1Rows.Count -ne 1) { throw "Expected one active complete C1 derivative for module $moduleId and hash $c1Sha" }
-    $c1Evidence = $c1Rows[0]
+    $c1Evidence = Select-MbaCourseC1Candidate -Candidates $c1Rows -PreferredKind 'complete C1' -ModuleId $moduleId -PreferredRunId ([string]$sourceItem.c1_run_id)
     Assert-Equal ([string]$c1Evidence.run_id) ([string]$sourceItem.c1_run_id) "module $moduleId C1 run"
     Assert-Equal ([string]$c1Evidence.derivative_id) ([string]$sourceItem.c1_derivative_id) "module $moduleId C1 derivative"
     Assert-Equal ([string]$c1Evidence.input_item_id) $itemId "module $moduleId C1 item"

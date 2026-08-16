@@ -21,6 +21,7 @@ $requiredFiles = @(
     '05_scripts\publish-finance-c2b-live.ps1',
     '05_scripts\register-finance-c2b-knowledge.ps1',
     '05_scripts\prepare-mba-course-c1b.ps1',
+    '05_scripts\select-mba-course-c1-candidate.ps1',
     '05_scripts\build-mba-course-learning-docs.ps1',
     '05_scripts\register-mba-course-c1b-handoff.ps1',
     '05_scripts\register-mba-course-c2b-knowledge.ps1',
@@ -29,6 +30,7 @@ $requiredFiles = @(
     '05_scripts\check-mba-course-c2b-package.ps1',
     '05_scripts\publish-mba-course-c2b-live.ps1',
     '05_scripts\verify-mba-course-c2b-closure.ps1',
+    '05_scripts\test-select-mba-course-c1-candidate.ps1',
     '05_scripts\test-register-mba-course-c1b-handoff.ps1',
     '05_scripts\test-register-mba-course-c2b-knowledge.ps1',
     '05_scripts\test-mba-course-c2b-package.ps1'
@@ -145,7 +147,7 @@ try {
 
     Assert-GenericStatus -Name 'generic-mba-complete-and-tested' `
         -ExpectedStatus 'available' `
-        -ExpectedDetail 'dedicated-tests=3' `
+        -ExpectedDetail 'dedicated-tests=4' `
         -Mutate {
             param($caseRoot)
         }
