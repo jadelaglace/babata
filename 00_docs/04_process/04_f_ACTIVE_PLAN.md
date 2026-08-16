@@ -44,7 +44,7 @@ Requirements/PRD 拥有，实际交付状态由 `DOC-USAGE` 拥有，完成证�
 - 状态转换类型：`user-explicit-goal-override`
 - 状态转换依据：用户明确覆盖原课程 Goal，授权暂停 AP03 并把本治理修复设为唯一 active；这不是
   blocker、自主重排或从旧 resolved 项推导出的重开。
-- 当前状态：`in_progress / pr-comment-fix-validated`。
+- 当前状态：`in_progress / pr-ready-awaiting-review`。
 - 用户目标：修复 Agent 在信息不完整时擅自重开 terminal、切换 active 的漏洞；让根目录 AGENTS/
   README 或等价浅层入口对恢复必读权威形成强制钩子；全面去除 03/04 与跨文档杂冗、理清 authority
   边界，并把可复用方法反哺 product-docs Skill。
@@ -94,9 +94,12 @@ Requirements/PRD 拥有，实际交付状态由 `DOC-USAGE` 拥有，完成证�
     先于 Active Plan；Active Plan 使用结构化转换类型并要求与肯定式来源前缀一致；新增 AGENTS
     与 README 各自的顺序反转、缺失边界、缺失类型和否定来源 mutation。五组治理 mutation、boundary 和完整仓库 gate
     全部通过；外部 product-docs Skill 已同步该模式并通过 `quick_validate.py` 与最小上下文前向验证。
+16. PR `#153` 的两条 P2 inline review thread 已逐条回复并标记 `resolved`；提交 `63f82c9` 的
+    Architecture/docs、Rust、TypeScript/Python 三组 GitHub gate 全部通过，当前无未解决 review
+    comment。PR 仍保持 open/mergeable，合并需要明确的用户或维护者决定。
 
-- 下一步：提交并推送 P2 修复，等待 PR `#153` 新一轮 review/gate；合并前保持 AP05/DFC02 active，
-  AP03 仍须用户明确恢复，不能自动晋升。
+- 下一步：等待 PR `#153` 的合并决定；不得擅自合并。合并前保持 AP05/DFC02 active，AP03 仍须
+  用户明确恢复，不能自动晋升。
 - 证据入口：`DOC-WORDING-RECOVERY`、`DOC-INTENT-PLAN-GOVERNANCE`、本文件、
   `05_scripts/check-intent-plan-governance.ps1`、`05_scripts/test-intent-plan-governance.ps1`、外部
   product-docs `SKILL.md` 与 `references/intent-plan-lifecycle.md`、
