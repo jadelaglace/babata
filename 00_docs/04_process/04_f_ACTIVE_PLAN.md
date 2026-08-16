@@ -34,18 +34,26 @@ Goal 或本文尚未回写，只补终端状态、证据和清理，不重跑业
 
 ## 2. 当前活动项（恢复时先读，最多一个）
 
-<!-- CURRENT-ACTIVE: none -->
-
-当前无活动项。CI 路由修复已经由 PR #157 run `31926103848` 证明：Rust 与 adapters 均为
-`skipped`，Architecture/docs 实际执行并通过。MBA Goal 继续暂停并保留在显式恢复队列。
-
-## 3. 下次开工队列（禁止恢复时自动执行）
+<!-- CURRENT-ACTIVE: AP-20260816-06 -->
 
 ### AP-20260816-06：MBA 全课程逐门闭环
 
-- 来源锚点：2026-08-16 用户已明确启动的 MBA 全课程 Goal；本次由实时治理修复暂时避让。
-- 当前状态：`queued / paused-by-live-governance-override / requires-explicit-resume`。
-- 用户目标：MBA 全课程逐门闭环，覆盖 13 门课程，先导课算第 1 门。
-- 已保留现场：第 2 门执行商务沟通 C1B 准备 `19/19`，`staged_only`；决策会计、财务管理、全球供应链和可持续运营已 `closed`。
-- 下一步：本次 CI 修复终端后仍等待用户明确恢复 MBA Goal，再从执行商务沟通 C2B 正文继续。
-- 恢复入口：Goal API、`CURRENT-ACTIVE` 和 `D:\BabataData\04_runtime\staging\model-workspaces\mba-course-plans\executive-business-communication-20260816-v1.json`。
+- 来源锚点：2026-08-16 用户明确恢复“mba所有课程闭环，列好了一课一课跑，统一找我确认”；本次与 Goal API 中同名 active Goal 身份一致。
+- Goal 锚点：Goal API 当前为 `active`，目标覆盖 MBA 全部课程逐门独立闭环；既有课程顺序与已关闭状态保持有效。
+- 状态转换类型：`user-explicit-goal-start`
+- 状态转换依据：用户明确启动已暂停的 MBA 全课程 Goal，满足本项 `requires-explicit-resume` 条件并授权按既定课程顺序继续。
+- 当前状态：`in_progress / mba-course-sequence / executive-communication-c2b`。
+- 用户目标：MBA 所有课程逐门闭环，一课一课执行，每门发布后统一请求用户内容与视觉确认。
+- 目标终端：全部 13 门课程分别完成 C1 覆盖、C1B、C2B 内容与知识登记、package/live、用户内容与视觉确认及 closure verifier；DOC-USAGE 逐门记录 `accepted / closed`。
+- 不改变/保护边界：不重跑已关闭课程；不重做执行商务沟通已完成的 `19/19` C1B 准备；每门未取得用户确认不得关闭或推进下一门；先导课仍计为独立一课。
+- 临时子计划与阶段结论：
+  1. [完成] 13 门课程顺序、分母与既有 closure 状态已经冻结；决策会计、财务管理、全球供应链和可持续运营已关闭。
+  2. [进行中] 当前课程为执行商务沟通；复核既有 `19/19` C1B staging 后，从该现场继续生成 C2B 学习正文、正式登记并发布。
+  3. [待执行] 发布后停在 `pending_user_acceptance`，统一请求用户确认内容与视觉；确认后运行 closure verifier。
+  4. [待执行] 每门关闭后更新 DOC-USAGE 和课程路线，再按既定顺序推进下一门，直至 13 门全部关闭。
+- 下一步：核对执行商务沟通现有 plan/manifest 与正式登记状态，只执行尚未完成的 C2B、登记、package/live 步骤。
+- 证据入口：`D:\BabataData\04_runtime\staging\model-workspaces\mba-course-plans\executive-business-communication-20260816-v1.json`、`D:\BabataData\04_runtime\staging\model-workspaces\mba-executive-business-communication-c1b-20260816-v1\manifest.json`。
+
+## 3. 下次开工队列（禁止恢复时自动执行）
+
+队列当前无其他可自动晋升项。
