@@ -21,6 +21,11 @@ Requirements/PRD 拥有，实际交付状态由 `DOC-USAGE` 拥有，完成证�
 既有 Goal，不授权选择最近可见子话题。没有明确用户覆盖、合法终端晋升或有依据的授权重排时，
 当前 active 默认不可变，`resolved/superseded/closed` 默认不得重开。
 
+恢复时同时核对实时对话、Goal 运行态和本文持久态。若实时对话已有对应结果并明确汇报完成，而
+Goal 或本文尚未回写，只补终端状态、证据和清理，不重跑业务动作、收尾、测试或发布；否则才从
+当前活动项的“当前状态”和“下一步”继续。已标为完成、已有结果、已终态登记或已按成功终端规则
+从本文清理的步骤，不能因摘要、最近消息、旧指令或工具断点再次出现而重跑。
+
 活动项结束时，先把长期有效的决定、产品语义、状态、证据和未决义务提升到各自权威；成功且
 无遗留义务的临时活动项随后删除。只自动晋升明确允许 `auto-promote` 的队列项；
 `requires-explicit-resume` 项继续留在队列。若没有可自动晋升项，写 `CURRENT-ACTIVE: none` 并等待
@@ -31,20 +36,16 @@ Requirements/PRD 拥有，实际交付状态由 `DOC-USAGE` 拥有，完成证�
 
 <!-- CURRENT-ACTIVE: none -->
 
-当前无活动项，等待授权。
+当前无活动项。CI 路由修复已经由 PR #157 run `31926103848` 证明：Rust 与 adapters 均为
+`skipped`，Architecture/docs 实际执行并通过。MBA Goal 继续暂停并保留在显式恢复队列。
 
 ## 3. 下次开工队列（禁止恢复时自动执行）
 
-### AP-20260815-03：继续完成下一门 MBA 课程
+### AP-20260816-06：MBA 全课程逐门闭环
 
-- 来源锚点：原线程 Goal“继续完成下一课”；2026-08-15 用户明确将其降为次优先，但要求保留。
-- 当前状态：`queued / paused-by-explicit-goal-override / requires-explicit-resume`。
-- 用户目标：复用既有 MBA C1B/C2B 链路完成下一门课；下一课程为 `25春 OMBA 5401 决策会计`，
-  权威 C1 coverage `33/33`，课件 19、视频 14。
-- 下一步：只保存恢复入口；必须在 AP05 到达终端且用户明确恢复课程后，才可晋升并继续 successor
-  ontology compatibility 前置轮和决策会计 fresh C1B/C2B。
-- 恢复入口：`DOC-MBA-ROLLOUT`、`DOC-USAGE`、`02_skills/00_specs/07_knowledge.md`、migration `0008`、
-  `01_app/01_babata_domain/src/course.rs`、`01_app/03_babata_infrastructure/src/sqlite/knowledge_core_repository.rs`。
-
-禁止自动执行：恢复、压缩、session/Agent 交接、Agent 或工具中断及“继续/恢复”只继续
-`CURRENT-ACTIVE`，不构成 AP03 的晋升授权。
+- 来源锚点：2026-08-16 用户已明确启动的 MBA 全课程 Goal；本次由实时治理修复暂时避让。
+- 当前状态：`queued / paused-by-live-governance-override / requires-explicit-resume`。
+- 用户目标：MBA 全课程逐门闭环，覆盖 13 门课程，先导课算第 1 门。
+- 已保留现场：第 2 门执行商务沟通 C1B 准备 `19/19`，`staged_only`；决策会计、财务管理、全球供应链和可持续运营已 `closed`。
+- 下一步：本次 CI 修复终端后仍等待用户明确恢复 MBA Goal，再从执行商务沟通 C2B 正文继续。
+- 恢复入口：Goal API、`CURRENT-ACTIVE` 和 `D:\BabataData\04_runtime\staging\model-workspaces\mba-course-plans\executive-business-communication-20260816-v1.json`。

@@ -296,6 +296,9 @@ Assert-Contains $activePlan '信息缺失只产生' 'unknown-state recovery rule
 Assert-Contains $activePlan '“继续/恢复”只授权继续' 'continue-resume goal preservation'
 Assert-Contains $activePlan '当前 active 默认不可变' 'active-goal immutability'
 Assert-Contains $activePlan '`resolved/superseded/closed` 默认不得重开' 'terminal-state immutability'
+Assert-Contains $activePlan '恢复时同时核对实时对话、Goal 运行态和本文持久态' 'three-layer recovery reconciliation'
+Assert-Contains $activePlan '只补终端状态、证据和清理，不重跑业务动作、收尾、测试或发布' 'lagging-terminal writeback rule'
+Assert-Contains $activePlan '不能因摘要、最近消息、旧指令或工具断点再次出现而重跑' 'completed-step replay guard'
 $currentHeading = '2. 当前活动项（恢复时先读，最多一个）'
 $queueHeading = '3. 下次开工队列（禁止恢复时自动执行）'
 $currentSection = Get-MarkdownSection $activePlan $currentHeading
@@ -420,6 +423,7 @@ if ($currentItems.Count -eq 1) {
         throw 'Intent/plan governance unknown Goal anchor must identify the Goal API result.'
     }
     $transitionPrefixes = @{
+        'user-explicit-goal-start' = '用户明确启动'
         'user-explicit-goal-override' = '用户明确覆盖'
         'legal-terminal-auto-promote' = '当前项到达合法终端后晋升'
         'authority-approved-blocker-replan' = '出现真实阻断并由用户或既定 authority 明确授权重排'
@@ -514,12 +518,27 @@ if ($governance -notmatch '(?s)在任何状态写入前先调用环境可用的\
 
 foreach ($marker in @(
     '新产品输入 append-first 原样捕获',
+    '恢复状态分为三个互补层级',
+    '**实时对话层**',
+    '**Goal 运行层**',
+    '**Docs 持久层**',
+    '判定为**回写滞后**',
+    '不得重新执行业务',
+    '只补写 Goal/Docs/证据的剩余终端维护',
+    'Docs 中“仍在做”不能覆盖实时层已经发生的完成事实',
+    'Docs 已标记',
+    '压缩摘要、交接文字、旧消息和工具断点不构成第四层',
+    '只有被用户在恢复后重新明确发出',
     'Agent 不记录全部思维过程',
     '摘要、断点或最近可见片段未包含的信息一律视为',
     '恢复边界不是新任务授权',
+    '恢复后的首个执行动作必须由三层核对结果产生',
+    '实时层已完成而',
+    '任何已有完成结果或 terminal 状态的旧实例不得重放',
     '“继续/恢复”只授权继续既有 Goal',
     '当前 active goal/item 和 `resolved/superseded/closed` terminal 状态默认不可变',
     '用户明确覆盖当前 Goal',
+    '首次建立 governing Goal 与覆盖一个仍在执行的 Goal 是两种不同转换',
     '追加 `reopened_by`、证据和影响范围',
     '用户编号子任务或声明阶段到达终端后',
     '失去它是否会让下一位 Agent 走不同路线或重复大段工作',
@@ -532,6 +551,20 @@ foreach ($marker in @(
     '线程/外部 Goal（若可用） -> DOC-ACTIVE-PLAN 的 CURRENT-ACTIVE -> DOC-INDEX -> DOC-WORDING'
 )) {
     Assert-Contains $governance $marker "governance lifecycle marker: $marker"
+}
+
+$recoveryLayers = @(
+    '**实时对话层**',
+    '**Goal 运行层**',
+    '**Docs 持久层**'
+)
+$previousIndex = -1
+foreach ($value in $recoveryLayers) {
+    $currentIndex = $governance.IndexOf($value, [StringComparison]::Ordinal)
+    if ($currentIndex -le $previousIndex) {
+        throw 'Intent/plan governance three-layer recovery order is missing or out of order.'
+    }
+    $previousIndex = $currentIndex
 }
 
 Assert-Contains $process '`DOC-ACTIVE-PLAN`' 'process active-plan routing'
