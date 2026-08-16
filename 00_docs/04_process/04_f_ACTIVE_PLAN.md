@@ -41,9 +41,10 @@ Requirements/PRD 拥有，实际交付状态由 `DOC-USAGE` 拥有，完成证�
   合并到 `main@67c1a68`，当前在干净分支 `codex/152-docs-recovery-governance` 继续 AP05。
 - Goal 锚点：当前 Goal API 返回空值，按 `unknown` 处理；以最新明确用户指令作为持久化 Goal，
   不从交接摘要、最近可见子话题或工具断点推断其他 Goal。
+- 状态转换类型：`user-explicit-goal-override`
 - 状态转换依据：用户明确覆盖原课程 Goal，授权暂停 AP03 并把本治理修复设为唯一 active；这不是
   blocker、自主重排或从旧 resolved 项推导出的重开。
-- 当前状态：`in_progress / pr-ready-awaiting-review`。
+- 当前状态：`in_progress / pr-comment-fix-validated`。
 - 用户目标：修复 Agent 在信息不完整时擅自重开 terminal、切换 active 的漏洞；让根目录 AGENTS/
   README 或等价浅层入口对恢复必读权威形成强制钩子；全面去除 03/04 与跨文档杂冗、理清 authority
   边界，并把可复用方法反哺 product-docs Skill。
@@ -84,9 +85,18 @@ Requirements/PRD 拥有，实际交付状态由 `DOC-USAGE` 拥有，完成证�
     CRLF current-state mutation；focused intent checker/mutation 已通过。
 13. CRLF 修复提交 `c6dbf76` 已推送；PR `#153` 新一轮 GitHub Architecture/docs、Rust、
     TypeScript/Python 三组 gate 全部通过，PR 保持 ready。
+14. PR `#153` review 发现两项合并前 P2：浅层 hook checker 从 marker 扫到文件末尾且只检查
+    关键词存在，未保护 Goal API -> Active Plan 的顺序；状态转换依据也只做正向关键词匹配，
+    否定句可伪装成合法来源。两项属于同一 checker/fixture 修复批次，必须增加显式 hook 区块、
+    顺序断言、结构化转换类型/肯定式来源断言和反向 mutation；其余审查未发现产品意图或
+    03/04 authority 断链。
+15. P2 修复已完成：AGENTS/README hook 现在有显式起止边界并在区块内强制 Goal/task-state API
+    先于 Active Plan；Active Plan 使用结构化转换类型并要求与肯定式来源前缀一致；新增顺序反转、
+    缺失边界、缺失类型和否定来源 mutation。五组治理 mutation、boundary 和完整仓库 gate
+    全部通过；外部 product-docs Skill 已同步该模式并通过 `quick_validate.py` 与最小上下文前向验证。
 
-- 下一步：等待 PR `#153` 的 review/merge 决定。只有 PR 合并并完成终端提升后，才维护 AP05/DFC02
-  terminal；AP03 仍须用户明确恢复，不能自动晋升。
+- 下一步：提交并推送 P2 修复，等待 PR `#153` 新一轮 review/gate；合并前保持 AP05/DFC02 active，
+  AP03 仍须用户明确恢复，不能自动晋升。
 - 证据入口：`DOC-WORDING-RECOVERY`、`DOC-INTENT-PLAN-GOVERNANCE`、本文件、
   `05_scripts/check-intent-plan-governance.ps1`、`05_scripts/test-intent-plan-governance.ps1`、外部
   product-docs `SKILL.md` 与 `references/intent-plan-lifecycle.md`、

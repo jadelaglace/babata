@@ -31,6 +31,8 @@ Babata 是一个本地优先的个人资料与知识系统。它面向微信、�
 > Babata 仍处于开发阶段，不是面向普通用户的稳定发行版。当前 phase、真实范围、完成度和
 > 未完成项只查 [Usage Status](00_docs/04_process/04_b_USAGE_STATUS.md)。
 
+<!-- /BABATA-RECOVERY-HOOK: v1 -->
+
 ## 从原件到使用
 
 ```mermaid

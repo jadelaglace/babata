@@ -281,9 +281,17 @@ try {
         param($caseRoot)
         Replace-Once $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md' '- Goal 锚点：' '- 外部目标：'
     }
-    Assert-CheckerFails 'current-item-loses-transition-authority' 'active-plan transition authority' {
+    Assert-CheckerFails 'current-item-loses-transition-authority' 'structured Goal/transition values' {
         param($caseRoot)
         Replace-Once $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md' '- 状态转换依据：' '- 状态说明：'
+    }
+    Assert-CheckerFails 'current-item-loses-transition-type' 'structured Goal/transition values' {
+        param($caseRoot)
+        Replace-Once $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md' '- 状态转换类型：' '- 状态类型：'
+    }
+    Assert-CheckerFails 'transition-source-negation' 'affirmative source matching its structured type' {
+        param($caseRoot)
+        Replace-Once $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md' '- 状态转换依据：用户明确覆盖原课程 Goal，授权暂停 AP03 并把本治理修复设为唯一 active；这不是' '- 状态转换依据：未经用户明确，因工具中断初始化 active；'
     }
     Assert-CheckerFails 'active-plan-treats-missing-context-as-authority' 'unknown-state recovery rule' {
         param($caseRoot)
@@ -375,6 +383,20 @@ try {
     Assert-CheckerFails 'root-readme-loses-active-plan-link' 'root README.md recovery hook value: 00_docs/04_process/04_f_ACTIVE_PLAN.md' {
         param($caseRoot)
         Replace-Once $caseRoot 'README.md' '00_docs/04_process/04_f_ACTIVE_PLAN.md' '00_docs/README.md'
+    }
+    Assert-CheckerFails 'root-agents-hook-loses-end-marker' 'exactly one bounded v1 recovery hook' {
+        param($caseRoot)
+        Replace-Once $caseRoot 'AGENTS.md' '<!-- /BABATA-RECOVERY-HOOK: v1 -->' '<!-- hook end removed -->'
+    }
+    Assert-CheckerFails 'root-agents-hook-reverses-order' 'requires Goal/task-state API before Active Plan' {
+        param($caseRoot)
+        $path = Join-Path $caseRoot 'AGENTS.md'
+        $text = Get-Content -LiteralPath $path -Raw -Encoding utf8
+        $sentinel = '__GOAL_STEP_SENTINEL__'
+        $text = $text.Replace('1. Call the available Goal/task-state API.', $sentinel)
+        $text = $text.Replace('2. Immediately read `00_docs/04_process/04_f_ACTIVE_PLAN.md`', '1. Call the available Goal/task-state API.')
+        $text = $text.Replace($sentinel, '2. Immediately read `00_docs/04_process/04_f_ACTIVE_PLAN.md`')
+        Set-Content -LiteralPath $path -Value $text -Encoding utf8
     }
     Assert-CheckerFails 'governance-adds-unknown-transition-authority' 'treats unknown information as transition authority' {
         param($caseRoot)

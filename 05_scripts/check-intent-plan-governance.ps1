@@ -71,11 +71,20 @@ function Get-PlanStateInfo {
 
 function Assert-ShallowRecoveryHook {
     param([string]$Text, [string]$Label)
-    $markers = @([regex]::Matches($Text, '<!-- BABATA-RECOVERY-HOOK: v1 -->'))
-    if ($markers.Count -ne 1) {
-        throw "Intent/plan governance requires exactly one v1 recovery hook in $Label."
+    $openMarker = '<!-- BABATA-RECOVERY-HOOK: v1 -->'
+    $closeMarker = '<!-- /BABATA-RECOVERY-HOOK: v1 -->'
+    $openMarkers = @([regex]::Matches($Text, [regex]::Escape($openMarker)))
+    $closeMarkers = @([regex]::Matches($Text, [regex]::Escape($closeMarker)))
+    if ($openMarkers.Count -ne 1 -or $closeMarkers.Count -ne 1) {
+        throw "Intent/plan governance requires exactly one bounded v1 recovery hook in $Label."
     }
-    $hook = $Text.Substring($markers[0].Index)
+    $open = $openMarkers[0]
+    $close = $closeMarkers[0]
+    $hookStart = $open.Index + $open.Length
+    if ($close.Index -le $hookStart) {
+        throw "Intent/plan governance requires a non-empty bounded recovery hook in $Label."
+    }
+    $hook = $Text.Substring($hookStart, $close.Index - $hookStart)
     foreach ($value in @(
         'Goal/task-state',
         '00_docs/04_process/04_f_ACTIVE_PLAN.md',
@@ -85,6 +94,11 @@ function Assert-ShallowRecoveryHook {
         '00_docs/04_process/04_g_INTENT_AND_PLAN_GOVERNANCE.md'
     )) {
         Assert-Contains $hook $value "$Label recovery hook value: $value"
+    }
+    $goalIndex = $hook.IndexOf('Goal/task-state API', [StringComparison]::Ordinal)
+    $activePlanIndex = $hook.IndexOf('00_docs/04_process/04_f_ACTIVE_PLAN.md', [StringComparison]::Ordinal)
+    if ($goalIndex -lt 0 -or $activePlanIndex -lt 0 -or $goalIndex -ge $activePlanIndex) {
+        throw "Intent/plan governance requires Goal/task-state API before Active Plan in the bounded $Label recovery hook."
     }
 }
 
@@ -392,8 +406,9 @@ if ($currentItems.Count -eq 1) {
         }
     }
     $goalAnchor = [regex]::Match($currentItem, '(?m)^- Goal 锚点：(?<value>.+)$')
+    $transitionType = [regex]::Match($currentItem, '(?m)^- 状态转换类型：`(?<value>[a-z0-9-]+)`$')
     $transition = [regex]::Match($currentItem, '(?m)^- 状态转换依据：(?<value>.+)$')
-    if (-not $goalAnchor.Success -or -not $transition.Success) {
+    if (-not $goalAnchor.Success -or -not $transitionType.Success -or -not $transition.Success) {
         throw 'Intent/plan governance current item is missing structured Goal/transition values.'
     }
     if ($goalAnchor.Groups['value'].Value -match '摘要推断|最近消息推断' -or
@@ -404,8 +419,18 @@ if ($currentItems.Count -eq 1) {
         -not $goalAnchor.Groups['value'].Value.Contains('Goal API')) {
         throw 'Intent/plan governance unknown Goal anchor must identify the Goal API result.'
     }
-    if ($transition.Groups['value'].Value -notmatch '用户明确|合法终端|授权重排|初始化') {
-        throw 'Intent/plan governance current transition lacks an authorized transition source.'
+    $transitionPrefixes = @{
+        'user-explicit-goal-override' = '用户明确覆盖'
+        'legal-terminal-auto-promote' = '当前项到达合法终端后晋升'
+        'authority-approved-blocker-replan' = '出现真实阻断并由用户或既定 authority 明确授权重排'
+    }
+    $transitionTypeValue = $transitionType.Groups['value'].Value
+    if (-not $transitionPrefixes.ContainsKey($transitionTypeValue)) {
+        throw "Intent/plan governance current transition type is not an allowed enum: $transitionTypeValue"
+    }
+    $requiredPrefix = $transitionPrefixes[$transitionTypeValue]
+    if (-not $transition.Groups['value'].Value.StartsWith($requiredPrefix, [StringComparison]::Ordinal)) {
+        throw 'Intent/plan governance current transition must use an affirmative source matching its structured type.'
     }
 }
 for ($captureNumber = 0; $captureNumber -lt $captureMarkers.Count; $captureNumber++) {

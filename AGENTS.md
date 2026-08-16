@@ -20,6 +20,8 @@ The lifecycle contract is owned by
 `00_docs/04_process/04_g_INTENT_AND_PLAN_GOVERNANCE.md`. This shallow hook only
 routes recovery to that authority; it does not become a second product or plan authority.
 
+<!-- /BABATA-RECOVERY-HOOK: v1 -->
+
 - This is the post-2.0 reboot workspace. The frozen predecessor is at
   `C:\Users\Aiano\Babata-2.0-frozen`.
 - This root is the Babata Git repository; use `main` and the configured `origin`
