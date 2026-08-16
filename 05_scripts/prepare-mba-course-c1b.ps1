@@ -25,6 +25,17 @@ if ($planStatus -ne 'pending_user_acceptance') { throw 'New MBA course plans mus
 $course = [string]$plan.course
 $expected = [int]$plan.expected_modules
 if ([string]::IsNullOrWhiteSpace($course) -or $expected -lt 1) { throw 'Course plan requires course and expected_modules' }
+$runOverrides = @{}
+if ($plan.PSObject.Properties['c1_run_overrides']) {
+    foreach ($override in $plan.c1_run_overrides.PSObject.Properties) {
+        $moduleId = [string]$override.Name
+        $runId = [string]$override.Value
+        if ($moduleId -notmatch '^\d+$' -or $runId -notmatch '^run_[A-Za-z0-9]+$') {
+            throw "Invalid c1_run_overrides entry: $moduleId"
+        }
+        $runOverrides[$moduleId] = $runId
+    }
+}
 
 if ([string]::IsNullOrWhiteSpace($CoverageAuditPath)) {
     $CoverageAuditPath = Join-Path $data '04_runtime\staging\model-workspaces\gaodun-mba-c1-20260803\coverage\c1-coverage-audit.json'
@@ -70,6 +81,8 @@ $extra = @($chapterByModule.Keys | Where-Object { $courseIds -notcontains $_ })
 if ($unmapped.Count -or $extra.Count) {
     throw "Chapter mapping must cover the course exactly. unmapped=$($unmapped -join ',') extra=$($extra -join ',')"
 }
+$extraOverrides = @($runOverrides.Keys | Where-Object { $courseIds -notcontains $_ })
+if ($extraOverrides.Count) { throw "c1_run_overrides contains modules outside the course: $($extraOverrides -join ',')" }
 
 # Delay mutation until the immutable inputs and exact course partition pass.
 New-Item -ItemType Directory -Path $staging -Force | Out-Null
@@ -97,7 +110,9 @@ WHERE p.input_revision_id='$revision' AND p.state='succeeded' AND p.invalidated_
   AND p.target_kind='$(Escape-Sql $preferredKind)'
 ORDER BY p.created_at;
 "@)
-    $c1 = Select-MbaCourseC1Candidate -Candidates $candidates -PreferredKind $preferredKind -ModuleId ([string]$row.module_id)
+    $moduleId = [string]$row.module_id
+    $preferredRunId = if ($runOverrides.ContainsKey($moduleId)) { [string]$runOverrides[$moduleId] } else { '' }
+    $c1 = Select-MbaCourseC1Candidate -Candidates $candidates -PreferredKind $preferredKind -ModuleId $moduleId -PreferredRunId $preferredRunId
     if ([string]::IsNullOrWhiteSpace([string]$c1.logical_path)) { throw "Managed C1 path missing for module $($row.module_id)" }
     $c1Path = Join-Path $data ([string]$c1.logical_path).Replace('/','\')
     if (-not (Test-Path -LiteralPath $c1Path -PathType Leaf)) { throw "Managed C1 file missing: $c1Path" }
