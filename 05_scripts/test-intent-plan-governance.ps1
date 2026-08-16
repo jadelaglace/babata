@@ -101,9 +101,11 @@ function Add-QueueFixture {
         '$1' + "`n`n<!-- CURRENT-ACTIVE: none -->`n`n当前无活动项。`n`n",
         1
     )
-    $plan = $plan.Replace(
-        '队列当前无其他可自动晋升项。',
-        "### AP-20260815-03：测试队列项`n`n- 来源锚点：测试队列。`n- 用户目标：复用既有 MBA C1B/C2B 链路。`n- 当前状态：``queued / paused-by-explicit-goal-override / requires-explicit-resume``。`n- 下一步：等待明确恢复。`n- 恢复入口：DOC-ACTIVE-PLAN。`n`n队列当前无其他可自动晋升项。"
+    $plan = [regex]::Replace(
+        $plan,
+        '(?ms)(## 3\. 下次开工队列（禁止恢复时自动执行）).*\z',
+        ('$1' + "`n`n### AP-20260815-03：测试队列项`n`n- 来源锚点：测试队列。`n- 用户目标：复用既有 MBA C1B/C2B 链路。`n- 当前状态：``queued / paused-by-explicit-goal-override / requires-explicit-resume``。`n- 下一步：等待明确恢复。`n- 恢复入口：DOC-ACTIVE-PLAN。`n"),
+        1
     )
     Set-Content -LiteralPath $planPath -Value $plan -Encoding utf8
 }
