@@ -13,6 +13,13 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
+# Native stdout is UTF-8 (sqlite3 JSON and babata --json). Hidden/non-console
+# runners can otherwise inherit an OEM console code page and corrupt Chinese
+# strings before ConvertFrom-Json sees them.
+$utf8NoBom = [Text.UTF8Encoding]::new($false)
+$OutputEncoding = $utf8NoBom
+[Console]::OutputEncoding = $utf8NoBom
+
 if ([string]::IsNullOrWhiteSpace($DataHome)) {
     throw 'BABATA_DATA_HOME or -DataHome is required'
 }

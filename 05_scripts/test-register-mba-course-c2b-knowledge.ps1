@@ -246,6 +246,7 @@ try {
     Assert-True (-not $text.Contains('foundation:$foundationKey')) 'Registrar must not double-prefix a canonical foundation key'
     Assert-True ($text.Contains('map_node_refs = @($foundationKey)')) 'Registrar must use the full canonical foundation key directly'
     Assert-True ($text.Contains('ConvertFrom-Json -DateKind String')) 'Registrar must preserve RFC3339 JSON timestamps as strings'
+    Assert-True ($text.Contains('[Console]::OutputEncoding = $utf8NoBom')) 'Registrar must decode native sqlite3/babata JSON as UTF-8 under hidden runners'
     Assert-True ($text.Contains('Require-Rfc3339Utc')) 'Registrar must validate C1B ledger generated_at before mutation'
     Assert-True ($text.Contains('[switch]$AllowLegacyGeneratedAt')) 'Registrar must make legacy timestamp compatibility explicit'
     Assert-True ($text.Contains('[IO.File]::Move($temporary, $manifestPath, $true)')) 'Registrar must atomically overwrite an existing state receipt on Windows'

@@ -89,8 +89,10 @@ if ($assetBase -match '[\\/:*?"<>|]' -or $assetBase -in @('.','..')) { throw 'co
 
 $domains = @($spec.domains)
 $learning = $spec.learning
-$expectedColors = @('#2563EB','#16A34A','#EA8A00','#EF4444','#8B5CF6')
-if ($domains.Count -lt 4 -or $domains.Count -gt $expectedColors.Count) { throw 'The accepted MBA profile requires four or five knowledge domains' }
+$classicColors = @('#2563EB','#16A34A','#EA8A00','#EF4444','#8B5CF6')
+$sixDomainColors = @('#2563EB','#0F766E','#EA8A00','#7C3AED','#DC2626','#16A34A')
+if ($domains.Count -lt 4 -or $domains.Count -gt 6) { throw 'The accepted MBA profile requires four to six knowledge domains' }
+$expectedColors = if ($domains.Count -eq 6) { $sixDomainColors } else { $classicColors }
 $allIds = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
 if (-not $allIds.Add($rootId)) { throw "Duplicate Mermaid id: $rootId" }
 $knowledgeNodes = @()
@@ -146,13 +148,16 @@ $learningColor=Require-Text $learning.color 'learning.color'
 if($learningColor -cne '#64748B'){throw 'Learning-aid branch must use the accepted neutral profile color'}
 $learningNodes = @($learning.nodes)
 if ($learningNodes.Count -ne 4) { throw 'The accepted MBA profile requires four learning-aid links' }
+$validatedLearningNodes = @()
 foreach ($node in $learningNodes) {
     $id = Require-Id $node.id 'learning node id'
     $note = Require-Text $node.note 'learning node note'
     if ($note -match '[\\/\[\]"<>]') { throw "Learning note is not a safe package basename: $note" }
     if (-not $allIds.Add($id)) { throw "Duplicate Mermaid id: $id" }
     if (-not (Test-Path -LiteralPath (Join-Path $package ($note+'.md')) -PathType Leaf)) { throw "Learning note is missing: $note" }
+    $validatedLearningNodes += [pscustomobject]@{id=$id;note=$note}
 }
+$learningNodes = $validatedLearningNodes
 $linkedNodes = @($knowledgeNodes) + @($learningNodes)
 $linkedNotes = @($linkedNodes | ForEach-Object { [string]$_.note })
 if (@($linkedNotes | Sort-Object -Unique).Count -ne $linkedNotes.Count) { throw 'Course-map linked note labels must be unique' }
@@ -170,7 +175,7 @@ foreach ($domain in $domains) {
     $domainId='domain_' + (Require-Id $domain.id 'domain.id')
     [void]$lines.Add("  $domainId[`"<b>$(Escape-Html ([string]$domain.label))</b>&nbsp;<span style='color:$([string]$domain.color)'>&#9675;</span>`"]")
     foreach ($node in @($domain.nodes)) {
-        $nodeId=[string]$node.id
+        $nodeId=Require-Id $node.id 'node id'
         [void]$lines.Add("  $nodeId[`"$([string]$node.note)`"]")
         [void]$lines.Add("  ${nodeId}J(( ))")
         $details=@($node.details)
@@ -187,7 +192,7 @@ foreach ($domain in $domains) {
     $indices=[Collections.Generic.List[int]]::new();$domainId='domain_' + (Require-Id $domain.id 'domain.id')
     [void]$edgeLines.Add("  $rootId --- $domainId");[void]$indices.Add($edgeIndex);$edgeIndex++
     foreach ($node in @($domain.nodes)) {
-        $nodeId=[string]$node.id
+        $nodeId=Require-Id $node.id 'node id'
         [void]$edgeLines.Add("  $domainId --- $nodeId");[void]$indices.Add($edgeIndex);$edgeIndex++
         [void]$edgeLines.Add("  $nodeId --- ${nodeId}J");[void]$indices.Add($edgeIndex);$edgeIndex++
         for($i=0;$i -lt @($node.details).Count;$i++){[void]$edgeLines.Add("  ${nodeId}J --- ${nodeId}D$($i+1)");[void]$indices.Add($edgeIndex);$edgeIndex++}
@@ -212,7 +217,7 @@ $edgeGroups[$learningId]=@($learningIndices);$edgeLines|ForEach-Object{[void]$li
 $detailIds=@($knowledgeNodes|ForEach-Object{$node=$_;for($i=0;$i -lt @($node.details).Count;$i++){[string]$node.id+'D'+($i+1)}})
 [void]$lines.Add('  class '+($detailIds -join ',')+' detail')
 foreach($domain in $domains){
-    $junctions=@($domain.nodes|ForEach-Object{[string]$_.id+'J'});$domainId='domain_' + (Require-Id $domain.id 'domain.id')
+    $junctions=@($domain.nodes|ForEach-Object{(Require-Id $_.id 'node id')+'J'});$domainId='domain_' + (Require-Id $domain.id 'domain.id')
     [void]$lines.Add('  class '+($junctions -join ',')+' junction')
     foreach($junction in $junctions){[void]$lines.Add("  style $junction fill:#FFFFFF,stroke:$([string]$domain.color),stroke-width:2px")}
     [void]$lines.Add("  linkStyle $($edgeGroups[$domainId] -join ',') stroke:$([string]$domain.color),stroke-width:2px")
