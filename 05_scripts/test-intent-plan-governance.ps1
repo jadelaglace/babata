@@ -42,6 +42,55 @@ function Replace-Once {
     Set-Content -LiteralPath $path -Value $mutated -Encoding utf8
 }
 
+function Add-ActivePlanFixture {
+    param([string]$CaseRoot)
+    $planPath = Join-Path $CaseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md'
+    $plan = Get-Content -LiteralPath $planPath -Raw -Encoding utf8
+    $planPattern = '(?ms)^## 2\. 当前活动项（恢复时先读，最多一个）.*?(?=^## 3\. 下次开工队列（禁止恢复时自动执行）)'
+    $planFixture = @'
+## 2. 当前活动项（恢复时先读，最多一个）
+
+<!-- CURRENT-ACTIVE: AP-20260815-05 -->
+
+恢复后只执行唯一当前活动项，不从摘要或队列选择工作。
+
+### AP-20260815-05：测试活动项
+
+- 来源锚点：`DFC-20260815-02`、测试来源。
+- Goal 锚点：当前 Goal API 返回空值，按 `unknown` 处理；以最新明确用户指令作为持久化 Goal。
+- 状态转换类型：`user-explicit-goal-override`
+- 状态转换依据：用户明确覆盖原课程 Goal，授权暂停 AP03 并把本治理修复设为唯一 active；这不是 blocker、自主重排或从旧 resolved 项推导出的重开。
+- 当前状态：`in_progress`。
+- 用户目标：修复 Agent 在信息不完整时的测试治理漏洞。
+- 目标终端：测试 checker 与 mutation。
+- 不改变：不改变队列项或产品数据。
+
+#### 临时子计划与阶段结论
+
+1. 测试 fixture 只用于覆盖 active-plan schema。
+
+- 下一步：运行测试。
+- 证据入口：测试输出。
+
+'@
+    $plan = [regex]::Replace($plan, $planPattern, $planFixture, 1)
+    Set-Content -LiteralPath $planPath -Value $plan -Encoding utf8
+
+    $recoveryPath = Join-Path $CaseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md'
+    $recovery = Get-Content -LiteralPath $recoveryPath -Raw -Encoding utf8
+    $recovery = $recovery.Replace(
+        '| 浅层强制钩子、根目录 AGENTS/README、Docs 去冗余、先 PR 后干净分支、恢复入口 | 2026-08-15 23:43 | `resolved` | `resolved_by`: PR `#153` merged as `a1c6df7`; AP-20260815-05 terminal |',
+        '| 浅层强制钩子、根目录 AGENTS/README、Docs 去冗余、先 PR 后干净分支、恢复入口 | 2026-08-15 23:43 | `active` | 目标去向：`AP-20260815-05` |'
+    )
+    $recovery = [regex]::Replace(
+        $recovery,
+        '(?ms)(<!-- DOCS-FIRST-CAPTURE: DFC-20260815-02; schema=v1 -->.*?^状态：)`resolved`(。).*?^`resolved_by`：.*?governance boundary/full gates。\s*',
+        ('$1`active`$2' + "`r`n`r`n目标去向：`AP-20260815-05`。`r`n"),
+        1
+    )
+    Set-Content -LiteralPath $recoveryPath -Value $recovery -Encoding utf8
+}
+
 function Replace-CurrentInProgressState {
     param([string]$CaseRoot, [string]$Replacement)
     $path = Join-Path $CaseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md'
@@ -123,10 +172,12 @@ try {
     }
     Assert-CheckerFails 'recovery-terminal-capture-reappears-in-active-plan' 'terminal recovery capture still appears as an active-plan source obligation' {
         param($caseRoot)
+        Add-ActivePlanFixture $caseRoot
         Replace-Once $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md' '来源锚点：`DFC-20260815-02`' '来源锚点：`DFC-20260815-01`'
     }
     Assert-CheckerFails 'recovery-active-capture-loses-plan-anchor' 'active recovery capture is not structurally anchored in the active plan' {
         param($caseRoot)
+        Add-ActivePlanFixture $caseRoot
         $path = Join-Path $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md'
         $text = Get-Content -LiteralPath $path -Raw -Encoding utf8
         $text = $text.Replace('DFC-20260815-02', 'DFC-20260815-99')
@@ -152,14 +203,10 @@ try {
         param($caseRoot)
         $path = Join-Path $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md'
         $text = Get-Content -LiteralPath $path -Raw -Encoding utf8
-        $text = $text.Replace(
-            '| 浅层强制钩子、根目录 AGENTS/README、Docs 去冗余、先 PR 后干净分支、恢复入口 | 2026-08-15 23:43 | `active` |',
-            '| 浅层强制钩子、根目录 AGENTS/README、Docs 去冗余、先 PR 后干净分支、恢复入口 | 2026-08-15 23:43 | `resolved` |'
-        )
         $text = [regex]::Replace(
             $text,
-            '(?ms)(<!-- DOCS-FIRST-CAPTURE: DFC-20260815-02; schema=v1 -->.*?状态：)`active`(。)',
-            '$1`resolved`$2'
+            '(?ms)(<!-- DOCS-FIRST-CAPTURE: DFC-20260815-02; schema=v1 -->.*?^状态：`resolved`。).*?^`resolved_by`：.*?governance boundary/full gates。\s*',
+            ('$1' + "`r`n")
         )
         Set-Content -LiteralPath $path -Value $text -Encoding utf8
     }
@@ -172,7 +219,7 @@ try {
     }
     Assert-CheckerFails 'recovery-index-status-diverges' 'status does not match its fast-index row' {
         param($caseRoot)
-        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| 浅层强制钩子、根目录 AGENTS/README、Docs 去冗余、先 PR 后干净分支、恢复入口 | 2026-08-15 23:43 | `active` |' '| 浅层强制钩子、根目录 AGENTS/README、Docs 去冗余、先 PR 后干净分支、恢复入口 | 2026-08-15 23:43 | `resolved` |'
+        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| 浅层强制钩子、根目录 AGENTS/README、Docs 去冗余、先 PR 后干净分支、恢复入口 | 2026-08-15 23:43 | `resolved` |' '| 浅层强制钩子、根目录 AGENTS/README、Docs 去冗余、先 PR 后干净分支、恢复入口 | 2026-08-15 23:43 | `active` |'
     }
     Assert-CheckerFails 'recovery-context-marker-loses-attribution' 'malformed attributed-context marker' {
         param($caseRoot)
@@ -188,6 +235,7 @@ try {
     }
     Assert-CheckerFails 'active-plan-duplicates-current-item' 'allows at most one current active item' {
         param($caseRoot)
+        Add-ActivePlanFixture $caseRoot
         $path = Join-Path $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md'
         $text = Get-Content -LiteralPath $path -Raw -Encoding utf8
         $text = $text.Replace(
@@ -198,6 +246,7 @@ try {
     }
     Assert-CheckerFails 'active-plan-hides-competing-heading' 'unrecognized competing level-three plan heading' {
         param($caseRoot)
+        Add-ActivePlanFixture $caseRoot
         $path = Join-Path $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md'
         $text = Get-Content -LiteralPath $path -Raw -Encoding utf8
         $text = $text.Replace(
@@ -208,6 +257,7 @@ try {
     }
     Assert-CheckerFails 'active-plan-duplicates-item-id' 'item IDs must be unique' {
         param($caseRoot)
+        Add-ActivePlanFixture $caseRoot
         Replace-Once $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md' '### AP-20260815-03：继续完成下一门 MBA 课程' '### AP-20260815-05：继续完成下一门 MBA 课程'
     }
     Assert-CheckerFails 'active-plan-empty-without-marker' 'explicit empty active-plan state' {
@@ -231,8 +281,8 @@ try {
             '$1' + "`n`n<!-- CURRENT-ACTIVE: none -->`n`n当前无活动项。`n`n"
         )
         Set-Content -LiteralPath $path -Value $text -Encoding utf8
-        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| 浅层强制钩子、根目录 AGENTS/README、Docs 去冗余、先 PR 后干净分支、恢复入口 | 2026-08-15 23:43 | `active` | 目标去向：`AP-20260815-05`；当前批次先 PR，随后在干净 Issue 分支继续治理 |' '| 浅层强制钩子、根目录 AGENTS/README、Docs 去冗余、先 PR 后干净分支、恢复入口 | 2026-08-15 23:43 | `resolved` | `resolved_by`: test terminal |'
-        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '状态：`active`。' '状态：`resolved`。'
+        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| 浅层强制钩子、根目录 AGENTS/README、Docs 去冗余、先 PR 后干净分支、恢复入口 | 2026-08-15 23:43 | `resolved` | `resolved_by`: PR `#153` merged as `a1c6df7`; AP-20260815-05 terminal |' '| 浅层强制钩子、根目录 AGENTS/README、Docs 去冗余、先 PR 后干净分支、恢复入口 | 2026-08-15 23:43 | `resolved` | `resolved_by`: test terminal |'
+        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '状态：`resolved`。' '状态：`resolved`。'
         Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '目标去向：`AP-20260815-05`。' '`resolved_by`：test terminal。'
     }
     Assert-CheckerFails 'active-plan-auto-promote-queue-without-current' 'auto-promote queue while CURRENT-ACTIVE is none' {
@@ -249,10 +299,12 @@ try {
     }
     Assert-CheckerFails 'active-plan-keeps-successful-terminal' 'forbids successful terminal items' {
         param($caseRoot)
+        Add-ActivePlanFixture $caseRoot
         Replace-CurrentInProgressState $caseRoot 'completed / no-follow-up'
     }
     Assert-CheckerFails 'crlf-current-state-mutation' 'forbids successful terminal items' {
         param($caseRoot)
+        Add-ActivePlanFixture $caseRoot
         $path = Join-Path $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md'
         $text = (Get-Content -LiteralPath $path -Raw -Encoding utf8).Replace("`r`n", "`n").Replace("`n", "`r`n")
         Set-Content -LiteralPath $path -Value $text -Encoding utf8 -NoNewline
@@ -260,10 +312,12 @@ try {
     }
     Assert-CheckerFails 'blocked-item-loses-terminal-fields' 'abnormal terminal field: 终态原因' {
         param($caseRoot)
+        Add-ActivePlanFixture $caseRoot
         Replace-CurrentInProgressState $caseRoot 'blocked / waiting-user'
     }
     Assert-CheckerPasses 'blocked-item-keeps-recovery-contract' {
         param($caseRoot)
+        Add-ActivePlanFixture $caseRoot
         Replace-CurrentInProgressState $caseRoot 'blocked'
         $path = Join-Path $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md'
         $text = Get-Content -LiteralPath $path -Raw -Encoding utf8
@@ -275,22 +329,27 @@ try {
     }
     Assert-CheckerFails 'current-item-loses-user-goal' 'active-plan user goal' {
         param($caseRoot)
+        Add-ActivePlanFixture $caseRoot
         Replace-Once $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md' '- 用户目标：修复 Agent' '- 目标说明：修复 Agent'
     }
     Assert-CheckerFails 'current-item-loses-external-goal-anchor' 'active-plan external goal anchor' {
         param($caseRoot)
+        Add-ActivePlanFixture $caseRoot
         Replace-Once $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md' '- Goal 锚点：' '- 外部目标：'
     }
-    Assert-CheckerFails 'current-item-loses-transition-authority' 'structured Goal/transition values' {
+    Assert-CheckerFails 'current-item-loses-transition-authority' 'active-plan transition authority' {
         param($caseRoot)
+        Add-ActivePlanFixture $caseRoot
         Replace-Once $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md' '- 状态转换依据：' '- 状态说明：'
     }
     Assert-CheckerFails 'current-item-loses-transition-type' 'structured Goal/transition values' {
         param($caseRoot)
+        Add-ActivePlanFixture $caseRoot
         Replace-Once $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md' '- 状态转换类型：' '- 状态类型：'
     }
     Assert-CheckerFails 'transition-source-negation' 'affirmative source matching its structured type' {
         param($caseRoot)
+        Add-ActivePlanFixture $caseRoot
         Replace-Once $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md' '- 状态转换依据：用户明确覆盖原课程 Goal，授权暂停 AP03 并把本治理修复设为唯一 active；这不是' '- 状态转换依据：未经用户明确，因工具中断初始化 active；'
     }
     Assert-CheckerFails 'active-plan-treats-missing-context-as-authority' 'unknown-state recovery rule' {
@@ -311,10 +370,12 @@ try {
     }
     Assert-CheckerFails 'current-state-hides-terminal-qualifier' 'current item uses a forbidden qualifier: closed' {
         param($caseRoot)
+        Add-ActivePlanFixture $caseRoot
         Replace-CurrentInProgressState $caseRoot 'in_progress / closed'
     }
     Assert-CheckerFails 'goal-anchor-uses-summary-inference' 'unauthorized inference source' {
         param($caseRoot)
+        Add-ActivePlanFixture $caseRoot
         Replace-Once $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md' '当前 Goal API 返回空值，按 `unknown` 处理' '从摘要推断 Goal 为 `unknown`'
     }
     Assert-CheckerFails 'queue-exceeds-bound' 'next-start queue exceeds the five-item bound' {
