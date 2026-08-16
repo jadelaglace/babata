@@ -42,7 +42,7 @@ Goal 或本文尚未回写，只补终端状态、证据和清理，不重跑业
 - Goal 锚点：Goal API 当前为 `active`，目标覆盖 MBA 全部课程逐门独立闭环；既有课程顺序与已关闭状态保持有效。
 - 状态转换类型：`user-explicit-goal-start`
 - 状态转换依据：用户明确启动已暂停的 MBA 全课程 Goal，满足本项 `requires-explicit-resume` 条件并授权按既定课程顺序继续。
-- 当前状态：`in_progress / mba-course-sequence / organizational-behavior-pr-merge`。
+- 当前状态：`in_progress / mba-course-sequence / data-security-ethics-risk-pr-merge`。
 - 用户目标：MBA 所有课程按既定顺序一课一课执行；所有待做课程都到达 `pending_user_acceptance` 后，只统一请求一次内容与视觉确认。
 - 目标终端：全部 13 门课程分别完成 C1 覆盖、C1B、C2B 内容与知识登记、package/live；所有待验收课程一次性取得用户内容与视觉确认后，分别运行 closure verifier 并由 DOC-USAGE 记录 `accepted / closed`。
 - 不改变/保护边界：不重跑已关闭课程；不重做执行商务沟通已完成的 `19/19` C1B 准备；单课到达 `pending_user_acceptance` 后不打断用户、不等待逐门确认，直接按顺序推进下一门；先导课仍计为独立一课。
@@ -54,10 +54,11 @@ Goal 或本文尚未回写，只补终端状态、证据和清理，不重跑业
   5. [完成] “25春 OMBA 5402 创造价值的营销管理”权威 C1 `70/70`；通用 prepare 已修复为按 coverage audit active kinds 合法选择 C1，C1B registrar 也补齐隐藏 runner UTF-8 原生 JSON 边界。正式 C1B 为 `70/70 registered`、26 个必要视觉；v2 execution round 的 8/8 学习文档、70/70 知识登记、39/39 package/live 全部通过，到达 `pending_user_acceptance`。按总 Goal 不运行本课 closure verifier、不单独请求验收。
   6. [完成] “25春 OMBA5404 组织绩效的战略领导力”权威 C1 `42/42`，含课件 13、视频 29；正式 C1B 与知识登记均为 `42/42`，必要视觉为 0，学习正文 8/8。v1 已通过阶段被保留；修复 materializer 的全课程 0-media 空集合汇总后，v2 仅运行 materialize、package gate 和 publish-live，三阶段无缺陷通过，13/13 package/live hash 相等并到达 `pending_user_acceptance`。按总 Goal 不运行本课 closure verifier、不单独请求验收。
   7. [完成] “25春 OMBA5409 组织行为学”权威 C1 `75/75`，含课件 56、视频 19；正式 C1B 为 `75/75` 本质判断和 107 个必要视觉，9/9 学习正文与 `75/75` 知识登记完成。v1 execution round 五阶段无缺陷通过，121/121 package/live hash 相等并到达 `pending_user_acceptance`。按总 Goal 不运行本课 closure verifier、不单独请求验收。
-  8. [下一门] 按冻结顺序进入“25春 MBAO 5411 数据安全、道德和风险管理”；权威 C1 coverage audit 为 `43/43`，含课件 35、视频 8。先完成本课 Issue/PR 合并，再为下一门建立独立 Issue/短分支与 course plan。
-  9. [待执行] 所有待做课程均发布后，一次性汇总内容与视觉请求用户统一确认；确认后逐课运行 closure verifier、更新 DOC-USAGE 并关闭全量 Goal。
-- 下一步：只运行组织行为学 DOC-USAGE 与 Active Plan 相关定向检查，完成 Issue #166 的提交、PR 和 main 合并；随后进入数据安全、道德和风险管理，不运行无关 Rust 检查。
-- 证据入口：执行商务沟通终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-executive-business-communication-20260816-v3\round-ledger.json`；先导课终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-primer-20260816-v8\round-ledger.json`；战略领导力终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-strategic-leadership-20260816-v2\round-ledger.json`；组织行为学终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-organizational-behavior-20260816-v1\round-ledger.json`，唯一 live 为 `C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\organizational_behavior_c2b_latest`。
+  8. [完成] “25春 MBAO 5411 数据安全、道德和风险管理”权威 C1 `43/43`，含课件 35、视频 8；正式 C1B 为 `43/43` 本质判断和 47 个必要视觉，9/9 学习正文与 `43/43` 知识登记完成。共享 C1 candidate helper 已按内容身份折叠同指纹重复 run、继续拒绝不同指纹分叉，并以 source-map run_id 保持冻结身份。v1 execution round 五阶段无缺陷通过，61/61 package/live 逐文件 SHA-256 零差异，唯一 live 已发布并到达 `pending_user_acceptance`。按总 Goal 不运行本课 closure verifier、不单独请求验收。
+  9. [下一门] Issue #168 合并回 main 后，按冻结顺序进入“25春 OMBA 5413 管理经济学”；权威 C1 coverage audit 为 `61/61`，含课件 37、视频 24。
+  10. [待执行] 所有待做课程均发布后，一次性汇总内容与视觉请求用户统一确认；确认后逐课运行 closure verifier、更新 DOC-USAGE 并关闭全量 Goal。
+- 下一步：只运行 Issue #168 所需的 PowerShell/docs 定向检查与 `git diff --check`，提交本课相关文件并经 PR 合并回 main；随后为管理经济学建立独立 Issue/短分支与 course plan。不得重跑数据安全课程任何阶段、已终端课程或无关 Rust 检查。
+- 证据入口：执行商务沟通终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-executive-business-communication-20260816-v3\round-ledger.json`；先导课终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-primer-20260816-v8\round-ledger.json`；战略领导力终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-strategic-leadership-20260816-v2\round-ledger.json`；组织行为学终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-organizational-behavior-20260816-v1\round-ledger.json`；数据安全终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-data-security-ethics-risk-20260816-v1\round-ledger.json`，唯一 live 为 `C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\data_security_ethics_risk_c2b_latest`。
 
 ## 3. 下次开工队列（禁止恢复时自动执行）
 

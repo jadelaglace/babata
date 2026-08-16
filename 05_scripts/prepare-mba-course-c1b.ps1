@@ -7,7 +7,8 @@ param(
     [string]$DataHome = $env:BABATA_DATA_HOME,
     [int]$ChunkCharLimit = 180000,
     [string]$MediaExtractor = (Join-Path $PSScriptRoot 'extract-mba-course-c1b-media.py'),
-    [string]$TemplateBuilder = (Join-Path $PSScriptRoot 'build-template-preserving-c2b.ps1')
+    [string]$TemplateBuilder = (Join-Path $PSScriptRoot 'build-template-preserving-c2b.ps1'),
+    [string]$CandidateSelector = (Join-Path $PSScriptRoot 'select-mba-course-c1-candidate.ps1')
 )
 
 $ErrorActionPreference = 'Stop'
@@ -34,9 +35,10 @@ if (Test-Path -LiteralPath $staging) { throw "Use a fresh MBA course staging roo
 
 $rawDb = Join-Path $data '01_raw\index\raw.sqlite'
 $derivedDb = Join-Path $data '02_derived\index\derived.sqlite'
-foreach ($path in @($rawDb,$derivedDb,$MediaExtractor,$TemplateBuilder)) {
+foreach ($path in @($rawDb,$derivedDb,$MediaExtractor,$TemplateBuilder,$CandidateSelector)) {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Missing required input: $path" }
 }
+. (Get-Item -LiteralPath $CandidateSelector).FullName
 
 function Escape-Sql([string]$Value) { return $Value.Replace("'", "''") }
 function Sql-Rows([string]$Database,[string]$Sql) {
@@ -95,8 +97,7 @@ WHERE p.input_revision_id='$revision' AND p.state='succeeded' AND p.invalidated_
   AND p.target_kind='$(Escape-Sql $preferredKind)'
 ORDER BY p.created_at;
 "@)
-    if ($candidates.Count -ne 1) { throw "Expected one active $preferredKind for module $($row.module_id), found $($candidates.Count)" }
-    $c1 = $candidates[0]
+    $c1 = Select-MbaCourseC1Candidate -Candidates $candidates -PreferredKind $preferredKind -ModuleId ([string]$row.module_id)
     if ([string]::IsNullOrWhiteSpace([string]$c1.logical_path)) { throw "Managed C1 path missing for module $($row.module_id)" }
     $c1Path = Join-Path $data ([string]$c1.logical_path).Replace('/','\')
     if (-not (Test-Path -LiteralPath $c1Path -PathType Leaf)) { throw "Managed C1 file missing: $c1Path" }
