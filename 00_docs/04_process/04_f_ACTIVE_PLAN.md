@@ -34,24 +34,10 @@ Goal 或本文尚未回写，只补终端状态、证据和清理，不重跑业
 
 ## 2. 当前活动项（恢复时先读，最多一个）
 
-<!-- CURRENT-ACTIVE: AP-20260816-07 -->
+<!-- CURRENT-ACTIVE: none -->
 
-### AP-20260816-07：按变更范围路由工程门禁
-
-- 来源锚点：2026-08-16 用户纠正：纯 Docs/PowerShell 治理变更触发 Rust 全量检查属于必须修复的 CI 路由缺陷，不能因检查成功或既有 workflow 如此配置而合理化。
-- Goal 锚点：MBA 全课程 Goal 保持 `paused`；本项是实时对话层明确覆盖的紧急治理修复，不授权恢复任何课程动作。
-- 状态转换类型：`user-explicit-goal-override`
-- 状态转换依据：用户明确覆盖当前执行路线，要求先处理错误触发 Rust 的 CI 根因；已暂停的 MBA Goal 保留原身份和现场，待本项终端后仍需明确恢复授权。
-- 当前状态：`in_progress / engineering-gate-scope-routing`。
-- 用户目标：修复工程门禁的错误扩大触发，让未改动的语言栈明确跳过，而不是用无关的全量检查结果掩盖路由缺陷。
-- 目标终端：变更路径分类器具有定向测试；GitHub workflow 根据分类结果跳过无关语言栈；本 PR 的新 run 证明 `Rust` 与 `TypeScript and Python adapters` 为 `skipped`，`Architecture and docs` 实际执行并通过。
-- 不改变/保护边界：不运行 Rust、Cargo、adapter 全量检查来验证本次纯治理修复；不恢复 MBA 课程；不把绿色的无关 job 当作正确路由证据；不提交仅有行尾变化的用户文件。
-- 临时子计划与阶段结论：
-  1. [完成] 采用成熟的 `dorny/paths-filter@v3` 做 changed-path scope detection，避免自造复杂分类机制。
-  2. [完成] Rust 仅由 `01_app/**`、`03_migrations/**` 或其 gate orchestration 触发；adapters 仅由 `08_adapters/**` 或其 gate orchestration 触发；Architecture/docs 始终执行。
-  3. [进行中] 只运行 workflow/治理静态检查和 `git diff --check`，推送后用新的 GitHub run 验证 skipped/executed 矩阵。
-- 下一步：提交并推送；观察 PR #157 新 run，确认 Rust/adapters skipped、Architecture/docs passed。
-- 证据入口：`.github/workflows/engineering-gates.yml`、PR #157 checks。
+当前无活动项。CI 路由修复已经由 PR #157 run `31926103848` 证明：Rust 与 adapters 均为
+`skipped`，Architecture/docs 实际执行并通过。MBA Goal 继续暂停并保留在显式恢复队列。
 
 ## 3. 下次开工队列（禁止恢复时自动执行）
 
