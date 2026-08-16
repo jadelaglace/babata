@@ -150,7 +150,10 @@ foreach($registration in $registrations){
 
 $generatedRoot=Join-Path (Split-Path $learningPath -Parent) 'generated'
 if(-not(Test-Path -LiteralPath $generatedRoot -PathType Container)){throw 'Learning-doc generated root is missing'}
-$expectedNotes=@('00-课程总览')+@($plan.chapters.note|ForEach-Object{[string]$_})+@('09-公式与决策工具','10-案例练习','11-复习与自测')
+$learningNotes=@($plan.course_map.learning.nodes.note|ForEach-Object{[string]$_})
+if($learningNotes.Count -ne 4 -or @($learningNotes|Sort-Object -Unique).Count -ne 4 -or $learningNotes -notcontains '视觉证据索引'){throw 'Course-map learning layer must contain three unique numbered learning documents and 视觉证据索引'}
+$aidNotes=@();foreach($prefix in @('09-','10-','11-')){$matches=@($learningNotes|Where-Object{$_.StartsWith($prefix,[StringComparison]::Ordinal)});if($matches.Count -ne 1){throw "Course-map learning layer requires exactly one $prefix document"};$aidNotes+=Safe-Basename $matches[0] 'learning document'}
+$expectedNotes=@('00-课程总览')+@($plan.chapters.note|ForEach-Object{[string]$_})+$aidNotes
 $expectedFiles=@($expectedNotes|ForEach-Object{$_+'.md'})
 $learningRows=@($learning.generated_files)
 if($learningRows.Count -ne $expectedFiles.Count -or @($learningRows.name|Sort-Object -Unique).Count -ne $expectedFiles.Count -or
@@ -240,7 +243,7 @@ Set-Content -LiteralPath (Join-Path $package '视觉证据索引.md') -Value (($
 
 $index=@('---','babata_type: c2b_course_knowledge_base',"course: $course",'variant: c2b','status: pending_user_acceptance','formal_registration: registered','c1b_registration: registered','knowledge_universe_registration: registered','template_profile: semantic-obsidian/v1','template_status: accepted','---','',"# $shortName 知识库",'', '从 [[00-课程总览]] 开始。这里按知识和决策链组织，媒体证据按章节挂载。','','## 课程章节')
 foreach($chapter in @($plan.chapters.note|ForEach-Object{[string]$_})){$index+="- [[$chapter]]"}
-$index+=@('','## 学习工具','- [[09-公式与决策工具]]','- [[10-案例练习]]','- [[11-复习与自测]]','- [[视觉证据索引]]','')
+$index+=@('','## 学习工具')+@($aidNotes|ForEach-Object{"- [[$_]]"})+@('- [[视觉证据索引]]','')
 Set-Content -LiteralPath (Join-Path $package 'index.md') -Value ($index -join "`n") -Encoding utf8
 
 $assetBase=$shortName+'课程脑图'
