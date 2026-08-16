@@ -49,11 +49,11 @@ Goal 或本文尚未回写，只补终端状态、证据和清理，不重跑业
 - 临时子计划与阶段结论：
   1. [完成] 13 门课程顺序、分母与既有 closure 状态已经冻结；决策会计、财务管理、全球供应链和可持续运营已关闭。
   2. [完成] 执行商务沟通 C1B 已正式登记 `19/19` essence decisions 与 `16/16` retained media；v1 round 随后因通用 builder 将 `09-公式与决策工具` 写死而 fail-closed，下游知识登记/package/live 均未运行。
-  3. [进行中] builder/materializer 已改为从课程 plan 解析 `09-/10-/11-` 学习文档并通过定向测试；使用全新 v2 round 复用正式 C1B fingerprint，继续生成本课 C2B 正文、知识登记、package/live。
+  3. [进行中] builder/materializer 已改为从课程 plan 解析 `09-/10-/11-` 学习文档并通过定向测试；v2 正确复用了正式 C1B，但首个 QianWen digest 因 prompt 未声明长度而得到 `1491 < 1800`，在下游前 fail-closed；已补充至少 2200 字符的证据整理合同，使用全新 v3 做该对象的第二次且最后一次尝试。
   4. [待执行] 发布后停在 `pending_user_acceptance`，统一请求用户确认内容与视觉；确认后运行 closure verifier。
   5. [待执行] 每门关闭后更新 DOC-USAGE 和课程路线，再按既定顺序推进下一门，直至 13 门全部关闭。
-- 下一步：启动全新 v2 execution round，从 fingerprint 复用 C1B 开始跑到唯一 live，不使用 v1 C2B 输出作为输入。
-- 证据入口：`D:\BabataData\04_runtime\staging\execution-rounds\mba-executive-business-communication-20260816-v1\round-ledger.json`、`D:\BabataData\04_runtime\staging\model-workspaces\mba-executive-business-communication-c1b-registration-20260816-v1\c1b-registration-ledger.json`。
+- 下一步：启动全新 v3 execution round，从 fingerprint 复用 C1B 开始跑到唯一 live，不使用 v1/v2 learning 或 C2B 输出作为输入。
+- 证据入口：`D:\BabataData\04_runtime\staging\execution-rounds\mba-executive-business-communication-20260816-v2\round-ledger.json`、`D:\BabataData\04_runtime\staging\model-workspaces\mba-executive-business-communication-c1b-registration-20260816-v2\c1b-registration-ledger.json`。
 
 ## 3. 下次开工队列（禁止恢复时自动执行）
 
