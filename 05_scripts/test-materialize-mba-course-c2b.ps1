@@ -44,6 +44,14 @@ try{
     if(-not (Get-Content -LiteralPath (Join-Path $stage 'package\index.md') -Raw -Encoding utf8).Contains("[[$($aids[0])]]")){throw 'Course-specific learning-tool link was not materialized'}
     if((Get-Content -LiteralPath (Join-Path $stage 'package\01-章节1.md') -Raw -Encoding utf8).Contains('[[来源/')){throw 'Complete source-layer link leaked into package'}
     $checked=@(&$checker -CoursePlanPath $planPath -PackageRoot (Join-Path $stage 'package') -ManifestPath $manifestPath);if($checked.Count -ne 1 -or $checked[0].status -ne 'passed'){throw 'Materialized mock package did not pass checker'}
+    $registrations[0].media_registrations=@();$decisions[0].retained_media=@();Write-Json $decisionPath $decisions 10
+    $c1b.coverage.retained_media_registered=0;$c1b.registrations=$registrations;$c1b.decision_source_sha256=Hash $decisionPath;Write-Json $c1bPath $c1b 30
+    $knowledge.c1b_ledger_sha256=Hash $c1bPath;Write-Json $knowledgePath $knowledge 30
+    $zeroMediaStage=Join-Path $runtime 'valid-zero-media';$zeroMediaResult=@(&$materializer -CoursePlanPath $planPath -LearningDocsManifestPath $learningPath -C1BRegistrationLedgerPath $c1bPath -KnowledgeUniverseLedgerPath $knowledgePath -StagingRoot $zeroMediaStage -DataHome $data)
+    if($zeroMediaResult.Count -ne 1 -or $zeroMediaResult[0].status -ne 'passed_engineering_gates'){throw 'Valid zero-media materialization failed'}
+    $zeroMediaManifest=Get-Content -LiteralPath ([string]$zeroMediaResult[0].manifest) -Raw -Encoding utf8|ConvertFrom-Json
+    if([int]$zeroMediaManifest.c1b_registration.media -ne 0 -or @($zeroMediaManifest.c1b_registration.media_derivative_ids).Count -ne 0){throw 'Zero-media manifest is not empty'}
+    if(-not (Get-Content -LiteralPath (Join-Path $zeroMediaStage 'package\视觉证据索引.md') -Raw -Encoding utf8).Contains('未要求额外媒体')){throw 'Zero-media package does not explain the empty visual set'}
     $knowledge.modules=@($knowledge.modules)+@($knowledge.modules[0]);Write-Json $knowledgePath $knowledge 30
     $badStage=Join-Path $runtime 'bad-duplicate-module';Assert-Throws {&$materializer -CoursePlanPath $planPath -LearningDocsManifestPath $learningPath -C1BRegistrationLedgerPath $c1bPath -KnowledgeUniverseLedgerPath $knowledgePath -StagingRoot $badStage -DataHome $data} 'duplicate knowledge module'
     if(Test-Path -LiteralPath $badStage){throw 'Failed preflight created a staging root'}

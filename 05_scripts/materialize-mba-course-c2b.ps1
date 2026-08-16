@@ -258,7 +258,7 @@ $manifest=[ordered]@{
     module_ids=@($planIds|Sort-Object);source_map=$sourceMapPath;source_map_sha256=Hash $sourceMapPath
     c1b_ledger_sha256=$c1bSha;knowledge_ledger_sha256=$knowledgeSha;learning_docs_manifest=$learningPath;learning_docs_manifest_sha256=$learningSha
     formal_registration='registered'
-    c1b_registration=[ordered]@{status='registered';ledger=$c1bPath;decisions=$registrations.Count;media=$mediaRows.Count;decision_derivative_ids=@($registrations.decision_registration.derivative_id);media_derivative_ids=@($registrations.media_registrations.derivative_id)}
+    c1b_registration=[ordered]@{status='registered';ledger=$c1bPath;decisions=$registrations.Count;media=$mediaRows.Count;decision_derivative_ids=@($registrations.decision_registration.derivative_id);media_derivative_ids=@($registrations|ForEach-Object{@($_.media_registrations)}|ForEach-Object{[string]$_.derivative_id})}
     knowledge_universe=[ordered]@{status='registered';ledger=$knowledgePath;foundation=$plan.knowledge_universe.foundation_id;discipline=$plan.knowledge_universe.discipline_id;branch=$knowledge.branch;semantic_ids=@($knowledgeModules.semantic_id)}
     obsidian_template=[ordered]@{profile='semantic-obsidian/v1';status='accepted'}
     publication=[ordered]@{live_path=[string]$plan.live.path;vault=[string]$plan.live.vault;file=[string]$plan.live.file}
