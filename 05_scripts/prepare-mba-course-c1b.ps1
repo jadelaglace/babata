@@ -77,7 +77,17 @@ $sequence = 0
 foreach ($row in $courseRows) {
     $sequence++
     $revision = Escape-Sql ([string]$row.revision_id)
-    $preferredKind = if ([string]$row.module_type -eq 'video') { 'transcript' } else { 'extracted_text' }
+    $activeKinds = @($row.active_kinds | ForEach-Object { [string]$_ })
+    $preferredKinds = if ([string]$row.module_type -eq 'video') {
+        @('transcript')
+    } else {
+        @('extracted_text','ocr_text','structured_result')
+    }
+    $preferredKind = @($preferredKinds | Where-Object { $activeKinds -contains $_ } | Select-Object -First 1)
+    if ($preferredKind.Count -ne 1) {
+        throw "Coverage audit has no supported active C1 kind for module $($row.module_id): $($activeKinds -join ',')"
+    }
+    $preferredKind = [string]$preferredKind[0]
     $candidates = @(Sql-Rows $derivedDb @"
 SELECT p.run_id,p.target_kind,p.tool_or_model,d.derivative_id,d.output_sha256,d.logical_path
 FROM process_runs p JOIN derivatives d ON d.run_id=p.run_id

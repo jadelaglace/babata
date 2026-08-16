@@ -51,9 +51,10 @@ Goal 或本文尚未回写，只补终端状态、证据和清理，不重跑业
   2. [完成] 执行商务沟通 v3 execution round 无缺陷到达 `pending_user_acceptance`：C1B `19/19`、必要媒体 `16/16`、知识条目 `19/19`、学习文档 12 份、package/live 33/33；唯一 live 已发布，当前不运行 closure verifier。
   3. [完成] 通用 builder/materializer 已改为从课程 plan 解析 `09-/10-/11-` 学习文档并通过课程专属名称定向测试；证据整理合同明确至少 2200 字符，v3 已证明修复后的整轮交付。
   4. [完成] 第 1 门“美国加州多明尼克大学 MBA 先导课”已由权威 coverage audit 证明 C1 `119/119`，分为会计学原理 14、商务英语 16、市场营销 10、管理经济学 46、组织行为学 18、运营管理 15（6 份课件 + 113 段视频）；正式 C1B 已登记 `119/119` 本质判断和 72 个必要视觉，10/10 学习文档与 `119/119` 知识登记完成。修复六域脑图与 kebab-case Mermaid internal-link 后，v8 execution round 的 materialize、package gate、唯一 live 全部通过，87/87 package/live hash 相等，到达 `pending_user_acceptance`；按总 Goal 不运行本课 closure verifier、不单独请求验收。
-  5. [进行中] 按冻结课程顺序进入下一门尚未关闭且尚未到待统一验收终端的课程；先盘点权威课程序列、C1 分母与已有阶段结果，只执行未完成步骤。
-  6. [待执行] 所有待做课程均发布后，一次性汇总内容与视觉请求用户统一确认；确认后逐课运行 closure verifier、更新 DOC-USAGE 并关闭全量 Goal。
-- 下一步：读取冻结的 13 门课程顺序和 MBA 763/763 coverage audit，确定第 2 门未完成课程及其已有状态；不得回头重跑先导课或其他已终端课程。
+  5. [完成] “25春 OMBA 5402 创造价值的营销管理”权威 C1 `70/70`；通用 prepare 已修复为按 coverage audit active kinds 合法选择 C1，C1B registrar 也补齐隐藏 runner UTF-8 原生 JSON 边界。正式 C1B 为 `70/70 registered`、26 个必要视觉；v2 execution round 的 8/8 学习文档、70/70 知识登记、39/39 package/live 全部通过，到达 `pending_user_acceptance`。按总 Goal 不运行本课 closure verifier、不单独请求验收。
+  6. [进行中] 按冻结顺序进入“25春 OMBA5404 组织绩效的战略领导力”；权威 C1 coverage audit 为 `42/42`，含课件 13、视频 29。先建立本课 Issue/短分支与覆盖全部 module_id 的 course plan，再从正式 C1B 执行至 `pending_user_acceptance`。
+  7. [待执行] 所有待做课程均发布后，一次性汇总内容与视觉请求用户统一确认；确认后逐课运行 closure verifier、更新 DOC-USAGE 并关闭全量 Goal。
+- 下一步：为组织绩效的战略领导力建立 Issue/短分支，冻结 42/42 module_id 与章节映射；不得回头重跑营销课或其他已终端课程。
 - 证据入口：执行商务沟通终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-executive-business-communication-20260816-v3\round-ledger.json`；先导课终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-primer-20260816-v8\round-ledger.json`，唯一 live 为 `C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\mba_primer_c2b_latest`。
 
 ## 3. 下次开工队列（禁止恢复时自动执行）
