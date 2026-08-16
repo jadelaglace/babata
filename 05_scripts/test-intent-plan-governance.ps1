@@ -379,6 +379,17 @@ try {
         Add-ActivePlanFixture $caseRoot
         Replace-Once $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md' '- 状态转换依据：用户明确覆盖原课程 Goal，授权暂停 AP03 并把本治理修复设为唯一 active；这不是' '- 状态转换依据：未经用户明确，因工具中断初始化 active；'
     }
+    Assert-CheckerPasses 'current-item-allows-explicit-goal-start' {
+        param($caseRoot)
+        Add-ActivePlanFixture $caseRoot
+        Replace-Once $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md' '- 状态转换类型：`user-explicit-goal-override`' '- 状态转换类型：`user-explicit-goal-start`'
+        Replace-Once $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md' '- 状态转换依据：用户明确覆盖' '- 状态转换依据：用户明确启动'
+    }
+    Assert-CheckerFails 'goal-start-rejects-override-evidence' 'affirmative source matching its structured type' {
+        param($caseRoot)
+        Add-ActivePlanFixture $caseRoot
+        Replace-Once $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md' '- 状态转换类型：`user-explicit-goal-override`' '- 状态转换类型：`user-explicit-goal-start`'
+    }
     Assert-CheckerFails 'active-plan-treats-missing-context-as-authority' 'unknown-state recovery rule' {
         param($caseRoot)
         Replace-Once $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md' '信息缺失只产生' '信息缺失可以产生'
@@ -386,6 +397,18 @@ try {
     Assert-CheckerFails 'active-plan-continue-selects-visible-subtopic' 'continue-resume goal preservation' {
         param($caseRoot)
         Replace-Once $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md' '“继续/恢复”只授权继续' '“继续/恢复”允许选择'
+    }
+    Assert-CheckerFails 'active-plan-replays-completed-stage-from-summary' 'completed-step replay guard' {
+        param($caseRoot)
+        Replace-Once $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md' '不能因摘要、最近消息、旧指令或工具断点再次出现而重跑' '可以按摘要重新执行'
+    }
+    Assert-CheckerFails 'active-plan-skips-three-layer-reconciliation' 'three-layer recovery reconciliation' {
+        param($caseRoot)
+        Replace-Once $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md' '恢复时同时核对实时对话、Goal 运行态和本文持久态' '恢复时只读取本文持久态'
+    }
+    Assert-CheckerFails 'active-plan-reruns-when-terminal-writeback-lags' 'lagging-terminal writeback rule' {
+        param($caseRoot)
+        Replace-Once $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md' '只补终端状态、证据和清理，不重跑业务动作、收尾、测试或发布' '重新执行业务动作、收尾、测试和发布，再补终端状态'
     }
     Assert-CheckerFails 'queue-loses-user-goal' 'queue user goal' {
         param($caseRoot)
@@ -430,6 +453,27 @@ try {
     Assert-CheckerFails 'governance-records-all-thought' 'governance lifecycle marker: Agent 不记录全部思维过程' {
         param($caseRoot)
         Replace-Once $caseRoot '00_docs\04_process\04_g_INTENT_AND_PLAN_GOVERNANCE.md' 'Agent 不记录全部思维过程' 'Agent 记录全部思维过程'
+    }
+    Assert-CheckerFails 'governance-adds-summary-as-fourth-layer' 'governance lifecycle marker: 压缩摘要、交接文字、旧消息和工具断点不构成第四层' {
+        param($caseRoot)
+        Replace-Once $caseRoot '00_docs\04_process\04_g_INTENT_AND_PLAN_GOVERNANCE.md' '压缩摘要、交接文字、旧消息和工具断点不构成第四层' '压缩摘要、交接文字、旧消息和工具断点构成第四层'
+    }
+    Assert-CheckerFails 'governance-reorders-three-layers' 'three-layer recovery order is missing or out of order' {
+        param($caseRoot)
+        $path = Join-Path $caseRoot '00_docs\04_process\04_g_INTENT_AND_PLAN_GOVERNANCE.md'
+        $text = Get-Content -LiteralPath $path -Raw -Encoding utf8
+        $live = '**实时对话层**'
+        $docs = '**Docs 持久层**'
+        $text = $text.Replace($live, '__LIVE_LAYER__').Replace($docs, $live).Replace('__LIVE_LAYER__', $docs)
+        Set-Content -LiteralPath $path -Value $text -Encoding utf8
+    }
+    Assert-CheckerFails 'governance-reruns-business-when-writeback-lags' 'governance lifecycle marker: 不得重新执行业务' {
+        param($caseRoot)
+        Replace-Once $caseRoot '00_docs\04_process\04_g_INTENT_AND_PLAN_GOVERNANCE.md' '不得重新执行业务' '应重新执行业务'
+    }
+    Assert-CheckerFails 'governance-lets-docs-override-live-completion' 'governance lifecycle marker: Docs 中“仍在做”不能覆盖实时层已经发生的完成事实' {
+        param($caseRoot)
+        Replace-Once $caseRoot '00_docs\04_process\04_g_INTENT_AND_PLAN_GOVERNANCE.md' 'Docs 中“仍在做”不能覆盖实时层已经发生的完成事实' 'Docs 中“仍在做”覆盖实时层完成事实'
     }
     Assert-CheckerFails 'governance-treats-summary-gap-as-unfinished' 'governance lifecycle marker: 摘要、断点或最近可见片段未包含的信息一律视为' {
         param($caseRoot)
@@ -498,6 +542,18 @@ try {
         $text = $text.Replace('[Active Plan](00_docs/04_process/04_f_ACTIVE_PLAN.md)', '先调用环境可用的 Goal/task-state API')
         $text = $text.Replace($sentinel, '[Active Plan](00_docs/04_process/04_f_ACTIVE_PLAN.md)')
         Set-Content -LiteralPath $path -Value $text -Encoding utf8
+    }
+    Assert-CheckerFails 'governance-replays-finished-action-after-compaction' 'governance lifecycle marker: 任何已有完成结果或 terminal 状态的旧实例不得重放' {
+        param($caseRoot)
+        Replace-Once $caseRoot '00_docs\04_process\04_g_INTENT_AND_PLAN_GOVERNANCE.md' '任何已有完成结果或 terminal 状态的旧实例不得重放' '仅 Docs terminal 禁止重放'
+    }
+    Assert-CheckerFails 'governance-infers-unfinished-after-doc-cleanup' 'governance lifecycle marker: Docs 已标记' {
+        param($caseRoot)
+        Replace-Once $caseRoot '00_docs\04_process\04_g_INTENT_AND_PLAN_GOVERNANCE.md' 'Docs 已标记' 'Docs 未标记'
+    }
+    Assert-CheckerFails 'governance-conflates-goal-start-with-override' 'governance lifecycle marker: 首次建立 governing Goal 与覆盖一个仍在执行的 Goal 是两种不同转换' {
+        param($caseRoot)
+        Replace-Once $caseRoot '00_docs\04_process\04_g_INTENT_AND_PLAN_GOVERNANCE.md' '首次建立 governing Goal 与覆盖一个仍在执行的 Goal 是两种不同转换' '首次建立和覆盖 Goal 使用同一转换'
     }
     Assert-CheckerFails 'governance-adds-unknown-transition-authority' 'treats unknown information as transition authority' {
         param($caseRoot)
