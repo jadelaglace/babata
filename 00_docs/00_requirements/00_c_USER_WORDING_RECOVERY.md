@@ -31,7 +31,7 @@
 | 完整轮次、docs-first、Agent 随行 | 2026-08-15 | `active` | Process、`DOC-ACTIVE-PLAN`、通用 Skill |
 | 四基石交叉、Course/Branch、MBA lens | 2026-08-15 知识宇宙段 | `resolved` | Agent 分析经用户整体采用；当前见 Requirements/Architecture |
 | 00_b 当前意图、00_c 逐字恢复、临时子计划、阶段结论、终端提升清理 | 2026-08-15 末段 | `resolved` | `resolved_by`: `DOC-WORDING`、`DOC-INTENT-PLAN-GOVERNANCE`、`DOC-ACTIVE-PLAN`、治理 checker/mutation tests、product-docs Skill |
-| 浅层强制钩子、根目录 AGENTS/README、Docs 去冗余、先 PR 后干净分支、恢复入口 | 2026-08-15 23:43 | `active` | 目标去向：`AP-20260815-05`；当前批次先 PR，随后在干净 Issue 分支继续治理 |
+| 浅层强制钩子、根目录 AGENTS/README、Docs 去冗余、先 PR 后干净分支、恢复入口 | 2026-08-15 23:43 | `resolved` | `resolved_by`: PR `#153` merged as `a1c6df7`; AP-20260815-05 terminal |
 
 以下历史正文来自 Babata 1.0 原始归档和按日期整理的产品讨论。章节标题、状态/覆盖注释是编辑者
 导航；`>` 引文才是逐字用户证据。完整原始会话不进入 Git，未来如需长期保存，应由 Babata 正式
@@ -903,9 +903,12 @@ verbatim sha256：`1ea0fead6bdc9a8089e0141ad87e3c023bf80e27a64813a1cfb15252576fd
 
 极简检索词：`浅层强制钩子`；`根目录 AGENTS/README`；`Docs 去冗余`；`先 PR 后干净分支`；`恢复入口`。
 
-状态：`active`。
+状态：`resolved`。
 
 目标去向：`AP-20260815-05`。
+
+`resolved_by`：PR `#153`、merge commit `a1c6df761ac98e38e2c6eb4be98151cdefec76e7`、
+`DOC-ACTIVE-PLAN` terminal cleanup、governance boundary/full gates。
 
 > 还有 现在这些真正至关重要的docs 埋的太深了 根目录的agens和readme像废了一样 03 04 杂冗太严重了 包括这些docs之间的杂冗边界 你根本没处理好。 这些关键指令至少要在浅层 或者浅层至少有强制钩子link 每次user我提醒你 你读一下 一压缩 一交接 你就傻了 浅层又没钩子 这跟有大炮锁起来五层门不用 没区别。全面你检查docs问题 严谨仔细分析 不丢 不冗余 逻辑清晰 处理好 然后反哺skill 立刻做 全面做 ap立刻切换最高优先级  最好先pr再做 立刻pr 然后更新明白了ap 然后  开个干净issue分支继续做这个ap
 >
