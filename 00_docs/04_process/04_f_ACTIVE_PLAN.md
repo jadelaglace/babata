@@ -91,8 +91,8 @@ Requirements/PRD 拥有，实际交付状态由 `DOC-USAGE` 拥有，完成证�
     顺序断言、结构化转换类型/肯定式来源断言和反向 mutation；其余审查未发现产品意图或
     03/04 authority 断链。
 15. P2 修复已完成：AGENTS/README hook 现在有显式起止边界并在区块内强制 Goal/task-state API
-    先于 Active Plan；Active Plan 使用结构化转换类型并要求与肯定式来源前缀一致；新增顺序反转、
-    缺失边界、缺失类型和否定来源 mutation。五组治理 mutation、boundary 和完整仓库 gate
+    先于 Active Plan；Active Plan 使用结构化转换类型并要求与肯定式来源前缀一致；新增 AGENTS
+    与 README 各自的顺序反转、缺失边界、缺失类型和否定来源 mutation。五组治理 mutation、boundary 和完整仓库 gate
     全部通过；外部 product-docs Skill 已同步该模式并通过 `quick_validate.py` 与最小上下文前向验证。
 
 - 下一步：提交并推送 P2 修复，等待 PR `#153` 新一轮 review/gate；合并前保持 AP05/DFC02 active，

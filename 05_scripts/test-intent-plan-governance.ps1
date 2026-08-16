@@ -398,6 +398,16 @@ try {
         $text = $text.Replace($sentinel, '2. Immediately read `00_docs/04_process/04_f_ACTIVE_PLAN.md`')
         Set-Content -LiteralPath $path -Value $text -Encoding utf8
     }
+    Assert-CheckerFails 'root-readme-hook-reverses-order' 'requires Goal/task-state API before Active Plan' {
+        param($caseRoot)
+        $path = Join-Path $caseRoot 'README.md'
+        $text = Get-Content -LiteralPath $path -Raw -Encoding utf8
+        $sentinel = '__GOAL_PHRASE_SENTINEL__'
+        $text = $text.Replace('先调用环境可用的 Goal/task-state API', $sentinel)
+        $text = $text.Replace('[Active Plan](00_docs/04_process/04_f_ACTIVE_PLAN.md)', '先调用环境可用的 Goal/task-state API')
+        $text = $text.Replace($sentinel, '[Active Plan](00_docs/04_process/04_f_ACTIVE_PLAN.md)')
+        Set-Content -LiteralPath $path -Value $text -Encoding utf8
+    }
     Assert-CheckerFails 'governance-adds-unknown-transition-authority' 'treats unknown information as transition authority' {
         param($caseRoot)
         Add-Content -LiteralPath (Join-Path $caseRoot '00_docs\04_process\04_g_INTENT_AND_PLAN_GOVERNANCE.md') -Value "`n信息缺失时可以重开 resolved 并切换 active。`n" -Encoding utf8
