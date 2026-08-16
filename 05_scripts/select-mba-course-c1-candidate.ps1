@@ -18,17 +18,17 @@ function Select-MbaCourseC1Candidate {
         }
     }
 
-    $fingerprints = @($active | Group-Object { [string]$_.output_sha256 })
-    if ($fingerprints.Count -ne 1) {
-        throw "Expected one active $PreferredKind content fingerprint for module $ModuleId, found $($fingerprints.Count) divergent fingerprints across $($active.Count) candidates"
-    }
-
     if (-not [string]::IsNullOrWhiteSpace($PreferredRunId)) {
         $preferred = @($active | Where-Object { [string]$_.run_id -ceq $PreferredRunId })
         if ($preferred.Count -ne 1) {
-            throw "Expected frozen $PreferredKind run $PreferredRunId for module $ModuleId within the unique content fingerprint"
+            throw "Expected explicit frozen $PreferredKind run $PreferredRunId for module $ModuleId among active candidates"
         }
         return $preferred[0]
+    }
+
+    $fingerprints = @($active | Group-Object { [string]$_.output_sha256 })
+    if ($fingerprints.Count -ne 1) {
+        throw "Expected one active $PreferredKind content fingerprint for module $ModuleId, found $($fingerprints.Count) divergent fingerprints across $($active.Count) candidates"
     }
 
     # Repeated successful runs with the same managed content are one C1 identity.

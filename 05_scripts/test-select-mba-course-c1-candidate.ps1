@@ -27,7 +27,12 @@ $frozen=Select-MbaCourseC1Candidate -Candidates @(
     Candidate 'run-2' $hashA $pathA
 ) -PreferredKind 'extracted_text' -ModuleId '2' -PreferredRunId 'run-1'
 if ($frozen.run_id -ne 'run-1') { throw 'Frozen same-fingerprint run identity was not preserved' }
-Assert-Throws { Select-MbaCourseC1Candidate -Candidates @(Candidate 'run-1' $hashA $pathA) -PreferredKind 'extracted_text' -ModuleId '2' -PreferredRunId 'run-missing' } 'Expected frozen extracted_text run run-missing'
+$divergentFrozen=Select-MbaCourseC1Candidate -Candidates @(
+    Candidate 'run-1' $hashA $pathA
+    Candidate 'run-2' $hashB '02_derived/files/sha256/bb/content-b'
+) -PreferredKind 'ocr_text' -ModuleId '3' -PreferredRunId 'run-1'
+if ($divergentFrozen.run_id -ne 'run-1') { throw 'Explicit divergent run identity was not preserved' }
+Assert-Throws { Select-MbaCourseC1Candidate -Candidates @(Candidate 'run-1' $hashA $pathA) -PreferredKind 'extracted_text' -ModuleId '2' -PreferredRunId 'run-missing' } 'Expected explicit frozen extracted_text run run-missing'
 
 Assert-Throws { Select-MbaCourseC1Candidate -Candidates @(
     Candidate 'run-1' $hashA $pathA

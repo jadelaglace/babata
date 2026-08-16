@@ -51,6 +51,7 @@ function Get-GenericMbaPathStatus {
             'pending-user-acceptance' = 'pending_user_acceptance'
             'fresh-staging-root' = 'Use a fresh MBA course staging root'
             'fingerprint-candidate-selector' = 'select-mba-course-c1-candidate.ps1'
+            'explicit-divergent-run-selection' = 'c1_run_overrides'
         }
         '05_scripts\select-mba-course-c1-candidate.ps1' = [ordered]@{
             'same-fingerprint-deduplication' = 'Repeated successful runs with the same managed content are one C1 identity.'

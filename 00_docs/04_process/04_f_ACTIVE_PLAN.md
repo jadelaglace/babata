@@ -42,7 +42,7 @@ Goal 或本文尚未回写，只补终端状态、证据和清理，不重跑业
 - Goal 锚点：Goal API 当前为 `active`，目标覆盖 MBA 全部课程逐门独立闭环；既有课程顺序与已关闭状态保持有效。
 - 状态转换类型：`user-explicit-goal-start`
 - 状态转换依据：用户明确启动已暂停的 MBA 全课程 Goal，满足本项 `requires-explicit-resume` 条件并授权按既定课程顺序继续。
-- 当前状态：`in_progress / mba-course-sequence / business-analytics-course-plan`。
+- 当前状态：`in_progress / mba-course-sequence / strategic-management-course-plan`。
 - 用户目标：MBA 所有课程按既定顺序一课一课执行；所有待做课程都到达 `pending_user_acceptance` 后，只统一请求一次内容与视觉确认。
 - 目标终端：全部 13 门课程分别完成 C1 覆盖、C1B、C2B 内容与知识登记、package/live；所有待验收课程一次性取得用户内容与视觉确认后，分别运行 closure verifier 并由 DOC-USAGE 记录 `accepted / closed`。
 - 不改变/保护边界：不重跑已关闭课程；不重做执行商务沟通已完成的 `19/19` C1B 准备；单课到达 `pending_user_acceptance` 后不打断用户、不等待逐门确认，直接按顺序推进下一门；先导课仍计为独立一课。
@@ -57,11 +57,11 @@ Goal 或本文尚未回写，只补终端状态、证据和清理，不重跑业
   8. [完成] “25春 MBAO 5411 数据安全、道德和风险管理”权威 C1 `43/43`，含课件 35、视频 8；正式 C1B 为 `43/43` 本质判断和 47 个必要视觉，9/9 学习正文与 `43/43` 知识登记完成。共享 C1 candidate helper 已按内容身份折叠同指纹重复 run、继续拒绝不同指纹分叉，并以 source-map run_id 保持冻结身份。v1 execution round 五阶段无缺陷通过，61/61 package/live 逐文件 SHA-256 零差异，唯一 live 已发布并到达 `pending_user_acceptance`。按总 Goal 不运行本课 closure verifier、不单独请求验收。
   9. [完成] “25春 OMBA 5413 管理经济学”权威 C1 `61/61`，含课件 37、视频 24；正式 C1B 为 `61/61` 本质判断和 55 个必要视觉，9/9 学习正文与 `61/61` 知识登记完成。v1 execution round 五阶段无缺陷通过，69/69 package/live 逐文件 SHA-256 零差异，唯一 live 已发布并到达 `pending_user_acceptance`。按总 Goal 不运行本课 closure verifier、不单独请求验收。
   10. [完成] “25春 MBAO5407 商业分析”权威 C1 `51/51`，含课件 26、视频 25；正式 C1B 为 `51/51` 本质判断和 30 个必要视觉。通用 builder 已实现有界分层归约并通过 5 项通用 MBA dedicated tests；全新 v2 完成 67 个一级 digest、2 个二级归约摘要、9/9 学习正文与 `51/51` 知识登记，越过 v1 字符预算阻断。v2 的 materialize 暴露“可视化/图表”同义 grounding 缺口后，renderer 修复及回归测试通过；v3 repair round 的 materialize、package gate、publish 三阶段无缺陷通过，44/44 package/live 逐文件 SHA-256 零差异，唯一 live 已发布并到达 `pending_user_acceptance`。按总 Goal 不运行本课 closure verifier、不单独请求验收。
-  11. [进行中] 按冻结顺序进入“25春 MBAO 5405 全球商业环境”；尚未冻结本课权威 C1 分母、course plan 或正式 execution round，先从 coverage audit 与既有正式状态核对开始。
-  12. [待执行] 完成“25春 OMBA 5480 战略管理”至 `pending_user_acceptance`。
+  11. [完成] “25春 MBAO 5405 全球商业环境”权威 C1 `38/38`，含课件 25、视频 13；正式 C1B 为 `38/38` 本质判断和 32 个必要视觉。通用 prepare/selector 已增加 plan 级显式 run 冻结合同，在不修改全局历史 run 的前提下解决唯一 OCR 分叉；registration 为 38/38 decisions、32/32 media，0 复用。v1 execution round 五阶段无缺陷通过，13 个一级 digest、9/9 学习正文、38/38 知识登记完成，46/46 package/live 逐文件 SHA-256 零差异，唯一 live 已发布并到达 `pending_user_acceptance`。按总 Goal 不运行本课 closure verifier、不单独请求验收。
+  12. [进行中] 按冻结顺序进入“25春 OMBA 5480 战略管理”；尚未冻结本课权威 C1 分母、course plan 或正式 execution round，先从 coverage audit 与既有正式状态核对开始。
   13. [待执行] 所有待做课程均发布后，一次性汇总内容与视觉请求用户统一确认；确认后逐课运行 closure verifier、更新 DOC-USAGE 并关闭全量 Goal。
-- 下一步：完成商业分析 Issue #172 的分支检查、PR 合并与 main 同步；随后为“25春 MBAO 5405 全球商业环境”建立 Issue/短分支，核对 coverage audit、现有 C1/C1B/C2B 状态与课程分母，再冻结本课 course plan。不得重跑商业分析或其他已终端课程，不得运行无关 Rust 检查。
-- 证据入口：执行商务沟通终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-executive-business-communication-20260816-v3\round-ledger.json`；先导课终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-primer-20260816-v8\round-ledger.json`；战略领导力终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-strategic-leadership-20260816-v2\round-ledger.json`；组织行为学终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-organizational-behavior-20260816-v1\round-ledger.json`；数据安全终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-data-security-ethics-risk-20260816-v1\round-ledger.json`；管理经济学终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-managerial-economics-20260816-v1\round-ledger.json`；商业分析成功终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-business-analytics-20260816-v3\round-ledger.json`，唯一 live 为 `C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\business_analytics_c2b_latest`。
+- 下一步：完成全球商业环境 Issue #174 的分支检查、PR 合并与 main 同步；随后为“25春 OMBA 5480 战略管理”建立 Issue/短分支，核对 coverage audit、现有 C1/C1B/C2B 状态与课程分母，再冻结本课 course plan。不得重跑全球商业环境、商业分析或其他已终端课程，不得运行无关 Rust 检查。
+- 证据入口：执行商务沟通终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-executive-business-communication-20260816-v3\round-ledger.json`；先导课终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-primer-20260816-v8\round-ledger.json`；战略领导力终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-strategic-leadership-20260816-v2\round-ledger.json`；组织行为学终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-organizational-behavior-20260816-v1\round-ledger.json`；数据安全终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-data-security-ethics-risk-20260816-v1\round-ledger.json`；管理经济学终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-managerial-economics-20260816-v1\round-ledger.json`；商业分析成功终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-business-analytics-20260816-v3\round-ledger.json`；全球商业环境终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-global-business-environment-20260816-v1\round-ledger.json`，唯一 live 为 `C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\global_business_environment_c2b_latest`。
 
 ## 3. 下次开工队列（禁止恢复时自动执行）
 
