@@ -31,20 +31,8 @@ Requirements/PRD 拥有，实际交付状态由 `DOC-USAGE` 拥有，完成证�
 
 <!-- CURRENT-ACTIVE: none -->
 
-当前无活动项，等待授权。
+当前无活动项，等待用户决定。
 
 ## 3. 下次开工队列（禁止恢复时自动执行）
 
-### AP-20260815-03：继续完成下一门 MBA 课程
-
-- 来源锚点：原线程 Goal“继续完成下一课”；2026-08-15 用户明确将其降为次优先，但要求保留。
-- 当前状态：`queued / paused-by-explicit-goal-override / requires-explicit-resume`。
-- 用户目标：复用既有 MBA C1B/C2B 链路完成下一门课；下一课程为 `25春 OMBA 5401 决策会计`，
-  权威 C1 coverage `33/33`，课件 19、视频 14。
-- 下一步：只保存恢复入口；必须在 AP05 到达终端且用户明确恢复课程后，才可晋升并继续 successor
-  ontology compatibility 前置轮和决策会计 fresh C1B/C2B。
-- 恢复入口：`DOC-MBA-ROLLOUT`、`DOC-USAGE`、`02_skills/00_specs/07_knowledge.md`、migration `0008`、
-  `01_app/01_babata_domain/src/course.rs`、`01_app/03_babata_infrastructure/src/sqlite/knowledge_core_repository.rs`。
-
-禁止自动执行：恢复、压缩、session/Agent 交接、Agent 或工具中断及“继续/恢复”只继续
-`CURRENT-ACTIVE`，不构成 AP03 的晋升授权。
+队列当前无其他可自动晋升项。

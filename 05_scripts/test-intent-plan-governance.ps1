@@ -91,6 +91,23 @@ function Add-ActivePlanFixture {
     Set-Content -LiteralPath $recoveryPath -Value $recovery -Encoding utf8
 }
 
+function Add-QueueFixture {
+    param([string]$CaseRoot)
+    $planPath = Join-Path $CaseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md'
+    $plan = Get-Content -LiteralPath $planPath -Raw -Encoding utf8
+    $plan = [regex]::Replace(
+        $plan,
+        '(?ms)(## 2\. 当前活动项（恢复时先读，最多一个）).*?(?=## 3\. 下次开工队列（禁止恢复时自动执行）)',
+        '$1' + "`n`n<!-- CURRENT-ACTIVE: none -->`n`n当前无活动项。`n`n",
+        1
+    )
+    $plan = $plan.Replace(
+        '队列当前无其他可自动晋升项。',
+        "### AP-20260815-03：测试队列项`n`n- 来源锚点：测试队列。`n- 用户目标：复用既有 MBA C1B/C2B 链路。`n- 当前状态：``queued / paused-by-explicit-goal-override / requires-explicit-resume``。`n- 下一步：等待明确恢复。`n- 恢复入口：DOC-ACTIVE-PLAN。`n`n队列当前无其他可自动晋升项。"
+    )
+    Set-Content -LiteralPath $planPath -Value $plan -Encoding utf8
+}
+
 function Replace-CurrentInProgressState {
     param([string]$CaseRoot, [string]$Replacement)
     $path = Join-Path $CaseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md'
@@ -258,7 +275,13 @@ try {
     Assert-CheckerFails 'active-plan-duplicates-item-id' 'item IDs must be unique' {
         param($caseRoot)
         Add-ActivePlanFixture $caseRoot
-        Replace-Once $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md' '### AP-20260815-03：继续完成下一门 MBA 课程' '### AP-20260815-05：继续完成下一门 MBA 课程'
+        $path = Join-Path $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md'
+        $text = Get-Content -LiteralPath $path -Raw -Encoding utf8
+        $text = $text.Replace(
+            '## 3. 下次开工队列（禁止恢复时自动执行）',
+            "### AP-20260815-05：duplicate-id`n`n- 当前状态：`queued / paused-by-explicit-goal-override / requires-explicit-resume`。`n`n## 3. 下次开工队列（禁止恢复时自动执行）"
+        )
+        Set-Content -LiteralPath $path -Value $text -Encoding utf8
     }
     Assert-CheckerFails 'active-plan-empty-without-marker' 'explicit empty active-plan state' {
         param($caseRoot)
@@ -293,6 +316,10 @@ try {
             $text,
             '(?s)(## 2\. 当前活动项（恢复时先读，最多一个）).*?(?=## 3\. 下次开工队列（禁止恢复时自动执行）)',
             '$1' + "`n`n<!-- CURRENT-ACTIVE: none -->`n`n当前无活动项。`n`n"
+        )
+        $text = $text.Replace(
+            '队列当前无其他可自动晋升项。',
+            "### AP-20260815-03：测试队列项`n`n- 来源锚点：测试队列。`n- 用户目标：测试显式恢复边界。`n- 当前状态：``queued / paused-by-explicit-goal-override / requires-explicit-resume``。`n- 下一步：等待明确恢复。`n- 恢复入口：DOC-ACTIVE-PLAN。`n`n队列当前无其他可自动晋升项。"
         )
         $text = $text.Replace('requires-explicit-resume', 'auto-promote')
         Set-Content -LiteralPath $path -Value $text -Encoding utf8
@@ -362,10 +389,12 @@ try {
     }
     Assert-CheckerFails 'queue-loses-user-goal' 'queue user goal' {
         param($caseRoot)
+        Add-QueueFixture $caseRoot
         Replace-Once $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md' '- 用户目标：复用既有 MBA C1B/C2B 链路' '- 目标说明：复用既有 MBA C1B/C2B 链路'
     }
     Assert-CheckerFails 'queue-uses-auto-resume-qualifier' 'require exactly one promotion qualifier' {
         param($caseRoot)
+        Add-QueueFixture $caseRoot
         Replace-Once $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md' 'queued / paused-by-explicit-goal-override / requires-explicit-resume' 'queued / paused-by-explicit-goal-override / auto-resume'
     }
     Assert-CheckerFails 'current-state-hides-terminal-qualifier' 'current item uses a forbidden qualifier: closed' {
@@ -387,14 +416,15 @@ try {
                 "### AP-20990101-$i：queued-$i"
                 ''
                 "- 来源锚点：source-$i。"
-                '- 当前状态：`queued / next-start`。'
+                '- 当前状态：`queued / requires-explicit-resume`。'
                 "- 用户目标：goal-$i。"
                 "- 下一步：next-$i。"
                 "- 恢复入口：entry-$i。"
                 ''
             ) -join "`n")
         }
-        $text = $text.Replace('禁止自动执行：', ($extra -join '') + "`n禁止自动执行：")
+        $queueHeading = '## 3. 下次开工队列（禁止恢复时自动执行）'
+        $text = $text.Replace($queueHeading, $queueHeading + "`n`n" + ($extra -join "`n`n"))
         Set-Content -LiteralPath $path -Value $text -Encoding utf8
     }
     Assert-CheckerFails 'governance-records-all-thought' 'governance lifecycle marker: Agent 不记录全部思维过程' {

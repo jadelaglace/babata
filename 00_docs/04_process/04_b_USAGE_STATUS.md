@@ -107,7 +107,31 @@ Phase 完成只表示该 Phase 关闭时适用的 gate 和 AC/TC 有足够证据
 使用历史单路径 `意识 -> 管理学 -> 供应链管理`，不证明当前已采用的 course/branch 分离、多重归属
 和 MBA lens 模型。兼容迁移不得清除其他有依据的 assignment，也不改变既有用户验收事实。
 
-## 6. 试跑、试点、模板与全量使用
+## 6. 决策会计当前正式成果
+
+- 正式课程分母与 C1B：33/33 完整 C1、33/33 本质判断、30/30 必要视觉片段登记。
+- 正式 C2B：33/33 知识条目已注册，归属新建并回读的 `决策会计` branch；branch id
+  `mapnode_01M044RHTAGJRFQMTGE3S6FXEM`。
+- 学习正文：4 个章节、课程总览、公式与决策工具、案例练习、复习与自测，共 8 份学习文档；
+  学习 manifest 保持 `candidate`，作为 package 内不可变重建输入。
+- 当前候选批次：
+  `D:\BabataData\04_runtime\staging\model-workspaces\mba-decision-accounting-c2b-20260816-v8`。
+- 唯一用户 live：
+  `C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\mba_decision_accounting_c2b_latest`。
+- package/live：43/43，逐文件 hash 差异 0；raw/derived SQLite `quick_check=ok`，外键错误 0。
+- 课程脑图：原生 Mermaid 主图与 PNG 回退均已 materialize；package checker、renderer/materializer
+  行为测试和完整工程 gate 通过。
+- 当前状态：用户已明确验收内容与视觉，课程实例为 `accepted / closed`。package、manifest 和 live
+  保留 `pending_user_acceptance` 的不可变可重建快照状态；accepted/closed 由独立 closure receipt
+  与本文记录，避免 Obsidian 导出成为第二权威 writer。
+- 关闭回执：v8 `closure-verification.json`，schema
+  `babata.mba-course-c2b-formal-closure/v1`，status `passed`，course acceptance `accepted`、
+  closure `closed`，package/live 43/43、hash 差异 0。
+
+上述 accepted/closed 证明本门决策会计课程在声明的 33 个模块范围内完成内容、媒体、知识归属、
+package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也不改变其他课程的历史状态。
+
+## 7. 试跑、试点、模板与全量使用
 
 | 名称 | 在产品文档中的位置 | 在本文中的状态含义 |
 | --- | --- | --- |
@@ -119,7 +143,7 @@ Phase 完成只表示该 Phase 关闭时适用的 gate 和 AC/TC 有足够证据
 一个试跑结果、试点结果或模板验收可以成为能力成熟度证据，但它们的数字、批次名、日期和
 当前完成状态属于本文或运行回执，不属于 PRD/AC/TC 正文。
 
-## 7. 证据索引
+## 8. 证据索引
 
 | 使用事实 | 主要证据位置 |
 | --- | --- |
@@ -132,6 +156,9 @@ Phase 完成只表示该 Phase 关闭时适用的 gate 和 AC/TC 有足够证据
 | 供应链 C1B 正式登记 | `mba-supply-chain-c1b-registration-20260815-v1/c1b-registration-ledger.json`；v2 为 RFC3339 时间修正版证据 |
 | 供应链知识宇宙登记 | `mba-supply-chain-c2b-knowledge-registration-20260815-v4/knowledge-universe-registration.json` |
 | 供应链 C2B 当前关闭 | v5 `manifest.json`、`verification.json`、`closure-verification.json`、publish receipt 与唯一 live |
+| 决策会计 C1B 正式登记 | `mba-decision-accounting-c1b-registration-20260816-v1/c1b-registration-ledger.json` |
+| 决策会计知识宇宙登记 | `mba-decision-accounting-knowledge-20260816-v2/knowledge-universe-registration.json` |
+| 决策会计 C2B 当前关闭 | v8 `manifest.json`、`verification.json`、`closure-verification.json` 与唯一 live |
 
 历史被否决的候选、旧批次和逐次调参记录保留在 Git 外 staging/archive 和 Git 历史中，只用于
 追溯，不作为当前状态或产品定义。本文只在当前事实、范围或证据定位发生变化时更新。

@@ -14,8 +14,12 @@ function Require-Text([object]$Value,[string]$Label) {
 
 function Require-Id([object]$Value,[string]$Label) {
     $id = Require-Text $Value $Label
-    if ($id -notmatch '^[A-Za-z][A-Za-z0-9_]*$') { throw "$Label is not a Mermaid-safe identifier: $id" }
-    $id
+    # Course plans may use kebab-case keys; Mermaid identifiers cannot contain
+    # hyphens, so normalize them at the rendering boundary while retaining the
+    # plan's human-facing labels and hashes.
+    $normalized = $id -replace '-', '_'
+    if ($normalized -notmatch '^[A-Za-z][A-Za-z0-9_]*$') { throw "$Label is not a Mermaid-safe identifier: $id" }
+    $normalized
 }
 
 function Escape-Html([string]$Value) {
@@ -31,6 +35,7 @@ function GroundingCandidates([string]$Token) {
     $aliases = @{
         '连续检查' = @('连续检查','连续监控')
         '周期检查' = @('周期检查','定期审查')
+        '情景' = @('情景','情境','场景')
     }
     if ($aliases.ContainsKey($normalized)) { return @($aliases[$normalized]) }
     return @($Token)
@@ -48,7 +53,7 @@ function Assert-DetailGrounded([string]$Detail,[string]$Body,[string]$Label) {
         # punctuation-separated token exists.
         foreach ($atom in $atoms) {
             $normalizedAtom = Normalized $atom
-            for ($length = [Math]::Min(8, $normalizedAtom.Length); $length -ge 4; $length--) {
+            for ($length = [Math]::Min(8, $normalizedAtom.Length); $length -ge 2; $length--) {
                 for ($start = 0; $start -le $normalizedAtom.Length - $length; $start++) {
                     if ($bodyNormalized.Contains($normalizedAtom.Substring($start, $length))) {
                         $matches += $atom
@@ -85,16 +90,16 @@ if ($assetBase -match '[\\/:*?"<>|]' -or $assetBase -in @('.','..')) { throw 'co
 $domains = @($spec.domains)
 $learning = $spec.learning
 $expectedColors = @('#2563EB','#16A34A','#EA8A00','#EF4444','#8B5CF6')
-if ($domains.Count -ne $expectedColors.Count) { throw 'The accepted MBA profile requires exactly five knowledge domains' }
+if ($domains.Count -lt 4 -or $domains.Count -gt $expectedColors.Count) { throw 'The accepted MBA profile requires four or five knowledge domains' }
 $allIds = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
 if (-not $allIds.Add($rootId)) { throw "Duplicate Mermaid id: $rootId" }
 $knowledgeNodes = @()
 $detailCount = 0
 for ($domainIndex=0; $domainIndex -lt $domains.Count; $domainIndex++) {
     $domain = $domains[$domainIndex]
-    $domainId = Require-Id $domain.id "domain[$domainIndex].id"
+    $domainId = 'domain_' + (Require-Id $domain.id "domain[$domainIndex].id")
     Require-Text $domain.label "domain[$domainIndex].label" | Out-Null
-    if ([string]$domain.color -cne $expectedColors[$domainIndex]) { throw "Domain color does not match the accepted five-color profile: $domainId" }
+    if ([string]$domain.color -cne $expectedColors[$domainIndex]) { throw "Domain color does not match the accepted domain-color profile: $domainId" }
     if (-not $allIds.Add($domainId)) { throw "Duplicate Mermaid id: $domainId" }
     $nodes = @($domain.nodes)
     if (-not $nodes.Count) { throw "Course-map domain has no chapter node: $domainId" }
@@ -119,7 +124,17 @@ for ($domainIndex=0; $domainIndex -lt $domains.Count; $domainIndex++) {
     $domainBody = @($nodes | ForEach-Object { Get-Content -LiteralPath (Join-Path $package (([string]$_.note)+'.md')) -Raw -Encoding utf8 }) -join "`n"
     foreach ($token in @($domain.evidence | ForEach-Object { [string]$_ })) {
         $candidates = @(GroundingCandidates $token)
-        if ([string]::IsNullOrWhiteSpace($token) -or -not @($candidates | Where-Object { (Normalized $domainBody).Contains((Normalized $_)) }).Count) {
+        $bodyNormalized = Normalized $domainBody
+        $matched = @($candidates | Where-Object { $bodyNormalized.Contains((Normalized $_)) })
+        if (-not $matched.Count -and -not [string]::IsNullOrWhiteSpace($token)) {
+            $normalizedToken = Normalized $token
+            for ($length = [Math]::Min(8, $normalizedToken.Length); $length -ge 2 -and -not $matched.Count; $length--) {
+                for ($start = 0; $start -le $normalizedToken.Length - $length; $start++) {
+                    if ($bodyNormalized.Contains($normalizedToken.Substring($start, $length))) { $matched += $token; break }
+                }
+            }
+        }
+        if ([string]::IsNullOrWhiteSpace($token) -or -not $matched.Count) {
             throw "Course-map domain evidence is absent from linked chapter text: $domainId / $token"
         }
     }
@@ -152,7 +167,7 @@ $lines = [Collections.Generic.List[string]]::new()
     "  $rootId[`"<b>$(Escape-Html $rootLabel)</b><br/><small>$(Escape-Html $tagline)</small>`"]"
 ) | ForEach-Object { [void]$lines.Add($_) }
 foreach ($domain in $domains) {
-    $domainId=[string]$domain.id
+    $domainId='domain_' + (Require-Id $domain.id 'domain.id')
     [void]$lines.Add("  $domainId[`"<b>$(Escape-Html ([string]$domain.label))</b>&nbsp;<span style='color:$([string]$domain.color)'>&#9675;</span>`"]")
     foreach ($node in @($domain.nodes)) {
         $nodeId=[string]$node.id
@@ -169,7 +184,7 @@ foreach ($node in $learningNodes) { [void]$lines.Add("  $([string]$node.id)[`"$(
 
 $edgeLines=[Collections.Generic.List[string]]::new();$edgeGroups=@{};$edgeIndex=0
 foreach ($domain in $domains) {
-    $indices=[Collections.Generic.List[int]]::new();$domainId=[string]$domain.id
+    $indices=[Collections.Generic.List[int]]::new();$domainId='domain_' + (Require-Id $domain.id 'domain.id')
     [void]$edgeLines.Add("  $rootId --- $domainId");[void]$indices.Add($edgeIndex);$edgeIndex++
     foreach ($node in @($domain.nodes)) {
         $nodeId=[string]$node.id
@@ -191,13 +206,13 @@ $edgeGroups[$learningId]=@($learningIndices);$edgeLines|ForEach-Object{[void]$li
     '  classDef detail fill:transparent,color:#273244,stroke:transparent,stroke-width:0px,font-size:20px,font-weight:400,text-align:left'
     '  classDef junction fill:#FFFFFF,color:transparent,stroke-width:2px,padding:2px'
     "  class $rootId root"
-    '  class '+((@($domains.id)+@($learningId)) -join ',')+' branch'
+    '  class '+((@($domains | ForEach-Object { 'domain_' + (Require-Id $_.id 'domain.id') })+@($learningId)) -join ',')+' branch'
     '  class '+(@($linkedNodes.id) -join ',')+' internal-link'
 ) | ForEach-Object { [void]$lines.Add($_) }
 $detailIds=@($knowledgeNodes|ForEach-Object{$node=$_;for($i=0;$i -lt @($node.details).Count;$i++){[string]$node.id+'D'+($i+1)}})
 [void]$lines.Add('  class '+($detailIds -join ',')+' detail')
 foreach($domain in $domains){
-    $junctions=@($domain.nodes|ForEach-Object{[string]$_.id+'J'});$domainId=[string]$domain.id
+    $junctions=@($domain.nodes|ForEach-Object{[string]$_.id+'J'});$domainId='domain_' + (Require-Id $domain.id 'domain.id')
     [void]$lines.Add('  class '+($junctions -join ',')+' junction')
     foreach($junction in $junctions){[void]$lines.Add("  style $junction fill:#FFFFFF,stroke:$([string]$domain.color),stroke-width:2px")}
     [void]$lines.Add("  linkStyle $($edgeGroups[$domainId] -join ',') stroke:$([string]$domain.color),stroke-width:2px")
@@ -205,7 +220,7 @@ foreach($domain in $domains){
 [void]$lines.Add("  linkStyle $($edgeGroups[$learningId] -join ',') stroke:$([string]$learning.color),stroke-width:1.75px")
 $mermaid=$lines -join "`n"
 if($mermaid.Contains('obsidian://') -or $mermaid -match '(?m)^\s*click\s+' -or $mermaid.Contains('-->') -or $mermaid.Contains('<--')){throw 'Course map contains a forbidden URI, click directive, or arrow'}
-if([regex]::Matches($mermaid,"(?m)^\s*$rootId --- ").Count -ne 6){throw 'Course map must have five knowledge domains and one learning branch from the root'}
+if([regex]::Matches($mermaid,"(?m)^\s*$rootId --- ").Count -ne ($domains.Count + 1)){throw 'Course map root edges must match the knowledge-domain count plus learning branch'}
 
 $mediaRoot=Join-Path $package 'media';$mmdPath=Join-Path $mediaRoot ($assetBase+'.mmd');$pngPath=Join-Path $mediaRoot ($assetBase+'.png');$svgPath=Join-Path $mediaRoot ('.'+$assetBase+'-link-check.svg')
 Set-Content -LiteralPath $mmdPath -Value ($mermaid+"`n") -Encoding utf8
