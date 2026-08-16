@@ -194,8 +194,16 @@ if ($mappedNotes.Count -ne $chapterNotes.Count -or @($mappedNotes | Sort-Object 
     throw 'Course-map domains must cover every chapter note exactly once'
 }
 $learningNotes = @($plan.course_map.learning.nodes.note | ForEach-Object { [string]$_ })
-foreach ($requiredAid in @('09-公式与决策工具','10-案例练习','11-复习与自测','视觉证据索引')) {
-    if ($learningNotes -notcontains $requiredAid) { throw "Course-map learning layer is missing: $requiredAid" }
+if ($learningNotes.Count -ne 4 -or @($learningNotes | Sort-Object -Unique).Count -ne 4 -or
+    $learningNotes -notcontains '视觉证据索引') {
+    throw 'Course-map learning layer must contain three unique numbered learning documents and 视觉证据索引'
+}
+$aidNotes = @()
+foreach ($prefix in @('09-','10-','11-')) {
+    $matches = @($learningNotes | Where-Object { $_.StartsWith($prefix,[StringComparison]::Ordinal) })
+    if ($matches.Count -ne 1) { throw "Course-map learning layer requires exactly one $prefix document" }
+    Assert-SafeBasename $matches[0] 'learning document'
+    $aidNotes += $matches[0]
 }
 
 $sourceRows = @()
@@ -364,9 +372,9 @@ Set-Content -LiteralPath (Join-Path $generatedRoot '00-课程总览.md') -Value 
 
 $chapterSectionTitles = @($plan.chapters.title | ForEach-Object { [string]$_ })
 $aidSpecs = @(
-    [ordered]@{id='09-公式与决策工具';title='公式与决策工具';sections=@('工具选择总览')+$chapterSectionTitles+@('使用条件与易错点');minimum=3500},
-    [ordered]@{id='10-案例练习';title='案例练习';sections=@('练习说明')+$chapterSectionTitles+@('参考思路');minimum=4000},
-    [ordered]@{id='11-复习与自测';title='复习与自测';sections=@('知识检查','公式检查','情境判断','综合自测','答案与解释','薄弱点回链');minimum=4000}
+    [ordered]@{id=$aidNotes[0];title=($aidNotes[0] -replace '^09-','');sections=@('工具选择总览')+$chapterSectionTitles+@('使用条件与易错点');minimum=3500},
+    [ordered]@{id=$aidNotes[1];title=($aidNotes[1] -replace '^10-','');sections=@('练习说明')+$chapterSectionTitles+@('参考思路');minimum=4000},
+    [ordered]@{id=$aidNotes[2];title=($aidNotes[2] -replace '^11-','');sections=@('知识检查','公式检查','情境判断','综合自测','答案与解释','薄弱点回链');minimum=4000}
 )
 foreach ($spec in $aidSpecs) {
     $headings = @($spec.sections | ForEach-Object { "## $_" }) -join "`n"
@@ -382,7 +390,7 @@ $corpusText
     Set-Content -LiteralPath $path -Value $text -Encoding utf8
 }
 
-$expectedDocs = @('00-课程总览') + @($plan.chapters.note) + @('09-公式与决策工具','10-案例练习','11-复习与自测')
+$expectedDocs = @('00-课程总览') + @($plan.chapters.note) + $aidNotes
 foreach ($name in $expectedDocs) {
     $path = Join-Path $generatedRoot ($name + '.md')
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Missing learning document: $name" }
