@@ -36,6 +36,7 @@ function GroundingCandidates([string]$Token) {
         '连续检查' = @('连续检查','连续监控')
         '周期检查' = @('周期检查','定期审查')
         '情景' = @('情景','情境','场景')
+        '可视化' = @('可视化','图表')
     }
     if ($aliases.ContainsKey($normalized)) { return @($aliases[$normalized]) }
     return @($Token)

@@ -13,6 +13,7 @@ try{
     for($i=1;$i -le 6;$i++){
         $note=('0{0}-章节{0}' -f $i);$token="知识$i";$body="# $note`n`n$token 是本章的核心依据。`n"; $evidence=@($token)
         if($i -eq 2){$body += "连续监控与定期审查是本章的控制方式。`n";$evidence=@('连续检查','周期检查')}
+        if($i -eq 3){$body += "本章用图表呈现关键证据。`n";$evidence=@('可视化')}
         Set-Content -LiteralPath (Join-Path $package ($note+'.md')) -Value $body -Encoding utf8
         $domains+=[ordered]@{id="domain-$i";label="域$i";color=$colors[$i-1];evidence=$evidence;nodes=@([ordered]@{id="chapter-$i";note=$note;details=@("${token}：决策规则")})}
     }

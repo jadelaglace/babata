@@ -226,7 +226,20 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 该状态只证明本门课程的正式 C1B、内容、知识登记和唯一 live 已到待验收终端，不代表用户已经
 验收、课程已经 closed 或全部 MBA 已完成。
 
-## 14. 试跑、试点、模板与全量使用
+## 14. 商业分析当前正式成果
+
+- 正式课程分母与 C1B：51/51 完整 C1、51/51 本质判断、30 个必要视觉登记。
+- 正式 C2B：51/51 知识条目已注册；学习正文为 5 章、课程总览和 3 份学习工具，共 9 份。
+- 当前候选批次：`D:\BabataData\04_runtime\staging\model-workspaces\mba-business-analytics-c2b-20260816-v3`。
+- 唯一用户 live：`C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\business_analytics_c2b_latest`。
+- package/live：44/44，逐文件 SHA-256 零差异；11 个 Markdown、30 个 C1B 媒体文件和 3 个课程脑图资产。
+- 当前状态：v2 从干净 staging 完成 67 个一级 digest、2 个有界二级归约摘要、9/9 学习正文与 51/51 知识登记；v3 repair round 的 materialize、package gate 和 publish 三阶段无缺陷到达 `pending_user_acceptance`。按全课程 Goal 不单独请求验收、不运行 closure verifier，待所有未关闭课程发布后统一请求一次内容与视觉确认。
+- 终端证据：v2 上游证据位于 `D:\BabataData\04_runtime\staging\execution-rounds\mba-business-analytics-20260816-v2\round-ledger.json`；成功终端位于 `D:\BabataData\04_runtime\staging\execution-rounds\mba-business-analytics-20260816-v3\round-ledger.json`，status `passed`、actual terminal `pending_user_acceptance`。
+
+该状态只证明本门课程的正式 C1B、内容、知识登记和唯一 live 已到待验收终端，不代表用户已经
+验收、课程已经 closed 或全部 MBA 已完成。
+
+## 15. 试跑、试点、模板与全量使用
 
 | 名称 | 在产品文档中的位置 | 在本文中的状态含义 |
 | --- | --- | --- |
@@ -238,7 +251,7 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 一个试跑结果、试点结果或模板验收可以成为能力成熟度证据，但它们的数字、批次名、日期和
 当前完成状态属于本文或运行回执，不属于 PRD/AC/TC 正文。
 
-## 15. 证据索引
+## 16. 证据索引
 
 | 使用事实 | 主要证据位置 |
 | --- | --- |
@@ -275,6 +288,9 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 | 管理经济学 C1B 正式登记 | `mba-managerial-economics-c1b-registration-20260816-v1/c1b-registration-ledger.json` |
 | 管理经济学知识宇宙登记 | `mba-managerial-economics-knowledge-20260816-v1/knowledge-universe-registration.json` |
 | 管理经济学待统一验收 | v1 execution `round-ledger.json`、C2B `manifest.json`、`verification.json`、publish receipt 与唯一 live |
+| 商业分析 C1B 正式登记 | `mba-business-analytics-c1b-registration-20260816-v1/c1b-registration-ledger.json` |
+| 商业分析知识宇宙登记 | `mba-business-analytics-knowledge-20260816-v2/knowledge-universe-registration.json` |
+| 商业分析待统一验收 | v3 repair execution `round-ledger.json`、C2B `manifest.json`、`verification.json`、publish receipt 与唯一 live |
 
 历史被否决的候选、旧批次和逐次调参记录保留在 Git 外 staging/archive 和 Git 历史中，只用于
 追溯，不作为当前状态或产品定义。本文只在当前事实、范围或证据定位发生变化时更新。
