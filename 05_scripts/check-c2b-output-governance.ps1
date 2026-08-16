@@ -60,6 +60,8 @@ function Get-GenericMbaPathStatus {
             'course-plan-schema' = 'babata.mba-course-c2b-plan/v1'
             'candidate-learning-docs' = "status='candidate'"
             'fresh-staging-root' = 'Use a fresh learning-doc staging root'
+            'bounded-hierarchical-reduction' = 'Group-MbaLearningDigestNodes'
+            'reduction-module-coverage' = 'omitted module M-'
         }
         '05_scripts\register-mba-course-c1b-handoff.ps1' = [ordered]@{
             'course-plan-schema' = 'babata.mba-course-c2b-plan/v1'
@@ -110,6 +112,7 @@ function Get-GenericMbaPathStatus {
         '05_scripts\test-select-mba-course-c1-candidate.ps1',
         '05_scripts\test-register-mba-course-c1b-handoff.ps1',
         '05_scripts\test-register-mba-course-c2b-knowledge.ps1',
+        '05_scripts\test-group-mba-learning-digests.ps1',
         '05_scripts\test-mba-course-c2b-package.ps1'
     )
     $reasons = [Collections.Generic.List[string]]::new()

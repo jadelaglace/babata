@@ -9,11 +9,20 @@ param(
     [string]$Model = 'qwen3.6-plus',
     [int]$ChunkCharLimit = 150000,
     [int]$MaxRequestChars = 180000,
+    [string]$DigestGrouper = (Join-Path $PSScriptRoot 'group-mba-learning-digests.ps1'),
     [switch]$Resume
 )
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+
+if (-not (Test-Path -LiteralPath $DigestGrouper -PathType Leaf)) {
+    throw "Digest grouper not found: $DigestGrouper"
+}
+. $DigestGrouper
+if (-not (Get-Command Group-MbaLearningDigestNodes -CommandType Function -ErrorAction SilentlyContinue)) {
+    throw 'Digest grouper must define Group-MbaLearningDigestNodes'
+}
 
 function Hash([string]$Path) {
     return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -128,6 +137,82 @@ function Invoke-Qianwen(
         usage=if ($response.PSObject.Properties['usage']) { $response.usage } else { [ordered]@{} }
     }
     return $text
+}
+
+function New-ChapterPrompt([object]$Chapter,[object[]]$DigestNodes) {
+    $digestText = @($DigestNodes | ForEach-Object { [string]$_.text }) -join "`n`n---`n`n"
+    return @"
+将下列分组证据整合为一篇可连续学习、可复习、可用于决策的完整章节。合并重复内容但不要删掉独有知识。必须使用：
+# $($Chapter.title)
+## 本章要解决的问题
+## 核心结论
+## 概念与逻辑
+## 决策方法
+## 公式与计算
+## 案例与应用
+## 易错点与边界
+## 复习检查
+不要生成“来源索引”，系统会追加。正文叙述不得出现 M-编号或其他工程 ID；用课程标题、概念或案例名称自然指代来源。正文至少 5000 个字符。
+
+$digestText
+"@
+}
+
+function New-DigestReductionPrompt(
+    [object]$Chapter,
+    [int]$Level,
+    [int]$GroupNo,
+    [int]$GroupCount,
+    [object[]]$Nodes
+) {
+    $requiredModules = @($Nodes.modules | ForEach-Object { [string]$_ } | Sort-Object -Unique)
+    $required = @($requiredModules | ForEach-Object { "M-$_" }) -join '、'
+    $evidence = @($Nodes | ForEach-Object {
+        "`n===== $([string]$_.id) | $(@($_.modules | ForEach-Object { "M-$_" }) -join '、') =====`n$([string]$_.text)"
+    }) -join "`n"
+    return @"
+为《$($Chapter.title)》执行第 $Level 层证据归约，第 $GroupNo/$GroupCount 组。完整保留组内全部独有概念、公式、变量、条件、案例、冲突、风险和边界；只合并重复表达，不得删除独有知识。必须在末尾用“## 本组来源”逐项列出全部 $required，不能遗漏、替换或编造 M-编号。不要跨越所给证据推断。输出可供下一层继续合成的中文 Markdown，至少 1800 个字符。
+
+$evidence
+"@
+}
+
+function Reduce-DigestNodesToBudget(
+    [object]$Chapter,
+    [object[]]$Nodes,
+    [string]$SystemPrompt
+) {
+    $level = 0
+    $currentNodes = @($Nodes)
+    while (($SystemPrompt.Length + (New-ChapterPrompt $Chapter $currentNodes).Length) -gt $MaxRequestChars) {
+        $level++
+        if ($level -gt 12) { throw "Digest reduction did not converge: $($Chapter.id)" }
+
+        # Leave ample room for instructions, node labels, and module identities.
+        $groupBudget = $MaxRequestChars - $SystemPrompt.Length - 5000
+        if ($groupBudget -lt 1000) { throw 'MaxRequestChars is too small for digest reduction' }
+        $groups = @(Group-MbaLearningDigestNodes -Nodes $currentNodes -CharBudget $groupBudget)
+        $nextNodes = @()
+        $groupNo = 0
+        foreach ($group in $groups) {
+            $groupNo++
+            $groupNodes = @($group.nodes)
+            $modules = @($groupNodes.modules | ForEach-Object { [string]$_ } | Sort-Object -Unique)
+            $id = '{0}-reduce-{1:d2}-{2:d2}' -f [string]$Chapter.id,$level,$groupNo
+            $prompt = New-DigestReductionPrompt $Chapter $level $groupNo $groups.Count $groupNodes
+            $reduced = Invoke-Qianwen $id $SystemPrompt $prompt 1800
+            foreach ($module in $modules) {
+                if ($reduced -notmatch "M-$module(?!\d)") { throw "Digest reduction $id omitted module M-$module" }
+            }
+            Set-Content -LiteralPath (Join-Path $digestRoot ($id + '.md')) -Value $reduced -Encoding utf8
+            $nextNodes += [pscustomobject]@{id=$id;text=$reduced;modules=$modules}
+        }
+        $beforeChars = (@($currentNodes | ForEach-Object { ([string]$_.text).Length }) | Measure-Object -Sum).Sum
+        $afterChars = (@($nextNodes | ForEach-Object { ([string]$_.text).Length }) | Measure-Object -Sum).Sum
+        if ($afterChars -ge $beforeChars) { throw "Digest reduction made no progress: $($Chapter.id) level $level" }
+        $currentNodes = @($nextNodes)
+    }
+    return $currentNodes
 }
 
 $planPath = (Get-Item -LiteralPath $CoursePlanPath).FullName
@@ -289,7 +374,7 @@ foreach ($chapter in @($plan.chapters)) {
     }
     if ($current.Count) { $batches += ,@($current) }
 
-    $digests = @(); $batchNo = 0
+    $digestNodes = @(); $batchNo = 0
     foreach ($batch in $batches) {
         $batchNo++
         $evidence = foreach ($segment in $batch) {
@@ -317,26 +402,13 @@ $($evidence -join "`n")
         foreach ($module in $requiredModules) {
             if ($digest -notmatch "M-$module(?!\d)") { throw "Digest $id omitted module M-$module" }
         }
-        $digests += $digest
+        $digestNodes += [pscustomobject]@{id=$id;text=$digest;modules=@($requiredModules)}
     }
 
     $sourceLinks = @('','## 来源索引','')
     foreach ($item in $chapterItems) { $sourceLinks += "- [[来源/M-$($item.module_id)|$($item.title)]]" }
-    $chapterPrompt = @"
-将下列分组证据整合为一篇可连续学习、可复习、可用于决策的完整章节。合并重复内容但不要删掉独有知识。必须使用：
-# $($chapter.title)
-## 本章要解决的问题
-## 核心结论
-## 概念与逻辑
-## 决策方法
-## 公式与计算
-## 案例与应用
-## 易错点与边界
-## 复习检查
-不要生成“来源索引”，系统会追加。正文叙述不得出现 M-编号或其他工程 ID；用课程标题、概念或案例名称自然指代来源。正文至少 5000 个字符。
-
-$($digests -join "`n`n---`n`n")
-"@
+    $digestNodes = @(Reduce-DigestNodesToBudget $chapter $digestNodes $system)
+    $chapterPrompt = New-ChapterPrompt $chapter $digestNodes
     $chapterText = Invoke-Qianwen ([string]$chapter.note) $system $chapterPrompt 5000
     $chapterText = $chapterText.Trim() + "`n" + ($sourceLinks -join "`n") + "`n"
     $chapterPath = Join-Path $generatedRoot (([string]$chapter.note) + '.md')
