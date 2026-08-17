@@ -32,6 +32,9 @@
 | 四基石交叉、Course/Branch、MBA lens | 2026-08-15 知识宇宙段 | `resolved` | Agent 分析经用户整体采用；当前见 Requirements/Architecture |
 | 00_b 当前意图、00_c 逐字恢复、临时子计划、阶段结论、终端提升清理 | 2026-08-15 末段 | `resolved` | `resolved_by`: `DOC-WORDING`、`DOC-INTENT-PLAN-GOVERNANCE`、`DOC-ACTIVE-PLAN`、治理 checker/mutation tests、product-docs Skill |
 | 浅层强制钩子、根目录 AGENTS/README、Docs 去冗余、先 PR 后干净分支、恢复入口 | 2026-08-15 23:43 | `resolved` | `resolved_by`: PR `#153` merged as `a1c6df7`; AP-20260815-05 terminal |
+| 课程计划是什么、章节还是平铺小节、09 10 11、禁止恢复 goal | 2026-08-17 | `resolved` | `resolved_by`: `DOC-USAGE` §17、`DOC-ACTIVE-PLAN` AP-20260816-06、Issue #180 presentation v2 receipt |
+| 09 10 11 固定套路、最多分八节、财务管理供应链、基石分类再检查 | 2026-08-17 | `resolved` | `resolved_by`: `DOC-USAGE` P8.9/§17、MBA governance successor receipt、Issue #180 |
+| 先做第二个解、MBA 全按第一个解、Obsidian 模板更新、Goal 不能恢复、统一看 | 2026-08-17 | `resolved` | `resolved_by`: `DOC-USAGE` §17、`DOC-ACTIVE-PLAN` AP-20260816-06 terminal review gate、Issue #180 |
 
 以下历史正文来自 Babata 1.0 原始归档和按日期整理的产品讨论。章节标题、状态/覆盖注释是编辑者
 导航；`>` 引文才是逐字用户证据。完整原始会话不进入 Git，未来如需长期保存，应由 Babata 正式
@@ -915,3 +918,55 @@ verbatim sha256：`1ea0fead6bdc9a8089e0141ad87e3c023bf80e27a64813a1cfb15252576fd
 > 你自己读读04f 假设你那个压缩上下文又执行了 读到04f 你不就又开始AP-20260815-03了吗 压缩或者断电之后不应该继续现在的AP-20260815-05吗 你写那个玩意多大的歧义
 >
 > 立刻修04f文档 你可以标唯一激活目标 但是被踢到次优先的你也别删
+
+### 2026-08-17：MBA 课程计划与章节/小节结构必须先澄清
+
+<!-- DOCS-FIRST-CAPTURE: DFC-20260817-01; schema=v1 -->
+
+capture time：`2026-08-17`。来源：当前用户对话。
+
+verbatim sha256：`1b38f0e8b6092b4a10350969ebb16c18b467f4e1bf87cbf34749caef903f1927`。
+
+极简检索词：`课程计划是什么`；`章节还是平铺小节`；`09 10 11`；`禁止恢复 goal`。
+
+状态：`resolved`。
+
+`resolved_by`：`DOC-USAGE` §17、`DOC-ACTIVE-PLAN` AP-20260816-06、Issue #180 presentation v2 receipt。
+
+> 没懂 目录我理解 就是磁盘上的 课程计划又是哪 到底啥时候分章节 啥时候就平铺小节 啥东西啊？我提问的这俩 你docs先行吧 越来越乱了 在解决这俩之前 不允许恢复goal
+
+### 2026-08-17：两个待解决问题的原始提问补录
+
+<!-- DOCS-FIRST-CAPTURE: DFC-20260817-02; schema=v1 -->
+
+capture time：`2026-08-17`。来源：当前用户对话。
+
+verbatim sha256：`e197f42e7486fb4d16ef14cda8678ac999a1e53fb6d10c8f05f74f9f6b804e4e`。
+
+极简检索词：`09 10 11 固定套路`；`最多分八节`；`财务管理供应链`；`基石分类再检查`。
+
+状态：`resolved`。
+
+`resolved_by`：`DOC-USAGE` P8.9/§17、MBA governance successor receipt、Issue #180。
+
+> 1. obsidian里的9 10 11固定套路 那么也就是说你最多分八节吗
+>
+> 2. 财务管理和供应链这两节课，是探路与第一次扩展的，其中基石分类，还有一些最终固化的东西，需要再检查下吗
+
+### 2026-08-17：两个结构问题的修复顺序、范围与统一验收
+
+<!-- DOCS-FIRST-CAPTURE: DFC-20260817-03; schema=v1 -->
+
+capture time：`2026-08-17`。来源：当前用户对话。
+
+verbatim sha256：`990cd8518fc6391600edeaa0cd053a0bedba56cd89cf273bc0fedb6fc2f8029d`。
+
+极简检索词：`先做第二个解`；`MBA 全按第一个解`；`Obsidian 模板更新`；`Goal 不能恢复`；`统一看`。
+
+状态：`resolved`。
+
+`resolved_by`：`DOC-USAGE` §17、`DOC-ACTIVE-PLAN` AP-20260816-06 terminal review gate、Issue #180。
+
+> 建议你 先做第二个解 然后mba的全按第一个解，obsidian模板也更新记录好。 docs先行。另外 开始之前 回答我 解第一个问题 不会影响c2b结构吧 对吧
+>
+> 开工 修这俩 但是goal还是不能恢复哈 统一修好了 再找我看

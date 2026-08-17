@@ -129,9 +129,9 @@ try {
         param($caseRoot)
         Replace-Once $caseRoot '02_skills\00_specs\templates\semantic-obsidian-profile.md' 'These display domains are not ontology `Branch`' 'These display domains create ontology `Branch`'
     }
-    Assert-CheckerFails 'outputs-claims-successor-enabled' 'successor contract implementation status' {
+    Assert-CheckerFails 'outputs-loses-successor-implementation' 'successor contract implementation status' {
         param($caseRoot)
-        Replace-Once $caseRoot '02_skills\00_specs\09_outputs.md' 'Successor MBA universe-registration contract (adopted, not yet implemented or enabled for new formal' 'Successor MBA universe-registration contract (adopted and enabled for new formal'
+        Replace-Once $caseRoot '02_skills\00_specs\09_outputs.md' 'Successor MBA universe-registration contract (adopted; core writer and register/show CLI implemented,' 'Successor MBA universe-registration contract (adopted; implementation status unspecified,'
     }
     Assert-CheckerFails 'architecture-omits-typed-map-relation-semantics' 'typed relation semantics in architecture' {
         param($caseRoot)
@@ -153,13 +153,13 @@ try {
         param($caseRoot)
         Replace-Once $caseRoot '00_docs\04_process\04_b_USAGE_STATUS.md' '| P6 | 历史 baseline 已完成 |' '| P6 | 已完成 |'
     }
-    Assert-CheckerFails 'usage-promotes-finance-ontology' 'finance acceptance/ontology separation' {
+    Assert-CheckerFails 'usage-loses-finance-successor' 'finance successor registration status' {
         param($caseRoot)
-        Replace-Once $caseRoot '00_docs\04_process\04_b_USAGE_STATUS.md' '使用历史单路径 `意识 -> 管理学 -> 财务管理`，不证明当前已采用的 course/branch 分离' '使用历史单路径 `意识 -> 管理学 -> 财务管理`，并证明当前已采用的 course/branch 分离'
+        Replace-Once $caseRoot '00_docs\04_process\04_b_USAGE_STATUS.md' '财务管理的 successor' '财务管理的兼容记录'
     }
-    Assert-CheckerFails 'usage-promotes-supply-chain-ontology' 'supply-chain acceptance/ontology separation' {
+    Assert-CheckerFails 'usage-loses-supply-chain-successor' 'supply-chain successor registration status' {
         param($caseRoot)
-        Replace-Once $caseRoot '00_docs\04_process\04_b_USAGE_STATUS.md' '使用历史单路径 `意识 -> 管理学 -> 供应链管理`，不证明当前已采用的 course/branch 分离' '使用历史单路径 `意识 -> 管理学 -> 供应链管理`，并证明当前已采用的 course/branch 分离'
+        Replace-Once $caseRoot '00_docs\04_process\04_b_USAGE_STATUS.md' '全球供应链的 successor' '全球供应链的兼容记录'
     }
     Assert-CheckerFails 'outputs-reenable-v1' 'new-registration prohibition' {
         param($caseRoot)

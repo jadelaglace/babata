@@ -5,13 +5,15 @@ use babata_application::{
     CreateMapNodeCommand, CreateScoreProfileCommand, CreateSublibraryCommand,
     DenseExpressionPreviewService, EvolveMapNodeAction, EvolveMapNodeCommand, ExploreService,
     KnowledgeService, OpsService, OutputService, ProcessService, RecordRelevanceScoreCommand,
-    RecordSuggestionReviewCommand, RegisterFirstPartySemanticCommand, ReviseSublibraryCommand,
-    SearchQuery, SemanticDigestService, SublibraryService, SurfaceQuery, WorkspaceService,
+    RecordSuggestionReviewCommand, RegisterCourseCommand, RegisterFirstPartySemanticCommand,
+    ReviseSublibraryCommand, SearchQuery, SemanticDigestService, SublibraryService, SurfaceQuery,
+    WorkspaceService,
 };
 use babata_domain::{
-    DerivativeId, FirstPartySemanticDefinition, ItemId, OutputId, OutputScope, PageCursor,
-    PipelineId, QueryFilter, RelevanceComponents, RelevanceTargetKind, RevisionId, RunId,
-    ScoreProfile, ScoreProfileId, SnapshotId, SublibraryId, SublibraryOutputScope, UtcTimestamp,
+    CourseRegistrationDefinition, DerivativeId, FirstPartySemanticDefinition, ItemId, OutputId,
+    OutputScope, PageCursor, PipelineId, QueryFilter, RelevanceComponents, RelevanceTargetKind,
+    RevisionId, RunId, ScoreProfile, ScoreProfileId, SnapshotId, SublibraryId,
+    SublibraryOutputScope, UtcTimestamp,
 };
 use babata_infrastructure::{
     AppConfig, DenseExpressionViewStore, FileAssetStore, OutputViewStore, ResticBackupDriver,
@@ -410,6 +412,17 @@ fn execute_knowledge(
         }
         crate::commands::KnowledgeCommand::ShowEntry { semantic } => {
             render_value(&service.show_entry(&semantic)?, json)?;
+        }
+        crate::commands::KnowledgeCommand::RegisterCourse { definition } => {
+            let definition: CourseRegistrationDefinition =
+                serde_json::from_str(&std::fs::read_to_string(definition)?)?;
+            render_value(
+                &service.register_course(&RegisterCourseCommand { definition })?,
+                json,
+            )?;
+        }
+        crate::commands::KnowledgeCommand::ShowCourse { course, version } => {
+            render_value(&service.show_course(&course, version)?, json)?;
         }
         crate::commands::KnowledgeCommand::CreateMapNode {
             level,

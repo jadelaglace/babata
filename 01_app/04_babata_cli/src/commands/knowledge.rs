@@ -28,6 +28,16 @@ pub enum KnowledgeCommand {
         #[arg(long)]
         semantic: String,
     },
+    RegisterCourse {
+        #[arg(long)]
+        definition: std::path::PathBuf,
+    },
+    ShowCourse {
+        #[arg(long)]
+        course: String,
+        #[arg(long)]
+        version: u32,
+    },
     CreateMapNode {
         #[arg(long)]
         level: MapNodeLevelArg,

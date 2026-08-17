@@ -39,10 +39,10 @@ Goal 或本文尚未回写，只补终端状态、证据和清理，不重跑业
 ### AP-20260816-06：MBA 全课程逐门闭环
 
 - 来源锚点：2026-08-16 用户明确恢复“mba所有课程闭环，列好了一课一课跑，统一找我确认”；本次与 Goal API 中同名 active Goal 身份一致。
-- Goal 锚点：Goal API 当前为 `active`，目标覆盖 MBA 全部课程逐门独立闭环；既有课程顺序与已关闭状态保持有效。
+- Goal 锚点：Goal API 当前为 `blocked`，目标覆盖 MBA 全部课程逐门独立闭环；既有课程顺序与已关闭状态保持有效。
 - 状态转换类型：`user-explicit-goal-start`
 - 状态转换依据：用户明确启动已暂停的 MBA 全课程 Goal，满足本项 `requires-explicit-resume` 条件并授权按既定课程顺序继续。
-- 当前状态：`in_progress / mba-course-sequence / pending-unified-user-acceptance`。
+- 当前状态：`blocked / course-structure-and-governance-repair / pending-unified-user-review`。
 - 用户目标：MBA 所有课程按既定顺序一课一课执行；所有待做课程都到达 `pending_user_acceptance` 后，只统一请求一次内容与视觉确认。
 - 目标终端：全部 13 门课程分别完成 C1 覆盖、C1B、C2B 内容与知识登记、package/live；所有待验收课程一次性取得用户内容与视觉确认后，分别运行 closure verifier 并由 DOC-USAGE 记录 `accepted / closed`。
 - 不改变/保护边界：不重跑已关闭课程；不重做执行商务沟通已完成的 `19/19` C1B 准备；单课到达 `pending_user_acceptance` 后不打断用户、不等待逐门确认，直接按顺序推进下一门；先导课仍计为独立一课。
@@ -60,7 +60,16 @@ Goal 或本文尚未回写，只补终端状态、证据和清理，不重跑业
   11. [完成] “25春 MBAO 5405 全球商业环境”权威 C1 `38/38`，含课件 25、视频 13；正式 C1B 为 `38/38` 本质判断和 32 个必要视觉。通用 prepare/selector 已增加 plan 级显式 run 冻结合同，在不修改全局历史 run 的前提下解决唯一 OCR 分叉；registration 为 38/38 decisions、32/32 media，0 复用。v1 execution round 五阶段无缺陷通过，13 个一级 digest、9/9 学习正文、38/38 知识登记完成，46/46 package/live 逐文件 SHA-256 零差异，唯一 live 已发布并到达 `pending_user_acceptance`。按总 Goal 不运行本课 closure verifier、不单独请求验收。
   12. [完成] “25春 OMBA 5480 战略管理”已完成全新 v1 execution round：权威 C1 `74/74 covered`（课件 46、视频 28）；正式 C1B `74/74` 本质判断、67 个必要视觉，registration `74/74 decisions`、`67/67 media`、0 复用；9/9 学习正文、74/74 知识登记、81/81 package/live 逐文件 SHA-256 零差异，唯一 live 已发布。五阶段无缺陷到达 `pending_user_acceptance`。按总 Goal 不运行本课 closure verifier、不单独请求验收。
   13. [待用户统一验收] 所有待做课程均已发布到 `pending_user_acceptance`；只向用户请求一次全课程内容与视觉确认。用户确认后逐课运行 closure verifier、更新 DOC-USAGE 并关闭全量 Goal。
-- 下一步：向用户发起一次全课程内容与视觉统一确认；在确认前不得运行任何课程 closure verifier，不得重跑任何已终端课程，不得运行无关 Rust 检查。
+  14. [进行中 / 等待用户统一检查] 用户要求两个问题统一修好后再一次性检查，执行顺序固定为：先只读复核财务管理与全球供应链相对最终知识治理合同的兼容性并修复真实治理缺口；再把已确认的课程大纲/学习支持分层应用到全部 MBA C2B 呈现，更新 course plan、builder/materializer/checker、Obsidian profile/template 与现有 MBA 可重建输出。第一项不重跑已关闭课程；第二项只升级 C2B 呈现合同，不改变 `C1 -> C1B -> C2B` 语义链、正文判断、来源绑定或知识权威。全过程保持 Goal API `blocked`，不运行课程、closure verifier、课程发布验收或无关 Rust 检查；两项及定向验证全部结束后只请求一次用户检查。来源：Issue #180、`DFC-20260817-03`（已 resolved）。
+     - [阶段结论 / Agent / 2026-08-17] 两门课的 C1B、C2B 正文、媒体、package/live、用户验收与 closure 证据均保持有效；真实治理缺口是 raw core 的 `courses` 及后继关系表当前为零，历史 ledger 只有单一 branch assignment。既有 core 已具备不可变 Course、typed `covers`、module assignment role/strength/confidence、typed map relation 与 lens membership writer，但 CLI/registrar 尚未暴露，不能以 Docs、Obsidian 或直接 SQLite 写入冒充迁移。剩余路线固定为：先暴露并验证 core CLI；建立版本化 MBA lens；用历史 semantic IDs 追加登记财务管理和全球供应链的独立 Course 身份、covers、基石多重 assignment 与迁移回执；不删除旧 assignment、不重写旧 package/closure。
+     - [第一项完成 / Agent / 2026-08-17] core CLI 已暴露 `knowledge register-course/show-course`，并修复 Course assignment 对四个固定基石 ID 的合法支持。通过版本化 MBA lens `sublibrary_01M07ZYC2FY7JFCF2QCCJHENK4`，财务管理与全球供应链已从历史 ledger 追加登记 2 个不可变 Course、138 个 semantic module、799 条带 role/strength/confidence 的 assignment、2 条 typed `covers`、4 条 typed map relation 和 2 条 lens membership；两课 read-back 均保持 `accepted/closed`，SQLite quick check/foreign keys 通过，原 774 条历史 assignment 未删除，旧 package/live/closure 未改。回执：`D:\BabataData\04_runtime\staging\model-workspaces\mba-course-governance-successor-20260817-v1\registration-receipt.json`。
+     - [第二项完成 / Agent / 2026-08-17] `babata.mba-course-presentation-plan/v2`、`semantic-obsidian/v2` 和 flat/sectioned、unit/source-module、独立 learning-support 合同已沿 authority chain 固化；101-unit 正反 mutation 测试通过。13/13 门课程已从 canonical live/package 完成呈现层迁移并原子发布：10 flat、3 sectioned（执行商务沟通、财务管理、全球供应链，均为 5 sections / 8 units），784/784 文件；live/manifest hash differences 0，09/10/11 numbered files 0，旧 live 与 staged successor package 均保留。正文重生成、C1B 登记、知识登记、closure verifier 均为 0 次。回执：`D:\BabataData\04_runtime\staging\model-workspaces\mba-course-presentation-rollout-20260817-v3\rollout-receipt.json`。
+     - [定向验证完成 / Agent / 2026-08-17] 17 个变更 PowerShell 文件 parser、presentation governance/materialization tests、13/13 presentation-plan 与 migration checker、intent/plan 与 ontology mutation tests、`check-boundary.ps1`、`git diff --check` 全部通过；Rust 只运行本次改动对应的 Course 固定基石与 CLI course command 两项定向测试，均通过，未运行无关 Rust 全量门禁。
+- 下一步：两项治理修复及定向验证均已完成；保持 Goal API `blocked`，只统一请求用户检查知识治理 successor 与 MBA C2B 呈现 v2。用户检查前不得恢复课程执行、运行 closure verifier、发布验收或自动晋升其他 Goal。
+- 终态原因：用户明确要求两项结构治理统一完成后再检查；治理修复已完成，但 Goal 继续 `blocked`，等待一次统一用户检查，不是课程执行授权。
+- 证据入口：知识治理 successor 回执 `D:\BabataData\04_runtime\staging\model-workspaces\mba-course-governance-successor-20260817-v1\registration-receipt.json`；呈现 v2 回执 `D:\BabataData\04_runtime\staging\model-workspaces\mba-course-presentation-rollout-20260817-v3\rollout-receipt.json`。
+- 下一授权/决定：用户检查两项治理结果并明确下一步；在此之前不恢复 Goal、不运行课程或 closure verifier。
+- 恢复入口：重新恢复边界仍先查 Goal API 和本 Active Plan；仅凭压缩上下文、历史指令或队列不得执行 MBA 课程。
 - 证据入口：执行商务沟通终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-executive-business-communication-20260816-v3\round-ledger.json`；先导课终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-primer-20260816-v8\round-ledger.json`；战略领导力终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-strategic-leadership-20260816-v2\round-ledger.json`；组织行为学终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-organizational-behavior-20260816-v1\round-ledger.json`；数据安全终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-data-security-ethics-risk-20260816-v1\round-ledger.json`；管理经济学终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-managerial-economics-20260816-v1\round-ledger.json`；商业分析成功终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-business-analytics-20260816-v3\round-ledger.json`；全球商业环境终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-global-business-environment-20260816-v1\round-ledger.json`；战略管理终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-strategic-management-20260816-v1\round-ledger.json`，唯一 live 为 `C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\strategic_management_c2b_latest`。
 
 ## 3. 下次开工队列（禁止恢复时自动执行）

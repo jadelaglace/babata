@@ -172,11 +172,7 @@ impl CourseRegistrationDefinition {
             }
             let mut assigned_nodes = HashSet::new();
             for assignment in &module.assignments {
-                validate_prefixed_id(
-                    "course assignment map_node_id",
-                    &assignment.map_node_id,
-                    "mapnode_",
-                )?;
+                validate_map_node_id("course assignment map_node_id", &assignment.map_node_id)?;
                 if assignment.strength > 100 || assignment.confidence > 100 {
                     return invalid(
                         "course assignment strength/confidence",
@@ -196,12 +192,8 @@ impl CourseRegistrationDefinition {
 
         let mut relations = HashSet::new();
         for relation in &self.map_relations {
-            validate_prefixed_id(
-                "map relation source",
-                &relation.from_map_node_id,
-                "mapnode_",
-            )?;
-            validate_prefixed_id("map relation target", &relation.to_map_node_id, "mapnode_")?;
+            validate_map_node_id("map relation source", &relation.from_map_node_id)?;
+            validate_map_node_id("map relation target", &relation.to_map_node_id)?;
             if relation.from_map_node_id == relation.to_map_node_id {
                 return invalid("map relation", "self relation");
             }
@@ -235,6 +227,17 @@ fn validate_prefixed_id(field: &'static str, value: &str, prefix: &str) -> Resul
         Ok(())
     } else {
         invalid(field, value)
+    }
+}
+
+fn validate_map_node_id(field: &'static str, value: &str) -> Result<(), DomainError> {
+    if matches!(
+        value,
+        "mapnode_p6_time" | "mapnode_p6_space" | "mapnode_p6_matter" | "mapnode_p6_consciousness"
+    ) {
+        Ok(())
+    } else {
+        validate_prefixed_id(field, value, "mapnode_")
     }
 }
 
@@ -317,5 +320,22 @@ mod tests {
                 method_version: "course-map/v1".to_owned(),
             });
         assert!(independent_case.validate().is_ok());
+    }
+
+    #[test]
+    fn course_registration_accepts_only_the_four_fixed_foundation_ids() {
+        let mut valid = definition();
+        valid.modules[0].assignments.push(CourseMapAssignment {
+            map_node_id: "mapnode_p6_time".to_owned(),
+            role: MapAssignmentRole::Secondary,
+            strength: 75,
+            confidence: 80,
+            rationale: "Time value affects the decision".to_owned(),
+            method_version: "mba-foundation-assignment/v1".to_owned(),
+        });
+        assert!(valid.validate().is_ok());
+
+        valid.modules[0].assignments[1].map_node_id = "mapnode_p6_unknown".to_owned();
+        assert!(valid.validate().is_err());
     }
 }

@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory=$true)][string]$CoursePlanPath,
+    [string]$PresentationPlanPath,
     [Parameter(Mandatory=$true)][string]$LearningDocsManifestPath,
     [Parameter(Mandatory=$true)][string]$C1BRegistrationLedgerPath,
     [Parameter(Mandatory=$true)][string]$KnowledgeUniverseLedgerPath,
@@ -12,6 +13,10 @@ param(
 
 $ErrorActionPreference='Stop'
 Set-StrictMode -Version Latest
+
+$presentationResolver=Join-Path $PSScriptRoot 'resolve-mba-course-presentation.ps1'
+if(-not(Test-Path -LiteralPath $presentationResolver -PathType Leaf)){throw "Presentation resolver not found: $presentationResolver"}
+. $presentationResolver
 
 function Hash([string]$Path){(Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()}
 function Is-Within([string]$Child,[string]$Parent){
@@ -101,18 +106,24 @@ $c1b=Get-Content -LiteralPath $c1bPath -Raw -Encoding utf8|ConvertFrom-Json
 $knowledge=Get-Content -LiteralPath $knowledgePath -Raw -Encoding utf8|ConvertFrom-Json
 $planSha=Hash $planPath;$learningSha=Hash $learningPath;$c1bSha=Hash $c1bPath;$knowledgeSha=Hash $knowledgePath
 if([string]$plan.schema -cne 'babata.mba-course-c2b-plan/v1' -or [string]$plan.output_status -cne 'pending_user_acceptance'){throw 'Course plan must be MBA v1 and pending_user_acceptance'}
+$presentation=Resolve-MbaCoursePresentation -CoursePlan $plan -CoursePlanPath $planPath -PresentationPlanPath $PresentationPlanPath -PresentationCheckerPath (Join-Path $PSScriptRoot 'check-mba-course-presentation-plan.ps1')
+$chapters=@($presentation.chapters);$courseMap=$presentation.course_map;$profile=[string]$presentation.profile
 $course=Require-Text $plan.course 'course';$courseKey=Require-Text $plan.course_key 'course_key';$shortName=Safe-Basename ([string]$plan.short_name) 'short_name'
 if($courseKey -notmatch '^[a-z0-9]+(?:-[a-z0-9]+)*$'){throw 'course_key must be a lowercase ASCII slug'}
 $expected=[int]$plan.expected_modules;if($expected -lt 1){throw 'expected_modules must be positive'}
-$planIds=@($plan.chapters|ForEach-Object{@($_.modules)}|ForEach-Object{[string]$_})
+$legacyPlanIds=@($plan.chapters|ForEach-Object{@($_.modules)}|ForEach-Object{[string]$_})
+$planIds=@($chapters|ForEach-Object{@($_.modules)}|ForEach-Object{[string]$_})
 Assert-ExactIds $planIds @($planIds) 'course plan'
 if($planIds.Count -ne $expected){throw 'Course plan chapter denominator mismatch'}
-$chapterByModule=@{};foreach($chapter in @($plan.chapters)){$note=Safe-Basename ([string]$chapter.note) 'chapter note';foreach($module in @($chapter.modules)){$chapterByModule[[string]$module]=$note}}
+Assert-ExactIds $planIds @($legacyPlanIds) 'presentation plan'
+$legacyChapterByModule=@{};foreach($chapter in @($plan.chapters)){$note=Safe-Basename ([string]$chapter.note) 'legacy chapter note';foreach($module in @($chapter.modules)){$legacyChapterByModule[[string]$module]=$note}}
+$chapterByModule=@{};foreach($chapter in $chapters){$note=Safe-Basename ([string]$chapter.note) 'presentation unit note';foreach($module in @($chapter.modules)){$chapterByModule[[string]$module]=$note}}
 
 if([string]$learning.schema -cne 'babata.mba-course-learning-docs/v1' -or [string]$learning.status -cne 'candidate' -or
     [string]$learning.course -cne $course -or [int]$learning.expected_modules -ne $expected -or [string]$learning.course_plan_sha256 -cne $planSha){throw 'Learning-doc manifest does not bind this pending course plan and denominator'}
-if([int]$learning.complete_source_notes -ne $expected -or [int]$learning.chapter_documents -ne @($plan.chapters).Count -or
-    [int]$learning.learning_documents -ne (1+@($plan.chapters).Count+3)){throw 'Learning-doc manifest coverage is incomplete'}
+if($profile -ceq 'semantic-obsidian/v2' -and ([string]$learning.presentation_plan_sha256 -cne [string]$presentation.plan_sha256 -or [string]$learning.template_profile -cne $profile)){throw 'Learning-doc manifest does not bind the v2 presentation plan'}
+if([int]$learning.complete_source_notes -ne $expected -or [int]$learning.chapter_documents -ne $chapters.Count -or
+    [int]$learning.learning_documents -ne (1+$chapters.Count+3)){throw 'Learning-doc manifest coverage is incomplete'}
 if([string]$c1b.schema -cne 'babata.mba-course-c1b-registration/v1' -or [string]$c1b.status -cne 'registered' -or
     [string]$c1b.course -cne $course -or [string]$c1b.course_key -cne $courseKey -or [string]$c1b.course_plan_sha256 -cne $planSha){throw 'Formal C1B ledger does not bind this course plan'}
 if([string]$knowledge.schema -cne 'babata.mba-course-c2b-knowledge-registration/v1' -or [string]$knowledge.status -cne 'registered' -or
@@ -150,10 +161,12 @@ foreach($registration in $registrations){
 
 $generatedRoot=Join-Path (Split-Path $learningPath -Parent) 'generated'
 if(-not(Test-Path -LiteralPath $generatedRoot -PathType Container)){throw 'Learning-doc generated root is missing'}
-$learningNotes=@($plan.course_map.learning.nodes.note|ForEach-Object{[string]$_})
-if($learningNotes.Count -ne 4 -or @($learningNotes|Sort-Object -Unique).Count -ne 4 -or $learningNotes -notcontains '视觉证据索引'){throw 'Course-map learning layer must contain three unique numbered learning documents and 视觉证据索引'}
-$aidNotes=@();foreach($prefix in @('09-','10-','11-')){$matches=@($learningNotes|Where-Object{$_.StartsWith($prefix,[StringComparison]::Ordinal)});if($matches.Count -ne 1){throw "Course-map learning layer requires exactly one $prefix document"};$aidNotes+=Safe-Basename $matches[0] 'learning document'}
-$expectedNotes=@('00-课程总览')+@($plan.chapters.note|ForEach-Object{[string]$_})+$aidNotes
+$learningNotes=@($presentation.learning_notes)
+if($learningNotes.Count -ne 4 -or @($learningNotes|Sort-Object -Unique).Count -ne 4 -or $learningNotes -notcontains '视觉证据索引'){throw 'Course-map learning layer must contain three unique learning-support documents and 视觉证据索引'}
+$aidNotes=@()
+if($profile -ceq 'semantic-obsidian/v2'){$aidNotes=@($learningNotes[0..2]|ForEach-Object{Safe-Basename $_ 'learning document'})}
+else{foreach($prefix in @('09-','10-','11-')){$matches=@($learningNotes|Where-Object{$_.StartsWith($prefix,[StringComparison]::Ordinal)});if($matches.Count -ne 1){throw "Course-map learning layer requires exactly one $prefix document"};$aidNotes+=Safe-Basename $matches[0] 'learning document'}}
+$expectedNotes=@('00-课程总览')+@($chapters.note|ForEach-Object{[string]$_})+$aidNotes
 $expectedFiles=@($expectedNotes|ForEach-Object{$_+'.md'})
 $learningRows=@($learning.generated_files)
 if($learningRows.Count -ne $expectedFiles.Count -or @($learningRows.name|Sort-Object -Unique).Count -ne $expectedFiles.Count -or
@@ -173,7 +186,7 @@ $decisionByModule=@{};foreach($decision in $decisions){$decisionByModule[[string
 $derivativeIds=[Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal);$mediaWork=@()
 foreach($row in $registrations){
     $module=[string]$row.module_id
-    if([string]$row.chapter -cne [string]$chapterByModule[$module]){throw "C1B chapter binding mismatch: $module"}
+    if([string]$row.chapter -cne [string]$legacyChapterByModule[$module]){throw "C1B chapter binding mismatch: $module"}
     $decision=$decisionByModule[$module]
     if([string]$decision.c1_sha256 -cne [string]$row.complete_c1.output_sha256){throw "C1B decision and complete-C1 hash disagree: $module"}
     $decisionMedia=@($decision.retained_media|Where-Object{$null-ne$_}|ForEach-Object{[string]$_.sha256}|Sort-Object)
@@ -197,7 +210,7 @@ if([string]$knowledge.branch.name -cne [string]$plan.knowledge_universe.branch_n
 foreach($module in $knowledgeModules){
     $id=Require-Text $module.semantic_id "semantic id $($module.module_id)";if(-not $semanticIds.Add($id)){throw "Duplicate semantic id: $id"}
     if([string]$module.status -cne 'registered' -or [string]$module.review_state -cne 'accepted' -or [string]$module.assignment_state -cne 'assigned' -or
-        [string]$module.chapter -cne [string]$chapterByModule[[string]$module.module_id]){throw "Knowledge registration is incomplete or misassigned: $($module.module_id)"}
+        [string]$module.chapter -cne [string]$legacyChapterByModule[[string]$module.module_id]){throw "Knowledge registration is incomplete or misassigned: $($module.module_id)"}
     $semanticPackage=(Get-Item -LiteralPath ([string]$module.package_path) -ErrorAction Stop).FullName;Assert-SameHash $semanticPackage $module.fingerprint "semantic package $($module.module_id)"
 }
 
@@ -205,7 +218,7 @@ foreach($module in $knowledgeModules){
 $package=Join-Path $staging 'package';New-Item -ItemType Directory -Path $package -Force|Out-Null
 $mediaRoot=Join-Path $package 'media';New-Item -ItemType Directory -Path $mediaRoot -Force|Out-Null
 $forbidden=@('本试点','C2 应当','外部主权库负责','不是正式 C2','我们要求','作为 AI','作为AI')
-$chapterSet=[Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal);foreach($name in @($plan.chapters.note)){[void]$chapterSet.Add(([string]$name)+'.md')}
+$chapterSet=[Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal);foreach($name in @($chapters.note)){[void]$chapterSet.Add(([string]$name)+'.md')}
 $removedProvenanceSections=0
 foreach($name in $expectedFiles){
     $text=[string]$learningBodies[$name]
@@ -232,42 +245,45 @@ foreach($work in $mediaWork){
     $row=[ordered]@{module_id=$work.module;chapter=$work.chapter;path='media/'+$fileName;sha256=Hash $destination;bytes=(Get-Item $destination).Length;modality=$modality;role=[string]$work.registration.role;source_locator=$work.registration.source_locator;derivative_id=[string]$work.registration.derivative_id}
     $mediaRows+=$row;if(-not $byChapter.ContainsKey($work.chapter)){$byChapter[$work.chapter]=@()};$byChapter[$work.chapter]+=$row
 }
-foreach($chapter in @($plan.chapters.note|ForEach-Object{[string]$_})){
+foreach($chapter in @($chapters.note|ForEach-Object{[string]$_})){
     if(-not $byChapter.ContainsKey($chapter)){continue};$section=@('','## 视觉证据','','以下媒体保留文字无法替代的公式、图表、板书或空间信息；正文仍是主要学习入口。','')
     foreach($row in @($byChapter[$chapter])){$label="模块 $($row.module_id)";$locator=Locator-Label $row.source_locator;if($locator){$label+="（$locator）"};$section+="### $label";switch($row.modality){'image'{$section+="![$label]($($row.path))"};default{$section+="[$label]($($row.path))"}};$section+=''}
     Add-Content -LiteralPath (Join-Path $package ($chapter+'.md')) -Value ($section -join "`n") -Encoding utf8
 }
 $visual=@('# 视觉证据索引','','按章节列出 C1B 正式登记并保留的必要媒体。','')
-if(-not $mediaRows.Count){$visual+='本课程的正式 C1B 判断未要求额外媒体。'}else{foreach($chapter in @($plan.chapters.note|ForEach-Object{[string]$_})){if(-not $byChapter.ContainsKey($chapter)){continue};$visual+="## $chapter";foreach($row in @($byChapter[$chapter])){if($row.modality -eq 'image'){$visual+="- ![模块 $($row.module_id)]($($row.path))"}else{$visual+="- [模块 $($row.module_id)]($($row.path))"}};$visual+=''}}
+if(-not $mediaRows.Count){$visual+='本课程的正式 C1B 判断未要求额外媒体。'}else{foreach($chapter in @($chapters.note|ForEach-Object{[string]$_})){if(-not $byChapter.ContainsKey($chapter)){continue};$visual+="## $chapter";foreach($row in @($byChapter[$chapter])){if($row.modality -eq 'image'){$visual+="- ![模块 $($row.module_id)]($($row.path))"}else{$visual+="- [模块 $($row.module_id)]($($row.path))"}};$visual+=''}}
 Set-Content -LiteralPath (Join-Path $package '视觉证据索引.md') -Value (($visual -join "`n")+"`n") -Encoding utf8
 
-$index=@('---','babata_type: c2b_course_knowledge_base',"course: $course",'variant: c2b','status: pending_user_acceptance','formal_registration: registered','c1b_registration: registered','knowledge_universe_registration: registered','template_profile: semantic-obsidian/v1','template_status: accepted','---','',"# $shortName 知识库",'', '从 [[00-课程总览]] 开始。这里按知识和决策链组织，媒体证据按章节挂载。','','## 课程章节')
-foreach($chapter in @($plan.chapters.note|ForEach-Object{[string]$_})){$index+="- [[$chapter]]"}
+$index=@('---','babata_type: c2b_course_knowledge_base',"course: $course",'variant: c2b','status: pending_user_acceptance','formal_registration: registered','c1b_registration: registered','knowledge_universe_registration: registered',"template_profile: $profile",'template_status: accepted','---','',"# $shortName 知识库",'', '从 [[00-课程总览]] 开始。这里按知识和决策链组织，媒体证据按学习单元挂载。','','## 课程大纲')
+if([string]$presentation.outline_mode -ceq 'sectioned'){
+    foreach($section in @($presentation.sections)){$index+='';$index+="### $($section.title)";foreach($note in @($section.notes)){$index+="- [[$note]]"}}
+}else{foreach($chapter in @($chapters.note|ForEach-Object{[string]$_})){$index+="- [[$chapter]]"}}
 $index+=@('','## 学习工具')+@($aidNotes|ForEach-Object{"- [[$_]]"})+@('- [[视觉证据索引]]','')
 Set-Content -LiteralPath (Join-Path $package 'index.md') -Value ($index -join "`n") -Encoding utf8
 
 $assetBase=$shortName+'课程脑图'
-$mapSpec=[ordered]@{schema='babata.mba-course-map-spec/v1';status='pending_user_acceptance';course=$course;course_plan_sha256=$planSha;classification_axis=[string]$plan.course_map.classification_axis;root_id=[string]$plan.course_map.root_id;root_label=[string]$plan.course_map.root_label;tagline=[string]$plan.course_map.tagline;asset_basename=$assetBase;domains=@($plan.course_map.domains);learning=$plan.course_map.learning}
+$mapSpec=[ordered]@{schema='babata.mba-course-map-spec/v1';status='pending_user_acceptance';course=$course;course_plan_sha256=$planSha;presentation_plan_sha256=$presentation.plan_sha256;classification_axis=[string]$courseMap.classification_axis;root_id=[string]$courseMap.root_id;root_label=[string]$courseMap.root_label;tagline=[string]$courseMap.tagline;asset_basename=$assetBase;domains=@($courseMap.domains);learning=$courseMap.learning}
 $mapSpec|ConvertTo-Json -Depth 20|Set-Content -LiteralPath (Join-Path $mediaRoot 'course-map.spec.json') -Encoding utf8
 $renderResult=@(& $renderer -PackageRoot $package)
 if($renderResult.Count -ne 1 -or [string]$renderResult[0].schema -cne 'babata.mba-course-map-render/v1' -or [string]$renderResult[0].status -cne 'passed'){throw 'Course-map renderer did not return one passed result'}
 $map=$renderResult[0]
 
 $manifest=[ordered]@{
-    schema='babata.mba-course-c2b/v1';course=$course;course_key=$courseKey;status='pending_user_acceptance';course_plan=$planPath;course_plan_sha256=$planSha
+    schema='babata.mba-course-c2b/v1';course=$course;course_key=$courseKey;status='pending_user_acceptance';course_plan=$planPath;course_plan_sha256=$planSha;presentation_plan=$presentation.plan_path;presentation_plan_sha256=$presentation.plan_sha256;outline_mode=$presentation.outline_mode
     module_ids=@($planIds|Sort-Object);source_map=$sourceMapPath;source_map_sha256=Hash $sourceMapPath
     c1b_ledger_sha256=$c1bSha;knowledge_ledger_sha256=$knowledgeSha;learning_docs_manifest=$learningPath;learning_docs_manifest_sha256=$learningSha
     formal_registration='registered'
     c1b_registration=[ordered]@{status='registered';ledger=$c1bPath;decisions=$registrations.Count;media=$mediaRows.Count;decision_derivative_ids=@($registrations.decision_registration.derivative_id);media_derivative_ids=@($registrations|ForEach-Object{@($_.media_registrations)}|ForEach-Object{[string]$_.derivative_id})}
     knowledge_universe=[ordered]@{status='registered';ledger=$knowledgePath;foundation=$plan.knowledge_universe.foundation_id;discipline=$plan.knowledge_universe.discipline_id;branch=$knowledge.branch;semantic_ids=@($knowledgeModules.semantic_id)}
-    obsidian_template=[ordered]@{profile='semantic-obsidian/v1';status='accepted'}
-    publication=[ordered]@{live_path=[string]$plan.live.path;vault=[string]$plan.live.vault;file=[string]$plan.live.file}
+    obsidian_template=[ordered]@{profile=$profile;status='accepted'}
+    publication=[ordered]@{live_path=[string]$presentation.live.path;vault=[string]$presentation.live.vault;file=[string]$presentation.live.file}
     course_map=[ordered]@{mermaid=[string]$map.mermaid;png=[string]$map.png;classification_axis=[string]$map.classification_axis;layout=[string]$map.layout;mece_domains=[int]$map.mece_domains;knowledge_details=[int]$map.knowledge_details;internal_link_targets=[int]$map.internal_link_targets;responsive_svg=[bool]$map.responsive_svg;default_expanded=[string]$map.default_expanded;png_default_collapsed=[bool]$map.png_default_collapsed;png_display_width=[int]$map.png_display_width;png_width=[int]$map.png_width;png_height=[int]$map.png_height;effective_font_px=[double]$map.effective_font_px;aspect_ratio=[double]$map.aspect_ratio}
     media=$mediaRows;user_knowledge_has_full_c1=$false;removed_learning_provenance_sections=$removedProvenanceSections;old_c2b_inputs=0;external_sovereign_original_reads=0
     package_files=@(Get-ChildItem -LiteralPath $package -Recurse -File -Force|Sort-Object FullName|ForEach-Object{[ordered]@{path=Relative $package $_.FullName;sha256=Hash $_.FullName;bytes=[long]$_.Length}})
 }
 $manifestPath=Join-Path $staging 'manifest.json';$manifest|ConvertTo-Json -Depth 30|Set-Content -LiteralPath $manifestPath -Encoding utf8
-$checkResult=@(& $checker -CoursePlanPath $planPath -PackageRoot $package -ManifestPath $manifestPath)
+$checkerArgs=@{CoursePlanPath=$planPath;PackageRoot=$package;ManifestPath=$manifestPath};if($presentation.plan_path){$checkerArgs.PresentationPlanPath=$presentation.plan_path}
+$checkResult=@(& $checker @checkerArgs)
 if($checkResult.Count -ne 1 -or [string]$checkResult[0].schema -cne 'babata.mba-course-c2b-package-check/v1' -or [string]$checkResult[0].status -cne 'passed'){throw 'Materialized package did not pass the formal package checker'}
 $verification=[ordered]@{schema='babata.mba-course-c2b-materialization-verification/v1';status='passed_engineering_gates';course_acceptance='pending_user_acceptance';course=$course;course_plan_sha256=$planSha;source_modules=$expected;c1b_decisions=$registrations.Count;c1b_media=$mediaRows.Count;knowledge_entries=$knowledgeModules.Count;package_files=[int]$checkResult[0].package_files;wiki_links=[int]$checkResult[0].wiki_links;markdown_links=[int]$checkResult[0].markdown_links;old_c2b_inputs=0;external_sovereign_original_reads=0}
 $verification|ConvertTo-Json -Depth 12|Set-Content -LiteralPath (Join-Path $staging 'verification.json') -Encoding utf8

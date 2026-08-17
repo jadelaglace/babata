@@ -330,8 +330,19 @@ MBA 这类跨学科课程集合优先使用该版本化子库/lens 能力；子�
 
 `C1B-FORMAL-HANDOFF-GATE` 要求课程 C2B 只消费 Rust 核心回读通过的 C1B 账本：完整 C1 引用、
 本质判断和必要媒体均保留 C0/C1 身份与 hash，staging sidecar 不能代替正式登记。正式发布还要
-同时标记 C2B、Obsidian 导出和 `semantic-obsidian/v1` 模板状态；模板是可复用合同，Vault 仍是
+同时标记 C2B、Obsidian 导出和当前适用的版本化 semantic Obsidian profile 状态；模板是可复用合同，Vault 仍是
 只读兼容导出。
+
+课程呈现使用版本化 presentation plan，而不是把目录和文件名前缀当成课程结构。plan 提供两种
+明确模式：`flat` 直接排列 unit，适合没有稳定上层主题的短课；`sectioned` 先排列 section，再在
+section 内排列 unit，适合有真实主题阶段或大量小节的课程。两种模式都让 unit 完整绑定 source
+modules；source module 是资源，不自动成为学习小节。课程总览、决策工具、案例练习、复习与自测、
+视觉证据索引由独立 learning-support 区声明和排序，不占用 unit 编号。由此章节数量不受 `09/10/11`
+旧文件名限制，100+ 节课程也使用同一合同，而无需把磁盘目录提升为导航权威。
+
+已存在的 v1 课程输出可以进行呈现层兼容迁移：逐字复用既有正文和媒体，只调整学习支持名称、
+导航、内部链接及其 package manifest/hash，并生成独立迁移回执。迁移不得重新生成课程正文、重做
+C1B/知识登记、改变用户 acceptance/closure，或把新的 profile 状态冒充新的课程内容验收。
 
 课程脑图还必须通过 `C2B-MECE-COURSE-MAP-GATE`：使用一个明确的分类轴，把知识章节分入互斥
 且完整覆盖的一级分支；学习支持单独成层，不把内容分类、流程顺序、跨章依赖混成一张交叉图。
@@ -355,6 +366,10 @@ Obsidian 中的节点使用原生内部链接并能打开当前 live 课程笔�
 `max-width`。同源 PNG 仍随 package 发布，但默认收进折叠 callout，仅作为打印、离线和渲染
 回退，不再与主图重复撑高首页。该能力不宣称 Mermaid 自带图内滚轮缩放或平移，原生课程内链
 仍保持可点击。
+
+`C2B-COURSE-OUTLINE-GATE` 要求 presentation plan 的 flat/sectioned 结构、unit/source-module
+完整覆盖、learning-support 分层和顺序全部可验证；builder、materializer 和 checker 读取同一 plan，
+不从文件名或目录重新猜测结构。
 
 用户查看入口遵守 `OBSIDIAN-HUMAN-VIEW-BOUNDARY`：Agent 只启动注册 Vault 的正确 URI 并交还用户，
 不使用 Computer Use 代替用户阅读或验收。具体课程当前入口只由 usage status/manifest 登记，

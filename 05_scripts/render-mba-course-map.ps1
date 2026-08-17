@@ -248,8 +248,9 @@ try {
 $index=Get-Content -LiteralPath $indexPath -Raw -Encoding utf8
 $block=@('## 课程脑图','','课程知识沿决策主线向右展开。章节节点对应完整笔记，末端短句用于复习。','','```mermaid',$mermaid,'```','', '> [!info]- 位图版本（打印 / 离线 / 渲染回退）', "> ![[media/$assetBase.png|760]]") -join "`n"
 if($index -match '(?ms)^## 课程脑图\s*.*?(?=^## |\z)'){$index=[regex]::Replace($index,'(?ms)^## 课程脑图\s*.*?(?=^## |\z)',($block+"`n`n"),1)}else{
-    if($index -notmatch '(?m)^## 课程章节\s*$'){throw 'C2B index has no course chapter section'}
-    $index=[regex]::Replace($index,'(?m)^## 课程章节\s*$',($block+"`n`n## 课程章节"),1)
+    $outlineHeading=[regex]::Match($index,'(?m)^## (课程章节|课程大纲)\s*$')
+    if(-not $outlineHeading.Success){throw 'C2B index has no course outline section'}
+    $index=[regex]::Replace($index,'(?m)^## (课程章节|课程大纲)\s*$',($block+"`n`n## "+$outlineHeading.Groups[1].Value),1)
 }
 Set-Content -LiteralPath $indexPath -Value ($index.TrimEnd()+"`n") -Encoding utf8
 

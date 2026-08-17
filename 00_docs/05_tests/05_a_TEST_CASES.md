@@ -147,6 +147,11 @@ TC 验证 AC，但不重新定义 AC。工程 gate 可证明编译、所有权�
    discipline、singular-only assignment contract，以及 registrar 清除未在本轮撤销的其他归属。
    对历史单路径 accepted instance 保留既有 C1B、内容、媒体、profile、package/live、用户验收和
    closure，不得冒充当前本体 conformance；兼容迁移不得损坏这些独立 accepted 维度。
+7. 通过 CLI 用不可变 definition 登记 Course，再用 course key/version 回读；核对 typed `covers`、
+   每个 semantic module 的多重 role/strength/confidence assignment、typed map relations 和 MBA lens
+   membership。重复同一 definition 必须幂等，不同 definition 冲突；缺失 lens/semantic/map node 拒绝。
+8. 对历史单路径课程做追加迁移后，旧 assignment、C1B/package/live、acceptance/closure 全部不变；
+   直接 SQLite、Obsidian 或 sidecar 不能替代 core CLI receipt。
 
 #### TC-08C：课程内容、内链和视觉 profile
 
@@ -158,6 +163,13 @@ TC 验证 AC，但不重新定义 AC。工程 gate 可证明编译、所有权�
 4. 实际渲染 SVG，用 profile 声明的 Obsidian selector 精确匹配全部 internal-link labels，并逐项
    对应唯一 Markdown 目标；源码字符串检查不能替代实际 selector。
 5. 实际查看 package-owned PNG；用户视觉接受与工程检查分别记录。
+6. `C2B-COURSE-OUTLINE-GATE`：分别用 flat 与 sectioned fixture，验证 unit 顺序、section 顺序和
+   source-module 恰好一次覆盖；100+ unit 不得因学习支持命名失败。重复、漏绑、空 section、混合两种
+   outline shape 或从文件名前缀推断结构必须拒绝。
+7. learning support 使用 profile 声明的语义 slot 和文件名，独立于 unit 数字命名空间；注入
+   `09/10/11` 新正式文件名或让文件系统顺序覆盖 plan 顺序时 checker 必须拒绝。
+8. v1 -> v2 呈现迁移核对非授权正文/媒体 hash 全部不变、旧 plan/manifest 指纹和 rename map 完整、
+   新 index/Mermaid 内链唯一可达、package/live exact match；不得改变课程 acceptance/closure。
 
 #### TC-08D：响应式主图和折叠位图
 

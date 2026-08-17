@@ -127,7 +127,7 @@ P4 完成只证明首批路径，不证明全部来源 enabled。
 
 历史 baseline 退出：在 P6 关闭时适用的 TC-03B、TC-05..08 与对应 AC 通过；Obsidian/Web 不因
 通用输出通过自动标为可用。P6 关闭后新采用的 ontology successor（map-node 非父边类型化关系、
-Course/Branch、`covers`、MBA lens、基石强度/置信度）不倒改历史 gate，作为 P8.9 当前交付缺口，
+Course/Branch、`covers`、MBA lens、基石强度/置信度）不倒改历史 gate，由 P8.9 单独交付和追踪，
 必须通过现行 AC/TC 后才能声明新 ontology conformance。
 
 ### P7：扩展来源、统一 Skill 与受控 Agent

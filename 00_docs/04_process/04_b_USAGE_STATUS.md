@@ -26,9 +26,9 @@
 | P3 | 已完成 | C0、first-party 与唯一 writer 底座通过 |
 | P4 | 已完成 | 首批真实收集路径通过；不代表全部来源可用 |
 | P5 | 已完成 | 真实 C0 -> C1 清洗、失败重试与原件不变通过 |
-| P6 | 历史 baseline 已完成 | 关闭时适用的核心沉淀、检索、子库与通用输出 gate 通过；后采用 ontology successor 未完成 |
+| P6 | 历史 baseline 已完成 | 关闭时适用的核心沉淀、检索、子库与通用输出 gate 通过；后采用 ontology successor 由 P8.9 单独交付，不倒签 P6 |
 | P7 | 已完成 | 扩展来源、统一收集 Skill 与受控 Agent 合同通过 |
-| P8 | 进行中 | 来源回收已收束；MBA C2B 正在从财务标杆扩展到其余课程 |
+| P8 | 进行中 | 来源回收已收束；MBA 13 门 C2B 均已发布并完成呈现治理迁移，等待全课程统一验收 |
 | P9 | 未开始 | 本地备份/隔离恢复已有证据；外部同步目标尚未选定并跑通 |
 
 Phase 完成只表示该 Phase 关闭时适用的 gate 和 AC/TC 有足够证据，不等于后来新增的 adopted
@@ -48,7 +48,7 @@ Phase 完成只表示该 Phase 关闭时适用的 gate 和 AC/TC 有足够证据
 | P8.6 | 完成 | 同一 70/70 权威存量进入 registered/C0-C | 未触发新增抓取或 C1 |
 | P8.7 | 历史试点 | 本地 MBA 小批 C1 和停队列证据保留 | 不是当前 MBA 权威输入 |
 | P8.8 | 完成 | MBA 网站权威 C1 为 763/763，课件 369、视频 394 | 真实数据继续留在外部数据根 |
-| P8.9 | 进行中 | 财务管理、供应链和决策会计已关闭；其余 MBA 课程均已发布并待全课程统一验收 | 已关闭课程的部分宇宙归属仍是历史单路径模型；map-node 非父边类型化关系、course/branch 分离、多重归属、MBA lens、基石强度/置信度、兼容迁移、全课程统一验收及适用的 closure 尚未完成 |
+| P8.9 | 进行中 | 财务管理、全球供应链已完成知识治理 successor 登记；13/13 MBA C2B 呈现 v2 迁移完成；决策会计、财务管理、全球供应链已关闭，其余 10 门已发布并待全课程统一验收 | 仍需用户一次性确认其余 10 门课程内容与视觉；确认后逐课运行 closure verifier 并更新 accepted/closed |
 
 “全量”永远绑定本行声明的明确范围。70/70、763/763 或一门课程完整跑通，都只是对应使用范围
 的完成事实，不进入 PRD，也不自动扩大为整个产品、全部来源或全部 MBA 已完成。
@@ -65,18 +65,19 @@ Phase 完成只表示该 Phase 关闭时适用的 gate 和 AC/TC 有足够证据
 - 用户打开 URI：
   `obsidian://open?vault=Obsidian%20Vault&file=Babata%2FMBA%2Fmba_finance_c2b_latest%2Findex.md`；
   Agent 只启动 URI，不代替用户查看。
-- Obsidian profile：`semantic-obsidian/v1 / accepted`；课程内容状态：
+- Obsidian profile：`semantic-obsidian/v2 / accepted`；课程内容状态：
   `accepted_benchmark / registered`。
 - package/live：92/92，逐文件 hash 差异 0；Wiki/媒体悬空 0。
+- 课程呈现 v2：`sectioned`，5 sections / 8 units；每个 source module 恰好绑定一个 unit，
+  learning-support 独立于 outline 编号；09/10/11 编号已移除且学习正文 hash 保持不变。
 - 课程脑图：原生 Mermaid 为唯一默认展开主图并随窗格自适应；12/12 原生内部链接；
   1488x1920 PNG 保留为默认折叠回退。
 - 关闭回执：`<current batch>/closure-verification.json`，schema
   `babata.finance-c2b-formal-closure/v2`，status `passed`。
 
-上述 accepted/closed 继续证明课程内容、媒体、profile、package/live 和用户验收；其知识宇宙登记
-使用历史单路径 `意识 -> 管理学 -> 财务管理`，不证明当前已采用的 course/branch 分离、多重归属
-和 MBA lens 模型。兼容迁移必须经核心 writer 追加/调整关系，不重写已接受内容、C1B 或 closure
-证据，也不得用新状态倒签旧 package。
+上述 accepted/closed 继续证明课程内容、媒体、profile、package/live 和用户验收；财务管理的 successor
+登记已由核心 writer 追加课程身份、多重基石 assignment、typed covers/map relations 与 MBA lens 并经回读确认。
+呈现 v2 迁移只改变可重建的 C2B 视图合同，不重写已接受内容、C1B 或 closure 证据。
 
 财务管理证明的是一套可复用能力、profile 和一门课程的真实使用关闭。后续 MBA 课程必须复用
 同一合同重新通过各自输入覆盖、内容质量、媒体必要性、知识宇宙归属、重建和用户验收；不得因
@@ -97,15 +98,17 @@ Phase 完成只表示该 Phase 关闭时适用的 gate 和 AC/TC 有足够证据
 - package/live：55/55，逐文件 hash 相等；14 个 Markdown、39 个内容媒体、Wiki/媒体悬空 0。
 - 课程脑图：五个知识域、12 个内部章节/学习链接；原生 Mermaid 默认展开，1427x1633 PNG
   作为折叠回退。
+- 课程呈现 v2：`sectioned`，5 sections / 8 units；每个 source module 恰好绑定一个 unit，
+  learning-support 独立于 outline 编号；09/10/11 编号已移除且学习正文 hash 保持不变。
 - 当前状态：用户已明确认可，课程实例为 `accepted / closed`。package/live 保留
   `pending_user_acceptance` 的不可变可重建快照状态；accepted/closed 结果由独立 closure receipt
   和本文记录，避免让 Obsidian 导出成为第二权威 writer。
 - 关闭回执：v5 `closure-verification.json`，schema
   `babata.mba-course-c2b-formal-closure/v1`，status `passed`，package/live 55/55、hash 差异 0。
 
-上述 accepted/closed 继续证明课程内容、媒体、profile、package/live 和用户验收；其知识宇宙登记
-使用历史单路径 `意识 -> 管理学 -> 供应链管理`，不证明当前已采用的 course/branch 分离、多重归属
-和 MBA lens 模型。兼容迁移不得清除其他有依据的 assignment，也不改变既有用户验收事实。
+上述 accepted/closed 继续证明课程内容、媒体、profile、package/live 和用户验收；全球供应链的 successor
+登记已由核心 writer 追加课程身份、多重基石 assignment、typed covers/map relations 与 MBA lens 并经回读确认。
+呈现 v2 迁移只改变可重建的 C2B 视图合同，不清除其他有依据的 assignment，也不改变既有用户验收事实。
 
 ## 6. 决策会计当前正式成果
 
@@ -265,7 +268,26 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 该状态只证明本门课程的正式 C1B、内容、知识登记和唯一 live 已到待验收终端，不代表用户已经
 验收、课程已经 closed 或全部 MBA 已完成。
 
-## 17. 试跑、试点、模板与全量使用
+## 17. MBA C2B 呈现 v2 全量迁移
+
+- 呈现合同：`babata.mba-course-presentation-plan/v2`；Obsidian profile：
+  `semantic-obsidian/v2`。大纲只有两种合法形态：`flat` 的 ordered units，或 `sectioned` 的
+  ordered sections -> ordered units；每个 source module 恰好绑定一个 unit，learning-support
+  独立于 outline 编号。
+- 全量结果：13/13 课程、784/784 文件完成从现有 canonical live/package 的呈现层迁移；10 门
+  `flat`，3 门 `sectioned`。sectioned 为执行商务沟通、财务管理、全球供应链，均为 5 sections / 8 units；
+  其余课程没有可证明的多 unit 上层主题，保持 flat。
+- 迁移边界：只做 index、outline、learning-support 命名和呈现结构的确定性变换；正文 hash 不变，
+  `C1 -> C1B -> C2B` 内容、来源绑定、知识权威、课程 accepted/closed 语义不变。旧 flat live 已
+  归档，staged successor package 和 manifest 保留，可回建且可审计。
+- 独立审计：live/manifest hash differences `0`；09/10/11 numbered files `0`；archived predecessor
+  lives `13/13`；retained staged packages `13/13`；source content regeneration `0`、C1B
+  registration `0`、knowledge registration `0`、closure verifier `0`。
+- 终端回执：
+  `D:\BabataData\04_runtime\staging\model-workspaces\mba-course-presentation-rollout-20260817-v3\rollout-receipt.json`；
+  中间 v1/v2 失败或不合规回执保留在同一 staging 根下，仅用于追溯，不作为当前状态。
+
+## 18. 试跑、试点、模板与全量使用
 
 | 名称 | 在产品文档中的位置 | 在本文中的状态含义 |
 | --- | --- | --- |
@@ -277,7 +299,7 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 一个试跑结果、试点结果或模板验收可以成为能力成熟度证据，但它们的数字、批次名、日期和
 当前完成状态属于本文或运行回执，不属于 PRD/AC/TC 正文。
 
-## 18. 证据索引
+## 19. 证据索引
 
 | 使用事实 | 主要证据位置 |
 | --- | --- |
@@ -323,6 +345,8 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 | 战略管理 C1B 正式登记 | `mba-strategic-management-c1b-registration-20260816-v1/c1b-registration-ledger.json` |
 | 战略管理知识宇宙登记 | `mba-strategic-management-knowledge-20260816-v1/knowledge-universe-registration.json` |
 | 战略管理待统一验收 | v1 execution `round-ledger.json`、C2B `manifest.json`、publish receipt 与唯一 live |
+| MBA 知识治理 successor 登记 | `D:\BabataData\04_runtime\staging\model-workspaces\mba-course-governance-successor-20260817-v1\registration-receipt.json`；核心 writer read-back 与 SQLite integrity 结果 |
+| MBA C2B 呈现 v2 全量迁移 | `D:\BabataData\04_runtime\staging\model-workspaces\mba-course-presentation-rollout-20260817-v3\rollout-receipt.json`、各课程 `migration-receipt.json`、source snapshot manifests |
 
 历史被否决的候选、旧批次和逐次调参记录保留在 Git 外 staging/archive 和 Git 历史中，只用于
 追溯，不作为当前状态或产品定义。本文只在当前事实、范围或证据定位发生变化时更新。

@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory=$true)][string]$CoursePlanPath,
+    [string]$PresentationPlanPath,
     [Parameter(Mandatory=$true)][string]$SourceMapPath,
     [Parameter(Mandatory=$true)][string]$C1BPreparationReceiptPath,
     [Parameter(Mandatory=$true)][string]$QianwenTextScript,
@@ -15,6 +16,10 @@ param(
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+
+$presentationResolver=Join-Path $PSScriptRoot 'resolve-mba-course-presentation.ps1'
+if(-not(Test-Path -LiteralPath $presentationResolver -PathType Leaf)){throw "Presentation resolver not found: $presentationResolver"}
+. $presentationResolver
 
 if (-not (Test-Path -LiteralPath $DigestGrouper -PathType Leaf)) {
     throw "Digest grouper not found: $DigestGrouper"
@@ -238,6 +243,8 @@ $plan = Get-Content -LiteralPath $planPath -Raw -Encoding utf8 | ConvertFrom-Jso
 $sourceMap = Get-Content -LiteralPath $mapPath -Raw -Encoding utf8 | ConvertFrom-Json
 $preparation = Get-Content -LiteralPath $preparationPath -Raw -Encoding utf8 | ConvertFrom-Json
 if ($plan.schema -ne 'babata.mba-course-c2b-plan/v1') { throw 'Unsupported course plan schema' }
+$presentation=Resolve-MbaCoursePresentation -CoursePlan $plan -CoursePlanPath $planPath -PresentationPlanPath $PresentationPlanPath -PresentationCheckerPath (Join-Path $PSScriptRoot 'check-mba-course-presentation-plan.ps1')
+$chapters=@($presentation.chapters);$courseMap=$presentation.course_map
 if ($sourceMap.course -cne $plan.course) { throw 'Course plan and source map course mismatch' }
 $expected = [int]$plan.expected_modules
 if ($preparation.schema -ne 'babata.mba-course-c1b-preparation/v1' -or $preparation.course -cne $plan.course -or
@@ -252,15 +259,15 @@ if ($items.Count -ne $expected -or @($items.module_id | Sort-Object -Unique).Cou
 }
 
 $chapterByModule = @{}
-$chapterIds = @($plan.chapters.id | ForEach-Object { [string]$_ })
-$chapterNotes = @($plan.chapters.note | ForEach-Object { [string]$_ })
-$chapterTitles = @($plan.chapters.title | ForEach-Object { [string]$_ })
+$chapterIds = @($chapters.id | ForEach-Object { [string]$_ })
+$chapterNotes = @($chapters.note | ForEach-Object { [string]$_ })
+$chapterTitles = @($chapters.title | ForEach-Object { [string]$_ })
 if (@($chapterIds | Sort-Object -Unique).Count -ne $chapterIds.Count -or
     @($chapterNotes | Sort-Object -Unique).Count -ne $chapterNotes.Count -or
     @($chapterTitles | Sort-Object -Unique).Count -ne $chapterTitles.Count) {
     throw 'Chapter id, note and title must each be unique'
 }
-foreach ($chapter in @($plan.chapters)) {
+foreach ($chapter in $chapters) {
     if ([string]$chapter.id -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]*$') { throw "Unsafe chapter id: $($chapter.id)" }
     Assert-SafeBasename ([string]$chapter.note) 'chapter note'
     Assert-SafeBasename ([string]$chapter.title) 'chapter title'
@@ -273,22 +280,27 @@ foreach ($chapter in @($plan.chapters)) {
 $missing = @($items | Where-Object { -not $chapterByModule.ContainsKey([string]$_.module_id) })
 if ($chapterByModule.Count -ne $expected -or $missing.Count) { throw 'Chapter plan must partition every source module exactly once' }
 
-$mappedNotes = @($plan.course_map.domains.nodes.note | ForEach-Object { [string]$_ })
+$mappedNotes = @($courseMap.domains.nodes.note | ForEach-Object { [string]$_ })
 if ($mappedNotes.Count -ne $chapterNotes.Count -or @($mappedNotes | Sort-Object -Unique).Count -ne $mappedNotes.Count -or
     @($chapterNotes | Where-Object { $mappedNotes -notcontains $_ }).Count) {
     throw 'Course-map domains must cover every chapter note exactly once'
 }
-$learningNotes = @($plan.course_map.learning.nodes.note | ForEach-Object { [string]$_ })
+$learningNotes = @($presentation.learning_notes)
 if ($learningNotes.Count -ne 4 -or @($learningNotes | Sort-Object -Unique).Count -ne 4 -or
     $learningNotes -notcontains '视觉证据索引') {
     throw 'Course-map learning layer must contain three unique numbered learning documents and 视觉证据索引'
 }
 $aidNotes = @()
-foreach ($prefix in @('09-','10-','11-')) {
-    $matches = @($learningNotes | Where-Object { $_.StartsWith($prefix,[StringComparison]::Ordinal) })
-    if ($matches.Count -ne 1) { throw "Course-map learning layer requires exactly one $prefix document" }
-    Assert-SafeBasename $matches[0] 'learning document'
-    $aidNotes += $matches[0]
+if([string]$presentation.profile -ceq 'semantic-obsidian/v2'){
+    $aidNotes=@($learningNotes[0..2])
+    foreach($note in $aidNotes){Assert-SafeBasename $note 'learning document'}
+}else{
+    foreach ($prefix in @('09-','10-','11-')) {
+        $matches = @($learningNotes | Where-Object { $_.StartsWith($prefix,[StringComparison]::Ordinal) })
+        if ($matches.Count -ne 1) { throw "Course-map learning layer requires exactly one $prefix document" }
+        Assert-SafeBasename $matches[0] 'learning document'
+        $aidNotes += $matches[0]
+    }
 }
 
 $sourceRows = @()
@@ -348,7 +360,7 @@ $system = @"
 "@
 $runs = @()
 $chapterFiles = @()
-foreach ($chapter in @($plan.chapters)) {
+foreach ($chapter in $chapters) {
     $chapterIds = @($chapter.modules | ForEach-Object { [string]$_ })
     $chapterItems = @($items | Where-Object { $chapterIds -contains [string]$_.module_id })
     $segments = @()
@@ -423,9 +435,9 @@ $corpus = foreach ($path in $chapterFiles) {
     "`n===== $(Split-Path -LeafBase $path) =====`n" + $chapterBody
 }
 $corpusText = $corpus -join "`n"
-$chapterLinks = @($plan.chapters | ForEach-Object { "- [[$([string]$_.note)]]" }) -join "`n"
+$chapterLinks = @($chapters | ForEach-Object { "- [[$([string]$_.note)]]" }) -join "`n"
 $overviewPrompt = @"
-基于下列 $($plan.chapters.Count) 章正文编写整门《$($plan.short_name)》课程总览。使用：
+基于下列 $($chapters.Count) 个学习单元正文编写整门《$($plan.short_name)》课程总览。使用：
 # $($plan.short_name) 课程总览
 ## 课程主线
 ## 章节导航
@@ -443,18 +455,18 @@ $corpusText
 $overview = Invoke-Qianwen '00-课程总览' $system $overviewPrompt 3500
 Set-Content -LiteralPath (Join-Path $generatedRoot '00-课程总览.md') -Value $overview -Encoding utf8
 
-$chapterSectionTitles = @($plan.chapters.title | ForEach-Object { [string]$_ })
+$chapterSectionTitles = @($chapters.title | ForEach-Object { [string]$_ })
 $aidSpecs = @(
-    [ordered]@{id=$aidNotes[0];title=($aidNotes[0] -replace '^09-','');sections=@('工具选择总览')+$chapterSectionTitles+@('使用条件与易错点');minimum=3500},
-    [ordered]@{id=$aidNotes[1];title=($aidNotes[1] -replace '^10-','');sections=@('练习说明')+$chapterSectionTitles+@('参考思路');minimum=4000},
-    [ordered]@{id=$aidNotes[2];title=($aidNotes[2] -replace '^11-','');sections=@('知识检查','公式检查','情境判断','综合自测','答案与解释','薄弱点回链');minimum=4000}
+    [ordered]@{id=$aidNotes[0];title=($aidNotes[0] -replace '^(09-|学习支持-)','');sections=@('工具选择总览')+$chapterSectionTitles+@('使用条件与易错点');minimum=3500},
+    [ordered]@{id=$aidNotes[1];title=($aidNotes[1] -replace '^(10-|学习支持-)','');sections=@('练习说明')+$chapterSectionTitles+@('参考思路');minimum=4000},
+    [ordered]@{id=$aidNotes[2];title=($aidNotes[2] -replace '^(11-|学习支持-)','');sections=@('知识检查','公式检查','情境判断','综合自测','答案与解释','薄弱点回链');minimum=4000}
 )
 foreach ($spec in $aidSpecs) {
     $headings = @($spec.sections | ForEach-Object { "## $_" }) -join "`n"
     $prompt = @"
-基于下列 $($plan.chapters.Count) 章正文编写《$($spec.title)》。使用唯一 H1“# $($spec.title)”并严格包含这些二级标题：
+基于下列 $($chapters.Count) 个学习单元正文编写《$($spec.title)》。使用唯一 H1“# $($spec.title)”并严格包含这些二级标题：
 $headings
-内容必须覆盖全部 $($plan.chapters.Count) 章并用章节 Wiki 链接回链。计算题给出步骤、单位和适用条件；答案不得脱离课程证据。不要写来源索引、M-编号或其他工程 ID。至少 $($spec.minimum) 字符。
+内容必须覆盖全部 $($chapters.Count) 个学习单元并用 Wiki 链接回链。计算题给出步骤、单位和适用条件；答案不得脱离课程证据。不要写来源索引、M-编号或其他工程 ID。至少 $($spec.minimum) 字符。
 
 $corpusText
 "@
@@ -463,7 +475,7 @@ $corpusText
     Set-Content -LiteralPath $path -Value $text -Encoding utf8
 }
 
-$expectedDocs = @('00-课程总览') + @($plan.chapters.note) + $aidNotes
+$expectedDocs = @('00-课程总览') + @($chapters.note) + $aidNotes
 foreach ($name in $expectedDocs) {
     $path = Join-Path $generatedRoot ($name + '.md')
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Missing learning document: $name" }
@@ -476,6 +488,9 @@ $manifest = [ordered]@{
     status='candidate'
     course_plan=$planPath
     course_plan_sha256=Hash $planPath
+    presentation_plan=$presentation.plan_path
+    presentation_plan_sha256=$presentation.plan_sha256
+    template_profile=$presentation.profile
     c1b_preparation_receipt=$preparationPath
     c1b_preparation_receipt_sha256=Hash $preparationPath
     source_map=$mapPath
@@ -483,11 +498,11 @@ $manifest = [ordered]@{
     expected_modules=$expected
     complete_source_notes=@(Get-ChildItem -LiteralPath $sourceRoot -File -Filter '*.md').Count
     source_notes=$sourceRows
-    chapter_documents=@($plan.chapters).Count
+    chapter_documents=$chapters.Count
     learning_documents=$expectedDocs.Count
     model=$Model
     runs=$runs
     generated_files=@(Get-ChildItem -LiteralPath $generatedRoot -File | Sort-Object Name | ForEach-Object { [ordered]@{name=$_.Name;sha256=Hash $_.FullName;chars=(Get-Content -LiteralPath $_.FullName -Raw -Encoding utf8).Length} })
 }
 $manifest | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath (Join-Path $root 'manifest.json') -Encoding utf8
-Write-Output "staged=$root course=$($plan.course) sources=$expected chapters=$(@($plan.chapters).Count) learning_docs=$($expectedDocs.Count) model_calls=$($runs.Count)"
+Write-Output "staged=$root course=$($plan.course) sources=$expected units=$($chapters.Count) learning_docs=$($expectedDocs.Count) model_calls=$($runs.Count) profile=$($presentation.profile)"
