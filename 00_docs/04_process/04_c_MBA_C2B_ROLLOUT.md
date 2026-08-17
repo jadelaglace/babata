@@ -93,7 +93,7 @@ hash-verified publisher
    gate 与唯一 live 全部完成，状态保持 `pending_user_acceptance`。
 
 课程批次使用 `05_scripts/invoke-babata-execution-round.ps1` 及 Git 外
-`babata.execution-round-plan/v1`/`babata.execution-round-ledger/v1` 留证；课程 plan、source map、
+`babata.execution-round-plan/v1`/`babata.execution-round-ledger/v1` 留证；课程内容 plan、presentation plan、source map、
 C1B/knowledge ledger、阶段脚本和其他显式输入必须纳入冻结指纹。round runner 不替代课程 builder、
 registrar、checker、publisher 或 closure verifier。
 
@@ -113,6 +113,11 @@ registrar、checker、publisher 或 closure verifier。
 3. 课程总览、章节导航、公式/工具、案例练习和复习问题服务真实学习；
 4. 来源/控制面/模型/存储信息进入 manifest/report，不挤占知识正文；
 5. 媒体只挂到确实改变理解的章节，链接无悬空且不重复追加。
+6. 用 `babata.mba-course-presentation-plan/v2` 显式选择 `flat` 或 `sectioned`：没有真实上层主题时
+   平铺 unit；存在稳定主题阶段、大量小节或长课程时使用 section -> unit。每个 source module 恰好
+   绑定一个 unit，但 module 不自动等于 unit。
+7. 课程总览和 learning support 与 outline 分层；决策工具、案例练习、复习与自测、视觉证据索引
+   使用语义名称并由 plan 排序，不再占用 `09/10/11` 章节编号。
 
 ### 5.4 知识宇宙登记
 
@@ -131,12 +136,16 @@ MBA lens 和独立基石强度/置信度语义；当前实现覆盖与缺口只�
 
 ### 5.5 Profile materialization
 
-1. 消费 accepted `semantic-obsidian/v1` 或后继明确版本；
+1. 新呈现消费 accepted `semantic-obsidian/v2`；历史 v1 只作为不可变证据或兼容迁移输入；
 2. 生成 package-owned Mermaid 源、同源 PNG、导航和 manifest；
 3. 课程图采用清楚主分类轴与用户接受的右向思维导图语言；
 4. 图中包含可紧急复习的正文有据知识骨架，不只是目录；
 5. 原生 internal-link labels 精确对应当前 package 的 Markdown 目标；
 6. Mermaid 为唯一默认展开响应式主图，PNG 默认折叠回退。
+7. builder/materializer/checker 都读取同一 presentation plan；目录、文件名前缀和 source module
+   数量均不得替代 plan 的 outline。
+8. 兼容迁移逐字复用既有章节/学习正文和媒体，只改授权名称、导航、内链和 manifest/hash，并写
+   migration receipt；不运行 C1B、知识正文生成、knowledge registrar 或 closure verifier。
 
 ### 5.6 全新重建和预发布验证
 

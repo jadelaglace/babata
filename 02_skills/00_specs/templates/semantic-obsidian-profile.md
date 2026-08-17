@@ -2,12 +2,12 @@
 
 <!-- DOC-AUTHORITY-BOUNDARY: reusable-output-profile -->
 
-<!-- Profile status: accepted; reusable for independently validated MBA courses. -->
+<!-- Profile status: accepted; v2 current for new MBA presentation, v1 retained as historical evidence. -->
 <!-- C2B-DOCS-FIRST-GATE / C1B-FORMAL-HANDOFF-GATE / C2B-KNOWLEDGE-UNIVERSE-GATE / C2B-PACKAGE-OWNED-COURSE-MAP / C2B-MECE-COURSE-MAP-GATE / C2B-CRASH-COURSE-MAP-GATE / C2B-MODERN-VISUAL-MAP-GATE / C2B-RIGHT-GROWING-MINDMAP-GATE / C2B-RESPONSIVE-MAP-GATE -->
 
 ## Contract
 
-- Profile: `semantic-obsidian/v1`
+- Profile: `semantic-obsidian/v2`
 - Input: provider-neutral C2B package, its manifest, a formal C1B registration ledger, and a formal
   knowledge-universe registration ledger; never read external originals directly.
 - Output: a rebuildable Obsidian Vault containing Markdown notes and only the C1B/C2B media assets
@@ -22,6 +22,10 @@ template version, package and manifest references. The Markdown body contains on
 conclusions, concepts, formulas, diagrams, cases, questions and relations.
 
 ## Materialization rules
+
+0. Require `babata.mba-course-presentation-plan/v2`. Render `outline.mode=flat` as ordered units and
+   `outline.mode=sectioned` as ordered sections containing ordered units. Each source module appears in exactly
+   one unit. The plan, not the directory or filename prefix, owns navigation and order.
 
 1. Organize notes by semantic nodes, course themes and relations; do not recreate an external website
    directory as the knowledge hierarchy.
@@ -74,6 +78,12 @@ conclusions, concepts, formulas, diagrams, cases, questions and relations.
     controlled `max-width`, and the exact expected `internal-link` labels. Keep the package-owned PNG
     at a `760px` embed inside a default-collapsed `[!info]-` callout for print, offline and renderer
     fallback. Fit-to-pane does not imply built-in Mermaid zoom or pan.
+18. Keep learning support outside the outline number space. Use the profile filenames
+    `学习支持-<课程工具箱>.md`, `学习支持-<课程案例练习>.md`, `学习支持-复习与自测.md`, and
+    `视觉证据索引.md`, with the course-specific labels supplied by the plan. Reject new `09-/10-/11-` names.
+19. A v1-to-v2 presentation migration may rename only the declared learning-support files and update their
+    references, index, Mermaid source/rendering and manifest. It must preserve every other Markdown/media byte,
+    record old/new plan and manifest hashes plus an exact rename map, and leave acceptance/closure unchanged.
 
 ## Publish gate
 
@@ -87,7 +97,8 @@ conclusions, concepts, formulas, diagrams, cases, questions and relations.
 
 ## Reference evidence
 
-Finance is the accepted reference implementation that established this profile. Its current formal package,
+Finance is the accepted reference implementation that established v1. The v2 profile supersedes only its
+navigation/learning-support naming contract. Its current formal package,
 C1B/media/semantic counts, live URI, accepted/rejected history and closure receipt belong exclusively to
 `00_docs/04_process/04_b_USAGE_STATUS.md` and Git-external runtime evidence. Reusing this profile does not
 transfer finance completion status to another course; each course independently passes its declared input,

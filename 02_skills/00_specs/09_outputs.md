@@ -3,7 +3,7 @@
 Governance markers: `C2B-DOCS-FIRST-GATE`, `C2B-KNOWLEDGE-UNIVERSE-GATE`,
 `C2B-PACKAGE-OWNED-COURSE-MAP`, `C2B-MECE-COURSE-MAP-GATE`,
 `C2B-CRASH-COURSE-MAP-GATE`, `C2B-MODERN-VISUAL-MAP-GATE`,
-`C2B-RIGHT-GROWING-MINDMAP-GATE`.
+`C2B-RIGHT-GROWING-MINDMAP-GATE`, `C2B-COURSE-OUTLINE-GATE`.
 
 <!-- DOC-AUTHORITY-BOUNDARY: output-spec -->
 
@@ -37,15 +37,25 @@ formal registration or publication.
   knowledge-universe ledger. `05_scripts/render-finance-course-map.ps1` writes Mermaid
   source and PNG into the package; `05_scripts/publish-finance-c2b-live.ps1` publishes only an
   `accepted_benchmark / registered` package with complete manifest hashes and an accepted profile.
-- Successor MBA universe-registration contract (adopted, not yet implemented or enabled for new formal
-  registration): a Git-external course plan supplies the distinct course identity/version,
+- Successor MBA universe-registration contract (adopted; core writer and register/show CLI implemented,
+  activation evidenced per course in `DOC-USAGE`): a Git-external immutable course definition supplies the distinct course identity/version,
   complete denominator, mutually exclusive course-local chapter mapping, typed `covers` relations to stable
   `Branch` identities, complete map-node non-parent typed relations and the
-  intended multi-map assignment set, MBA lens membership, course-map
-  domains, and one live export path. It requires a successor plan schema, core course/typed-relation contract,
-  registrar, checker and compatible closure verifier to pass their own AC/TC before activation. Concrete course
+  intended multi-map assignment set and MBA lens membership. The core writer registers and reads back the complete
+  definition atomically; presentation plans and Obsidian do not own these relations. Concrete course
   names, counts, module IDs, model usage, paths, and acceptance remain in the run plan/ledgers and usage status,
   not this reusable contract.
+- `babata.mba-course-presentation-plan/v2` is the sole new course-navigation input. Its `outline.mode` is
+  `flat` with ordered units or `sectioned` with ordered sections containing units. Every unit has a stable id,
+  note, title and one-or-more `source_modules`; the complete module denominator appears exactly once. Source
+  modules are evidence bindings, not learner lessons. `learning_support` is a separate ordered set of semantic
+  slots (`decision_tools`, `case_practice`, `review_self_test`, `evidence_index`) with profile-owned filenames.
+  New plans reject numbered `09-/10-/11-` learning-support filenames and never infer order from disk paths.
+- `semantic-obsidian/v2` materializes the v2 outline without changing C2B content semantics. Historical
+  `semantic-obsidian/v1` and `babata.mba-course-c2b-plan/v1` remain evidence only. A controlled v1-to-v2
+  presentation migration may copy existing package content, rename learning-support notes, update index/Mermaid
+  internal links and rebuild manifest hashes. Its receipt proves all other Markdown/media bytes unchanged and
+  preserves course acceptance/closure; it does not invoke content generation, C1B, knowledge registration or closure.
 - Historical MBA rollout path: `babata.mba-course-c2b-plan/v1` and the current generic scripts remain evidence
   for accepted C1B/content/profile/package/live instances, but their singular foundation/discipline/branch
   registration is not conformant for new formal registrations. Compatibility work must preserve those accepted

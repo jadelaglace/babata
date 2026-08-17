@@ -32,6 +32,34 @@ fn sha256_hex(bytes: &[u8]) -> String {
     format!("{:x}", sha2::Sha256::digest(bytes))
 }
 
+#[test]
+fn knowledge_course_commands_are_exposed_and_validate_identity() {
+    let temp = tempdir().unwrap();
+    let help = babata(&temp)
+        .args(["knowledge", "--help"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let help = String::from_utf8(help).unwrap();
+    assert!(help.contains("register-course"));
+    assert!(help.contains("show-course"));
+
+    babata(&temp)
+        .args([
+            "--json",
+            "knowledge",
+            "show-course",
+            "--course",
+            "fixture-course",
+            "--version",
+            "0",
+        ])
+        .assert()
+        .failure();
+}
+
 fn capture_file(temp: &tempfile::TempDir, path: &std::path::Path) -> Value {
     let output = babata(temp)
         .args([

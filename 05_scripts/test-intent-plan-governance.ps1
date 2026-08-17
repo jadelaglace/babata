@@ -179,7 +179,7 @@ try {
     }
     Assert-CheckerFails 'recovery-index-misses-latest-phrase' 'fast recovery index does not contain' {
         param($caseRoot)
-        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| 浅层强制钩子、根目录 AGENTS/README、Docs 去冗余、先 PR 后干净分支、恢复入口 |' '| 深层入口、根目录 AGENTS/README、Docs 去冗余、先 PR 后干净分支、恢复入口 |'
+        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| 先做第二个解、MBA 全按第一个解、Obsidian 模板更新、Goal 不能恢复、统一看 |' '| 结构问题、MBA 全按第一个解、Obsidian 模板更新、Goal 不能恢复、统一看 |'
     }
     Assert-CheckerFails 'recovery-index-uses-compound-status' 'recovery index uses an invalid base status' {
         param($caseRoot)
@@ -187,7 +187,7 @@ try {
     }
     Assert-CheckerFails 'recovery-duplicates-retrieval-phrase' 'retrieval phrases must be unique' {
         param($caseRoot)
-        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '极简检索词：`浅层强制钩子`；`根目录 AGENTS/README`；`Docs 去冗余`；`先 PR 后干净分支`；`恢复入口`。' '极简检索词：`浅层强制钩子`；`浅层强制钩子`；`Docs 去冗余`；`先 PR 后干净分支`；`恢复入口`。'
+        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '极简检索词：`先做第二个解`；`MBA 全按第一个解`；`Obsidian 模板更新`；`Goal 不能恢复`；`统一看`。' '极简检索词：`先做第二个解`；`先做第二个解`；`Obsidian 模板更新`；`Goal 不能恢复`；`统一看`。'
     }
     Assert-CheckerFails 'recovery-terminal-capture-reappears-in-active-plan' 'terminal recovery capture still appears as an active-plan source obligation' {
         param($caseRoot)
@@ -238,7 +238,7 @@ try {
     }
     Assert-CheckerFails 'recovery-index-status-diverges' 'status does not match its fast-index row' {
         param($caseRoot)
-        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| 浅层强制钩子、根目录 AGENTS/README、Docs 去冗余、先 PR 后干净分支、恢复入口 | 2026-08-15 23:43 | `resolved` |' '| 浅层强制钩子、根目录 AGENTS/README、Docs 去冗余、先 PR 后干净分支、恢复入口 | 2026-08-15 23:43 | `active` |'
+        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| 先做第二个解、MBA 全按第一个解、Obsidian 模板更新、Goal 不能恢复、统一看 | 2026-08-17 | `resolved` |' '| 先做第二个解、MBA 全按第一个解、Obsidian 模板更新、Goal 不能恢复、统一看 | 2026-08-17 | `active` |'
     }
     Assert-CheckerFails 'recovery-context-marker-loses-attribution' 'malformed attributed-context marker' {
         param($caseRoot)

@@ -116,7 +116,7 @@ Assert-Contains $profile 'These display domains are not ontology `Branch`' 'disp
 Assert-Contains $outputs 'Display domains are not universe ontology branches' 'display-domain/ontology separation in output contract'
 
 # The architecture owns stable successor semantics; implementation state stays in Usage/output contracts.
-Assert-Contains $outputs 'Successor MBA universe-registration contract (adopted, not yet implemented or enabled for new formal' 'successor contract implementation status'
+Assert-Contains $outputs 'Successor MBA universe-registration contract (adopted; core writer and register/show CLI implemented,' 'successor contract implementation status'
 Assert-Contains $architecture '本设计基线只定义 P6 稳定语义、writer 和数据关系，不维护实施切片、当前缺口或完成状态' 'architecture current-status ownership boundary'
 Assert-Contains $architecture '当前实现覆盖与缺口只查 `DOC-USAGE`' 'architecture Usage routing'
 Assert-Contains $architecture '`intersects_with`、`draws_from`、`applies_to`、`prerequisite_of` 等跨学科语义进入类型化关系' 'typed relation semantics in architecture'
@@ -124,11 +124,12 @@ Assert-NotMatches $architecture '(?m)^(?!.*(?:不维护|只查|不是|不得)).*
 Assert-Contains $rollout '任何课程 registrar 合同都必须支持本节的 course/branch 分离、typed `covers`、多重 assignment' 'stable successor registrar rollout contract'
 Assert-Contains $outputs 'complete map-node non-parent typed relations' 'map-node typed-relation successor output contract'
 Assert-Contains $process '历史 baseline 退出' 'versioned P6 baseline closure'
-Assert-Contains $process '作为 P8.9 当前交付缺口' 'ontology successor delivery phase'
+Assert-Contains $process '由 P8.9 单独交付和追踪' 'ontology successor delivery phase'
 Assert-Contains $usage '| P6 | 历史 baseline 已完成 |' 'honest P6 historical status'
-Assert-Contains $usage 'map-node 非父边类型化关系、course/branch 分离' 'complete P8.9 ontology gap'
-Assert-Contains $usage '使用历史单路径 `意识 -> 管理学 -> 财务管理`，不证明当前已采用的 course/branch 分离' 'finance acceptance/ontology separation'
-Assert-Contains $usage '使用历史单路径 `意识 -> 管理学 -> 供应链管理`，不证明当前已采用的 course/branch 分离' 'supply-chain acceptance/ontology separation'
+Assert-Contains $usage '财务管理、全球供应链已完成知识治理 successor 登记' 'P8.9 successor usage status'
+Assert-Contains $usage '13/13 MBA C2B 呈现 v2 迁移完成' 'P8.9 presentation rollout status'
+Assert-Contains $usage '财务管理的 successor' 'finance successor registration status'
+Assert-Contains $usage '全球供应链的 successor' 'supply-chain successor registration status'
 
 # The reusable output contract owns the historical-v1 compatibility boundary.
 Assert-Contains $outputs 'Historical MBA rollout path: `babata.mba-course-c2b-plan/v1` and the current generic scripts' 'historical registrar identification'

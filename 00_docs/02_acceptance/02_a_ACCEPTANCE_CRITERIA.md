@@ -153,6 +153,11 @@ C1B/C2B 与 Obsidian profile 还必须满足以下跨文档门禁：
 - `C2B-MODERN-VISUAL-MAP-GATE`、`C2B-RIGHT-GROWING-MINDMAP-GATE`：视觉遵循 accepted profile，
   不因样式牺牲内容或链接。
 - `C2B-RESPONSIVE-MAP-GATE`：只默认展开响应窗格的 Mermaid 主图；PNG 为折叠回退。
+- `C2B-COURSE-OUTLINE-GATE`：课程大纲由版本化 presentation plan 显式声明为 `flat` 或
+  `sectioned`；每个来源 module 恰好绑定到一个 unit，unit 数量不受学习支持文件名限制；课程总览、
+  决策工具、案例练习、复习与自测和视觉证据索引位于独立 learning-support 区并按 plan 排序。
+- v1 呈现迁移到后继 profile 时，正文与媒体逐字/hash 保持，只有授权的文件名、导航、内链和
+  manifest/hash 改变；C1/C1B、semantic IDs、知识关系、acceptance 和 closure 状态不变且可回读。
 - `OBSIDIAN-HUMAN-VIEW-BOUNDARY`：用户要求打开时只启动课程 manifest/usage status 登记的唯一
   live URI，不代替用户查看；课程可仍处于 `pending_user_acceptance`。
 

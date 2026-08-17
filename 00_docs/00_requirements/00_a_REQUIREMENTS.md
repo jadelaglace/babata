@@ -379,6 +379,13 @@ Obsidian frontmatter、目录或 sidecar 冒充正式归属。课程 Mermaid
 不得自行补写或渲染。课程 index 只服务本课程，可以为了学习可读性使用一个局部 MECE 主轴，
 但不等同于、也不静默修改或压扁宇宙级大 Index 及其交叉地图。
 
+课程的学习导航结构必须由版本化 course presentation plan 明确声明，不能从磁盘目录、文件名前缀
+或来源 module 数量反推。内容较短且没有稳定上层分组时可以平铺 unit；内容很多、存在真实主题阶段
+或可能达到数十乃至上百节时使用 section -> unit 两级大纲。每个 unit 可以绑定一个或多个来源
+module，来源 module 只是证据/资源绑定，不自动等于一节课。课程总览、决策工具、案例练习、复习
+自测和视觉证据索引属于独立的 learning support，不占章节编号，也不得形成“最多八章”之类的
+隐性上限。展示排序由 plan 决定，文件名只负责稳定寻址。
+
 `C2B-DOCS-FIRST-GATE`：新增或改变 C1B/C2B、知识宇宙归属、课程脑图或 Obsidian 输出能力时，
 必须沿 `DOC-INDEX` 定义的唯一权威顺序 review，并在真实语义受影响时同步对应的 PRD、AC、
 architecture/spec/profile、process/TC，再进入 implementation、formal registration/publish 和 usage。
@@ -394,6 +401,9 @@ architecture/spec/profile、process/TC，再进入 implementation、formal regis
 单根右向思维导图语言，层级、分色、曲线和文字清晰，不用卡片堆叠掩盖内容。
 `C2B-RESPONSIVE-MAP-GATE`：课程 Index 只默认展开一份可点击的 Mermaid 主图，并随 Obsidian
 窗格自适应；同源 PNG 保留为默认折叠的打印/离线回退。响应式不冒充图内 zoom/pan。
+`C2B-COURSE-OUTLINE-GATE`：课程 plan 必须显式采用 `flat` 或 `sectioned` 大纲并完整绑定来源
+module；学习支持使用独立语义名称，不得占用课程 unit 的数字命名空间。迁移呈现层不得改写正文
+判断、C1/C1B 来源绑定、知识登记或课程验收/关闭状态。
 精确 selector、尺寸、阈值、节点数量和 profile-specific 规则属于 output profile 与 TC，
 不在需求中重复维护。
 

@@ -24,6 +24,8 @@ $requiredFiles = @(
     '05_scripts\select-mba-course-c1-candidate.ps1',
     '05_scripts\build-mba-course-learning-docs.ps1',
     '05_scripts\group-mba-learning-digests.ps1',
+    '05_scripts\resolve-mba-course-presentation.ps1',
+    '05_scripts\check-mba-course-presentation-plan.ps1',
     '05_scripts\register-mba-course-c1b-handoff.ps1',
     '05_scripts\register-mba-course-c2b-knowledge.ps1',
     '05_scripts\materialize-mba-course-c2b.ps1',

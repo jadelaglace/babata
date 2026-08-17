@@ -1,12 +1,17 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory=$true)][string]$CoursePlanPath,
+    [string]$PresentationPlanPath,
     [Parameter(Mandatory=$true)][string]$PackageRoot,
     [string]$ManifestPath
 )
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+
+$presentationResolver=Join-Path $PSScriptRoot 'resolve-mba-course-presentation.ps1'
+if(-not(Test-Path -LiteralPath $presentationResolver -PathType Leaf)){throw "Presentation resolver not found: $presentationResolver"}
+. $presentationResolver
 
 function Get-Hash([string]$Path) {
     (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -154,6 +159,8 @@ if ((Test-IsWithin $planPath $package) -or (Test-IsWithin $manifestPathResolved 
 $plan = Get-Content -LiteralPath $planPath -Raw -Encoding utf8 | ConvertFrom-Json
 $manifest = Get-Content -LiteralPath $manifestPathResolved -Raw -Encoding utf8 | ConvertFrom-Json
 if ($plan.schema -cne 'babata.mba-course-c2b-plan/v1') { throw 'Unsupported MBA course plan schema' }
+$presentation=Resolve-MbaCoursePresentation -CoursePlan $plan -CoursePlanPath $planPath -PresentationPlanPath $PresentationPlanPath -PresentationCheckerPath (Join-Path $PSScriptRoot 'check-mba-course-presentation-plan.ps1')
+$chapters=@($presentation.chapters);$courseMapPlan=$presentation.course_map;$profile=[string]$presentation.profile
 if ([int]$plan.expected_modules -lt 1 -or @($plan.chapters).Count -lt 1) { throw 'Course plan must declare a positive denominator and at least one chapter' }
 if ([string]$plan.output_status -cne 'pending_user_acceptance') { throw 'Course plan must remain pending_user_acceptance before direct user approval' }
 if ([string]$manifest.status -eq 'accepted_benchmark') { throw 'Generic MBA checker rejects the finance-only accepted_benchmark status' }
@@ -163,14 +170,18 @@ if ([string]$manifest.course -cne [string]$plan.course -or [string]$manifest.cou
 }
 if ([string]$plan.course_key -notmatch '^[a-z0-9]+(?:-[a-z0-9]+)*$') { throw 'course_key must be a lowercase ASCII slug' }
 if ([string]$manifest.course_plan_sha256 -cne (Get-Hash $planPath)) { throw 'Manifest course-plan hash mismatch' }
+if($profile -ceq 'semantic-obsidian/v2' -and
+   ([string]$manifest.presentation_plan_sha256 -cne [string]$presentation.plan_sha256 -or [string]$manifest.outline_mode -cne [string]$presentation.outline_mode)){
+    throw 'Manifest does not bind the v2 presentation plan and outline mode'
+}
 if ([string]$manifest.formal_registration -cne 'registered' -or
     [string]$manifest.c1b_registration.status -cne 'registered' -or
     [string]$manifest.knowledge_universe.status -cne 'registered') {
     throw 'Package requires formal C1B and knowledge-universe registration'
 }
-if ([string]$manifest.obsidian_template.profile -cne 'semantic-obsidian/v1' -or
+if ([string]$manifest.obsidian_template.profile -cne $profile -or
     [string]$manifest.obsidian_template.status -cne 'accepted') {
-    throw 'Package requires the accepted semantic-obsidian/v1 profile'
+    throw "Package requires the accepted $profile profile"
 }
 Assert-ExternalHash ([string]$manifest.source_map) ([string]$manifest.source_map_sha256) 'source map'
 Assert-ExternalHash ([string]$manifest.c1b_registration.ledger) ([string]$manifest.c1b_ledger_sha256) 'C1B registration ledger'
@@ -186,8 +197,10 @@ foreach ($externalPath in @(
 }
 
 $expectedModules=[int]$plan.expected_modules
-$planModuleIds=@($plan.chapters|ForEach-Object{@($_.modules)}|ForEach-Object{[string]$_})
+$legacyModuleIds=@($plan.chapters|ForEach-Object{@($_.modules)}|ForEach-Object{[string]$_})
+$planModuleIds=@($chapters|ForEach-Object{@($_.modules)}|ForEach-Object{[string]$_})
 if($planModuleIds.Count -ne $expectedModules -or @($planModuleIds|Sort-Object -Unique).Count -ne $expectedModules){throw 'Course-plan chapter mapping is not an exact unique module denominator'}
+Assert-ExactModuleIds $planModuleIds @($legacyModuleIds) 'presentation plan'
 Assert-ExactModuleIds @($manifest.module_ids) $planModuleIds 'package manifest'
 $sourceMap=Get-Content -LiteralPath ([string]$manifest.source_map) -Raw -Encoding utf8|ConvertFrom-Json
 $c1bLedger=Get-Content -LiteralPath ([string]$manifest.c1b_registration.ledger) -Raw -Encoding utf8|ConvertFrom-Json
@@ -204,24 +217,25 @@ if([string]$knowledgeLedger.schema -cne 'babata.mba-course-c2b-knowledge-registr
 if([string]$learningManifest.schema -cne 'babata.mba-course-learning-docs/v1' -or [string]$learningManifest.status -cne 'candidate' -or
     [string]$learningManifest.course -cne [string]$plan.course -or [int]$learningManifest.expected_modules -ne $expectedModules -or
     [string]$learningManifest.course_plan_sha256 -cne (Get-Hash $planPath) -or [string]$learningManifest.source_map_sha256 -cne [string]$manifest.source_map_sha256){throw 'Learning-doc manifest does not bind the plan and source map'}
+if($profile -ceq 'semantic-obsidian/v2' -and ([string]$learningManifest.presentation_plan_sha256 -cne [string]$presentation.plan_sha256 -or [string]$learningManifest.template_profile -cne $profile)){throw 'Learning-doc manifest does not bind the v2 presentation plan'}
 Assert-ExactModuleIds @((Get-SourceMapItems $sourceMap).module_id) $planModuleIds 'source map'
 Assert-ExactModuleIds @($c1bLedger.registrations.module_id) $planModuleIds 'C1B ledger'
 Assert-ExactModuleIds @($knowledgeLedger.modules.module_id) $planModuleIds 'knowledge ledger'
 Assert-ExactModuleIds @($learningManifest.source_notes.module_id) $planModuleIds 'learning manifest'
 
-$planLive = [IO.Path]::GetFullPath([string]$plan.live.path).TrimEnd('\')
+$planLive = [IO.Path]::GetFullPath([string]$presentation.live.path).TrimEnd('\')
 $manifestLive = [IO.Path]::GetFullPath([string]$manifest.publication.live_path).TrimEnd('\')
 if (-not (Test-SamePath $planLive $manifestLive) -or
-    [string]$manifest.publication.vault -cne [string]$plan.live.vault -or
-    [string]$manifest.publication.file -cne [string]$plan.live.file) {
+    [string]$manifest.publication.vault -cne [string]$presentation.live.vault -or
+    [string]$manifest.publication.file -cne [string]$presentation.live.file) {
     throw 'Manifest publication target does not exactly match the course plan'
 }
-$liveFile = [string]$plan.live.file
+$liveFile = [string]$presentation.live.file
 Assert-RelativePath $liveFile 'plan live file'
 if (-not $liveFile.StartsWith('Babata/MBA/',[StringComparison]::Ordinal) -or -not $liveFile.EndsWith('/index.md',[StringComparison]::Ordinal)) {
     throw 'MBA live file must be a course index below Babata/MBA'
 }
-$vaultName = [string]$plan.live.vault
+$vaultName = [string]$presentation.live.vault
 $cursor = Get-Item -LiteralPath (Split-Path $planLive -Parent) -ErrorAction Stop
 while ($null -ne $cursor -and $cursor.Name -cne $vaultName) { $cursor = $cursor.Parent }
 if ($null -eq $cursor) { throw 'Plan live path is not below the named Obsidian vault' }
@@ -270,7 +284,7 @@ $frontmatter = Get-Frontmatter $indexText
 $requiredFrontmatter = [ordered]@{
     course=[string]$plan.course; variant='c2b'; status='pending_user_acceptance';
     formal_registration='registered'; c1b_registration='registered';
-    knowledge_universe_registration='registered'; template_profile='semantic-obsidian/v1'; template_status='accepted'
+    knowledge_universe_registration='registered'; template_profile=$profile; template_status='accepted'
 }
 foreach ($key in $requiredFrontmatter.Keys) {
     if (-not $frontmatter.ContainsKey($key) -or $frontmatter[$key] -cne [string]$requiredFrontmatter[$key]) {
@@ -341,9 +355,9 @@ if ($displayWidth -lt 1 -or $displayWidth -gt 760) { throw 'Course-map PNG displ
 $pngEmbedPattern = '(?m)^> \[!info\]- .*\r?\n> !\[\[' + [regex]::Escape($pngRel) + '\|' + $displayWidth + '\]\]$'
 if ([regex]::Matches($indexText,$pngEmbedPattern).Count -ne 1) { throw 'Course-map PNG must appear exactly once in a default-collapsed info callout' }
 
-$chapterNotes = @($plan.chapters | ForEach-Object { [string]$_.note })
-$mapChapterNotes = @($plan.course_map.domains | ForEach-Object { @($_.nodes) } | ForEach-Object { [string]$_.note })
-$learningNotes = @($plan.course_map.learning.nodes | ForEach-Object { [string]$_.note })
+$chapterNotes = @($chapters | ForEach-Object { [string]$_.note })
+$mapChapterNotes = @($courseMapPlan.domains | ForEach-Object { @($_.nodes) } | ForEach-Object { [string]$_.note })
+$learningNotes = @($presentation.learning_notes)
 if (@($chapterNotes | Sort-Object -Unique).Count -ne $chapterNotes.Count -or
     @($mapChapterNotes | Sort-Object -Unique).Count -ne $mapChapterNotes.Count -or
     (($chapterNotes | Sort-Object) -join "`n") -cne (($mapChapterNotes | Sort-Object) -join "`n")) {
@@ -355,6 +369,24 @@ foreach ($note in $linkedNotes) {
     if (-not $actualByRel.ContainsKey($note + '.md')) { throw "Course-map linked note is missing: $note" }
     if ([regex]::Matches($mmd,[regex]::Escape('["' + $note + '"]')).Count -ne 1) {
         throw "Course-map note label must occur exactly once in Mermaid: $note"
+    }
+}
+if($profile -ceq 'semantic-obsidian/v2'){
+    if(@($actualByRel.Keys|Where-Object{[IO.Path]::GetFileName($_) -match '^(09|10|11)-'}).Count){throw 'v2 package contains numbered learning-support files'}
+    $orderedLinks=@($chapterNotes)+@($learningNotes)
+    $cursor=-1
+    foreach($note in $orderedLinks){
+        $matches=@([regex]::Matches($indexText,[regex]::Escape("[[$note]]")))
+        if($matches.Count -ne 1 -or $matches[0].Index -le $cursor){throw "index.md does not preserve presentation-plan note order: $note"}
+        $cursor=$matches[0].Index
+    }
+    if([string]$presentation.outline_mode -ceq 'sectioned'){
+        $cursor=-1
+        foreach($section in @($presentation.sections)){
+            $matches=@([regex]::Matches($indexText,"(?m)^###\s+"+[regex]::Escape([string]$section.title)+"\s*$"))
+            if($matches.Count -ne 1 -or $matches[0].Index -le $cursor){throw "index.md does not preserve presentation-plan section order: $($section.title)"}
+            $cursor=$matches[0].Index
+        }
     }
 }
 $internalClass = @([regex]::Matches($mmd,'(?m)^\s*class\s+(?<ids>[A-Za-z0-9_,]+)\s+internal-link\s*$'))

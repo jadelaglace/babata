@@ -244,6 +244,13 @@ MBA 当前建模为版本化 `SublibraryDefinition`/lens：它引用并组织跨
 课程内脑图是 C2 学习视图，可以选定一个局部 MECE 主分类轴；宇宙级地图是跨内容、跨学科的
 正式关系图。局部视图的互斥分组不反写或压扁宇宙级多重归属。
 
+Course 的不可变登记由 core writer 接收版本化 definition，一次写入 course identity/version、typed
+`covers`、semantic module membership、带 `primary/secondary/contextual` 和独立 strength/confidence
+的多重 map assignment、typed map relation 与 lens membership，再从同一核心逐项回读。历史单路径
+semantic assignment 保留；兼容迁移只追加后继关系，不删除旧关系，也不重写旧 package、acceptance
+或 closure。机器判断使用明确的 machine provenance、内容依据和方法版本；Obsidian、sidecar 和直接
+SQLite 操作都不是合法 writer。
+
 ### 3.5 新内容、关系、再分析和真实修订
 
 P6 必须根据动作的真实含义写入，不能统一折叠成线性版本：
@@ -386,6 +393,13 @@ Obsidian 只是可选的阅读/展示 builder。对 Obsidian 文件的外部编�
 
 MBA lens 使用该机制聚合多个 discipline、branch、course 和 semantic entry。其定义保存用途、
 纳入/排除与组织规则；物化结果不得创建、删除或改写课程身份、地图父边、内容归属或课程验收状态。
+
+课程呈现结构是独立 C2 合同 `babata.mba-course-presentation-plan/v2`。它保存课程 identity、来源
+plan/manifest 指纹、`flat` 或 `sectioned` outline、按序 unit、每个 unit 的 source-module 绑定和独立
+learning-support 列表。磁盘目录和文件名是 materializer 结果，不是 outline authority；`09/10/11`
+只属于 v1 历史证据。v2 学习支持使用语义文件名，排序取自 plan。presentation migration 只允许复制
+既有 package 后重命名学习支持、更新 index/Mermaid 内链并重算 manifest/hash，必须为正文与媒体
+未变、旧 plan/manifest 指纹、迁移映射和新 package/live 一致性留回执。
 
 输出读取明确范围内的 C0、C1 和人工沉淀，并生成 manifest，至少记录输入版本、builder/
 template/profile 版本、时间、状态、限制和回溯路径。输出可以选择是否包含未审阅建议；
