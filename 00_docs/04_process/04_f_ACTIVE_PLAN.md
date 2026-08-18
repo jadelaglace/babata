@@ -41,10 +41,10 @@ Goal 或本文尚未回写，只补终端状态、证据和清理，不重跑业
 #### AP-20260816-06 terminal record：MBA 全课程逐门闭环
 
 - 来源锚点：2026-08-16 用户明确恢复“mba所有课程闭环，列好了一课一课跑，统一找我确认”；本次与 Goal API 中同名 active Goal 身份一致；当前验收与恢复授权来自用户 2026-08-18 明确指令。
-- Goal 锚点：Goal API 当前为 `active`，目标覆盖 MBA 全部课程逐门独立闭环；既有课程顺序与已关闭状态保持有效，当前仅等待本 PR 终端写回。
+- Goal 锚点：Goal API 已完成，目标覆盖 MBA 全部课程逐门独立闭环；既有课程顺序与已关闭状态保持有效。
 - 状态转换类型：`user-explicit-goal-override`
 - 状态转换依据：用户明确覆盖并确认全部 MBA 内容与视觉已验收，授权恢复 Goal、完成最终 Obsidian 模板收尾并提交 PR。
-- 当前状态：`terminal / final-obsidian-template-and-pr / pending-pr-merge`。
+- 当前状态：`completed / final-obsidian-template-and-pr / terminal-writeback-complete`。
 - 用户目标：MBA 所有课程按既定顺序一课一课执行；所有待做课程都到达 `pending_user_acceptance` 后，只统一请求一次内容与视觉确认。
 - 目标终端：全部 13 门课程分别完成 C1 覆盖、C1B、C2B 内容与知识登记、package/live；用户统一验收后，13 门课程 closure verifier 全部通过并由 DOC-USAGE 记录 `accepted / closed`。
 - 不改变/保护边界：不重跑已关闭课程；不重做执行商务沟通已完成的 `19/19` C1B 准备；单课到达 `pending_user_acceptance` 后不打断用户、不等待逐门确认，直接按顺序推进下一门；先导课仍计为独立一课。
@@ -70,9 +70,9 @@ Goal 或本文尚未回写，只补终端状态、证据和清理，不重跑业
      - [第 3 项短名修正完成 / Agent / 2026-08-18] 已去除 `c2b`、`latest` 字段式后缀，并按用户更正去掉 `25春`、`MBAO/OMBA` 和四位课程号前缀；13 门 live 目录与入口现在只保留 `short_name` 课程本名，不改变内部身份和课程内容。两轮 13/13 live 目录逐文件哈希均保持一致；本轮只做目录/入口短名二次重命名，不重生成正文、不运行 C1B/知识登记/closure、不恢复 Goal。回执：`D:\BabataData\04_runtime\staging\model-workspaces\mba-course-live-display-names-20260818-v2\display-name-migration-receipt.json`。来源：`DFC-20260818-02`。
      - [第 4 项完成 / Agent / 2026-08-18] 最终 Obsidian v2 模板和短展示名已落地；10 门 closure verifier 使用 published migration package 与 live 比对，全部 `status=passed`、hash 差异 0；不重做课程内容或命名迁移。来源：`DFC-20260818-03`。
 - 证据入口：知识治理 successor 回执 `D:\BabataData\04_runtime\staging\model-workspaces\mba-course-governance-successor-20260817-v1\registration-receipt.json`；呈现 v2 回执 `D:\BabataData\04_runtime\staging\model-workspaces\mba-course-presentation-rollout-20260817-v3\rollout-receipt.json`；短名迁移回执 `D:\BabataData\04_runtime\staging\model-workspaces\mba-course-live-display-names-20260818-v2\display-name-migration-receipt.json`。
-- 下一步：PR #183 已包含模板、verifier 迁移映射和终端状态写回；等待 CI 通过后合并并回 `main`。
-- 终态原因：用户已明确完成验收并恢复 Goal；课程闭环和模板收尾已完成，当前只剩 PR 合并。
-- 下一授权/决定：不再恢复课程或重跑内容；PR 合并后将 Goal 标记完成并保持 `CURRENT-ACTIVE: none`。
+- 下一步：无；PR #183 已通过 gates 并合并到 `main`（merge commit `633578f`）。
+- 终态原因：用户已明确完成验收并恢复 Goal；13 门课程 closure、最终 Obsidian 模板、状态写回和 PR 交付均已完成。
+- 下一授权/决定：不再恢复课程或重跑内容；`CURRENT-ACTIVE: none`，等待新的明确目标。
 - 恢复入口：重新恢复边界仍先查 Goal API 和本 Active Plan；仅凭压缩上下文、历史指令或队列不得执行 MBA 课程。
 - 证据入口：执行商务沟通终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-executive-business-communication-20260816-v3\round-ledger.json`；先导课终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-primer-20260816-v8\round-ledger.json`；战略领导力终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-strategic-leadership-20260816-v2\round-ledger.json`；组织行为学终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-organizational-behavior-20260816-v1\round-ledger.json`；数据安全终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-data-security-ethics-risk-20260816-v1\round-ledger.json`；管理经济学终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-managerial-economics-20260816-v1\round-ledger.json`；商业分析成功终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-business-analytics-20260816-v3\round-ledger.json`；全球商业环境终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-global-business-environment-20260816-v1\round-ledger.json`；战略管理终端见 `D:\BabataData\04_runtime\staging\execution-rounds\mba-strategic-management-20260816-v1\round-ledger.json`，唯一 live 为 `C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\战略管理`。
 
