@@ -35,6 +35,9 @@
 | 课程计划是什么、章节还是平铺小节、09 10 11、禁止恢复 goal | 2026-08-17 | `resolved` | `resolved_by`: `DOC-USAGE` §17、`DOC-ACTIVE-PLAN` AP-20260816-06、Issue #180 presentation v2 receipt |
 | 09 10 11 固定套路、最多分八节、财务管理供应链、基石分类再检查 | 2026-08-17 | `resolved` | `resolved_by`: `DOC-USAGE` P8.9/§17、MBA governance successor receipt、Issue #180 |
 | 先做第二个解、MBA 全按第一个解、Obsidian 模板更新、Goal 不能恢复、统一看 | 2026-08-17 | `resolved` | `resolved_by`: `DOC-USAGE` §17、`DOC-ACTIVE-PLAN` AP-20260816-06 terminal review gate、Issue #180 |
+| 每节课的名字、字段style、c2b、latest | 2026-08-18 | `resolved` | `resolved_by`: `D:\BabataData\04_runtime\staging\model-workspaces\mba-course-live-display-names-20260818-v1\display-name-migration-receipt.json`; AP-20260816-06 第 3 项终端 |
+| 前缀、25春、MBAO、OMBA、四个数字、课程本名 | 2026-08-18 | `resolved` | `resolved_by`: `D:\BabataData\04_runtime\staging\model-workspaces\mba-course-live-display-names-20260818-v2\display-name-migration-receipt.json`; AP-20260816-06 第 3 项终端 |
+| 验收所有mba、恢复goal、最终obsidian模板、pr | 2026-08-18 | `resolved` | `resolved_by`: AP-20260816-06 terminal writeback、closure receipts、PR #183；统一验收已发生，最终模板收尾已提交 |
 
 以下历史正文来自 Babata 1.0 原始归档和按日期整理的产品讨论。章节标题、状态/覆盖注释是编辑者
 导航；`>` 引文才是逐字用户证据。完整原始会话不进入 Git，未来如需长期保存，应由 Babata 正式
@@ -970,3 +973,57 @@ verbatim sha256：`990cd8518fc6391600edeaa0cd053a0bedba56cd89cf273bc0fedb6fc2f80
 > 建议你 先做第二个解 然后mba的全按第一个解，obsidian模板也更新记录好。 docs先行。另外 开始之前 回答我 解第一个问题 不会影响c2b结构吧 对吧
 >
 > 开工 修这俩 但是goal还是不能恢复哈 统一修好了 再找我看
+
+### 2026-08-18：MBA 课程用户展示名不应暴露字段式后缀
+
+<!-- DOCS-FIRST-CAPTURE: DFC-20260818-01; schema=v1 -->
+
+capture time：`2026-08-18`。来源：当前用户对话。
+
+verbatim sha256：`e94ebcfec441546769cd3db3a034bb764bd0b03392ce63c65c88fd8c15b930b1`。
+
+极简检索词：`每节课的名字`；`字段style`；`c2b`；`latest`。
+
+状态：`resolved`。
+
+目标去向：`AP-20260816-06`；保留内部稳定 course key/schema，只修用户可见课程名称、live 目录和导航呈现。已完成；后续仅需用户检查展示名。
+
+`resolved_by`：`D:\BabataData\04_runtime\staging\model-workspaces\mba-course-live-display-names-20260818-v1\display-name-migration-receipt.json`。
+
+> 每节课的名字太字段style了 什么 c2b shenme latest
+
+### 2026-08-18：课程展示名只保留课程本名
+
+<!-- DOCS-FIRST-CAPTURE: DFC-20260818-02; schema=v1 -->
+
+capture time：`2026-08-18`。来源：当前用户对话。
+
+verbatim sha256：`f03396487c6b5fbfcf099e644caf505027dadb98c428fe6ab939f5941676c8ee`。
+
+极简检索词：`前缀`；`25春`；`MBAO`；`OMBA`；`四个数字`；`课程本名`。
+
+状态：`resolved`。
+
+目标去向：`AP-20260816-06`；把用户可见 live 目录、入口和导航改成短课程本名，去掉学期、课程体系前缀和课程号；内部身份保持稳定。
+
+`resolved_by`：`D:\BabataData\04_runtime\staging\model-workspaces\mba-course-live-display-names-20260818-v2\display-name-migration-receipt.json`。
+
+> 去你的 那一堆前缀 25春 又是MBAO 又是OMBA的 还有四个数字 有的隔了空格 有的每隔 什么垃圾？改个名这么久？ 你这些烂前缀这么烂就别放！
+
+### 2026-08-18：全课程验收后恢复 Goal 并提交模板收尾
+
+<!-- DOCS-FIRST-CAPTURE: DFC-20260818-03; schema=v1 -->
+
+capture time：`2026-08-18`。来源：当前用户对话。
+
+verbatim sha256：`b5ad33f5fabaea8e3bdba5a6173ae96b1e381c05494dce6d2e1befe57de840bd`。
+
+极简检索词：`验收所有mba`；`恢复goal`；`最终obsidian模板`；`pr`。
+
+状态：`resolved`。
+
+目标去向：`AP-20260816-06`；用户已明确确认全部 MBA 内容与视觉验收，授权恢复 Goal，最终 Obsidian 模板收尾、closure verifier 和 PR 收尾均已完成。
+
+`resolved_by`：`DOC-USAGE` §17、`DOC-ACTIVE-PLAN` AP-20260816-06 terminal writeback、PR #183。
+
+> 我已经验收了所有mba 立刻恢复goal 并把最终obsidian模板更新 然后pr

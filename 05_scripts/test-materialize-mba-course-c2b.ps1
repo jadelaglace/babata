@@ -4,7 +4,7 @@ param()
 $ErrorActionPreference='Stop';Set-StrictMode -Version Latest
 $root=Join-Path ([IO.Path]::GetTempPath()) ('babata-materialize-test-'+[Guid]::NewGuid().ToString('N'))
 $data=Join-Path $root 'data';$plans=Join-Path $root 'inputs';$learningRoot=Join-Path $root 'learning';$generated=Join-Path $learningRoot 'generated'
-$derived=Join-Path $data '02_derived\files\sha256\aa';$derivedIndex=Join-Path $data '02_derived\index';$runtime=Join-Path $data '04_runtime\staging';$vault=Join-Path $root 'Obsidian Vault';$live=Join-Path $vault 'Babata\MBA\test_latest'
+$derived=Join-Path $data '02_derived\files\sha256\aa';$derivedIndex=Join-Path $data '02_derived\index';$runtime=Join-Path $data '04_runtime\staging';$vault=Join-Path $root 'Obsidian Vault';$live=Join-Path $vault 'Babata\MBA\测试课程'
 $materializer=Join-Path $PSScriptRoot 'materialize-mba-course-c2b.ps1';$checker=Join-Path $PSScriptRoot 'check-mba-course-c2b-package.ps1'
 $planPath=Join-Path $plans 'plan.json';$presentationPath=Join-Path $plans 'presentation.json';$sourceMapPath=Join-Path $plans 'source-map.json';$decisionPath=Join-Path $plans 'decisions.json';$c1bPath=Join-Path $plans 'c1b-ledger.json';$knowledgePath=Join-Path $plans 'knowledge-ledger.json';$learningPath=Join-Path $learningRoot 'manifest.json'
 function Hash([string]$Path){(Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()}
@@ -17,7 +17,7 @@ try{
     for($i=1;$i -le 5;$i++){$note=('0{0}-章节{0}' -f $i);$token="知识$i";$chapters+=[ordered]@{id="0$i";note=$note;title="章节$i";modules=@($i)};$domains+=[ordered]@{id="domain$i";label="域$i";color=$colors[$i-1];evidence=@($token);nodes=@([ordered]@{id="chapter$i";note=$note;details=@("${token}：决策规则")})};$sourceItems+=[ordered]@{module_id=$i;c1_sha256=$null}}
     $legacyAids=@('09-测试课程专属工具','10-案例练习','11-复习与自测','视觉证据索引');$aidNodes=@();for($i=0;$i -lt 4;$i++){$aidNodes+=[ordered]@{id="aid$($i+1)";note=$legacyAids[$i]}}
     $aids=@('学习支持-测试课程专属工具','学习支持-案例练习','学习支持-复习与自测','视觉证据索引')
-    $plan=[ordered]@{schema='babata.mba-course-c2b-plan/v1';course='Test MBA Course';short_name='测试课程';course_key='test-course';expected_modules=5;output_status='pending_user_acceptance';chapters=$chapters;knowledge_universe=[ordered]@{foundation_id='foundation_test';discipline_id='discipline_test';branch_name='测试管理'};course_map=[ordered]@{classification_axis='测试决策对象';root_id='courseRoot';root_label='测试课程';tagline='目标 · 方法 · 边界';domains=$domains;learning=[ordered]@{id='learning';label='学习支持';color='#64748B';nodes=$aidNodes}};live=[ordered]@{path=$live;vault='Obsidian Vault';file='Babata/MBA/test_latest/index.md'}}
+    $plan=[ordered]@{schema='babata.mba-course-c2b-plan/v1';course='Test MBA Course';short_name='测试课程';course_key='test-course';expected_modules=5;output_status='pending_user_acceptance';chapters=$chapters;knowledge_universe=[ordered]@{foundation_id='foundation_test';discipline_id='discipline_test';branch_name='测试管理'};course_map=[ordered]@{classification_axis='测试决策对象';root_id='courseRoot';root_label='测试课程';tagline='目标 · 方法 · 边界';domains=$domains;learning=[ordered]@{id='learning';label='学习支持';color='#64748B';nodes=$aidNodes}};live=[ordered]@{path=$live;vault='Obsidian Vault';file='Babata/MBA/测试课程/index.md'}}
     Write-Json $planPath $plan;$planSha=Hash $planPath
     $registrations=@();$knowledgeModules=@();$sourceNotes=@()
     for($i=1;$i -le 5;$i++){

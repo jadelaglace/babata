@@ -20,6 +20,19 @@ function Require-SafeNote([object]$Value,[string]$Label) {
     $note
 }
 
+function Require-DisplayLive([object]$Live,[string]$DisplayName) {
+    if($null -eq $Live){throw 'live is required'}
+    $path=Require-Text $Live.path 'live.path'
+    if(-not [IO.Path]::IsPathRooted($path)){throw 'live.path must be absolute'}
+    $leaf=(Split-Path -Leaf $path).Trim()
+    if($leaf -cne $DisplayName){throw "live directory must use the short course display name: expected '$DisplayName', got '$leaf'"}
+    $vault=Require-Text $Live.vault 'live.vault'
+    $file=Require-Text $Live.file 'live.file'
+    $expectedFile='Babata/MBA/'+$DisplayName+'/index.md'
+    if($file -cne $expectedFile){throw "live.file must use the short course display name: expected '$expectedFile', got '$file'"}
+    [pscustomobject][ordered]@{path=$path;vault=$vault;file=$file}
+}
+
 function Get-Units($Outline) {
     $mode=[string]$Outline.mode
     if($mode -ceq 'flat'){
@@ -51,12 +64,15 @@ $resolved=(Get-Item -LiteralPath $PlanPath -ErrorAction Stop).FullName
 $plan=Get-Content -LiteralPath $resolved -Raw -Encoding utf8|ConvertFrom-Json
 if([string]$plan.schema -cne 'babata.mba-course-presentation-plan/v2'){throw 'Unsupported MBA presentation-plan schema'}
 Require-Text $plan.course 'course'|Out-Null
+$courseName=[string]$plan.course
+$displayName=Require-SafeNote $plan.short_name 'short_name'
 $courseKey=Require-Text $plan.course_key 'course_key'
 if($courseKey -cnotmatch '^[a-z0-9]+(?:-[a-z0-9]+)*$'){throw "Invalid course_key: $courseKey"}
 $expected=[int]$plan.expected_modules
 if($expected -lt 1){throw 'expected_modules must be positive'}
 if([string]$plan.profile -cne 'semantic-obsidian/v2'){throw 'Presentation plan must use semantic-obsidian/v2'}
 if([string]$plan.output_status -notin @('pending_user_acceptance','accepted')){throw 'Invalid presentation output_status'}
+Require-DisplayLive $plan.live $displayName|Out-Null
 
 foreach($field in @('plan_path','plan_sha256','manifest_path','manifest_sha256')){
     $value=Require-Text $plan.source.$field "source.$field"

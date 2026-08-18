@@ -26,6 +26,16 @@ function Write-Utf8Json([object]$Value,[string]$Path){
     if(-not(Test-Path -LiteralPath $parent)){[void](New-Item -ItemType Directory -Path $parent)}
     [IO.File]::WriteAllText($Path,($Value|ConvertTo-Json -Depth 40),[Text.UTF8Encoding]::new($false))
 }
+function Display-Live([object]$LegacyLive,[string]$Course){
+    $legacyPath=[IO.Path]::GetFullPath([string]$LegacyLive.path)
+    $parent=(Split-Path -Parent $legacyPath)
+    $displayPath=Join-Path $parent $Course
+    [ordered]@{
+        path=$displayPath
+        vault=[string]$LegacyLive.vault
+        file=('Babata/MBA/'+$Course+'/index.md')
+    }
+}
 function Learning-Note([string]$Legacy,[string]$Slot){
     switch($Slot){
         'decision_tools' {
@@ -122,7 +132,7 @@ $plan=[ordered]@{
     learning_support=$support
     rename_map=$rename
     course_map=$courseMap
-    live=$legacy.live
+    live=(Display-Live $legacy.live ([string]$legacy.short_name))
 }
 $output=[IO.Path]::GetFullPath($OutputPath)
 $snapshotManifestPath=[IO.Path]::ChangeExtension($output,'.source-snapshot.json')

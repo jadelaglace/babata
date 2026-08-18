@@ -144,7 +144,9 @@ MBA lens 和独立基石强度/置信度语义；当前实现覆盖与缺口只�
 6. Mermaid 为唯一默认展开响应式主图，PNG 默认折叠回退。
 7. builder/materializer/checker 都读取同一 presentation plan；目录、文件名前缀和 source module
    数量均不得替代 plan 的 outline。
-8. 兼容迁移逐字复用既有章节/学习正文和媒体，只改授权名称、导航、内链和 manifest/hash，并写
+8. v2 用户入口目录与 index 使用短 `short_name`（课程本名，`Babata/MBA/<short_name>/index.md`）；
+   学期、项目和课程号以及 `course_key`、`c2b`、`latest` 仅作为内部元数据，不得出现在用户可见课程目录名中。
+9. 兼容迁移逐字复用既有章节/学习正文和媒体，只改授权名称、导航、内链和 manifest/hash，并写
    migration receipt；不运行 C1B、知识正文生成、knowledge registrar 或 closure verifier。
 
 ### 5.6 全新重建和预发布验证

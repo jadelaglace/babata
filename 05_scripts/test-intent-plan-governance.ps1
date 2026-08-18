@@ -179,13 +179,13 @@ try {
     }
     Assert-CheckerFails 'recovery-index-misses-latest-phrase' 'fast recovery index does not contain' {
         param($caseRoot)
-        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| 先做第二个解、MBA 全按第一个解、Obsidian 模板更新、Goal 不能恢复、统一看 |' '| 结构问题、MBA 全按第一个解、Obsidian 模板更新、Goal 不能恢复、统一看 |'
+        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| 验收所有mba、恢复goal、最终obsidian模板、pr |' '| 验收全部MBA、恢复goal、最终obsidian模板、pr |'
     }
     Assert-CheckerFails 'recovery-index-uses-compound-status' 'recovery index uses an invalid base status' {
         param($caseRoot)
         Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| `active` | 多仓/子 Git' '| `active-with-history` | 多仓/子 Git'
     }
-    Assert-CheckerFails 'recovery-duplicates-retrieval-phrase' 'retrieval phrases must be unique' {
+    Assert-CheckerFails 'recovery-duplicates-retrieval-phrase' 'requires 3-8 unique retrieval phrases' {
         param($caseRoot)
         Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '极简检索词：`先做第二个解`；`MBA 全按第一个解`；`Obsidian 模板更新`；`Goal 不能恢复`；`统一看`。' '极简检索词：`先做第二个解`；`先做第二个解`；`Obsidian 模板更新`；`Goal 不能恢复`；`统一看`。'
     }
@@ -238,7 +238,7 @@ try {
     }
     Assert-CheckerFails 'recovery-index-status-diverges' 'status does not match its fast-index row' {
         param($caseRoot)
-        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| 先做第二个解、MBA 全按第一个解、Obsidian 模板更新、Goal 不能恢复、统一看 | 2026-08-17 | `resolved` |' '| 先做第二个解、MBA 全按第一个解、Obsidian 模板更新、Goal 不能恢复、统一看 | 2026-08-17 | `active` |'
+        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| 验收所有mba、恢复goal、最终obsidian模板、pr | 2026-08-18 | `resolved` |' '| 验收所有mba、恢复goal、最终obsidian模板、pr | 2026-08-18 | `active` |'
     }
     Assert-CheckerFails 'recovery-context-marker-loses-attribution' 'malformed attributed-context marker' {
         param($caseRoot)

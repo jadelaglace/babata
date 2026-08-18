@@ -27,6 +27,11 @@ conclusions, concepts, formulas, diagrams, cases, questions and relations.
    `outline.mode=sectioned` as ordered sections containing ordered units. Each source module appears in exactly
    one unit. The plan, not the directory or filename prefix, owns navigation and order.
 
+0.1. The user-facing live directory and index path use the short `short_name` exactly:
+     `Babata/MBA/<short_name>/index.md`. Semester, provider/program prefixes and course numbers belong to
+     internal `course` metadata, while `course_key`, schema, and version/profile fields stay in manifests/plans;
+     none may appear in the user-facing directory name.
+
 1. Organize notes by semantic nodes, course themes and relations; do not recreate an external website
    directory as the knowledge hierarchy.
 2. Embed a retained C1B image, audio excerpt, video excerpt or attachment only when it changes the

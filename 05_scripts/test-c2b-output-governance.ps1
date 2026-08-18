@@ -162,12 +162,12 @@ try {
     }
     Assert-CheckerFails -Name 'usage-loses-current-obsidian-uri' -ExpectedMessage 'current user-facing Obsidian URI in usage status' -Mutate {
         param($caseRoot)
-        Remove-MarkerOnce (Join-Path $caseRoot '00_docs\04_process\04_b_USAGE_STATUS.md') 'obsidian://open?vault=Obsidian%20Vault&file=Babata%2FMBA%2Fmba_finance_c2b_latest%2Findex.md'
+        Remove-MarkerOnce (Join-Path $caseRoot '00_docs\04_process\04_b_USAGE_STATUS.md') 'obsidian://open?vault=Obsidian%20Vault&file=Babata%2FMBA%2F%E8%B4%A2%E5%8A%A1%E7%AE%A1%E7%90%86%2Findex.md'
     }
     Assert-CheckerFails -Name 'outputs-hardcodes-live-obsidian-uri' -ExpectedMessage 'concrete live Obsidian URI outside usage status: outputs' -Mutate {
         param($caseRoot)
         $path = Join-Path $caseRoot '02_skills\00_specs\09_outputs.md'
-        Add-Content -Encoding utf8 -LiteralPath $path -Value "`nobsidian://open?vault=Obsidian%20Vault&file=Babata%2FMBA%2Fmba_finance_c2b_latest%2Findex.md`n"
+        Add-Content -Encoding utf8 -LiteralPath $path -Value "`nobsidian://open?vault=Obsidian%20Vault&file=Babata%2FMBA%2F%E8%B4%A2%E5%8A%A1%E7%AE%A1%E7%90%86%2Findex.md`n"
     }
     Assert-CheckerFails -Name 'missing-formal-c1b-handoff' -ExpectedMessage 'C1B-FORMAL-HANDOFF-GATE in outputs' -Mutate {
         param($caseRoot)
