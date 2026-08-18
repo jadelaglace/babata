@@ -244,7 +244,7 @@ Assert-Contains $renderer 'internal-link' 'Obsidian native internal-link nodes'
 Assert-Contains $renderer '> [!info]- 位图版本（打印 / 离线 / 渲染回退）' 'default-collapsed PNG fallback callout'
 Assert-Contains $renderer '> ![[media/财务管理课程脑图.png|760]]' 'explicit readable PNG fallback width'
 Assert-Contains $documents.usage 'DOC-AUTHORITY-BOUNDARY: usage-status' 'usage-status authority role'
-Assert-Contains $documents.usage 'obsidian://open?vault=Obsidian%20Vault&file=Babata%2FMBA%2Fmba_finance_c2b_latest%2Findex.md' 'current user-facing Obsidian URI in usage status'
+Assert-Contains $documents.usage 'obsidian://open?vault=Obsidian%20Vault&file=Babata%2FMBA%2F%E8%B4%A2%E5%8A%A1%E7%AE%A1%E7%90%86%2Findex.md' 'current user-facing Obsidian URI in usage status'
 Assert-Contains $documents.outputs 'The current course path belongs to usage status' 'output-spec URI ownership boundary'
 Assert-Contains $documents.profile 'exact live URI registered by the course manifest/usage status' 'profile URI ownership boundary'
 foreach ($name in @('requirements', 'prd', 'acceptance', 'process', 'tests', 'outputs', 'profile')) {

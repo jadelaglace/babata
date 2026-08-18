@@ -113,7 +113,9 @@ formal registration or publication.
   place it inside a default-collapsed `[!info]-` callout as a print, offline, and renderer fallback. This
   responsive contract means fit-to-pane; it does not claim built-in Mermaid zoom or pan.
 - Output path contract: the runtime task directory is evidence-only; users open the one registered live
-  export for that course. The current course path belongs to usage status.
+  export for that course. The current course path belongs to usage status, and the v2 live directory/index
+  uses the short course name (`Babata/MBA/<short_name>/index.md`) rather than semester/program prefixes,
+  course numbers, `course_key`, `c2b`, `latest`, or another implementation/version suffix.
 - `OBSIDIAN-HUMAN-VIEW-BOUNDARY`: when the user asks to open Obsidian for their review, launch only
   the exact URI registered for the current live output in usage status/manifest and stop. Do not use
   Computer Use, screenshots, accessibility inspection, clicks or scrolling to substitute for the user's view

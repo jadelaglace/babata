@@ -397,8 +397,9 @@ MBA lens 使用该机制聚合多个 discipline、branch、course 和 semantic e
 课程呈现结构是独立 C2 合同 `babata.mba-course-presentation-plan/v2`。它保存课程 identity、来源
 plan/manifest 指纹、`flat` 或 `sectioned` outline、按序 unit、每个 unit 的 source-module 绑定和独立
 learning-support 列表。磁盘目录和文件名是 materializer 结果，不是 outline authority；`09/10/11`
-只属于 v1 历史证据。v2 学习支持使用语义文件名，排序取自 plan。presentation migration 只允许复制
-既有 package 后重命名学习支持、更新 index/Mermaid 内链并重算 manifest/hash，必须为正文与媒体
+只属于 v1 历史证据。v2 学习支持使用语义文件名，排序取自 plan；用户可见 live 目录/index 固定使用
+短 `short_name`（课程本名），学期/项目/课程号属于内部 `course` 元数据，`course_key`、`c2b`、`latest` 等实现字段只留在计划、manifest 和回执。presentation
+migration 只允许复制既有 package 后重命名学习支持、更新 index/Mermaid 内链并重算 manifest/hash，必须为正文与媒体
 未变、旧 plan/manifest 指纹、迁移映射和新 package/live 一致性留回执。
 
 输出读取明确范围内的 C0、C1 和人工沉淀，并生成 manifest，至少记录输入版本、builder/

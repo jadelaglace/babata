@@ -100,9 +100,9 @@ foreach($row in $rows){
     }else{$legacy=$row.legacy}
     if([string]$legacy.schema -cne 'babata.mba-course-c2b-plan/v1' -or [string]$legacy.course_key -cne [string]$row.key){throw "Invalid rollout course plan: $($row.key)"}
     if(-not(Test-Path -LiteralPath ([string]$row.manifest) -PathType Leaf)){throw "Missing rollout input: $($row.manifest)"}
-    $live=[IO.Path]::GetFullPath([string]$legacy.live.path)
-    if(-not(Is-Within $live $vaultRootResolved) -or -not(Test-Path -LiteralPath $live -PathType Container)){throw "Missing or unsafe canonical live: $live"}
-    Assert-SourceLiveMatches $live ([string]$row.manifest)
+    $sourceLive=[IO.Path]::GetFullPath([string]$legacy.live.path)
+    if(-not(Is-Within $sourceLive $vaultRootResolved) -or -not(Test-Path -LiteralPath $sourceLive -PathType Container)){throw "Missing or unsafe canonical live: $sourceLive"}
+    Assert-SourceLiveMatches $sourceLive ([string]$row.manifest)
 }
 
 [void](New-Item -ItemType Directory -Path $runtime)
@@ -117,16 +117,19 @@ $financeLegacyPath=Join-Path $runtime 'finance-compatibility-course-plan-v1.json
 $prepared=@();foreach($row in $rows){
     foreach($path in @([string]$row.plan,[string]$row.manifest)){if(-not(Test-Path -LiteralPath $path -PathType Leaf)){throw "Missing rollout input: $path"}}
     $legacy=Get-Content -LiteralPath ([string]$row.plan) -Raw -Encoding utf8|ConvertFrom-Json
-    $live=[IO.Path]::GetFullPath([string]$legacy.live.path)
-    if(-not(Test-Path -LiteralPath $live -PathType Container)){throw "Missing canonical live: $live"}
-    $snapshot=Join-Path $sourceSnapshots ([string]$row.key);Copy-Tree $live $snapshot
+    $sourceLive=[IO.Path]::GetFullPath([string]$legacy.live.path)
+    if(-not(Test-Path -LiteralPath $sourceLive -PathType Container)){throw "Missing canonical live: $sourceLive"}
+    $snapshot=Join-Path $sourceSnapshots ([string]$row.key);Copy-Tree $sourceLive $snapshot
     $plan=Join-Path $presentationPlans (([string]$row.key)+'-presentation-v2.json')
     $generated=@(& (Join-Path $PSScriptRoot 'new-mba-course-presentation-plan.ps1') -LegacyPlanPath ([string]$row.plan) -SourceManifestPath ([string]$row.manifest) -SourceRoot $snapshot -OutputPath $plan)
     if($generated.Count -ne 1 -or [string]$generated[0].status -cne 'passed'){throw "Plan generation failed: $($row.key)"}
     $migrationRoot=Join-Path $migrations ([string]$row.key)
     $migrated=@(& (Join-Path $PSScriptRoot 'migrate-mba-course-presentation-v2.ps1') -PresentationPlanPath $plan -SourceRoot $snapshot -StagingRoot $migrationRoot)
     if($migrated.Count -ne 1 -or [string]$migrated[0].status -cne 'passed_engineering_gates'){throw "Presentation migration failed: $($row.key)"}
-    $prepared+=[ordered]@{key=[string]$row.key;course=[string]$legacy.course;live=$live;snapshot=$snapshot;plan=$plan;source_compatibility_drift=[int]$generated[0].source_compatibility_drift;migration=$migrationRoot;package=[string]$migrated[0].package;manifest=[string]$migrated[0].manifest;receipt=[string]$migrated[0].receipt;files=[int]$migrated[0].files}
+    $presentationPlan=Get-Content -LiteralPath $plan -Raw -Encoding utf8|ConvertFrom-Json
+    $targetLive=[IO.Path]::GetFullPath([string]$presentationPlan.live.path)
+    if(Test-Path -LiteralPath $targetLive){throw "Display live target already exists: $targetLive"}
+    $prepared+=[ordered]@{key=[string]$row.key;course=[string]$legacy.course;source_live=$sourceLive;live=$targetLive;snapshot=$snapshot;plan=$plan;source_compatibility_drift=[int]$generated[0].source_compatibility_drift;migration=$migrationRoot;package=[string]$migrated[0].package;manifest=[string]$migrated[0].manifest;receipt=[string]$migrated[0].receipt;files=[int]$migrated[0].files}
 }
 if($prepared.Count -ne 13){throw "MBA presentation denominator mismatch: $($prepared.Count)/13"}
 
@@ -135,7 +138,7 @@ try{
     foreach($course in $prepared){
         $archive=Join-Path $archives ([string]$course.key)
         if(Test-Path -LiteralPath $archive){throw "Archive target already exists: $archive"}
-        Move-Item -LiteralPath ([string]$course.live) -Destination $archive
+        Move-Item -LiteralPath ([string]$course.source_live) -Destination $archive
         try{
             Copy-Tree ([string]$course.package) ([string]$course.live)
             Assert-LiveMatches ([string]$course.live) ([string]$course.manifest)
@@ -144,10 +147,10 @@ try{
                 if(-not(Test-Path -LiteralPath $failedLives)){[void](New-Item -ItemType Directory -Path $failedLives)}
                 Move-Item -LiteralPath ([string]$course.live) -Destination (Join-Path $failedLives ([string]$course.key))
             }
-            Move-Item -LiteralPath $archive -Destination ([string]$course.live)
+            Move-Item -LiteralPath $archive -Destination ([string]$course.source_live)
             throw
         }
-        $published+=[ordered]@{key=[string]$course.key;course=[string]$course.course;live=[string]$course.live;archived_live=$archive;staged_package=[string]$course.package;plan=[string]$course.plan;source_compatibility_drift=[int]$course.source_compatibility_drift;manifest=[string]$course.manifest;receipt=[string]$course.receipt;files=[int]$course.files;status='published_presentation_v2'}
+        $published+=[ordered]@{key=[string]$course.key;course=[string]$course.course;source_live=[string]$course.source_live;live=[string]$course.live;archived_live=$archive;staged_package=[string]$course.package;plan=[string]$course.plan;source_compatibility_drift=[int]$course.source_compatibility_drift;manifest=[string]$course.manifest;receipt=[string]$course.receipt;files=[int]$course.files;status='published_presentation_v2'}
     }
     if(Test-Path -LiteralPath $obsoletePilot -PathType Container){$obsoleteArchive=Join-Path $runtime 'archived-obsolete-finance-pilot';Move-Item -LiteralPath $obsoletePilot -Destination $obsoleteArchive}
     $rollout=[ordered]@{schema='babata.mba-course-presentation-rollout/v1';status='published';profile='semantic-obsidian/v2';courses=$published;course_count=$published.Count;source_content_regeneration_runs=0;c1b_registration_runs=0;knowledge_registration_runs=0;closure_verifier_runs=0;obsolete_finance_pilot_archive=$obsoleteArchive}
@@ -160,7 +163,7 @@ try{
             if(-not(Test-Path -LiteralPath $failedLives)){[void](New-Item -ItemType Directory -Path $failedLives)}
             Move-Item -LiteralPath ([string]$course.live) -Destination (Join-Path $failedLives ([string]$course.key))
         }
-        if(Test-Path -LiteralPath ([string]$course.archived_live)){Move-Item -LiteralPath ([string]$course.archived_live) -Destination ([string]$course.live)}
+            if(Test-Path -LiteralPath ([string]$course.archived_live)){Move-Item -LiteralPath ([string]$course.archived_live) -Destination ([string]$course.source_live)}
     }
     throw
 }

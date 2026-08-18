@@ -61,9 +61,9 @@ Phase 完成只表示该 Phase 关闭时适用的 gate 和 AC/TC 有足够证据
 - 当前正式批次：
   `D:\BabataData\04_runtime\staging\model-workspaces\mba-finance-c2b-benchmark-20260815-v17-responsive-map`。
 - 唯一用户 live：
-  `C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\mba_finance_c2b_latest\index.md`。
+  `C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\财务管理\index.md`。
 - 用户打开 URI：
-  `obsidian://open?vault=Obsidian%20Vault&file=Babata%2FMBA%2Fmba_finance_c2b_latest%2Findex.md`；
+  `obsidian://open?vault=Obsidian%20Vault&file=Babata%2FMBA%2F%E8%B4%A2%E5%8A%A1%E7%AE%A1%E7%90%86%2Findex.md`；
   Agent 只启动 URI，不代替用户查看。
 - Obsidian profile：`semantic-obsidian/v2 / accepted`；课程内容状态：
   `accepted_benchmark / registered`。
@@ -91,9 +91,9 @@ Phase 完成只表示该 Phase 关闭时适用的 gate 和 AC/TC 有足够证据
 - 当前候选批次：
   `D:\BabataData\04_runtime\staging\model-workspaces\mba-supply-chain-c2b-20260815-v5`。
 - 唯一用户 live：
-  `C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\mba_supply_chain_c2b_latest\index.md`。
+  `C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\全球供应链和可持续运营\index.md`。
 - 用户打开 URI：
-  `obsidian://open?vault=Obsidian%20Vault&file=Babata%2FMBA%2Fmba_supply_chain_c2b_latest%2Findex.md`；
+  `obsidian://open?vault=Obsidian%20Vault&file=Babata%2FMBA%2F%E5%85%A8%E7%90%83%E4%BE%9B%E5%BA%94%E9%93%BE%E5%92%8C%E5%8F%AF%E6%8C%81%E7%BB%AD%E8%BF%90%E8%90%A5%2Findex.md`；
   Agent 只启动 URI，不代替用户查看。
 - package/live：55/55，逐文件 hash 相等；14 个 Markdown、39 个内容媒体、Wiki/媒体悬空 0。
 - 课程脑图：五个知识域、12 个内部章节/学习链接；原生 Mermaid 默认展开，1427x1633 PNG
@@ -120,7 +120,7 @@ Phase 完成只表示该 Phase 关闭时适用的 gate 和 AC/TC 有足够证据
 - 当前候选批次：
   `D:\BabataData\04_runtime\staging\model-workspaces\mba-decision-accounting-c2b-20260816-v8`。
 - 唯一用户 live：
-  `C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\mba_decision_accounting_c2b_latest`。
+  `C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\决策会计`。
 - package/live：43/43，逐文件 hash 差异 0；raw/derived SQLite `quick_check=ok`，外键错误 0。
 - 课程脑图：原生 Mermaid 主图与 PNG 回退均已 materialize；package checker、renderer/materializer
   行为测试和完整工程 gate 通过。
@@ -141,7 +141,7 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 - 当前候选批次：
   `D:\BabataData\04_runtime\staging\model-workspaces\mba-executive-business-communication-c2b-20260816-v3`。
 - 唯一用户 live：
-  `C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\mba_executive_business_communication_c2b_latest`。
+  `C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\执行商务沟通`。
 - package/live：33/33，逐文件 hash 相等；14 个 Markdown、17 个媒体文件、Wiki/Markdown 链接检查通过。
 - 当前状态：整轮无缺陷到达 `pending_user_acceptance`；按全课程 Goal 不单独请求验收、不运行 closure verifier，待所有未关闭课程发布后统一请求一次内容与视觉确认。
 - 终端证据：`D:\BabataData\04_runtime\staging\execution-rounds\mba-executive-business-communication-20260816-v3\round-ledger.json`，status `passed`、actual terminal `pending_user_acceptance`；发布回执位于 `D:\BabataData\04_runtime\receipts\mba-course-c2b\executive-business-communication\`。
@@ -156,7 +156,7 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 - 当前候选批次：
   `D:\BabataData\04_runtime\staging\model-workspaces\mba-primer-c2b-20260816-v8`。
 - 唯一用户 live：
-  `C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\mba_primer_c2b_latest`。
+  `C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\MBA先导课`。
 - package/live：87/87，逐文件 hash 相等；六域课程脑图含 6 个章节和 4 个学习支持 internal-link。
 - 当前状态：整轮无缺陷到达 `pending_user_acceptance`；按全课程 Goal 不单独请求验收、不运行 closure verifier，待所有未关闭课程发布后统一请求一次内容与视觉确认。
 - 终端证据：`D:\BabataData\04_runtime\staging\execution-rounds\mba-primer-20260816-v8\round-ledger.json`，status `passed`、actual terminal `pending_user_acceptance`；发布回执位于 `D:\BabataData\04_runtime\receipts\mba-course-c2b\mba-primer\`。
@@ -169,7 +169,7 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 - 正式课程分母与 C1B：70/70 完整 C1、70/70 本质判断、26 个必要视觉登记。
 - 正式 C2B：70/70 知识条目已注册；学习正文为 4 章、课程总览和 3 份学习工具，共 8 份。
 - 当前候选批次：`D:\BabataData\04_runtime\staging\model-workspaces\mba-value-creating-marketing-c2b-20260816-v2`。
-- 唯一用户 live：`C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\value_creating_marketing_c2b_latest`。
+- 唯一用户 live：`C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\创造价值的营销管理`。
 - package/live：39/39，逐文件 hash 相等；课程脑图含 4 个章节和 4 个学习支持 internal-link。
 - 当前状态：v2 整轮无缺陷到达 `pending_user_acceptance`；按全课程 Goal 不单独请求验收、不运行 closure verifier，待所有未关闭课程发布后统一请求一次内容与视觉确认。
 - 终端证据：`D:\BabataData\04_runtime\staging\execution-rounds\mba-value-creating-marketing-20260816-v2\round-ledger.json`；发布回执位于 `D:\BabataData\04_runtime\receipts\mba-course-c2b\value-creating-marketing\`。
@@ -182,7 +182,7 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 - 正式课程分母与 C1B：42/42 完整 C1、42/42 本质判断；正式判断为 0 个额外必要媒体。
 - 正式 C2B：42/42 知识条目已注册；学习正文为 4 章、课程总览和 3 份学习工具，共 8 份。
 - 当前候选批次：`D:\BabataData\04_runtime\staging\model-workspaces\mba-strategic-leadership-c2b-20260816-v2`。
-- 唯一用户 live：`C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\strategic_leadership_c2b_latest`。
+- 唯一用户 live：`C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\组织绩效的战略领导力`。
 - package/live：13/13，逐文件 hash 相等；课程脑图含 4 个章节和 4 个学习支持 internal-link。
 - 当前状态：v2 修复轮次无缺陷到达 `pending_user_acceptance`；按全课程 Goal 不单独请求验收、不运行 closure verifier，待所有未关闭课程发布后统一请求一次内容与视觉确认。
 - 终端证据：`D:\BabataData\04_runtime\staging\execution-rounds\mba-strategic-leadership-20260816-v2\round-ledger.json`；v1 中已通过的 8/8 学习正文和 42/42 知识登记被精确复用，未重跑。
@@ -195,7 +195,7 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 - 正式课程分母与 C1B：75/75 完整 C1、75/75 本质判断、107 个必要视觉登记。
 - 正式 C2B：75/75 知识条目已注册；学习正文为 5 章、课程总览和 3 份学习工具，共 9 份。
 - 当前候选批次：`D:\BabataData\04_runtime\staging\model-workspaces\mba-organizational-behavior-c2b-20260816-v1`。
-- 唯一用户 live：`C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\organizational_behavior_c2b_latest`。
+- 唯一用户 live：`C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\组织行为学`。
 - package/live：121/121，逐文件 hash 相等；课程脑图含 5 个章节和 4 个学习支持 internal-link。
 - 当前状态：v1 整轮无缺陷到达 `pending_user_acceptance`；按全课程 Goal 不单独请求验收、不运行 closure verifier，待所有未关闭课程发布后统一请求一次内容与视觉确认。
 - 终端证据：`D:\BabataData\04_runtime\staging\execution-rounds\mba-organizational-behavior-20260816-v1\round-ledger.json`。
@@ -208,7 +208,7 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 - 正式课程分母与 C1B：43/43 完整 C1、43/43 本质判断、47 个必要视觉登记。
 - 正式 C2B：43/43 知识条目已注册；学习正文为 5 章、课程总览和 3 份学习工具，共 9 份。
 - 当前候选批次：`D:\BabataData\04_runtime\staging\model-workspaces\mba-data-security-ethics-risk-c2b-20260816-v1`。
-- 唯一用户 live：`C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\data_security_ethics_risk_c2b_latest`。
+- 唯一用户 live：`C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\数据安全、道德和风险管理`。
 - package/live：61/61，逐文件 SHA-256 零差异；11 个 Markdown、48 个媒体文件，课程脑图含 9 个内部链接。
 - 当前状态：v1 整轮五阶段无缺陷到达 `pending_user_acceptance`；按全课程 Goal 不单独请求验收、不运行 closure verifier，待所有未关闭课程发布后统一请求一次内容与视觉确认。
 - 终端证据：`D:\BabataData\04_runtime\staging\execution-rounds\mba-data-security-ethics-risk-20260816-v1\round-ledger.json`，status `passed`、actual terminal `pending_user_acceptance`。
@@ -221,7 +221,7 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 - 正式课程分母与 C1B：61/61 完整 C1、61/61 本质判断、55 个必要视觉登记。
 - 正式 C2B：61/61 知识条目已注册；学习正文为 5 章、课程总览和 3 份学习工具，共 9 份。
 - 当前候选批次：`D:\BabataData\04_runtime\staging\model-workspaces\mba-managerial-economics-c2b-20260816-v1`。
-- 唯一用户 live：`C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\managerial_economics_c2b_latest`。
+- 唯一用户 live：`C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\管理经济学`。
 - package/live：69/69，逐文件 SHA-256 零差异；11 个 Markdown、56 个媒体文件，课程脑图含 9 个内部链接。
 - 当前状态：v1 整轮五阶段无缺陷到达 `pending_user_acceptance`；按全课程 Goal 不单独请求验收、不运行 closure verifier，待所有未关闭课程发布后统一请求一次内容与视觉确认。
 - 终端证据：`D:\BabataData\04_runtime\staging\execution-rounds\mba-managerial-economics-20260816-v1\round-ledger.json`，status `passed`、actual terminal `pending_user_acceptance`。
@@ -234,7 +234,7 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 - 正式课程分母与 C1B：51/51 完整 C1、51/51 本质判断、30 个必要视觉登记。
 - 正式 C2B：51/51 知识条目已注册；学习正文为 5 章、课程总览和 3 份学习工具，共 9 份。
 - 当前候选批次：`D:\BabataData\04_runtime\staging\model-workspaces\mba-business-analytics-c2b-20260816-v3`。
-- 唯一用户 live：`C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\business_analytics_c2b_latest`。
+- 唯一用户 live：`C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\商业分析`。
 - package/live：44/44，逐文件 SHA-256 零差异；11 个 Markdown、30 个 C1B 媒体文件和 3 个课程脑图资产。
 - 当前状态：v2 从干净 staging 完成 67 个一级 digest、2 个有界二级归约摘要、9/9 学习正文与 51/51 知识登记；v3 repair round 的 materialize、package gate 和 publish 三阶段无缺陷到达 `pending_user_acceptance`。按全课程 Goal 不单独请求验收、不运行 closure verifier，待所有未关闭课程发布后统一请求一次内容与视觉确认。
 - 终端证据：v2 上游证据位于 `D:\BabataData\04_runtime\staging\execution-rounds\mba-business-analytics-20260816-v2\round-ledger.json`；成功终端位于 `D:\BabataData\04_runtime\staging\execution-rounds\mba-business-analytics-20260816-v3\round-ledger.json`，status `passed`、actual terminal `pending_user_acceptance`。
@@ -247,7 +247,7 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 - 正式课程分母与 C1B：38/38 完整 C1、38/38 本质判断、32 个必要视觉登记。
 - 正式 C2B：38/38 知识条目已注册；学习正文为 5 章、课程总览和 3 份学习工具，共 9 份。
 - 当前候选批次：`D:\BabataData\04_runtime\staging\model-workspaces\mba-global-business-environment-c2b-20260816-v1`。
-- 唯一用户 live：`C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\global_business_environment_c2b_latest`。
+- 唯一用户 live：`C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\全球商业环境`。
 - package/live：46/46，逐文件 SHA-256 零差异；11 个 Markdown、32 个 C1B 媒体文件和 3 个课程脑图资产。
 - 当前状态：v1 整轮五阶段无缺陷到达 `pending_user_acceptance`；按全课程 Goal 不单独请求验收、不运行 closure verifier，待所有未关闭课程发布后统一请求一次内容与视觉确认。
 - 终端证据：`D:\BabataData\04_runtime\staging\execution-rounds\mba-global-business-environment-20260816-v1\round-ledger.json`，status `passed`、actual terminal `pending_user_acceptance`。
@@ -260,7 +260,7 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 - 正式课程分母与 C1B：74/74 完整 C1、74/74 本质判断、67 个必要视觉登记。
 - 正式 C2B：74/74 知识条目已注册；学习正文为 5 章、课程总览和 3 份学习工具，共 9 份。
 - 当前候选批次：`D:\BabataData\04_runtime\staging\model-workspaces\mba-strategic-management-c2b-20260816-v1`。
-- 唯一用户 live：`C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\strategic_management_c2b_latest`。
+- 唯一用户 live：`C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\战略管理`。
 - package/live：81/81，逐文件 SHA-256 零差异；11 个 Markdown、67 个 C1B 媒体文件和 3 个课程脑图资产。
 - 当前状态：v1 execution round 五阶段无缺陷到达 `pending_user_acceptance`；按全课程 Goal 不单独请求验收、不运行 closure verifier，待所有课程发布后统一请求一次内容与视觉确认。
 - 终端证据：`D:\BabataData\04_runtime\staging\execution-rounds\mba-strategic-management-20260816-v1\round-ledger.json`，status `passed`、actual terminal `pending_user_acceptance`。

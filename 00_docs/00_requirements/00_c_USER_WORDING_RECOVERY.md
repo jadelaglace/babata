@@ -35,6 +35,8 @@
 | 课程计划是什么、章节还是平铺小节、09 10 11、禁止恢复 goal | 2026-08-17 | `resolved` | `resolved_by`: `DOC-USAGE` §17、`DOC-ACTIVE-PLAN` AP-20260816-06、Issue #180 presentation v2 receipt |
 | 09 10 11 固定套路、最多分八节、财务管理供应链、基石分类再检查 | 2026-08-17 | `resolved` | `resolved_by`: `DOC-USAGE` P8.9/§17、MBA governance successor receipt、Issue #180 |
 | 先做第二个解、MBA 全按第一个解、Obsidian 模板更新、Goal 不能恢复、统一看 | 2026-08-17 | `resolved` | `resolved_by`: `DOC-USAGE` §17、`DOC-ACTIVE-PLAN` AP-20260816-06 terminal review gate、Issue #180 |
+| 每节课的名字、字段style、c2b、latest | 2026-08-18 | `resolved` | `resolved_by`: `D:\BabataData\04_runtime\staging\model-workspaces\mba-course-live-display-names-20260818-v1\display-name-migration-receipt.json`; AP-20260816-06 第 3 项终端 |
+| 前缀、25春、MBAO、OMBA、四个数字、课程本名 | 2026-08-18 | `resolved` | `resolved_by`: `D:\BabataData\04_runtime\staging\model-workspaces\mba-course-live-display-names-20260818-v2\display-name-migration-receipt.json`; AP-20260816-06 第 3 项终端 |
 
 以下历史正文来自 Babata 1.0 原始归档和按日期整理的产品讨论。章节标题、状态/覆盖注释是编辑者
 导航；`>` 引文才是逐字用户证据。完整原始会话不进入 Git，未来如需长期保存，应由 Babata 正式
@@ -970,3 +972,41 @@ verbatim sha256：`990cd8518fc6391600edeaa0cd053a0bedba56cd89cf273bc0fedb6fc2f80
 > 建议你 先做第二个解 然后mba的全按第一个解，obsidian模板也更新记录好。 docs先行。另外 开始之前 回答我 解第一个问题 不会影响c2b结构吧 对吧
 >
 > 开工 修这俩 但是goal还是不能恢复哈 统一修好了 再找我看
+
+### 2026-08-18：MBA 课程用户展示名不应暴露字段式后缀
+
+<!-- DOCS-FIRST-CAPTURE: DFC-20260818-01; schema=v1 -->
+
+capture time：`2026-08-18`。来源：当前用户对话。
+
+verbatim sha256：`d027d51dc7d9069a4ffa29cba7adad4b2f5c267292bbe6269f2b259781369849`。
+
+极简检索词：`每节课的名字`；`字段style`；`c2b`；`latest`。
+
+状态：`resolved`。
+
+目标去向：`AP-20260816-06`；保留内部稳定 course key/schema，只修用户可见课程名称、live 目录和导航呈现。已完成；后续仅需用户检查展示名。
+
+`resolved_by`：`D:\BabataData\04_runtime\staging\model-workspaces\mba-course-live-display-names-20260818-v1\display-name-migration-receipt.json`。
+
+> 每节课的名字太字段style了 什么 c2b shenme latest
+
+### 2026-08-18：课程展示名只保留课程本名
+
+<!-- DOCS-FIRST-CAPTURE: DFC-20260818-02; schema=v1 -->
+
+capture time：`2026-08-18`。来源：当前用户对话。
+
+verbatim sha256：`e7f9c75a05dde5b208691c70dbb6cace23cce9c7fcdc2ca5693f75e632b72c55`。
+
+极简检索词：`前缀`；`25春`；`MBAO`；`OMBA`；`四个数字`；`课程本名`。
+
+状态：`resolved`。
+
+目标去向：`AP-20260816-06`；把用户可见 live 目录、入口和导航改成短课程本名，去掉学期、课程体系前缀和课程号；内部身份保持稳定。
+
+`resolved_by`：`D:\BabataData\04_runtime\staging\model-workspaces\mba-course-live-display-names-20260818-v2\display-name-migration-receipt.json`。
+
+> 去你的 那一堆前缀 25春 又是MBAO 又是OMBA的 还有四个数字 有的隔了空格 有的每隔 什么垃圾？改个名这么久？ 你这些烂前缀这么烂就别放！
+
+> 每节课的名字太字段style了 什么 c2b shenme  latest

@@ -21,7 +21,7 @@ function Base([object]$Outline,[object[]]$Nodes){
         source=[ordered]@{plan_path='C:\fixture\v1.json';plan_sha256=('a'*64);manifest_path='C:\fixture\manifest.json';manifest_sha256=('b'*64)}
         outline=$Outline;learning_support=@(Support);rename_map=[ordered]@{'09-长课工具箱'='学习支持-长课工具箱';'10-长课案例练习'='学习支持-长课案例练习';'11-复习与自测'='学习支持-复习与自测'}
         course_map=[ordered]@{domains=@([ordered]@{id='domain';label='课程';nodes=$Nodes});learning=[ordered]@{nodes=@((Support)|ForEach-Object{[ordered]@{id=$_.id;note=$_.note}})}}
-        live=[ordered]@{path='C:\fixture\live';vault='fixture';file='Babata/MBA/long/index.md'}
+        live=[ordered]@{path='C:\fixture\长课';vault='fixture';file='Babata/MBA/长课/index.md'}
     }
 }
 
@@ -35,13 +35,19 @@ try{
     $flat=Base ([ordered]@{mode='flat';units=$units}) @($units|ForEach-Object{[ordered]@{id=$_.id;note=$_.note}})
     $flatPath=Write-Plan $flat 'flat.json';if(@(&$checker -PlanPath $flatPath).Count -ne 1){throw '101-unit flat plan did not pass'}
 
+    $fieldStyle=$flat|ConvertTo-Json -Depth 40|ConvertFrom-Json
+    $fieldStyle.live.path='C:\fixture\long-course_c2b_latest'
+    $fieldStyle.live.file='Babata/MBA/long-course_c2b_latest/index.md'
+    $fieldStylePath=Write-Plan $fieldStyle 'field-style-live.json'
+    Assert-Fails {&$checker -PlanPath $fieldStylePath} 'field-style live directory'
+
     $duplicate=$flat|ConvertTo-Json -Depth 40|ConvertFrom-Json;$duplicate.outline.units[100].source_modules=@('100')
     $duplicatePath=Write-Plan $duplicate 'duplicate.json';Assert-Fails {&$checker -PlanPath $duplicatePath} 'duplicate source module'
     $numbered=$flat|ConvertTo-Json -Depth 40|ConvertFrom-Json;$numbered.learning_support[0].note='09-长课工具箱';$numbered.course_map.learning.nodes[0].note='09-长课工具箱'
     $numberedPath=Write-Plan $numbered 'numbered.json';Assert-Fails {&$checker -PlanPath $numberedPath} 'numbered learning support'
     $mixed=$flat|ConvertTo-Json -Depth 40|ConvertFrom-Json;$mixed.outline|Add-Member -NotePropertyName sections -NotePropertyValue @([ordered]@{id='bad';title='bad';units=@($units[0])})
     $mixedPath=Write-Plan $mixed 'mixed.json';Assert-Fails {&$checker -PlanPath $mixedPath} 'mixed outline shape'
-    [pscustomobject]@{schema='babata.mba-course-presentation-governance-test/v1';status='passed';flat_units=101;sectioned_units=101;mutations_rejected=3}
+    [pscustomobject]@{schema='babata.mba-course-presentation-governance-test/v1';status='passed';flat_units=101;sectioned_units=101;mutations_rejected=4}
 }finally{
     if(Test-Path -LiteralPath $root){Remove-Item -LiteralPath $root -Recurse -Force}
 }
