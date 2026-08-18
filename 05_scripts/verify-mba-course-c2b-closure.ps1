@@ -9,6 +9,9 @@ param(
     [string]$DataHome=$env:BABATA_DATA_HOME,
     [string]$PackageCheckerScript=(Join-Path $PSScriptRoot 'check-mba-course-c2b-package.ps1'),
     [string]$OutputPath,
+    [string]$PublishedPackageRoot,
+    [string]$PublishedPackageManifestPath,
+    [string]$LiveFileRenameMapPath,
     [Parameter(Mandatory=$true)][string]$UserAcceptanceEvidence
 )
 
@@ -30,6 +33,16 @@ $c1bPath=(Get-Item -LiteralPath $C1BRegistrationLedgerPath -ErrorAction Stop).Fu
 $knowledgePath=(Get-Item -LiteralPath $KnowledgeUniverseLedgerPath -ErrorAction Stop).FullName
 $staging=(Get-Item -LiteralPath $C2BStagingRoot -ErrorAction Stop).FullName.TrimEnd('\')
 $package=Join-Path $staging 'package'
+$publishedPackage=$package
+$publishedManifest=$null
+if(-not [string]::IsNullOrWhiteSpace($PublishedPackageRoot)){
+    $publishedPackage=(Get-Item -LiteralPath $PublishedPackageRoot -ErrorAction Stop).FullName.TrimEnd('\')
+    if([string]::IsNullOrWhiteSpace($PublishedPackageManifestPath)){throw 'Published package manifest is required with PublishedPackageRoot'}
+    $publishedManifest=Read-Json ((Get-Item -LiteralPath $PublishedPackageManifestPath -ErrorAction Stop).FullName)
+    if([string]$publishedManifest.schema -cne 'babata.mba-course-presentation-migration-manifest/v1' -or [string]$publishedManifest.status -cne 'passed_engineering_gates'){
+        throw 'Published package manifest is not a passed presentation migration manifest'
+    }
+}
 $manifestPath=Join-Path $staging 'manifest.json'
 $live=(Get-Item -LiteralPath $LiveVaultPath -ErrorAction Stop).FullName.TrimEnd('\')
 foreach($path in @($plan,$learning,$c1bPath,$knowledgePath,$package,$manifestPath,$live)){if(-not(Test-Path -LiteralPath $path)){throw "closure input missing: $path"}}
@@ -57,17 +70,43 @@ Assert-Equal ([string]$manifest.knowledge_universe.status) 'registered' 'knowled
 $checker=(Get-Item -LiteralPath $PackageCheckerScript -ErrorAction Stop).FullName
 & $checker -CoursePlanPath $plan -PackageRoot $package -ManifestPath $manifestPath | Out-Null
 
-$packageFiles=@(Get-ChildItem -LiteralPath $package -Recurse -File)
+$canonicalPackageFiles=@(Get-ChildItem -LiteralPath $package -Recurse -File)
+$packageFiles=@(Get-ChildItem -LiteralPath $publishedPackage -Recurse -File)
 $liveFiles=@(Get-ChildItem -LiteralPath $live -Recurse -File)
-$packageByRelative=@{};foreach($file in $packageFiles){$packageByRelative[(Relative $package $file.FullName)]=$file}
+$packageByRelative=@{};foreach($file in $packageFiles){$packageByRelative[(Relative $publishedPackage $file.FullName)]=$file}
 $liveByRelative=@{};foreach($file in $liveFiles){$liveByRelative[(Relative $live $file.FullName)]=$file}
-$hashFailures=[Collections.Generic.List[string]]::new()
-foreach($relative in $packageByRelative.Keys){
-    if(-not $liveByRelative.ContainsKey($relative)){[void]$hashFailures.Add("missing:$relative");continue}
-    if((Hash $packageByRelative[$relative].FullName) -cne (Hash $liveByRelative[$relative].FullName)){[void]$hashFailures.Add($relative)}
+$renameMap=@{}
+if(-not [string]::IsNullOrWhiteSpace($LiveFileRenameMapPath)){
+    $renamePath=(Get-Item -LiteralPath $LiveFileRenameMapPath -ErrorAction Stop).FullName
+    $renameObject=Read-Json $renamePath
+    foreach($rename in @($renameObject.renamed_learning_support)){
+        $from=[string]$rename.from
+        $to=[string]$rename.to
+        if([string]::IsNullOrWhiteSpace($from) -or [string]::IsNullOrWhiteSpace($to)){throw 'Live file rename map contains an empty source or target'}
+        if($renameMap.ContainsKey($from)){throw "Live file rename map duplicates source: $from"}
+        $renameMap[$from]=$to
+    }
 }
-foreach($relative in $liveByRelative.Keys){if(-not $packageByRelative.ContainsKey($relative)){[void]$hashFailures.Add("extra:$relative")}}
+$hashFailures=[Collections.Generic.List[string]]::new()
+$expectedLive=@{}
+foreach($relative in $packageByRelative.Keys){
+    $liveRelative=$relative
+    if($renameMap.ContainsKey($relative)){$liveRelative=$renameMap[$relative]}
+    if($expectedLive.ContainsKey($liveRelative)){[void]$hashFailures.Add("duplicate-target:$liveRelative");continue}
+    $expectedLive[$liveRelative]=$true
+    if(-not $liveByRelative.ContainsKey($liveRelative)){[void]$hashFailures.Add("missing:$liveRelative");continue}
+    if((Hash $packageByRelative[$relative].FullName) -cne (Hash $liveByRelative[$liveRelative].FullName)){[void]$hashFailures.Add($liveRelative)}
+}
+foreach($relative in $liveByRelative.Keys){if(-not $expectedLive.ContainsKey($relative)){[void]$hashFailures.Add("extra:$relative")}}
 Assert-Equal $hashFailures.Count 0 'package/live hash failures'
+if($null -ne $publishedManifest){
+    $declared=@($publishedManifest.package_files)
+    if($declared.Count -ne $packageFiles.Count){throw 'Published migration manifest package-file count mismatch'}
+    foreach($row in $declared){
+        $relative=[string]$row.path
+        if(-not $packageByRelative.ContainsKey($relative) -or [string]$row.sha256 -cne (Hash $packageByRelative[$relative].FullName)){throw "Published migration manifest hash mismatch: $relative"}
+    }
+}
 
 $rawDb=Join-Path $data '01_raw\index\raw.sqlite'
 $derivedDb=Join-Path $data '02_derived\index\derived.sqlite'
@@ -92,7 +131,7 @@ $receipt=[ordered]@{
     course=[ordered]@{name=$course;course_key=$courseKey;expected_modules=[int]$planObject.expected_modules}
     c1b=[ordered]@{complete_c1=[int]$c1b.coverage.complete_c1_reused;essence_decisions=[int]$c1b.coverage.essence_decisions_registered;retained_media=[int]$c1b.coverage.retained_media_registered;ledger_sha256=Hash $c1bPath}
     knowledge_universe=[ordered]@{entries=@($knowledge.modules).Count;branch=[string]$knowledge.branch.name;ledger_sha256=Hash $knowledgePath}
-    package=[ordered]@{status=[string]$manifest.status;staging=$staging;manifest_sha256=Hash $manifestPath;files=$packageFiles.Count}
+    package=[ordered]@{status=[string]$manifest.status;staging=$publishedPackage;canonical_staging=$staging;manifest_sha256=Hash $manifestPath;files=$packageFiles.Count}
     live=[ordered]@{path=$live;files=$liveFiles.Count;hash_differences=0}
     databases=[ordered]@{raw_quick_check=$rawQuick;derived_quick_check=$derivedQuick;foreign_key_failures=0}
 }

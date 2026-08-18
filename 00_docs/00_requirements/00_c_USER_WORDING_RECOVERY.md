@@ -37,6 +37,7 @@
 | 先做第二个解、MBA 全按第一个解、Obsidian 模板更新、Goal 不能恢复、统一看 | 2026-08-17 | `resolved` | `resolved_by`: `DOC-USAGE` §17、`DOC-ACTIVE-PLAN` AP-20260816-06 terminal review gate、Issue #180 |
 | 每节课的名字、字段style、c2b、latest | 2026-08-18 | `resolved` | `resolved_by`: `D:\BabataData\04_runtime\staging\model-workspaces\mba-course-live-display-names-20260818-v1\display-name-migration-receipt.json`; AP-20260816-06 第 3 项终端 |
 | 前缀、25春、MBAO、OMBA、四个数字、课程本名 | 2026-08-18 | `resolved` | `resolved_by`: `D:\BabataData\04_runtime\staging\model-workspaces\mba-course-live-display-names-20260818-v2\display-name-migration-receipt.json`; AP-20260816-06 第 3 项终端 |
+| 验收所有mba、恢复goal、最终obsidian模板、pr | 2026-08-18 | `resolved` | `resolved_by`: AP-20260816-06 terminal writeback、closure receipts、PR #183；统一验收已发生，最终模板收尾已提交 |
 
 以下历史正文来自 Babata 1.0 原始归档和按日期整理的产品讨论。章节标题、状态/覆盖注释是编辑者
 导航；`>` 引文才是逐字用户证据。完整原始会话不进入 Git，未来如需长期保存，应由 Babata 正式
@@ -979,7 +980,7 @@ verbatim sha256：`990cd8518fc6391600edeaa0cd053a0bedba56cd89cf273bc0fedb6fc2f80
 
 capture time：`2026-08-18`。来源：当前用户对话。
 
-verbatim sha256：`d027d51dc7d9069a4ffa29cba7adad4b2f5c267292bbe6269f2b259781369849`。
+verbatim sha256：`e94ebcfec441546769cd3db3a034bb764bd0b03392ce63c65c88fd8c15b930b1`。
 
 极简检索词：`每节课的名字`；`字段style`；`c2b`；`latest`。
 
@@ -997,7 +998,7 @@ verbatim sha256：`d027d51dc7d9069a4ffa29cba7adad4b2f5c267292bbe6269f2b259781369
 
 capture time：`2026-08-18`。来源：当前用户对话。
 
-verbatim sha256：`e7f9c75a05dde5b208691c70dbb6cace23cce9c7fcdc2ca5693f75e632b72c55`。
+verbatim sha256：`f03396487c6b5fbfcf099e644caf505027dadb98c428fe6ab939f5941676c8ee`。
 
 极简检索词：`前缀`；`25春`；`MBAO`；`OMBA`；`四个数字`；`课程本名`。
 
@@ -1009,4 +1010,20 @@ verbatim sha256：`e7f9c75a05dde5b208691c70dbb6cace23cce9c7fcdc2ca5693f75e632b72
 
 > 去你的 那一堆前缀 25春 又是MBAO 又是OMBA的 还有四个数字 有的隔了空格 有的每隔 什么垃圾？改个名这么久？ 你这些烂前缀这么烂就别放！
 
-> 每节课的名字太字段style了 什么 c2b shenme  latest
+### 2026-08-18：全课程验收后恢复 Goal 并提交模板收尾
+
+<!-- DOCS-FIRST-CAPTURE: DFC-20260818-03; schema=v1 -->
+
+capture time：`2026-08-18`。来源：当前用户对话。
+
+verbatim sha256：`b5ad33f5fabaea8e3bdba5a6173ae96b1e381c05494dce6d2e1befe57de840bd`。
+
+极简检索词：`验收所有mba`；`恢复goal`；`最终obsidian模板`；`pr`。
+
+状态：`resolved`。
+
+目标去向：`AP-20260816-06`；用户已明确确认全部 MBA 内容与视觉验收，授权恢复 Goal，最终 Obsidian 模板收尾、closure verifier 和 PR 收尾均已完成。
+
+`resolved_by`：`DOC-USAGE` §17、`DOC-ACTIVE-PLAN` AP-20260816-06 terminal writeback、PR #183。
+
+> 我已经验收了所有mba 立刻恢复goal 并把最终obsidian模板更新 然后pr

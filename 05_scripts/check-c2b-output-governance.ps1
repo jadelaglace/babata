@@ -106,6 +106,8 @@ function Get-GenericMbaPathStatus {
             'accepted-course-result' = "course_acceptance='accepted'"
             'closed-course-result' = "closure='closed'"
             'package-live-hashes' = 'package/live hash failures'
+            'published-package-root' = 'PublishedPackageRoot'
+            'presentation-rename-map' = 'renamed_learning_support'
             'database-integrity' = 'PRAGMA quick_check;'
         }
     }

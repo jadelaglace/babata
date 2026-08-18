@@ -28,7 +28,7 @@
 | P5 | 已完成 | 真实 C0 -> C1 清洗、失败重试与原件不变通过 |
 | P6 | 历史 baseline 已完成 | 关闭时适用的核心沉淀、检索、子库与通用输出 gate 通过；后采用 ontology successor 由 P8.9 单独交付，不倒签 P6 |
 | P7 | 已完成 | 扩展来源、统一收集 Skill 与受控 Agent 合同通过 |
-| P8 | 进行中 | 来源回收已收束；MBA 13 门 C2B 均已发布并完成呈现治理迁移，等待全课程统一验收 |
+| P8 | 已完成 | 来源回收已收束；MBA 13 门 C2B 均已发布，用户已统一验收内容与视觉，13 门课程 closure verifier 全部通过并登记 `accepted / closed` |
 | P9 | 未开始 | 本地备份/隔离恢复已有证据；外部同步目标尚未选定并跑通 |
 
 Phase 完成只表示该 Phase 关闭时适用的 gate 和 AC/TC 有足够证据，不等于后来新增的 adopted
@@ -48,7 +48,7 @@ Phase 完成只表示该 Phase 关闭时适用的 gate 和 AC/TC 有足够证据
 | P8.6 | 完成 | 同一 70/70 权威存量进入 registered/C0-C | 未触发新增抓取或 C1 |
 | P8.7 | 历史试点 | 本地 MBA 小批 C1 和停队列证据保留 | 不是当前 MBA 权威输入 |
 | P8.8 | 完成 | MBA 网站权威 C1 为 763/763，课件 369、视频 394 | 真实数据继续留在外部数据根 |
-| P8.9 | 进行中 | 财务管理、全球供应链已完成知识治理 successor 登记；13/13 MBA C2B 呈现 v2 迁移完成；决策会计、财务管理、全球供应链已关闭，其余 10 门已发布并待全课程统一验收 | 仍需用户一次性确认其余 10 门课程内容与视觉；确认后逐课运行 closure verifier 并更新 accepted/closed |
+| P8.9 | 完成 | 财务管理、全球供应链已完成知识治理 successor 登记；13/13 MBA C2B 呈现 v2 迁移完成；用户已于 2026-08-18 统一验收全部课程内容与视觉；13 门课程均已登记 `accepted / closed` | 10 门 closure receipt 均为 `status=passed`，v2 published package/live 逐文件 hash 差异为 0 |
 
 “全量”永远绑定本行声明的明确范围。70/70、763/763 或一门课程完整跑通，都只是对应使用范围
 的完成事实，不进入 PRD，也不自动扩大为整个产品、全部来源或全部 MBA 已完成。
@@ -143,11 +143,12 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 - 唯一用户 live：
   `C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\执行商务沟通`。
 - package/live：33/33，逐文件 hash 相等；14 个 Markdown、17 个媒体文件、Wiki/Markdown 链接检查通过。
-- 当前状态：整轮无缺陷到达 `pending_user_acceptance`；按全课程 Goal 不单独请求验收、不运行 closure verifier，待所有未关闭课程发布后统一请求一次内容与视觉确认。
+- 当前状态：用户已于 2026-08-18 统一验收内容与视觉；课程为 `accepted / closed`。
 - 终端证据：`D:\BabataData\04_runtime\staging\execution-rounds\mba-executive-business-communication-20260816-v3\round-ledger.json`，status `passed`、actual terminal `pending_user_acceptance`；发布回执位于 `D:\BabataData\04_runtime\receipts\mba-course-c2b\executive-business-communication\`。
+- 关闭回执：`D:\BabataData\04_runtime\staging\model-workspaces\mba-executive-business-communication-c2b-20260816-v3\closure-verification.json`，status `passed`，package/live `33/33`、hash 差异 `0`。
 
-该状态只证明本门课程的正式 C1B、内容、知识登记和唯一 live 已到待验收终端，不代表用户已经
-验收、课程已经 closed 或全部 MBA 已完成。
+该状态证明本门课程的正式 C1B、内容、知识登记、呈现迁移、唯一 live 和用户验收均已闭环；不单独扩大
+为其他课程或 Babata 全产品完成。
 
 ## 8. MBA 先导课当前正式成果
 
@@ -158,11 +159,12 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 - 唯一用户 live：
   `C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\MBA先导课`。
 - package/live：87/87，逐文件 hash 相等；六域课程脑图含 6 个章节和 4 个学习支持 internal-link。
-- 当前状态：整轮无缺陷到达 `pending_user_acceptance`；按全课程 Goal 不单独请求验收、不运行 closure verifier，待所有未关闭课程发布后统一请求一次内容与视觉确认。
+- 当前状态：用户已于 2026-08-18 统一验收内容与视觉；课程为 `accepted / closed`。
 - 终端证据：`D:\BabataData\04_runtime\staging\execution-rounds\mba-primer-20260816-v8\round-ledger.json`，status `passed`、actual terminal `pending_user_acceptance`；发布回执位于 `D:\BabataData\04_runtime\receipts\mba-course-c2b\mba-primer\`。
+- 关闭回执：`D:\BabataData\04_runtime\staging\model-workspaces\mba-primer-c2b-20260816-v8\closure-verification.json`，status `passed`，package/live `87/87`、hash 差异 `0`。
 
-该状态只证明本门课程的正式 C1B、内容、知识登记和唯一 live 已到待验收终端，不代表用户已经
-验收、课程已经 closed 或全部 MBA 已完成。
+该状态证明本门课程的正式 C1B、内容、知识登记、呈现迁移、唯一 live 和用户验收均已闭环；不单独扩大
+为其他课程或 Babata 全产品完成。
 
 ## 9. 创造价值的营销管理当前正式成果
 
@@ -171,11 +173,12 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 - 当前候选批次：`D:\BabataData\04_runtime\staging\model-workspaces\mba-value-creating-marketing-c2b-20260816-v2`。
 - 唯一用户 live：`C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\创造价值的营销管理`。
 - package/live：39/39，逐文件 hash 相等；课程脑图含 4 个章节和 4 个学习支持 internal-link。
-- 当前状态：v2 整轮无缺陷到达 `pending_user_acceptance`；按全课程 Goal 不单独请求验收、不运行 closure verifier，待所有未关闭课程发布后统一请求一次内容与视觉确认。
+- 当前状态：用户已于 2026-08-18 统一验收内容与视觉；课程为 `accepted / closed`。
 - 终端证据：`D:\BabataData\04_runtime\staging\execution-rounds\mba-value-creating-marketing-20260816-v2\round-ledger.json`；发布回执位于 `D:\BabataData\04_runtime\receipts\mba-course-c2b\value-creating-marketing\`。
+- 关闭回执：`D:\BabataData\04_runtime\staging\model-workspaces\mba-value-creating-marketing-c2b-20260816-v2\closure-verification.json`，status `passed`，package/live `39/39`、hash 差异 `0`。
 
-该状态只证明本门课程的正式 C1B、内容、知识登记和唯一 live 已到待验收终端，不代表用户已经
-验收、课程已经 closed 或全部 MBA 已完成。
+该状态证明本门课程的正式 C1B、内容、知识登记、呈现迁移、唯一 live 和用户验收均已闭环；不单独扩大
+为其他课程或 Babata 全产品完成。
 
 ## 10. 组织绩效的战略领导力当前正式成果
 
@@ -184,11 +187,12 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 - 当前候选批次：`D:\BabataData\04_runtime\staging\model-workspaces\mba-strategic-leadership-c2b-20260816-v2`。
 - 唯一用户 live：`C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\组织绩效的战略领导力`。
 - package/live：13/13，逐文件 hash 相等；课程脑图含 4 个章节和 4 个学习支持 internal-link。
-- 当前状态：v2 修复轮次无缺陷到达 `pending_user_acceptance`；按全课程 Goal 不单独请求验收、不运行 closure verifier，待所有未关闭课程发布后统一请求一次内容与视觉确认。
+- 当前状态：用户已于 2026-08-18 统一验收内容与视觉；课程为 `accepted / closed`。
 - 终端证据：`D:\BabataData\04_runtime\staging\execution-rounds\mba-strategic-leadership-20260816-v2\round-ledger.json`；v1 中已通过的 8/8 学习正文和 42/42 知识登记被精确复用，未重跑。
+- 关闭回执：`D:\BabataData\04_runtime\staging\model-workspaces\mba-strategic-leadership-c2b-20260816-v2\closure-verification.json`，status `passed`，package/live `13/13`、hash 差异 `0`。
 
-该状态只证明本门课程的正式 C1B、内容、知识登记和唯一 live 已到待验收终端，不代表用户已经
-验收、课程已经 closed 或全部 MBA 已完成。
+该状态证明本门课程的正式 C1B、内容、知识登记、呈现迁移、唯一 live 和用户验收均已闭环；不单独扩大
+为其他课程或 Babata 全产品完成。
 
 ## 11. 组织行为学当前正式成果
 
@@ -197,11 +201,12 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 - 当前候选批次：`D:\BabataData\04_runtime\staging\model-workspaces\mba-organizational-behavior-c2b-20260816-v1`。
 - 唯一用户 live：`C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\组织行为学`。
 - package/live：121/121，逐文件 hash 相等；课程脑图含 5 个章节和 4 个学习支持 internal-link。
-- 当前状态：v1 整轮无缺陷到达 `pending_user_acceptance`；按全课程 Goal 不单独请求验收、不运行 closure verifier，待所有未关闭课程发布后统一请求一次内容与视觉确认。
+- 当前状态：用户已于 2026-08-18 统一验收内容与视觉；课程为 `accepted / closed`。
 - 终端证据：`D:\BabataData\04_runtime\staging\execution-rounds\mba-organizational-behavior-20260816-v1\round-ledger.json`。
+- 关闭回执：`D:\BabataData\04_runtime\staging\model-workspaces\mba-organizational-behavior-c2b-20260816-v1\closure-verification.json`，status `passed`，package/live `121/121`、hash 差异 `0`。
 
-该状态只证明本门课程的正式 C1B、内容、知识登记和唯一 live 已到待验收终端，不代表用户已经
-验收、课程已经 closed 或全部 MBA 已完成。
+该状态证明本门课程的正式 C1B、内容、知识登记、呈现迁移、唯一 live 和用户验收均已闭环；不单独扩大
+为其他课程或 Babata 全产品完成。
 
 ## 12. 数据安全、道德和风险管理当前正式成果
 
@@ -210,11 +215,12 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 - 当前候选批次：`D:\BabataData\04_runtime\staging\model-workspaces\mba-data-security-ethics-risk-c2b-20260816-v1`。
 - 唯一用户 live：`C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\数据安全、道德和风险管理`。
 - package/live：61/61，逐文件 SHA-256 零差异；11 个 Markdown、48 个媒体文件，课程脑图含 9 个内部链接。
-- 当前状态：v1 整轮五阶段无缺陷到达 `pending_user_acceptance`；按全课程 Goal 不单独请求验收、不运行 closure verifier，待所有未关闭课程发布后统一请求一次内容与视觉确认。
+- 当前状态：用户已于 2026-08-18 统一验收内容与视觉；课程为 `accepted / closed`。
 - 终端证据：`D:\BabataData\04_runtime\staging\execution-rounds\mba-data-security-ethics-risk-20260816-v1\round-ledger.json`，status `passed`、actual terminal `pending_user_acceptance`。
+- 关闭回执：`D:\BabataData\04_runtime\staging\model-workspaces\mba-data-security-ethics-risk-c2b-20260816-v1\closure-verification.json`，status `passed`，package/live `61/61`、hash 差异 `0`。
 
-该状态只证明本门课程的正式 C1B、内容、知识登记和唯一 live 已到待验收终端，不代表用户已经
-验收、课程已经 closed 或全部 MBA 已完成。
+该状态证明本门课程的正式 C1B、内容、知识登记、呈现迁移、唯一 live 和用户验收均已闭环；不单独扩大
+为其他课程或 Babata 全产品完成。
 
 ## 13. 管理经济学当前正式成果
 
@@ -223,11 +229,12 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 - 当前候选批次：`D:\BabataData\04_runtime\staging\model-workspaces\mba-managerial-economics-c2b-20260816-v1`。
 - 唯一用户 live：`C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\管理经济学`。
 - package/live：69/69，逐文件 SHA-256 零差异；11 个 Markdown、56 个媒体文件，课程脑图含 9 个内部链接。
-- 当前状态：v1 整轮五阶段无缺陷到达 `pending_user_acceptance`；按全课程 Goal 不单独请求验收、不运行 closure verifier，待所有未关闭课程发布后统一请求一次内容与视觉确认。
+- 当前状态：用户已于 2026-08-18 统一验收内容与视觉；课程为 `accepted / closed`。
 - 终端证据：`D:\BabataData\04_runtime\staging\execution-rounds\mba-managerial-economics-20260816-v1\round-ledger.json`，status `passed`、actual terminal `pending_user_acceptance`。
+- 关闭回执：`D:\BabataData\04_runtime\staging\model-workspaces\mba-managerial-economics-c2b-20260816-v1\closure-verification.json`，status `passed`，package/live `69/69`、hash 差异 `0`。
 
-该状态只证明本门课程的正式 C1B、内容、知识登记和唯一 live 已到待验收终端，不代表用户已经
-验收、课程已经 closed 或全部 MBA 已完成。
+该状态证明本门课程的正式 C1B、内容、知识登记、呈现迁移、唯一 live 和用户验收均已闭环；不单独扩大
+为其他课程或 Babata 全产品完成。
 
 ## 14. 商业分析当前正式成果
 
@@ -236,11 +243,12 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 - 当前候选批次：`D:\BabataData\04_runtime\staging\model-workspaces\mba-business-analytics-c2b-20260816-v3`。
 - 唯一用户 live：`C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\商业分析`。
 - package/live：44/44，逐文件 SHA-256 零差异；11 个 Markdown、30 个 C1B 媒体文件和 3 个课程脑图资产。
-- 当前状态：v2 从干净 staging 完成 67 个一级 digest、2 个有界二级归约摘要、9/9 学习正文与 51/51 知识登记；v3 repair round 的 materialize、package gate 和 publish 三阶段无缺陷到达 `pending_user_acceptance`。按全课程 Goal 不单独请求验收、不运行 closure verifier，待所有未关闭课程发布后统一请求一次内容与视觉确认。
+- 当前状态：v2 从干净 staging 完成 67 个一级 digest、2 个有界二级归约摘要、9/9 学习正文与 51/51 知识登记；v3 repair round 的 materialize、package gate 和 publish 三阶段无缺陷通过。用户已于 2026-08-18 统一验收内容与视觉；课程为 `accepted / closed`。
 - 终端证据：v2 上游证据位于 `D:\BabataData\04_runtime\staging\execution-rounds\mba-business-analytics-20260816-v2\round-ledger.json`；成功终端位于 `D:\BabataData\04_runtime\staging\execution-rounds\mba-business-analytics-20260816-v3\round-ledger.json`，status `passed`、actual terminal `pending_user_acceptance`。
+- 关闭回执：`D:\BabataData\04_runtime\staging\model-workspaces\mba-business-analytics-c2b-20260816-v3\closure-verification.json`，status `passed`，package/live `44/44`、hash 差异 `0`。
 
-该状态只证明本门课程的正式 C1B、内容、知识登记和唯一 live 已到待验收终端，不代表用户已经
-验收、课程已经 closed 或全部 MBA 已完成。
+该状态证明本门课程的正式 C1B、内容、知识登记、呈现迁移、唯一 live 和用户验收均已闭环；不单独扩大
+为其他课程或 Babata 全产品完成。
 
 ## 15. 全球商业环境当前正式成果
 
@@ -249,11 +257,12 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 - 当前候选批次：`D:\BabataData\04_runtime\staging\model-workspaces\mba-global-business-environment-c2b-20260816-v1`。
 - 唯一用户 live：`C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\全球商业环境`。
 - package/live：46/46，逐文件 SHA-256 零差异；11 个 Markdown、32 个 C1B 媒体文件和 3 个课程脑图资产。
-- 当前状态：v1 整轮五阶段无缺陷到达 `pending_user_acceptance`；按全课程 Goal 不单独请求验收、不运行 closure verifier，待所有未关闭课程发布后统一请求一次内容与视觉确认。
+- 当前状态：用户已于 2026-08-18 统一验收内容与视觉；课程为 `accepted / closed`。
 - 终端证据：`D:\BabataData\04_runtime\staging\execution-rounds\mba-global-business-environment-20260816-v1\round-ledger.json`，status `passed`、actual terminal `pending_user_acceptance`。
+- 关闭回执：`D:\BabataData\04_runtime\staging\model-workspaces\mba-global-business-environment-c2b-20260816-v1\closure-verification.json`，status `passed`，package/live `46/46`、hash 差异 `0`。
 
-该状态只证明本门课程的正式 C1B、内容、知识登记和唯一 live 已到待验收终端，不代表用户已经
-验收、课程已经 closed 或全部 MBA 已完成。
+该状态证明本门课程的正式 C1B、内容、知识登记、呈现迁移、唯一 live 和用户验收均已闭环；不单独扩大
+为其他课程或 Babata 全产品完成。
 
 ## 16. 战略管理当前正式成果
 
@@ -262,11 +271,12 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 - 当前候选批次：`D:\BabataData\04_runtime\staging\model-workspaces\mba-strategic-management-c2b-20260816-v1`。
 - 唯一用户 live：`C:\Users\Aiano\Documents\Obsidian Vault\Babata\MBA\战略管理`。
 - package/live：81/81，逐文件 SHA-256 零差异；11 个 Markdown、67 个 C1B 媒体文件和 3 个课程脑图资产。
-- 当前状态：v1 execution round 五阶段无缺陷到达 `pending_user_acceptance`；按全课程 Goal 不单独请求验收、不运行 closure verifier，待所有课程发布后统一请求一次内容与视觉确认。
+- 当前状态：用户已于 2026-08-18 统一验收内容与视觉；课程为 `accepted / closed`。
 - 终端证据：`D:\BabataData\04_runtime\staging\execution-rounds\mba-strategic-management-20260816-v1\round-ledger.json`，status `passed`、actual terminal `pending_user_acceptance`。
+- 关闭回执：`D:\BabataData\04_runtime\staging\model-workspaces\mba-strategic-management-c2b-20260816-v1\closure-verification.json`，status `passed`，package/live `81/81`、hash 差异 `0`。
 
-该状态只证明本门课程的正式 C1B、内容、知识登记和唯一 live 已到待验收终端，不代表用户已经
-验收、课程已经 closed 或全部 MBA 已完成。
+该状态证明本门课程的正式 C1B、内容、知识登记、呈现迁移、唯一 live 和用户验收均已闭环；不单独扩大
+为其他课程或 Babata 全产品完成。
 
 ## 17. MBA C2B 呈现 v2 全量迁移
 
@@ -317,34 +327,34 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 | 决策会计 C2B 当前关闭 | v8 `manifest.json`、`verification.json`、`closure-verification.json` 与唯一 live |
 | 执行商务沟通 C1B 正式登记 | `mba-executive-business-communication-c1b-registration-20260816-v3/c1b-registration-ledger.json` |
 | 执行商务沟通知识宇宙登记 | `mba-executive-business-communication-knowledge-20260816-v3/knowledge-universe-registration.json` |
-| 执行商务沟通待统一验收 | v3 execution `round-ledger.json`、C2B `manifest.json`、`verification.json`、publish receipt 与唯一 live |
+| 执行商务沟通 C2B 当前关闭 | v3 execution `round-ledger.json`、C2B `manifest.json`、`verification.json`、`closure-verification.json`、publish receipt 与唯一 live |
 | MBA 先导课 C1B 正式登记 | `mba-primer-c1b-registration-20260816-v1/c1b-registration-ledger.json` |
 | MBA 先导课知识宇宙登记 | `mba-primer-knowledge-20260816-v4/knowledge-universe-registration.json` |
-| MBA 先导课待统一验收 | v8 execution `round-ledger.json`、C2B `manifest.json`、`verification.json`、publish receipt 与唯一 live |
+| MBA 先导课 C2B 当前关闭 | v8 execution `round-ledger.json`、C2B `manifest.json`、`verification.json`、`closure-verification.json`、publish receipt 与唯一 live |
 | 创造价值的营销管理 C1B 正式登记 | `mba-value-creating-marketing-c1b-registration-20260816-v1/c1b-registration-ledger.json` |
 | 创造价值的营销管理知识宇宙登记 | `mba-value-creating-marketing-knowledge-20260816-v2/knowledge-universe-registration.json` |
-| 创造价值的营销管理待统一验收 | v2 execution `round-ledger.json`、C2B `manifest.json`、`verification.json`、publish receipt 与唯一 live |
+| 创造价值的营销管理 C2B 当前关闭 | v2 execution `round-ledger.json`、C2B `manifest.json`、`verification.json`、`closure-verification.json`、publish receipt 与唯一 live |
 | 组织绩效的战略领导力 C1B 正式登记 | `mba-strategic-leadership-c1b-registration-20260816-v1/c1b-registration-ledger.json` |
 | 组织绩效的战略领导力知识宇宙登记 | `mba-strategic-leadership-knowledge-20260816-v1/knowledge-universe-registration.json` |
-| 组织绩效的战略领导力待统一验收 | v2 repair execution `round-ledger.json`、C2B `manifest.json`、`verification.json`、publish receipt 与唯一 live |
+| 组织绩效的战略领导力 C2B 当前关闭 | v2 repair execution `round-ledger.json`、C2B `manifest.json`、`verification.json`、`closure-verification.json`、publish receipt 与唯一 live |
 | 组织行为学 C1B 正式登记 | `mba-organizational-behavior-c1b-registration-20260816-v1/c1b-registration-ledger.json` |
 | 组织行为学知识宇宙登记 | `mba-organizational-behavior-knowledge-20260816-v1/knowledge-universe-registration.json` |
-| 组织行为学待统一验收 | v1 execution `round-ledger.json`、C2B `manifest.json`、`verification.json`、publish receipt 与唯一 live |
+| 组织行为学 C2B 当前关闭 | v1 execution `round-ledger.json`、C2B `manifest.json`、`verification.json`、`closure-verification.json`、publish receipt 与唯一 live |
 | 数据安全、道德和风险管理 C1B 正式登记 | `mba-data-security-ethics-risk-c1b-registration-20260816-v2/c1b-registration-ledger.json` |
 | 数据安全、道德和风险管理知识宇宙登记 | `mba-data-security-ethics-risk-knowledge-20260816-v1/knowledge-universe-registration.json` |
-| 数据安全、道德和风险管理待统一验收 | v1 execution `round-ledger.json`、C2B `manifest.json`、`verification.json`、publish receipt 与唯一 live |
+| 数据安全、道德和风险管理 C2B 当前关闭 | v1 execution `round-ledger.json`、C2B `manifest.json`、`verification.json`、`closure-verification.json`、publish receipt 与唯一 live |
 | 管理经济学 C1B 正式登记 | `mba-managerial-economics-c1b-registration-20260816-v1/c1b-registration-ledger.json` |
 | 管理经济学知识宇宙登记 | `mba-managerial-economics-knowledge-20260816-v1/knowledge-universe-registration.json` |
-| 管理经济学待统一验收 | v1 execution `round-ledger.json`、C2B `manifest.json`、`verification.json`、publish receipt 与唯一 live |
+| 管理经济学 C2B 当前关闭 | v1 execution `round-ledger.json`、C2B `manifest.json`、`verification.json`、`closure-verification.json`、publish receipt 与唯一 live |
 | 商业分析 C1B 正式登记 | `mba-business-analytics-c1b-registration-20260816-v1/c1b-registration-ledger.json` |
 | 商业分析知识宇宙登记 | `mba-business-analytics-knowledge-20260816-v2/knowledge-universe-registration.json` |
-| 商业分析待统一验收 | v3 repair execution `round-ledger.json`、C2B `manifest.json`、`verification.json`、publish receipt 与唯一 live |
+| 商业分析 C2B 当前关闭 | v3 repair execution `round-ledger.json`、C2B `manifest.json`、`verification.json`、`closure-verification.json`、publish receipt 与唯一 live |
 | 全球商业环境 C1B 正式登记 | `mba-global-business-environment-c1b-registration-20260816-v1/c1b-registration-ledger.json` |
 | 全球商业环境知识宇宙登记 | `mba-global-business-environment-knowledge-20260816-v1/knowledge-universe-registration.json` |
-| 全球商业环境待统一验收 | v1 execution `round-ledger.json`、C2B `manifest.json`、`verification.json`、publish receipt 与唯一 live |
+| 全球商业环境 C2B 当前关闭 | v1 execution `round-ledger.json`、C2B `manifest.json`、`verification.json`、`closure-verification.json`、publish receipt 与唯一 live |
 | 战略管理 C1B 正式登记 | `mba-strategic-management-c1b-registration-20260816-v1/c1b-registration-ledger.json` |
 | 战略管理知识宇宙登记 | `mba-strategic-management-knowledge-20260816-v1/knowledge-universe-registration.json` |
-| 战略管理待统一验收 | v1 execution `round-ledger.json`、C2B `manifest.json`、publish receipt 与唯一 live |
+| 战略管理 C2B 当前关闭 | v1 execution `round-ledger.json`、C2B `manifest.json`、`closure-verification.json`、publish receipt 与唯一 live |
 | MBA 知识治理 successor 登记 | `D:\BabataData\04_runtime\staging\model-workspaces\mba-course-governance-successor-20260817-v1\registration-receipt.json`；核心 writer read-back 与 SQLite integrity 结果 |
 | MBA C2B 呈现 v2 全量迁移 | `D:\BabataData\04_runtime\staging\model-workspaces\mba-course-presentation-rollout-20260817-v3\rollout-receipt.json`、各课程 `migration-receipt.json`、source snapshot manifests |
 

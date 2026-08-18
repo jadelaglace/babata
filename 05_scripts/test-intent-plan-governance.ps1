@@ -179,7 +179,7 @@ try {
     }
     Assert-CheckerFails 'recovery-index-misses-latest-phrase' 'fast recovery index does not contain' {
         param($caseRoot)
-        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| 前缀、25春、MBAO、OMBA、四个数字、课程本名 |' '| 目录标签、25春、MBAO、OMBA、四个数字、课程本名 |'
+        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| 验收所有mba、恢复goal、最终obsidian模板、pr |' '| 验收全部MBA、恢复goal、最终obsidian模板、pr |'
     }
     Assert-CheckerFails 'recovery-index-uses-compound-status' 'recovery index uses an invalid base status' {
         param($caseRoot)
@@ -238,7 +238,7 @@ try {
     }
     Assert-CheckerFails 'recovery-index-status-diverges' 'status does not match its fast-index row' {
         param($caseRoot)
-        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| 前缀、25春、MBAO、OMBA、四个数字、课程本名 | 2026-08-18 | `resolved` |' '| 前缀、25春、MBAO、OMBA、四个数字、课程本名 | 2026-08-18 | `active` |'
+        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| 验收所有mba、恢复goal、最终obsidian模板、pr | 2026-08-18 | `resolved` |' '| 验收所有mba、恢复goal、最终obsidian模板、pr | 2026-08-18 | `active` |'
     }
     Assert-CheckerFails 'recovery-context-marker-loses-attribution' 'malformed attributed-context marker' {
         param($caseRoot)
