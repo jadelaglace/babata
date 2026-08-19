@@ -60,16 +60,20 @@ Goal 或本文尚未回写，只补终端状态、证据和清理，不重跑业
      `jadelaglace/babata-obsidian-android-pilot` 已推送课程导出，main commit `1ad3d45`。
   3. [完成] GitHub read-back 和全新隔离 clone v2 已验证：13/13 文件、逐文件 SHA-256 差异 0、
      Git worktree clean；首次 clone 的 10 个换行差异由 `* -text` 后重新索引原始 live 字节修复。
-  4. [待执行] 将完整加密备份纯复制/同步到可恢复的 GitHub 外部副本；从该副本执行隔离恢复和
+  4. [进行中] 将完整加密备份纯复制/同步到可恢复的 GitHub 外部副本；从该副本执行隔离恢复和
      TC-10 检查。单课仓库和完整备份若受移动端体积或 GitHub 限制，保持逻辑隔离，不降低退出条件。
   5. [等待用户] 用户在安卓 Obsidian 实机确认课程内容、内部链接和课程脑图/PNG 可取得并打开。
   6. [待执行] 回写 DOC-USAGE、DFC、Active Plan、证据和 Goal，按适用 gates 完成 PR。
 - 已知阶段结论：P9 权威合同要求外部同步和从外部副本隔离恢复；单课 Obsidian 试点只证明用户读取。
   现有 restic repository 约 9.39 GB、548 个文件，最大单文件约 23.3 MB；当前 GitHub Free 账户有
-  Git LFS 使用能力但完整容量尚未实证，不能把未上传的本地备份声称为 P9 完成。试点课程 13 个文件、
+  10 GiB LFS storage/10 GiB bandwidth 官方免费额度，当前月 LFS 用量为 0；8.743 GiB 加密仓库可在
+  额度内完成一次上传和一次完整隔离下载，但余量有限，禁止重复完整 clone。2026-08-19 本地 restic
+  `check` 已验证 5 个快照无错误；最新 Babata snapshot 为 `snapshot_01KYZ2ER57QFJRKD8NR1CPDSM9`。
+  未完成外部上传和恢复前不能声称 P9 完成。试点课程 13 个文件、
   约 333 KB，覆盖 Markdown、内部链接、Mermaid 源和 PNG 回退图；仓库经 API read-back 确认为 private。
-- 下一步：用户按 private repository 入口在安卓 Obsidian 完成实机检查并回报；同时继续评估/执行
-  完整加密 restic repository 的 GitHub 外部同步和从外部副本隔离恢复。
+- 下一步：创建只含加密 restic repository 与 5 个 state receipt 的 GitHub LFS private backup repo，
+  明确排除密码文件；完成一次完整隔离 clone 后从该副本执行 restic check、隔离 restore 和 TC-10 read-back。
+  用户同时按 private pilot repository 入口在安卓 Obsidian 完成实机检查并回报。
 - 证据入口：`D:\BabataData\04_runtime\staging\p9-github-obsidian-pilot-20260819-v1.receipt.json`；
   隔离 clone 为 `D:\BabataRecovery\recovery\p9-github-obsidian-pilot-20260819-v2`；运行回执不进入 Git。
 
