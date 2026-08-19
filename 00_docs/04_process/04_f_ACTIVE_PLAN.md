@@ -44,7 +44,7 @@ Goal 或本文尚未回写，只补终端状态、证据和清理，不重跑业
 - 状态转换类型：`user-explicit-goal-start`
 - 状态转换依据：用户明确启动 2026-08-19 P9 Goal，要求用其 GitHub 建立 private Git，并让其在安卓
   Obsidian 验证一门 MBA C2B/Obsidian 试点；Goal API 已建立同 scope active Goal。
-- 当前状态：`in_progress / obsidian-pilot-published / pending-user-android-acceptance-and-full-backup-sync`。
+- 当前状态：`in_progress / p9-external-sync-and-tc10-complete / pending-user-android-acceptance`。
 - 用户目标：以 GitHub 私有 Git 作为 P9 外部目标；先用一门已闭环 MBA 课程形成最小真实
   Obsidian 试点，让用户在安卓手机确认能够取得并打开数据；随后完成 P9 外部复制和隔离恢复证据。
 - 目标终端：GitHub 外部目标保持 private；一门 MBA 课程的 C2B/Obsidian 文件完整推送且可由安卓
@@ -60,22 +60,28 @@ Goal 或本文尚未回写，只补终端状态、证据和清理，不重跑业
      `jadelaglace/babata-obsidian-android-pilot` 已推送课程导出，main commit `1ad3d45`。
   3. [完成] GitHub read-back 和全新隔离 clone v2 已验证：13/13 文件、逐文件 SHA-256 差异 0、
      Git worktree clean；首次 clone 的 10 个换行差异由 `* -text` 后重新索引原始 live 字节修复。
-  4. [进行中] 将完整加密备份纯复制/同步到可恢复的 GitHub 外部副本；从该副本执行隔离恢复和
-     TC-10 检查。单课仓库和完整备份若受移动端体积或 GitHub 限制，保持逻辑隔离，不降低退出条件。
+  4. [完成] 完整加密备份已纯复制到 private repository `jadelaglace/babata-p9-encrypted-backup`；
+     commit `a9ac5e36` 的 553/553 备份文件经唯一一次完整隔离 read-back 逐项 SHA-256 差异 0，clone
+     内 restic 5/5 snapshots 检查通过。外部副本已恢复到全新隔离根并通过 TC-10：2768/2768 文件、
+     4/4 SQLite、C0 fail-closed、C2/C3 可重建缺失分类和探针还原后 clean verify 全部通过。
   5. [等待用户] 用户在安卓 Obsidian 实机确认课程内容、内部链接和课程脑图/PNG 可取得并打开。
-  6. [待执行] 回写 DOC-USAGE、DFC、Active Plan、证据和 Goal，按适用 gates 完成 PR。
+  6. [进行中] Git 外 P9 receipt、DOC-USAGE 和 Active Plan 已回写；DFC terminal、Issue/PR 和 Goal
+     终态等待用户安卓验收后一次完成，不提前关闭当前 Goal。
 - 已知阶段结论：P9 权威合同要求外部同步和从外部副本隔离恢复；单课 Obsidian 试点只证明用户读取。
-  现有 restic repository 约 9.39 GB、548 个文件，最大单文件约 23.3 MB；当前 GitHub Free 账户有
-  10 GiB LFS storage/10 GiB bandwidth 官方免费额度，当前月 LFS 用量为 0；8.743 GiB 加密仓库可在
-  额度内完成一次上传和一次完整隔离下载，但余量有限，禁止重复完整 clone。2026-08-19 本地 restic
-  `check` 已验证 5 个快照无错误；最新 Babata snapshot 为 `snapshot_01KYZ2ER57QFJRKD8NR1CPDSM9`。
-  未完成外部上传和恢复前不能声称 P9 完成。试点课程 13 个文件、
+  现有 restic repository 约 9.39 GB、548 个文件，最大单文件约 23.3 MB；GitHub 外部副本实际为
+  536 个 LFS 对象、8.742 GiB。2026-08-20 billing API 已出现 `Git LFS storage` 8.087611888
+  GigabyteHours、net USD 0；该时权值存在统计延迟，不替代逐文件 byte/hash 证据。唯一一次完整隔离
+  read-back 已完成，禁止重复完整 clone。最新 Babata snapshot 为
+  `snapshot_01KYZ2ER57QFJRKD8NR1CPDSM9`。P9 外部同步和 TC-10 已完成；当前唯一未完成义务是用户安卓
+  Obsidian 实机验收。试点课程 13 个文件、
   约 333 KB，覆盖 Markdown、内部链接、Mermaid 源和 PNG 回退图；仓库经 API read-back 确认为 private。
-- 下一步：创建只含加密 restic repository 与 5 个 state receipt 的 GitHub LFS private backup repo，
-  明确排除密码文件；完成一次完整隔离 clone 后从该副本执行 restic check、隔离 restore 和 TC-10 read-back。
-  用户同时按 private pilot repository 入口在安卓 Obsidian 完成实机检查并回报。
-- 证据入口：`D:\BabataData\04_runtime\staging\p9-github-obsidian-pilot-20260819-v1.receipt.json`；
-  隔离 clone 为 `D:\BabataRecovery\recovery\p9-github-obsidian-pilot-20260819-v2`；运行回执不进入 Git。
+- 下一步：等待用户按 private pilot repository 入口在安卓 Obsidian 完成实机检查并回报；收到明确
+  验收后回写 DFC terminal、Issue/PR 和 Goal，清理当前 Active Plan。不得再运行完整 LFS clone 或重跑 TC-10。
+- 证据入口：安卓试点回执
+  `D:\BabataData\04_runtime\staging\p9-github-obsidian-pilot-20260819-v1.receipt.json`；P9/TC-10 回执
+  `D:\BabataData\04_runtime\staging\p9-github-external-backup-restore-20260820-v1.receipt.json`；外部备份
+  隔离 clone 为 `D:\BabataRecovery\recovery\p9-github-encrypted-backup-20260819-v1`，隔离恢复为
+  `D:\BabataRecovery\recovery\p9-github-external-restore-20260820-v1`；运行回执不进入 Git。
 
 #### AP-20260816-06 terminal record：MBA 全课程逐门闭环
 

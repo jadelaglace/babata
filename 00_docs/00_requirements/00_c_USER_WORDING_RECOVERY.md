@@ -1044,6 +1044,9 @@ verbatim sha256：`5cad8bf2cb89278715685f95250b760681f738d3f552fbadd9682cf2bf805
 目标去向：`AP-20260819-01`；用户选择 GitHub 私有 Git 作为 P9 外部目标，并要求先用一门 MBA
 C2B/Obsidian 导出验证安卓 Obsidian 能取得数据。
 
-`resolved_by`：留空，等待外部同步、隔离恢复和用户手机验收完成。
+阶段结果：GitHub private 外部加密备份、唯一一次完整 read-back、隔离恢复和 TC-10 已于
+2026-08-20 通过；单课 private Obsidian repository 的 13/13 文件已通过隔离 clone/hash read-back。
+
+`resolved_by`：留空，仅等待用户安卓 Obsidian 实机验收；验收前不关闭 Goal 或活动项。
 
 > 完成p9 选一节mba的c2b 和obsidian导出作为试点  用我的gh 建立私有git 尝试 然后 让我验证 我安卓手机obsidian能拿到数据 快速计划下
