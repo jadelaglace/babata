@@ -34,9 +34,44 @@ Goal 或本文尚未回写，只补终端状态、证据和清理，不重跑业
 
 ## 2. 当前活动项（恢复时先读，最多一个）
 
-<!-- CURRENT-ACTIVE: none -->
+<!-- CURRENT-ACTIVE: AP-20260819-01 -->
 
-当前无活动项，等待授权。
+### AP-20260819-01：P9 GitHub 私有 Git 与安卓 Obsidian 试点
+
+- 来源锚点：`DFC-20260819-01`；2026-08-19 用户明确启动 Goal，要求完成 P9，并选择一门 MBA
+  C2B/Obsidian 导出，通过其 GitHub 私有 Git 让用户在安卓 Obsidian 实机验证取得数据。
+- Goal 锚点：Goal API `active`，thread `01a01a89-14ee-7070-81bd-32215a744e08`。
+- 状态转换类型：`user-explicit-goal-start`
+- 状态转换依据：用户明确启动 2026-08-19 P9 Goal，要求用其 GitHub 建立 private Git，并让其在安卓
+  Obsidian 验证一门 MBA C2B/Obsidian 试点；Goal API 已建立同 scope active Goal。
+- 当前状态：`in_progress / obsidian-pilot-published / pending-user-android-acceptance-and-full-backup-sync`。
+- 用户目标：以 GitHub 私有 Git 作为 P9 外部目标；先用一门已闭环 MBA 课程形成最小真实
+  Obsidian 试点，让用户在安卓手机确认能够取得并打开数据；随后完成 P9 外部复制和隔离恢复证据。
+- 目标终端：GitHub 外部目标保持 private；一门 MBA 课程的 C2B/Obsidian 文件完整推送且可由安卓
+  Obsidian 取得；现有加密备份完成外部纯复制/同步，并从外部副本在全新隔离根恢复和通过 TC-10；
+  用户完成手机验收；Usage、证据、Issue/PR 和 Goal 均完成终态回写。
+- 不改变/保护边界：不重跑或改写已关闭 MBA 课程；Obsidian/Git 仍是只读可重建输出，不成为
+  canonical writer；不把单课手机试点冒充 TC-10；凭据和 restic 密码不得进入 Git；不覆盖活动数据根；
+  不提交用户现有 `AGENTS.md`、`README.md` 修改；不扩张 Web 输出或通用运维平台。
+- 临时子计划与阶段结论：
+  1. [完成] 已核对 P9/TC-10、现有本地加密备份、GitHub 账号和课程 live；外部目标为用户 GitHub
+     private storage，安卓试点为“组织绩效的战略领导力”。
+  2. [完成] 已建立 Issue #185 和 `codex/185-p9-github-obsidian-pilot`；private repository
+     `jadelaglace/babata-obsidian-android-pilot` 已推送课程导出，main commit `1ad3d45`。
+  3. [完成] GitHub read-back 和全新隔离 clone v2 已验证：13/13 文件、逐文件 SHA-256 差异 0、
+     Git worktree clean；首次 clone 的 10 个换行差异由 `* -text` 后重新索引原始 live 字节修复。
+  4. [待执行] 将完整加密备份纯复制/同步到可恢复的 GitHub 外部副本；从该副本执行隔离恢复和
+     TC-10 检查。单课仓库和完整备份若受移动端体积或 GitHub 限制，保持逻辑隔离，不降低退出条件。
+  5. [等待用户] 用户在安卓 Obsidian 实机确认课程内容、内部链接和课程脑图/PNG 可取得并打开。
+  6. [待执行] 回写 DOC-USAGE、DFC、Active Plan、证据和 Goal，按适用 gates 完成 PR。
+- 已知阶段结论：P9 权威合同要求外部同步和从外部副本隔离恢复；单课 Obsidian 试点只证明用户读取。
+  现有 restic repository 约 9.39 GB、548 个文件，最大单文件约 23.3 MB；当前 GitHub Free 账户有
+  Git LFS 使用能力但完整容量尚未实证，不能把未上传的本地备份声称为 P9 完成。试点课程 13 个文件、
+  约 333 KB，覆盖 Markdown、内部链接、Mermaid 源和 PNG 回退图；仓库经 API read-back 确认为 private。
+- 下一步：用户按 private repository 入口在安卓 Obsidian 完成实机检查并回报；同时继续评估/执行
+  完整加密 restic repository 的 GitHub 外部同步和从外部副本隔离恢复。
+- 证据入口：`D:\BabataData\04_runtime\staging\p9-github-obsidian-pilot-20260819-v1.receipt.json`；
+  隔离 clone 为 `D:\BabataRecovery\recovery\p9-github-obsidian-pilot-20260819-v2`；运行回执不进入 Git。
 
 #### AP-20260816-06 terminal record：MBA 全课程逐门闭环
 

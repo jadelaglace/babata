@@ -56,7 +56,7 @@ function Add-ActivePlanFixture {
 
 ### AP-20260815-05：测试活动项
 
-- 来源锚点：`DFC-20260815-02`、测试来源。
+- 来源锚点：`DFC-20260815-02`、`DFC-20260819-01`、测试来源。
 - Goal 锚点：当前 Goal API 返回空值，按 `unknown` 处理；以最新明确用户指令作为持久化 Goal。
 - 状态转换类型：`user-explicit-goal-override`
 - 状态转换依据：用户明确覆盖原课程 Goal，授权暂停 AP03 并把本治理修复设为唯一 active；这不是 blocker、自主重排或从旧 resolved 项推导出的重开。
@@ -108,6 +108,29 @@ function Add-QueueFixture {
         1
     )
     Set-Content -LiteralPath $planPath -Value $plan -Encoding utf8
+}
+
+function Resolve-P9CaptureFixture {
+    param([string]$CaseRoot)
+    $path = Join-Path $CaseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md'
+    $text = Get-Content -LiteralPath $path -Raw -Encoding utf8
+    $text = $text.Replace(
+        '| P9、MBA C2B、Obsidian、私有 Git、安卓验证 | 2026-08-19 | `active` | `AP-20260819-01`；GitHub 私有 Git 外部目标与安卓 Obsidian 试点 |',
+        '| P9、MBA C2B、Obsidian、私有 Git、安卓验证 | 2026-08-19 | `resolved` | `resolved_by`: test terminal |'
+    )
+    $marker = '<!-- DOCS-FIRST-CAPTURE: DFC-20260819-01; schema=v1 -->'
+    $markerIndex = $text.IndexOf($marker, [StringComparison]::Ordinal)
+    if ($markerIndex -lt 0) { throw 'P9 capture fixture marker is missing.' }
+    $prefix = $text.Substring(0, $markerIndex)
+    $capture = $text.Substring($markerIndex)
+    $capture = $capture.Replace('状态：`active`。', '状态：`resolved`。')
+    $capture = [regex]::Replace(
+        $capture,
+        '(?m)^`resolved_by`：.*$',
+        '`resolved_by`：test terminal。',
+        1
+    )
+    Set-Content -LiteralPath $path -Value ($prefix + $capture) -Encoding utf8
 }
 
 function Replace-CurrentInProgressState {
@@ -177,9 +200,9 @@ try {
         param($caseRoot)
         Add-Content -LiteralPath (Join-Path $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md') -Value "`n### 2099-01-01：遗漏结构`n`n> 新的治理输入。`n" -Encoding utf8
     }
-    Assert-CheckerFails 'recovery-index-misses-latest-phrase' 'fast recovery index does not contain' {
+    Assert-CheckerFails 'recovery-index-misses-latest-phrase' 'latest capture must map to exactly one fast-index row' {
         param($caseRoot)
-        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| 验收所有mba、恢复goal、最终obsidian模板、pr |' '| 验收全部MBA、恢复goal、最终obsidian模板、pr |'
+        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| P9、MBA C2B、Obsidian、私有 Git、安卓验证 |' '| P9、MBA C2B、Obsidian、私有 Git、手机验证 |'
     }
     Assert-CheckerFails 'recovery-index-uses-compound-status' 'recovery index uses an invalid base status' {
         param($caseRoot)
@@ -238,7 +261,7 @@ try {
     }
     Assert-CheckerFails 'recovery-index-status-diverges' 'status does not match its fast-index row' {
         param($caseRoot)
-        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| 验收所有mba、恢复goal、最终obsidian模板、pr | 2026-08-18 | `resolved` |' '| 验收所有mba、恢复goal、最终obsidian模板、pr | 2026-08-18 | `active` |'
+        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| P9、MBA C2B、Obsidian、私有 Git、安卓验证 | 2026-08-19 | `active` |' '| P9、MBA C2B、Obsidian、私有 Git、安卓验证 | 2026-08-19 | `resolved` |'
     }
     Assert-CheckerFails 'recovery-context-marker-loses-attribution' 'malformed attributed-context marker' {
         param($caseRoot)
@@ -309,6 +332,7 @@ try {
         Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| 浅层强制钩子、根目录 AGENTS/README、Docs 去冗余、先 PR 后干净分支、恢复入口 | 2026-08-15 23:43 | `resolved` | `resolved_by`: PR `#153` merged as `a1c6df7`; AP-20260815-05 terminal |' '| 浅层强制钩子、根目录 AGENTS/README、Docs 去冗余、先 PR 后干净分支、恢复入口 | 2026-08-15 23:43 | `resolved` | `resolved_by`: test terminal |'
         Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '状态：`resolved`。' '状态：`resolved`。'
         Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '目标去向：`AP-20260815-05`。' '`resolved_by`：test terminal。'
+        Resolve-P9CaptureFixture $caseRoot
     }
     Assert-CheckerFails 'active-plan-auto-promote-queue-without-current' 'auto-promote queue while CURRENT-ACTIVE is none' {
         param($caseRoot)
