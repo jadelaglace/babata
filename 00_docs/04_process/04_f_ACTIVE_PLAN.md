@@ -40,11 +40,11 @@ Goal 或本文尚未回写，只补终端状态、证据和清理，不重跑业
 
 - 来源锚点：`DFC-20260819-01`；2026-08-19 用户明确启动 Goal，要求完成 P9，并选择一门 MBA
   C2B/Obsidian 导出，通过其 GitHub 私有 Git 让用户在安卓 Obsidian 实机验证取得数据。
-- Goal 锚点：Goal API `active`，thread `01a01a89-14ee-7070-81bd-32215a744e08`。
+- Goal 锚点：Goal API `blocked`，thread `01a01a89-14ee-7070-81bd-32215a744e08`。
 - 状态转换类型：`user-explicit-goal-start`
 - 状态转换依据：用户明确启动 2026-08-19 P9 Goal，要求用其 GitHub 建立 private Git，并让其在安卓
   Obsidian 验证一门 MBA C2B/Obsidian 试点；Goal API 已建立同 scope active Goal。
-- 当前状态：`in_progress / p9-external-sync-and-tc10-complete / pending-user-android-acceptance`。
+- 当前状态：`blocked / p9-external-sync-and-tc10-complete / pending-user-android-acceptance`。
 - 用户目标：以 GitHub 私有 Git 作为 P9 外部目标；先用一门已闭环 MBA 课程形成最小真实
   Obsidian 试点，让用户在安卓手机确认能够取得并打开数据；随后完成 P9 外部复制和隔离恢复证据。
 - 目标终端：GitHub 外部目标保持 private；一门 MBA 课程的 C2B/Obsidian 文件完整推送且可由安卓
@@ -64,8 +64,9 @@ Goal 或本文尚未回写，只补终端状态、证据和清理，不重跑业
      commit `a9ac5e36` 的 553/553 备份文件经唯一一次完整隔离 read-back 逐项 SHA-256 差异 0，clone
      内 restic 5/5 snapshots 检查通过。外部副本已恢复到全新隔离根并通过 TC-10：2768/2768 文件、
      4/4 SQLite、C0 fail-closed、C2/C3 可重建缺失分类和探针还原后 clean verify 全部通过。
-  5. [等待用户] 用户在安卓 Obsidian 实机确认课程内容、内部链接和课程脑图/PNG 可取得并打开。
-  6. [进行中] Git 外 P9 receipt、DOC-USAGE 和 Active Plan 已回写；DFC terminal、Issue/PR 和 Goal
+  5. [阻塞 / 等待用户] 用户在安卓 Obsidian 实机确认课程内容、内部链接和课程脑图/PNG 可取得并打开。
+     该外部条件连续三轮没有回报，Goal API 已按合同标为 `blocked`；不以桌面验证替代实机验收。
+  6. [阻塞] Git 外 P9 receipt、DOC-USAGE 和 Active Plan 已回写；DFC terminal、Issue/PR 和 Goal
      终态等待用户安卓验收后一次完成，不提前关闭当前 Goal。
 - 已知阶段结论：P9 权威合同要求外部同步和从外部副本隔离恢复；单课 Obsidian 试点只证明用户读取。
   现有 restic repository 约 9.39 GB、548 个文件，最大单文件约 23.3 MB；GitHub 外部副本实际为
@@ -77,6 +78,8 @@ Goal 或本文尚未回写，只补终端状态、证据和清理，不重跑业
   约 333 KB，覆盖 Markdown、内部链接、Mermaid 源和 PNG 回退图；仓库经 API read-back 确认为 private。
 - 下一步：等待用户按 private pilot repository 入口在安卓 Obsidian 完成实机检查并回报；收到明确
   验收后回写 DFC terminal、Issue/PR 和 Goal，清理当前 Active Plan。不得再运行完整 LFS clone 或重跑 TC-10。
+- 阻塞原因与恢复入口：唯一阻塞是用户安卓实机结果；用户回复“安卓验收通过”或提供失败步骤/截图
+  即构成明确恢复输入。恢复后只处理验收结果和终态回写；不得恢复 P9 上传、隔离 clone、TC-10 或 MBA 课程。
 - 证据入口：安卓试点回执
   `D:\BabataData\04_runtime\staging\p9-github-obsidian-pilot-20260819-v1.receipt.json`；P9/TC-10 回执
   `D:\BabataData\04_runtime\staging\p9-github-external-backup-restore-20260820-v1.receipt.json`；外部备份
