@@ -29,12 +29,15 @@
 | P6 | 历史 baseline 已完成 | 关闭时适用的核心沉淀、检索、子库与通用输出 gate 通过；后采用 ontology successor 由 P8.9 单独交付，不倒签 P6 |
 | P7 | 已完成 | 扩展来源、统一收集 Skill 与受控 Agent 合同通过 |
 | P8 | 已完成 | 来源回收已收束；MBA 13 门 C2B 均已发布，用户已统一验收内容与视觉，13 门课程 closure verifier 全部通过并登记 `accepted / closed` |
-| P9 | 已完成 | GitHub private Git 外部目标已完成加密备份同步、唯一一次完整 read-back、隔离恢复和 TC-10；安卓 Obsidian 单课读取试点仍等待用户实机确认，不改变 P9 机器验收结果 |
+| P9 | 已完成 | GitHub private Git 外部目标已完成加密备份同步、唯一一次完整 read-back、隔离恢复和 TC-10；用户已明确免除安卓实测并接受单课 Obsidian 试点 |
 
 Phase 完成只表示该 Phase 关闭时适用的 gate 和 AC/TC 有足够证据，不等于后来新增的 adopted
 能力自动实现，也不等于所有来源、资料或未来使用范围都已全量处理。关闭后新增能力进入当前
 交付阶段并单独报告 conformance，不倒签或抹除历史 gate。P0–P9 是交付阶段；C0–C3 是数据权威
 级别，两者不得混用。
+
+截至 2026-08-20，P0–P9 当前主线全部完成并收官。Web 输出、暂缓来源、更多输出格式、新 UI 等
+仍是可选后续，不属于本轮主线遗留，也不得据此重开已关闭 Phase。
 
 ## 3. P8 当前使用范围
 
@@ -317,7 +320,8 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
   探针还原后再次全量 clean verify 通过。
 - 独立的安卓 Obsidian 单课试点 repository `jadelaglace/babata-obsidian-android-pilot` 保持 private，
   commit `1ad3d4539a2459379970c05166a65a3ee37a3cd5`，组织绩效的战略领导力 13/13 文件经隔离
-  clone 逐项 hash 差异 0。该试点等待用户手机确认，只证明移动端取得和打开，不替代 TC-10，也不重开课程。
+  clone 逐项 hash 差异 0。用户于 2026-08-20 明确免除安卓设备实测并接受试点；状态登记为
+  `accepted_by_user_waiver`，不得表述为手机实测成功。该试点不替代 TC-10，也不重开课程。
 - Git 外终端回执：
   `D:\BabataData\04_runtime\staging\p9-github-external-backup-restore-20260820-v1.receipt.json`。
 
