@@ -29,12 +29,15 @@
 | P6 | 历史 baseline 已完成 | 关闭时适用的核心沉淀、检索、子库与通用输出 gate 通过；后采用 ontology successor 由 P8.9 单独交付，不倒签 P6 |
 | P7 | 已完成 | 扩展来源、统一收集 Skill 与受控 Agent 合同通过 |
 | P8 | 已完成 | 来源回收已收束；MBA 13 门 C2B 均已发布，用户已统一验收内容与视觉，13 门课程 closure verifier 全部通过并登记 `accepted / closed` |
-| P9 | 未开始 | 本地备份/隔离恢复已有证据；外部同步目标尚未选定并跑通 |
+| P9 | 已完成 | GitHub private Git 外部目标已完成加密备份同步、唯一一次完整 read-back、隔离恢复和 TC-10；用户已明确免除安卓实测并接受单课 Obsidian 试点 |
 
 Phase 完成只表示该 Phase 关闭时适用的 gate 和 AC/TC 有足够证据，不等于后来新增的 adopted
 能力自动实现，也不等于所有来源、资料或未来使用范围都已全量处理。关闭后新增能力进入当前
 交付阶段并单独报告 conformance，不倒签或抹除历史 gate。P0–P9 是交付阶段；C0–C3 是数据权威
 级别，两者不得混用。
+
+截至 2026-08-20，P0–P9 当前主线全部完成并收官。Web 输出、暂缓来源、更多输出格式、新 UI 等
+仍是可选后续，不属于本轮主线遗留，也不得据此重开已关闭 Phase。
 
 ## 3. P8 当前使用范围
 
@@ -297,7 +300,32 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
   `D:\BabataData\04_runtime\staging\model-workspaces\mba-course-presentation-rollout-20260817-v3\rollout-receipt.json`；
   中间 v1/v2 失败或不合规回执保留在同一 staging 根下，仅用于追溯，不作为当前状态。
 
-## 18. 试跑、试点、模板与全量使用
+## 18. P9 GitHub 外部备份与隔离恢复
+
+- 外部目标：private repository `jadelaglace/babata-p9-encrypted-backup`，default branch `main`，
+  commit `a9ac5e36f0b4d732f69448bc30f7b33a4c7865bb`；只包含加密 restic repository 与 5 个 state
+  receipt，不包含 restic 密码或其他凭据。
+- 外部副本：536 个 Git LFS 对象、9,386,729,434 bytes；全新隔离 clone 的 557 个 tracked files
+  worktree clean，`git lfs fsck` 通过。`source-manifest.json` 自身 SHA-256 为
+  `ef6a4f72a60eb356464382cd863a00c92a38bdbf3f425ed32d544af3a2c8c1d1`，其登记的 553/553
+  备份文件、9,387,316,740 bytes 逐项 SHA-256 差异 0。
+- 从外部 clone 内 repository 执行 restic `check`，5/5 snapshots、packs、indexes、trees 和 blobs
+  无错误。最新 Babata snapshot `snapshot_01KYZ2ER57QFJRKD8NR1CPDSM9` 对应 restic snapshot
+  `5e646938fd631ff9cda50a4286ed5e663e76e58ba787be283c75537fef3f6cb0`。
+- 全新隔离恢复到 `D:\BabataRecovery\recovery\p9-github-external-restore-20260820-v1`，未切换或覆盖
+  活动数据根；Babata read-back 为 `state=verified`、2768/2768 files、27,418,034,190 bytes、
+  4/4 SQLite `quick_check` / foreign keys 通过，C1/C2/C3 missing 均为空，凭据保持需重新授权。
+- TC-10 故障语义通过：篡改一个隔离 C0 文件得到非零 `integrity_failed` 且 `retryable=false`；
+  临时移走一个 C2 与一个 C3 文件时仍为 `verified`，只进入各自 missing 清单，不冒充 C0 损坏；
+  探针还原后再次全量 clean verify 通过。
+- 独立的安卓 Obsidian 单课试点 repository `jadelaglace/babata-obsidian-android-pilot` 保持 private，
+  commit `1ad3d4539a2459379970c05166a65a3ee37a3cd5`，组织绩效的战略领导力 13/13 文件经隔离
+  clone 逐项 hash 差异 0。用户于 2026-08-20 明确免除安卓设备实测并接受试点；状态登记为
+  `accepted_by_user_waiver`，不得表述为手机实测成功。该试点不替代 TC-10，也不重开课程。
+- Git 外终端回执：
+  `D:\BabataData\04_runtime\staging\p9-github-external-backup-restore-20260820-v1.receipt.json`。
+
+## 19. 试跑、试点、模板与全量使用
 
 | 名称 | 在产品文档中的位置 | 在本文中的状态含义 |
 | --- | --- | --- |
@@ -309,7 +337,7 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 一个试跑结果、试点结果或模板验收可以成为能力成熟度证据，但它们的数字、批次名、日期和
 当前完成状态属于本文或运行回执，不属于 PRD/AC/TC 正文。
 
-## 19. 证据索引
+## 20. 证据索引
 
 | 使用事实 | 主要证据位置 |
 | --- | --- |
@@ -357,6 +385,7 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 | 战略管理 C2B 当前关闭 | v1 execution `round-ledger.json`、C2B `manifest.json`、`closure-verification.json`、publish receipt 与唯一 live |
 | MBA 知识治理 successor 登记 | `D:\BabataData\04_runtime\staging\model-workspaces\mba-course-governance-successor-20260817-v1\registration-receipt.json`；核心 writer read-back 与 SQLite integrity 结果 |
 | MBA C2B 呈现 v2 全量迁移 | `D:\BabataData\04_runtime\staging\model-workspaces\mba-course-presentation-rollout-20260817-v3\rollout-receipt.json`、各课程 `migration-receipt.json`、source snapshot manifests |
+| P9 GitHub 外部备份与 TC-10 | `D:\BabataData\04_runtime\staging\p9-github-external-backup-restore-20260820-v1.receipt.json`；private repo commit `a9ac5e36f0b4d732f69448bc30f7b33a4c7865bb`；隔离 clone 与 restore 根见 §18 |
 
 历史被否决的候选、旧批次和逐次调参记录保留在 Git 外 staging/archive 和 Git 历史中，只用于
 追溯，不作为当前状态或产品定义。本文只在当前事实、范围或证据定位发生变化时更新。

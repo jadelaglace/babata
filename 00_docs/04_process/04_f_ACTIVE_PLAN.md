@@ -36,7 +36,10 @@ Goal 或本文尚未回写，只补终端状态、证据和清理，不重跑业
 
 <!-- CURRENT-ACTIVE: none -->
 
-当前无活动项，等待授权。
+当前无活动项，等待授权。AP-20260819-01 已完成：P9 GitHub private 外部备份、完整 read-back、
+隔离恢复和 TC-10 均通过；用户于 2026-08-20 明确免除安卓实测并接受单课 Obsidian 试点。
+长期状态与证据已提升到 `DOC-USAGE` §18、`DFC-20260819-01`、`DFC-20260820-01`、Git 外 receipts、
+Issue #185 和 PR #186。
 
 #### AP-20260816-06 terminal record：MBA 全课程逐门闭环
 

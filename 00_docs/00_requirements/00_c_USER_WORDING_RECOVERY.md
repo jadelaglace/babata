@@ -38,6 +38,8 @@
 | 每节课的名字、字段style、c2b、latest | 2026-08-18 | `resolved` | `resolved_by`: `D:\BabataData\04_runtime\staging\model-workspaces\mba-course-live-display-names-20260818-v1\display-name-migration-receipt.json`; AP-20260816-06 第 3 项终端 |
 | 前缀、25春、MBAO、OMBA、四个数字、课程本名 | 2026-08-18 | `resolved` | `resolved_by`: `D:\BabataData\04_runtime\staging\model-workspaces\mba-course-live-display-names-20260818-v2\display-name-migration-receipt.json`; AP-20260816-06 第 3 项终端 |
 | 验收所有mba、恢复goal、最终obsidian模板、pr | 2026-08-18 | `resolved` | `resolved_by`: AP-20260816-06 terminal writeback、closure receipts、PR #183；统一验收已发生，最终模板收尾已提交 |
+| P9、MBA C2B、Obsidian、私有 Git、安卓验证 | 2026-08-19 | `resolved` | `resolved_by`: `DOC-USAGE` §18、P9/TC-10 receipts、`DFC-20260820-01`、PR #186 |
+| 安卓免验、通过、Babata收官 | 2026-08-20 | `resolved` | `resolved_by`: `DOC-USAGE` §18、P9/TC-10 receipts、PR #186；用户免除安卓实测并接受试点与主线收官 |
 
 以下历史正文来自 Babata 1.0 原始归档和按日期整理的产品讨论。章节标题、状态/覆盖注释是编辑者
 导航；`>` 引文才是逐字用户证据。完整原始会话不进入 Git，未来如需长期保存，应由 Babata 正式
@@ -1027,3 +1029,44 @@ verbatim sha256：`b5ad33f5fabaea8e3bdba5a6173ae96b1e381c05494dce6d2e1befe57de84
 `resolved_by`：`DOC-USAGE` §17、`DOC-ACTIVE-PLAN` AP-20260816-06 terminal writeback、PR #183。
 
 > 我已经验收了所有mba 立刻恢复goal 并把最终obsidian模板更新 然后pr
+
+### 2026-08-19：P9 GitHub 私有 Git 与安卓 Obsidian 试点
+
+<!-- DOCS-FIRST-CAPTURE: DFC-20260819-01; schema=v1 -->
+
+capture time：`2026-08-19`。来源：当前用户 Goal。
+
+verbatim sha256：`3486f9ba8e22f63cd19daf06bccef11fa0a24a39d9194c7b21199d288e19c9b0`。
+
+极简检索词：`P9`；`MBA C2B`；`Obsidian`；`私有 Git`；`安卓验证`。
+
+状态：`resolved`。
+
+目标去向：`AP-20260819-01`；用户选择 GitHub 私有 Git 作为 P9 外部目标，并要求先用一门 MBA
+C2B/Obsidian 导出验证安卓 Obsidian 能取得数据。
+
+阶段结果：GitHub private 外部加密备份、唯一一次完整 read-back、隔离恢复和 TC-10 已于
+2026-08-20 通过；单课 private Obsidian repository 的 13/13 文件已通过隔离 clone/hash read-back。
+
+`resolved_by`：`DOC-USAGE` §18、Git 外 P9/TC-10 与试点 receipts、`DFC-20260820-01`、PR #186。
+
+> 完成p9 选一节mba的c2b 和obsidian导出作为试点  用我的gh 建立私有git 尝试 然后 让我验证 我安卓手机obsidian能拿到数据 快速计划下
+
+### 2026-08-20：免除安卓实测并接受 Babata 主线收官
+
+<!-- DOCS-FIRST-CAPTURE: DFC-20260820-01; schema=v1 -->
+
+capture time：`2026-08-20`。来源：当前用户对话。
+
+verbatim sha256：`5028279b4fe06d18f129c26ad8c1aa8b4aaf65c8ab623dc3df59787ba36fad1c`。
+
+极简检索词：`安卓免验`；`通过`；`Babata收官`。
+
+状态：`resolved`。
+
+目标去向：`AP-20260819-01` terminal；用户明确不再执行安卓设备验收，接受现有试点结果并要求判断
+Babata 是否收官。该决定只免除未执行的人机验收，不改写既有机器证据。
+
+`resolved_by`：`DOC-USAGE` §18、Git 外 P9/TC-10 与试点 receipts、PR #186。
+
+> 不想验了 通过 babata收官了吗？

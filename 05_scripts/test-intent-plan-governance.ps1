@@ -177,9 +177,9 @@ try {
         param($caseRoot)
         Add-Content -LiteralPath (Join-Path $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md') -Value "`n### 2099-01-01：遗漏结构`n`n> 新的治理输入。`n" -Encoding utf8
     }
-    Assert-CheckerFails 'recovery-index-misses-latest-phrase' 'fast recovery index does not contain' {
+    Assert-CheckerFails 'recovery-index-misses-latest-phrase' 'latest capture must map to exactly one fast-index row' {
         param($caseRoot)
-        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| 验收所有mba、恢复goal、最终obsidian模板、pr |' '| 验收全部MBA、恢复goal、最终obsidian模板、pr |'
+        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| 安卓免验、通过、Babata收官 |' '| 安卓免验、接受、Babata收官 |'
     }
     Assert-CheckerFails 'recovery-index-uses-compound-status' 'recovery index uses an invalid base status' {
         param($caseRoot)
@@ -238,7 +238,7 @@ try {
     }
     Assert-CheckerFails 'recovery-index-status-diverges' 'status does not match its fast-index row' {
         param($caseRoot)
-        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| 验收所有mba、恢复goal、最终obsidian模板、pr | 2026-08-18 | `resolved` |' '| 验收所有mba、恢复goal、最终obsidian模板、pr | 2026-08-18 | `active` |'
+        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| 安卓免验、通过、Babata收官 | 2026-08-20 | `resolved` |' '| 安卓免验、通过、Babata收官 | 2026-08-20 | `active` |'
     }
     Assert-CheckerFails 'recovery-context-marker-loses-attribution' 'malformed attributed-context marker' {
         param($caseRoot)
