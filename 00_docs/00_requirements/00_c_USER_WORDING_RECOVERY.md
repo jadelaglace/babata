@@ -21,6 +21,7 @@
 
 | 极简检索词 | 时段/入口 | 当前状态 | 常规去向或覆盖关系 |
 | --- | --- | --- | --- |
+| 百炼千问、花钱不要问、查价格、记录 | 2026-08-22 | `active` | `DOC-ACTIVE-PLAN` AP-20260821-02；百炼/千问调用免逐次询问，Agent 负责实时查价与成本记录 |
 | 缺的集数、拿回来、C++缺集 | 2026-08-21 | `resolved` | `resolved_by`: Cherno gap acquisition manifest；6/6 prepared，目标盘 hash read-back 一致 |
 | E:\Cherno、meta原名字、ffmpeg统一、旧字幕doc不要、导出obsidian | 2026-08-21 | `active` | `DOC-ACTIVE-PLAN` AP-20260821-02；缺集补取已终端，完整 metadata/C1/C2B/Obsidian Goal 继续 |
 | 三大界、动态相关度、知识/案例、日志/感悟 | 1.0 原始归档、2026-07-20 | `active` | `DOC-WORDING`、Requirements §5 |
@@ -1138,3 +1139,20 @@ verbatim sha256：`f7da284bd6aa8259875e4e68d815805986b666c05a9f0dc082be49f2950b7
 `resolved_by`：`D:\BabataData\04_runtime\staging\model-workspaces\cherno-course-gap-acquisition-20260821-v1\acquisition-manifest.json`；6/6 prepared，目标盘 hash read-back 一致。
 
 > 嗯 缺的集数你试试拿回来
+
+### 2026-08-22：授权百炼/千问调用并要求查价记账
+
+<!-- DOCS-FIRST-CAPTURE: DFC-20260822-01; schema=v1 -->
+
+capture time：`2026-08-22`。来源：当前用户对话。
+
+verbatim sha256：`71fecd7cfc182675606efa9545716cc7186af5c3b8c672bafc6368e6ebb77140`。
+
+极简检索词：`百炼千问`；`花钱不要问`；`查价格`；`记录`。
+
+状态：`active`。
+
+目标去向：`AP-20260821-02`；恢复 Cherno ASR/C1，并把百炼/千问调用的实时价格、计量和成本记录
+纳入执行证据，不再逐次请求费用确认。
+
+> 百炼千问 调用花钱不要问我 自己查价格记录好
