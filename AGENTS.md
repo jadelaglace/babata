@@ -4,9 +4,10 @@
 
 <!-- BABATA-RECOVERY-HOOK: v1 -->
 
-At every recovery boundary--a new session, context compaction, Agent/task handoff,
-Agent or tool interruption, long pause, or an explicit `continue`, `resume`, or
-equivalent instruction--do this before any other state change:
+At every full recovery boundary--a new session, context compaction, Agent/task
+handoff or interruption that may lose control/context, a long pause with uncertain
+execution state, or an explicit `continue`, `resume`, or equivalent instruction--do
+this before any other state change:
 
 1. Call the available Goal/task-state API. A missing result is `unknown`; it is
    not evidence that work is unfinished and cannot change an active or terminal state.
@@ -15,6 +16,12 @@ equivalent instruction--do this before any other state change:
 3. Do not select work from summaries, recent messages, old plan IDs, or the queue.
    A queued item marked `requires-explicit-resume` stays queued until the user
    explicitly resumes it; it is never auto-promoted.
+
+An ordinary synchronous tool, command, or API failure that returns a clear result
+while the current turn and task identity remain intact is not a full recovery
+boundary; handle or retry it locally. If a stateful operation has an ambiguous
+outcome, reconcile that external state and run this hook only when control/context
+or the governing task may also have been lost.
 
 The lifecycle contract is owned by
 `00_docs/04_process/04_g_INTENT_AND_PLAN_GOVERNANCE.md`. This shallow hook only
