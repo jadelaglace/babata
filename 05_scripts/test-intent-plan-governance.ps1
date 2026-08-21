@@ -47,20 +47,23 @@ function Resolve-RecoveryOptimizationCaptureFixture {
     $path = Join-Path $CaseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md'
     $text = Get-Content -LiteralPath $path -Raw -Encoding utf8
     $text = $text.Replace(
-        '| 恢复钩子、启动慢、简化、skill | 2026-08-21 | `active` | `AP-20260821-01`；优化恢复热路径并同步 product-docs skill |',
-        '| 恢复钩子、启动慢、简化、skill | 2026-08-21 | `resolved` | `resolved_by`: test terminal |'
+        '| E:\Cherno、meta原名字、ffmpeg统一、旧字幕doc不要、导出obsidian | 2026-08-21 | `active` | `DOC-ACTIVE-PLAN` AP-20260821-02；缺集补取已终端，完整 metadata/C1/C2B/Obsidian Goal 继续 |',
+        '| E:\Cherno、meta原名字、ffmpeg统一、旧字幕doc不要、导出obsidian | 2026-08-21 | `resolved` | `resolved_by`: test terminal |'
     )
-    $marker = '<!-- DOCS-FIRST-CAPTURE: DFC-20260821-01; schema=v1 -->'
+    $marker = '<!-- DOCS-FIRST-CAPTURE: DFC-20260821-02; schema=v1 -->'
     $markerIndex = $text.IndexOf($marker, [StringComparison]::Ordinal)
-    if ($markerIndex -lt 0) { throw 'Recovery optimization capture fixture marker is missing.' }
+    if ($markerIndex -lt 0) { throw 'Current active capture fixture marker is missing.' }
+    $nextMarkerIndex = $text.IndexOf('<!-- DOCS-FIRST-CAPTURE:', $markerIndex + $marker.Length, [StringComparison]::Ordinal)
+    if ($nextMarkerIndex -lt 0) { throw 'Current active capture fixture successor marker is missing.' }
     $prefix = $text.Substring(0, $markerIndex)
-    $capture = $text.Substring($markerIndex)
+    $capture = $text.Substring($markerIndex, $nextMarkerIndex - $markerIndex)
+    $suffix = $text.Substring($nextMarkerIndex)
     $capture = $capture.Replace('状态：`active`。', '状态：`resolved`。')
     $capture = $capture.Replace(
-        '`resolved_by`：留空，等待仓库 PR 与共享 skill 验证完成。',
-        '`resolved_by`：test terminal。'
+        '目标去向：`AP-20260821-02`；先分析本地缓存和来源元数据，再按正式 Babata 链路处理。',
+        "目标去向：``AP-20260821-02``；先分析本地缓存和来源元数据，再按正式 Babata 链路处理。`r`n`r`n``resolved_by``：test terminal。"
     )
-    Set-Content -LiteralPath $path -Value ($prefix + $capture) -Encoding utf8
+    Set-Content -LiteralPath $path -Value ($prefix + $capture + $suffix) -Encoding utf8
 }
 
 function Add-ActivePlanFixture {
@@ -202,7 +205,7 @@ try {
     }
     Assert-CheckerFails 'recovery-index-misses-latest-phrase' 'latest capture must map to exactly one fast-index row' {
         param($caseRoot)
-        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| 恢复钩子、启动慢、简化、skill |' '| 恢复钩子、启动慢、简化、共享能力 |'
+        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| 缺的集数、拿回来、C++缺集 |' '| 缺的集数、拿回来、课程缺集 |'
     }
     Assert-CheckerFails 'recovery-index-uses-compound-status' 'recovery index uses an invalid base status' {
         param($caseRoot)
@@ -253,7 +256,7 @@ try {
     }
     Assert-CheckerFails 'recovery-index-status-diverges' 'status does not match its fast-index row' {
         param($caseRoot)
-        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| 恢复钩子、启动慢、简化、skill | 2026-08-21 | `resolved` |' '| 恢复钩子、启动慢、简化、skill | 2026-08-21 | `active` |'
+        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| 缺的集数、拿回来、C++缺集 | 2026-08-21 | `resolved` |' '| 缺的集数、拿回来、C++缺集 | 2026-08-21 | `active` |'
     }
     Assert-CheckerFails 'recovery-context-marker-loses-attribution' 'malformed attributed-context marker' {
         param($caseRoot)
