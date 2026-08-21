@@ -13,7 +13,7 @@
 
 ### AP-20260821-02：Cherno 课程缓存治理与 Babata 重洗
 
-- 来源锚点：`DFC-20260821-02`；GitHub Issue #190。
+- 来源锚点：`DFC-20260821-02`；GitHub Issue #190；draft PR #191。
 - Goal 锚点：Goal API 返回的 Cherno 三套课程缓存治理目标，状态 `active`。
 - 状态转换类型：`user-explicit-goal-start`
 - 状态转换依据：用户明确启动 Cherno 三套课程缓存治理 Goal，并另以 `DFC-20260821-03` 授权
@@ -21,7 +21,7 @@
 - 用户目标：以稳定 video ID 命名视频并由 metadata 保留 YouTube 原始标题、URL、playlist identity
   和顺序；评估 ffmpeg 规范化；排除旧 DOCX/内嵌旧字幕后经 Babata 重建 C1/C1B/C2B，最终发布
   可重建 Obsidian 视图。
-- 当前状态：`in_progress / stage-2-manifest-terminal / representative-c0-route-proven / awaiting-asr-consent`。
+- 当前状态：`in_progress / representative-c0-route-proven / draft-pr-191 / awaiting-asr-consent`。
 - 目标终端：三门课完整 source manifest 和 legacy 映射可审计；代表性试跑通过后完成全量正式
   C1/C1B/C2B，并由验证后的 C2B package 发布唯一可重建 Obsidian 视图。
 - 不改变：`E:\Cherno` 现有 MP4 与 DOCX 不覆盖、不删除；旧 DOCX 和内嵌旧字幕不作为新 C1
