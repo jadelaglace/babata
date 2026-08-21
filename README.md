@@ -19,11 +19,14 @@ Babata 是一个本地优先的个人资料与知识系统。它面向微信、�
 <!-- BABATA-RECOVERY-HOOK: v1 -->
 
 > [!CAUTION]
-> 新 session、上下文压缩、Agent/任务交接、Agent 或工具中断、长暂停，以及收到“继续”“恢复”
-> 等明确恢复指令后，先调用环境可用的 Goal/task-state API；空结果只记为 `unknown`。随后立即读取
+> 新 session、上下文压缩、可能丢失控制权/上下文的 Agent 交接或中断、执行状态不确定的长暂停，
+> 以及收到“继续”“恢复”等明确恢复指令后，先调用环境可用的 Goal/task-state API；空结果只记为
+> `unknown`。随后立即读取
 > [Active Plan](00_docs/04_process/04_f_ACTIVE_PLAN.md)，只执行其唯一 `CURRENT-ACTIVE` 指向的活动项。
 > 不从摘要、最近消息、旧 AP 或队列选择目标；`requires-explicit-resume` 队列项必须等待用户明确
-> 恢复，不能自动晋升。详细生命周期只由
+> 恢复，不能自动晋升。当前 turn 和任务身份完整、且明确返回结果的普通同步工具/命令/API 失败只在
+> 原地处理或重试，不触发完整恢复；有状态操作结果不明时先核对外部状态，只有控制上下文或 governing
+> task 也可能丢失时才执行完整钩子。详细生命周期只由
 > [Intent and Plan Governance](00_docs/04_process/04_g_INTENT_AND_PLAN_GOVERNANCE.md) 定义，本段只是
 > 浅层强制入口，不是第二份计划权威。
 

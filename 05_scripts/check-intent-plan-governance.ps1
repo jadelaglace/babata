@@ -115,10 +115,13 @@ $governance = Read-RequiredFile '00_docs\04_process\04_g_INTENT_AND_PLAN_GOVERNA
 
 Assert-ShallowRecoveryHook $rootAgents 'root AGENTS.md'
 Assert-ShallowRecoveryHook $rootReadme 'root README.md'
+Assert-Contains $rootAgents 'ordinary synchronous tool, command, or API failure' 'root AGENTS.md local tool-failure boundary'
+Assert-Contains $rootReadme '普通同步工具/命令/API 失败' 'root README.md local tool-failure boundary'
 Assert-Contains $index '<!-- BABATA-DOCS-RECOVERY-ENTRY: v1 -->' 'Docs index recovery entry'
 foreach ($value in @('Goal/task-state API', '04_process/04_f_ACTIVE_PLAN.md', 'CURRENT-ACTIVE', 'requires-explicit-resume')) {
     Assert-Contains $index $value "Docs index recovery value: $value"
 }
+Assert-Contains $index '普通同步工具、命令或 API 失败原地处理' 'Docs index local tool-failure boundary'
 if ($governance -match '(?im)^(?!\s*>).*?(?:信息缺失|unknown)[^\r\n]*(?:可以|允许)[^\r\n]*(?:重开|切换|晋升)') {
     throw 'Intent/plan governance contains a rule that treats unknown information as transition authority.'
 }
@@ -284,23 +287,11 @@ if ($matchingIndexRows[0].Groups['status'].Value -ne $captureStatus) {
 Assert-Contains $requirements '[00_b_USER_WORDING.md](00_b_USER_WORDING.md)' 'requirements current-intent link'
 Assert-Contains $requirements '[00_c_USER_WORDING_RECOVERY.md](00_c_USER_WORDING_RECOVERY.md)' 'requirements recovery link'
 
-Assert-Contains $activePlan '唯一的当前执行计划与进度控制面' 'single active-plan authority'
-Assert-Contains $activePlan '每次恢复边界' 'all recovery-boundary guard'
-Assert-Contains $activePlan '新 session' 'new-session recovery guard'
-Assert-Contains $activePlan 'Agent/任务交接' 'Agent-task-handoff recovery guard'
-Assert-Contains $activePlan 'Agent 或工具中断' 'Agent-tool-interruption recovery guard'
-Assert-Contains $activePlan '长暂停' 'long-pause recovery guard'
-Assert-Contains $activePlan '上下文压缩' 'context-compaction recovery guard'
-Assert-Contains $activePlan '“继续”“恢复”“接着做”' 'explicit-resume-instruction guard'
-Assert-Contains $activePlan '信息缺失只产生' 'unknown-state recovery rule'
-Assert-Contains $activePlan '“继续/恢复”只授权继续' 'continue-resume goal preservation'
-Assert-Contains $activePlan '当前 active 默认不可变' 'active-goal immutability'
-Assert-Contains $activePlan '`resolved/superseded/closed` 默认不得重开' 'terminal-state immutability'
-Assert-Contains $activePlan '恢复时同时核对实时对话、Goal 运行态和本文持久态' 'three-layer recovery reconciliation'
-Assert-Contains $activePlan '只补终端状态、证据和清理，不重跑业务动作、收尾、测试或发布' 'lagging-terminal writeback rule'
-Assert-Contains $activePlan '不能因摘要、最近消息、旧指令或工具断点再次出现而重跑' 'completed-step replay guard'
-$currentHeading = '2. 当前活动项（恢复时先读，最多一个）'
-$queueHeading = '3. 下次开工队列（禁止恢复时自动执行）'
+Assert-Contains $activePlan 'DOC-AUTHORITY-BOUNDARY: active-plan-progress' 'active-plan authority boundary'
+Assert-Contains $activePlan 'DOC-INTENT-PLAN-GOVERNANCE' 'stable lifecycle authority link'
+Assert-Contains $activePlan '不进入本恢复热路径' 'dynamic-only active-plan boundary'
+$currentHeading = '1. 当前活动项（恢复时先读，最多一个）'
+$queueHeading = '2. 下次开工队列（禁止恢复时自动执行）'
 $currentSection = Get-MarkdownSection $activePlan $currentHeading
 $queueSection = Get-MarkdownSection $activePlan $queueHeading
 if ($activePlan.IndexOf("## $currentHeading", [StringComparison]::Ordinal) -gt
@@ -309,6 +300,14 @@ if ($activePlan.IndexOf("## $currentHeading", [StringComparison]::Ordinal) -gt
 }
 $queueItems = @(Get-PlanItemBlocks $queueSection)
 $currentItems = @(Get-PlanItemBlocks $currentSection)
+$allPlanIdHeadings = @([regex]::Matches(
+    $queueSection + $currentSection,
+    '(?m)^(?<marks>#{1,6})\s+(?<id>AP-[0-9]{8}-[0-9]+)(?:[:：]|\s)'
+))
+$hiddenPlanHeadings = @($allPlanIdHeadings | Where-Object { $_.Groups['marks'].Value -ne '###' })
+if ($hiddenPlanHeadings.Count -gt 0) {
+    throw 'Intent/plan governance forbids AP records hidden under a non-item Markdown heading level.'
+}
 $allThirdLevelHeadings = @([regex]::Matches(
     $queueSection + $currentSection,
     '(?m)^### (?<title>[^\r\n]+)$'
@@ -508,8 +507,11 @@ for ($captureNumber = 0; $captureNumber -lt $captureMarkers.Count; $captureNumbe
     }
 }
 $activePlanLines = @($activePlan -split "`r?`n").Count
-if ($activePlanLines -gt 250) {
-    throw "Intent/plan governance active plan exceeds the 250-line maintenance threshold: $activePlanLines"
+if ($activePlanLines -gt 120) {
+    throw "Intent/plan governance active plan exceeds the 120-line hot-path limit: $activePlanLines"
+}
+if ($activePlan.Length -gt 6000) {
+    throw "Intent/plan governance active plan exceeds the 6000-character hot-path limit: $($activePlan.Length)"
 }
 
 if ($governance -notmatch '(?s)在任何状态写入前先调用环境可用的\s+Goal/task-state API，再立即读取\s+`DOC-ACTIVE-PLAN` 并核对唯一 `CURRENT-ACTIVE`') {
@@ -542,7 +544,10 @@ foreach ($marker in @(
     '追加 `reopened_by`、证据和影响范围',
     '用户编号子任务或声明阶段到达终端后',
     '失去它是否会让下一位 Agent 走不同路线或重复大段工作',
-    '建议保持在约 200 行内',
+    '硬上限为 120 行且 6,000 字符',
+    '普通工具失败不是再入场',
+    '恢复核对到此结束',
+    '不得用四级或更深标题',
     '将 adopted decision、当前需求、稳定架构、实际 usage、运行证据和仍未解决的义务提升',
     '纯通用待办没有 00_c 条目时不得为满足流程',
     '只晋升排序最前且明确标记',

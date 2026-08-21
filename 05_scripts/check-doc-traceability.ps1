@@ -159,7 +159,7 @@ $requiredMarkers = @(
     @('03_architecture/03_e_PERSONAL_KNOWLEDGE_UNIVERSE.md', 'P6-BLUEPRINT-STATUS: adopted-design-baseline'),
     @('04_process/04_a_DEVELOPMENT_PROCESS.md', 'P2-G7'),
     @('04_process/04_b_USAGE_STATUS.md', '唯一的当前使用与交付状态权威'),
-    @('04_process/04_f_ACTIVE_PLAN.md', '唯一的当前执行计划与进度控制面'),
+    @('04_process/04_f_ACTIVE_PLAN.md', '本文只保存当前活动项、受限队列和恢复所需的临时结论'),
     @('04_process/04_g_INTENT_AND_PLAN_GOVERNANCE.md', '三层恢复结构'),
     @('05_tests/05_a_TEST_CASES.md', 'GT-P2-07')
 )

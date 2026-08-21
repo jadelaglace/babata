@@ -10,11 +10,13 @@
 
 <!-- BABATA-DOCS-RECOVERY-ENTRY: v1 -->
 
-恢复边界包括新 session、上下文压缩、Agent/任务交接、Agent 或工具中断、长暂停，以及用户明确
-说“继续”“恢复”“接着做”。每次都先调用环境可用的 Goal/task-state API，再立即读取
+完整恢复边界包括新 session、上下文压缩、可能丢失控制权/上下文的 Agent 交接或中断、执行状态
+不确定的长暂停，以及用户明确说“继续”“恢复”“接着做”。每次都先调用环境可用的
+Goal/task-state API，再立即读取
 [`DOC-ACTIVE-PLAN`](04_process/04_f_ACTIVE_PLAN.md)，并且只执行其唯一 `CURRENT-ACTIVE`。空 Goal 或
 缺失上下文只记为 `unknown`，不能重开 terminal、切换 active 或晋升队列。队列只保存未来恢复入口；
-标记 `requires-explicit-resume` 的项目必须等待用户明确恢复。
+标记 `requires-explicit-resume` 的项目必须等待用户明确恢复。明确返回结果且当前 turn/任务身份完整的
+普通同步工具、命令或 API 失败原地处理，不触发完整恢复；有状态操作结果不明时先核对外部状态。
 
 稳定状态机和终端维护只由
 [`DOC-INTENT-PLAN-GOVERNANCE`](04_process/04_g_INTENT_AND_PLAN_GOVERNANCE.md) 拥有。根 `AGENTS.md`、
