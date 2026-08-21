@@ -40,7 +40,7 @@
 | 验收所有mba、恢复goal、最终obsidian模板、pr | 2026-08-18 | `resolved` | `resolved_by`: AP-20260816-06 terminal writeback、closure receipts、PR #183；统一验收已发生，最终模板收尾已提交 |
 | P9、MBA C2B、Obsidian、私有 Git、安卓验证 | 2026-08-19 | `resolved` | `resolved_by`: `DOC-USAGE` §18、P9/TC-10 receipts、`DFC-20260820-01`、PR #186 |
 | 安卓免验、通过、Babata收官 | 2026-08-20 | `resolved` | `resolved_by`: `DOC-USAGE` §18、P9/TC-10 receipts、PR #186；用户免除安卓实测并接受试点与主线收官 |
-| 恢复钩子、启动慢、简化、skill | 2026-08-21 | `active` | `AP-20260821-01`；优化恢复热路径并同步 product-docs skill |
+| 恢复钩子、启动慢、简化、skill | 2026-08-21 | `resolved` | `resolved_by`: PR #188、共享 product-docs skill validator、Issue #187 terminal writeback |
 
 以下历史正文来自 Babata 1.0 原始归档和按日期整理的产品讨论。章节标题、状态/覆盖注释是编辑者
 导航；`>` 引文才是逐字用户证据。完整原始会话不进入 Git，未来如需长期保存，应由 Babata 正式
@@ -1082,11 +1082,11 @@ verbatim sha256：`69011446b18b9a18a404206f50066ba8cd1e96771af04029b70da4da8c74e
 
 极简检索词：`恢复钩子`；`启动慢`；`简化`；`skill`。
 
-状态：`active`。
+状态：`resolved`。
 
 目标去向：`AP-20260821-01`；用户采用前一轮分析结论，授权完整实施恢复热路径瘦身，并同步修正
 `product-docs` skill。
 
-`resolved_by`：留空，等待仓库 PR 与共享 skill 验证完成。
+`resolved_by`：PR #188、共享 `product-docs` skill validator、Issue #187 terminal writeback。
 
 > 你都做了吧 然后skill也修掉

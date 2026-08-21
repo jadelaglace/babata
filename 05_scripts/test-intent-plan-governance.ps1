@@ -253,7 +253,7 @@ try {
     }
     Assert-CheckerFails 'recovery-index-status-diverges' 'status does not match its fast-index row' {
         param($caseRoot)
-        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| 恢复钩子、启动慢、简化、skill | 2026-08-21 | `active` |' '| 恢复钩子、启动慢、简化、skill | 2026-08-21 | `resolved` |'
+        Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| 恢复钩子、启动慢、简化、skill | 2026-08-21 | `resolved` |' '| 恢复钩子、启动慢、简化、skill | 2026-08-21 | `active` |'
     }
     Assert-CheckerFails 'recovery-context-marker-loses-attribution' 'malformed attributed-context marker' {
         param($caseRoot)
