@@ -21,6 +21,8 @@
 
 | 极简检索词 | 时段/入口 | 当前状态 | 常规去向或覆盖关系 |
 | --- | --- | --- | --- |
+| 缺的集数、拿回来、C++缺集 | 2026-08-21 | `resolved` | `resolved_by`: Cherno gap acquisition manifest；6/6 prepared，目标盘 hash read-back 一致 |
+| E:\Cherno、meta原名字、ffmpeg统一、旧字幕doc不要、导出obsidian | 2026-08-21 | `active` | `DOC-ACTIVE-PLAN` AP-20260821-02；缺集补取已终端，完整 metadata/C1/C2B/Obsidian Goal 继续 |
 | 三大界、动态相关度、知识/案例、日志/感悟 | 1.0 原始归档、2026-07-20 | `active` | `DOC-WORDING`、Requirements §5 |
 | 四段链路、真实用途优先、单仓本地优先 | 2026-07-12..17 | `active` | 多仓/子 Git 方案已被覆盖，仅作恢复；当前见 Requirements §1–2/§9 |
 | 成熟路线优先、少开发、手工最后 | 2026-07-17..25 | `active` | 具体 Browser/CLI 争论与批次为历史路线，当前见路线注册表 |
@@ -1090,3 +1092,49 @@ verbatim sha256：`69011446b18b9a18a404206f50066ba8cd1e96771af04029b70da4da8c74e
 `resolved_by`：PR #188、共享 `product-docs` skill validator、Issue #187 terminal writeback。
 
 > 你都做了吧 然后skill也修掉
+
+### 2026-08-21：Cherno 课程缓存重洗与 Obsidian 导出
+
+<!-- DOCS-FIRST-CAPTURE: DFC-20260821-02; schema=v1 -->
+
+capture time：`2026-08-21`。来源：当前用户对话。
+
+verbatim sha256：`4212f5951509e1c003206e62c96f2253da04bacf39aa8e846b0d710982190c3b`。
+
+极简检索词：`E:\Cherno`；`meta原名字`；`ffmpeg统一`；`旧字幕doc不要`；`导出obsidian`。
+
+状态：`active`。
+
+目标去向：`AP-20260821-02`；先分析本地缓存和来源元数据，再按正式 Babata 链路处理。
+
+目标网址：YouTube playlists `PLlrATfBNZ98dudnM48yfGUldqGD0S4FFb`、
+`PLlrATfBNZ98foTJPJ_Ev03o2oq3-GGOS2`、`PLlrATfBNZ98dC-V-N3m0Go4deliWHPFwT`。
+
+> E:\Cherno 这个是我已经缓存好的
+>
+> 三个需求
+>
+> 1. 我给你源网址，视频的文件名字是不能有特殊字符的，但是原始网站上有代码符号，所以丢了 那么现在你用一个meta类数据把原名字保存 视频就用固定顺序编号或者id命名
+> 2. 视频大小不一 分辨率也不一样 你看看是不是能用ffmpeg统一？
+> 3. 有些旧的识别的字幕doc 那些不要了 用babata洗一遍 最后导出obsidian
+>
+> 先快速分析对策
+
+### 2026-08-21：授权补取 Cherno 缺失集数
+
+<!-- DOCS-FIRST-CAPTURE: DFC-20260821-03; schema=v1 -->
+
+capture time：`2026-08-21`。来源：当前用户对话。
+
+verbatim sha256：`f7da284bd6aa8259875e4e68d815805986b666c05a9f0dc082be49f2950b7488`。
+
+极简检索词：`缺的集数`；`拿回来`；`C++缺集`。
+
+状态：`resolved`。
+
+目标去向：`AP-20260821-02 / stage-1 inventory-and-gap-acquisition`；只补取经 metadata 和时长核对
+确认缺失的播放列表项目，不覆盖现有缓存。
+
+`resolved_by`：`D:\BabataData\04_runtime\staging\model-workspaces\cherno-course-gap-acquisition-20260821-v1\acquisition-manifest.json`；6/6 prepared，目标盘 hash read-back 一致。
+
+> 嗯 缺的集数你试试拿回来

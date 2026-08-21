@@ -145,6 +145,10 @@ fn p7_source_descriptors() -> Vec<CapabilityDescriptor> {
             "source.doubao",
             "Explicit batches of 1-20 conversations can be discovered from the signed-in history, collected through OpenCLI into C0, and recollected per item without incomplete pagination or transient browser fields becoming C0",
         ),
+        enabled_p7_source(
+            "source.youtube",
+            "Explicit YouTube playlist/video caches can be admitted from a validated manifest with stable video IDs, original titles, playlist metadata, exact media hashes, and unchanged recollection through the core",
+        ),
     ]
 }
 

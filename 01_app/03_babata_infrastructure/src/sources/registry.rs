@@ -18,6 +18,7 @@ pub fn descriptors() -> Vec<SourceRouteDescriptor> {
         providers::browser::descriptor(),
         providers::conversations::descriptor(),
         providers::local_files::descriptor(),
+        providers::youtube::descriptor(),
         providers::first_party::descriptor(),
     ]
 }

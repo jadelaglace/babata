@@ -813,6 +813,7 @@ fn validate_candidate(candidate: &CandidateEnvelope) -> Result<(), ApplicationEr
             | "source.evernote"
             | "source.onenote"
             | "source.local_files"
+            | "source.youtube"
             | "source.browser_pages"
             | "source.browser_bookmarks"
     ) {
@@ -861,6 +862,11 @@ fn validate_candidate(candidate: &CandidateEnvelope) -> Result<(), ApplicationEr
         "source.onenote" if candidate.content_type != ContentType::Archive => {
             return Err(ApplicationError::Conflict(
                 "OneNote paired-export candidates must declare archive content".to_owned(),
+            ));
+        }
+        "source.youtube" if candidate.content_type != ContentType::Video => {
+            return Err(ApplicationError::Conflict(
+                "YouTube prepared-cache candidates must declare video content".to_owned(),
             ));
         }
         _ => {}
@@ -2149,6 +2155,28 @@ pub(crate) mod tests {
             },
             context: Some("one explicit paired export".to_owned()),
             native_id: Some("pair:fixture".to_owned()),
+            common_metadata: CommonSourceMetadata::default(),
+        };
+        assert!(validate_candidate(&candidate).is_ok());
+        candidate.content_type = ContentType::Document;
+        assert!(validate_candidate(&candidate).is_err());
+    }
+
+    #[test]
+    fn youtube_candidate_is_limited_to_video_content() {
+        let payload = "YouTube source metadata";
+        let mut candidate = CandidateEnvelope {
+            protocol_version: "1".to_owned(),
+            route_id: SourceRouteId("source.youtube".to_owned()),
+            source_reference: "https://www.youtube.com/watch?v=18c3MTX0PK0".to_owned(),
+            content_type: ContentType::Video,
+            payload_sha256: Sha256::of_bytes(payload.as_bytes()),
+            metadata: Metadata::empty(),
+            payload: CandidatePayload::Text {
+                text: payload.to_owned(),
+            },
+            context: Some("YouTube / C++".to_owned()),
+            native_id: Some("18c3MTX0PK0".to_owned()),
             common_metadata: CommonSourceMetadata::default(),
         };
         assert!(validate_candidate(&candidate).is_ok());
