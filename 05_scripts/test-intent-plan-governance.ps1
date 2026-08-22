@@ -218,7 +218,7 @@ try {
     Assert-CheckerFails 'recovery-terminal-capture-reappears-in-active-plan' 'terminal recovery capture still appears as an active-plan source obligation' {
         param($caseRoot)
         Add-ActivePlanFixture $caseRoot
-        Replace-Once $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md' '来源锚点：`DFC-20260815-02`' '来源锚点：`DFC-20260815-01`'
+        Replace-Once $caseRoot '00_docs\04_process\04_f_ACTIVE_PLAN.md' '来源锚点：`DFC-20260815-02`' '来源锚点：`DFC-20260815-02`、`DFC-20260815-01`'
     }
     Assert-CheckerFails 'recovery-active-capture-loses-plan-anchor' 'active recovery capture is not structurally anchored in the active plan' {
         param($caseRoot)
