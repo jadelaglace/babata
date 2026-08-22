@@ -21,6 +21,13 @@
 
 | 极简检索词 | 时段/入口 | 当前状态 | 常规去向或覆盖关系 |
 | --- | --- | --- | --- |
+| ok、Cherno验收、标题验收、终态关闭 | 2026-08-22 | `resolved` | `resolved_by`: `DOC-USAGE` §20、PR #191、Issue #190 和 Goal 终态回写 |
+| obsidian标题、L001、操作干嘛了、ID不能当标题 | 2026-08-22 | `resolved` | `resolved_by`: 三套可读标题 live、`DOC-USAGE` §20、PR #191 |
+| 旧 DOCX删掉、MP4保护、C1/C1B/C2B、Obsidian | 2026-08-22 | `resolved` | `resolved_by`: `DOC-USAGE` §20 与对应全量 ledger/publication receipts |
+| 升级、不要阻塞、直接继续、常规动作 | 2026-08-22 | `resolved` | `resolved_by`: Cherno 全量执行终态和 `DOC-USAGE` §20 |
+| 百炼千问、花钱不要问、查价格、记录 | 2026-08-22 | `resolved` | `resolved_by`: Cherno ASR/Qwen usage 证据和 `DOC-USAGE` §20 |
+| 缺的集数、拿回来、C++缺集 | 2026-08-21 | `resolved` | `resolved_by`: Cherno gap acquisition manifest；6/6 prepared，目标盘 hash read-back 一致 |
+| E:\Cherno、meta原名字、ffmpeg统一、旧字幕doc不要、导出obsidian | 2026-08-21 | `resolved` | `resolved_by`: `DOC-USAGE` §20、PR #191、Issue #190 和 Goal 终态回写 |
 | 三大界、动态相关度、知识/案例、日志/感悟 | 1.0 原始归档、2026-07-20 | `active` | `DOC-WORDING`、Requirements §5 |
 | 四段链路、真实用途优先、单仓本地优先 | 2026-07-12..17 | `active` | 多仓/子 Git 方案已被覆盖，仅作恢复；当前见 Requirements §1–2/§9 |
 | 成熟路线优先、少开发、手工最后 | 2026-07-17..25 | `active` | 具体 Browser/CLI 争论与批次为历史路线，当前见路线注册表 |
@@ -1090,3 +1097,148 @@ verbatim sha256：`69011446b18b9a18a404206f50066ba8cd1e96771af04029b70da4da8c74e
 `resolved_by`：PR #188、共享 `product-docs` skill validator、Issue #187 terminal writeback。
 
 > 你都做了吧 然后skill也修掉
+
+### 2026-08-21：Cherno 课程缓存重洗与 Obsidian 导出
+
+<!-- DOCS-FIRST-CAPTURE: DFC-20260821-02; schema=v1 -->
+
+capture time：`2026-08-21`。来源：当前用户对话。
+
+verbatim sha256：`4212f5951509e1c003206e62c96f2253da04bacf39aa8e846b0d710982190c3b`。
+
+极简检索词：`E:\Cherno`；`meta原名字`；`ffmpeg统一`；`旧字幕doc不要`；`导出obsidian`。
+
+状态：`resolved`。
+
+目标去向：`AP-20260821-02`；先分析本地缓存和来源元数据，再按正式 Babata 链路处理。
+
+目标网址：YouTube playlists `PLlrATfBNZ98dudnM48yfGUldqGD0S4FFb`、
+`PLlrATfBNZ98foTJPJ_Ev03o2oq3-GGOS2`、`PLlrATfBNZ98dC-V-N3m0Go4deliWHPFwT`。
+
+`resolved_by`：`DOC-USAGE` §20、Cherno 全量 ledger/publication receipts、PR #191、Issue #190 和 Goal 终态回写。
+
+> E:\Cherno 这个是我已经缓存好的
+>
+> 三个需求
+>
+> 1. 我给你源网址，视频的文件名字是不能有特殊字符的，但是原始网站上有代码符号，所以丢了 那么现在你用一个meta类数据把原名字保存 视频就用固定顺序编号或者id命名
+> 2. 视频大小不一 分辨率也不一样 你看看是不是能用ffmpeg统一？
+> 3. 有些旧的识别的字幕doc 那些不要了 用babata洗一遍 最后导出obsidian
+>
+> 先快速分析对策
+
+### 2026-08-21：授权补取 Cherno 缺失集数
+
+<!-- DOCS-FIRST-CAPTURE: DFC-20260821-03; schema=v1 -->
+
+capture time：`2026-08-21`。来源：当前用户对话。
+
+verbatim sha256：`f7da284bd6aa8259875e4e68d815805986b666c05a9f0dc082be49f2950b7488`。
+
+极简检索词：`缺的集数`；`拿回来`；`C++缺集`。
+
+状态：`resolved`。
+
+目标去向：`AP-20260821-02 / stage-1 inventory-and-gap-acquisition`；只补取经 metadata 和时长核对
+确认缺失的播放列表项目，不覆盖现有缓存。
+
+`resolved_by`：`D:\BabataData\04_runtime\staging\model-workspaces\cherno-course-gap-acquisition-20260821-v1\acquisition-manifest.json`；6/6 prepared，目标盘 hash read-back 一致。
+
+> 嗯 缺的集数你试试拿回来
+
+### 2026-08-22：授权百炼/千问调用并要求查价记账
+
+<!-- DOCS-FIRST-CAPTURE: DFC-20260822-01; schema=v1 -->
+
+capture time：`2026-08-22`。来源：当前用户对话。
+
+verbatim sha256：`08613ad1375d986e9a08e8a87c23008635cf9eb4a75f95d37692d3a4a8c758d9`。
+
+极简检索词：`百炼千问`；`花钱不要问`；`查价格`；`记录`。
+
+状态：`resolved`。
+
+目标去向：`AP-20260821-02`；恢复 Cherno ASR/C1，并把百炼/千问调用的实时价格、计量和成本记录
+纳入执行证据，不再逐次请求费用确认。
+
+`resolved_by`：Cherno ASR/Qwen usage 证据和 `DOC-USAGE` §20。
+
+> 百炼千问 调用花钱不要问我 自己查价格记录好
+
+### 2026-08-22：纠正常规升级与调用被反复阻塞
+
+<!-- DOCS-FIRST-CAPTURE: DFC-20260822-02; schema=v1 -->
+
+capture time：`2026-08-22`。来源：当前用户对话。
+
+verbatim sha256：`3d8cdcc1756d9020937e7ff4c2ef9e8ad3a564e3e8d8c21862790c74289c9220`。
+
+极简检索词：`升级`；`不要阻塞`；`直接继续`；`常规动作`。
+
+状态：`resolved`。
+
+目标去向：`AP-20260821-02`；直接升级 `bl` 并继续 Cherno 处理。Agent 不得再把常规工具升级、
+已授权 provider 调用、轮询或重试转成反复的用户阻塞。
+
+`resolved_by`：Cherno 全量执行终态和 `DOC-USAGE` §20。
+
+> 你有病？这你阻塞？ 升了会死？
+>
+> 再你妈的阻塞老子删了你
+
+### 2026-08-22：明确删除 Cherno 旧 DOCX
+
+<!-- DOCS-FIRST-CAPTURE: DFC-20260822-03; schema=v1 -->
+
+capture time：`2026-08-22`。来源：当前用户更新的 Goal objective。
+
+verbatim sha256：`d5b0e5a722f9e46136069ec0323e10d4bb467fa94c877e7d1e0eeccecd4a1dbd`。
+
+极简检索词：`旧 DOCX删掉`；`MP4保护`；`C1/C1B/C2B`；`Obsidian`。
+
+状态：`resolved`。
+
+目标去向：`AP-20260821-02`；旧 DOCX 在权威视频经新 C1/C1B/C2B 链路完整验证并留下删除清单后
+删除。`E:\Cherno` 的 MP4 源视频继续只读，不覆盖、不删除。
+
+`resolved_by`：`cherno-course-legacy-docx-retirement-20260822-v1`、全量 C1/C1B/C2B 证据和 `DOC-USAGE` §20。
+
+> 完成 Cherno 三套课程缓存治理：以稳定 video ID 命名并用元数据保留 YouTube 原始标题与播放列表身份；评估并实施合适的 ffmpeg 媒体规范化派生；旧 DOCX删掉，从权威视频音频经 Babata 重建可追溯 C1/C1B/C2B，并导出唯一可重建的 Obsidian 阅读视图。当前先完成全量盘点、缺集补取与快速方案定稿，保护 E:\Cherno 现有文件不被覆盖或删除。
+
+### 2026-08-22：Cherno Obsidian 课节标题必须是可读的操作/内容名称
+
+<!-- DOCS-FIRST-CAPTURE: DFC-20260822-04; schema=v1 -->
+
+capture time：`2026-08-22`。来源：当前用户对话。
+
+verbatim sha256：`6e938793f4d94bfe26a7365cec951a3f8376e2c5ee5d38d3b4b35e59daecf10c`。
+
+极简检索词：`obsidian标题`；`L001`；`操作干嘛了`；`ID不能当标题`。
+
+状态：`resolved`。
+
+目标去向：`AP-20260821-02`；修正 Cherno C2B 用户可见课节标题。稳定 video ID 继续只作文件名和
+metadata 身份；标题必须采用 `L001-<可读内容/操作名称>` 形式，表达这一节讲什么、做什么。
+
+`resolved_by`：三套可读标题 live、`cherno-course-c2b-full-20260822-v1` 和 `DFC-20260822-05` 用户验收。
+
+> obsidian标题你又是同样问题，id为什么拿来当标题。标题是类似L001-什么的什么操作干嘛了 类似这样。
+
+### 2026-08-22：接受 Cherno 新版 Obsidian 标题与发布结果
+
+<!-- DOCS-FIRST-CAPTURE: DFC-20260822-05; schema=v1 -->
+
+capture time：`2026-08-22`。来源：当前用户对话。
+
+verbatim sha256：`e899ce2736f5009c00cfbe49e1828ee1162e8709301fb0b32630ff713f21e3f3`。
+
+极简检索词：`ok`；`Cherno验收`；`标题验收`；`终态关闭`。
+
+状态：`resolved`。
+
+目标去向：`AP-20260821-02`；作为用户对新版 Cherno Obsidian 可读标题和当前发布结果的明确验收，
+完成 Usage Status、Active Plan、PR、Issue 与 Goal 终态回写，不重跑课程生成或发布。
+
+`resolved_by`：`DOC-USAGE` §20、PR #191、Issue #190 和 Goal 终态回写。
+
+> ok

@@ -810,6 +810,77 @@ fn process_register_binds_media_asset_and_imports_output_file() {
 }
 
 #[test]
+fn process_register_imports_a_video_excerpt_from_video_c0() {
+    let temp = tempdir().unwrap();
+    let media = temp.path().join("lesson.mp4");
+    std::fs::write(&media, b"fake-source-video-bytes").unwrap();
+    let capture = capture_file(&temp, &media);
+    let revision = capture["revision_id"].as_str().unwrap();
+    let asset_id = capture["asset_ids"][0].as_str().unwrap();
+    let asset_sha = capture["record"]["assets"][0]["sha256"].as_str().unwrap();
+
+    let staging_dir = temp.path().join("generated/c1b/results");
+    std::fs::create_dir_all(&staging_dir).unwrap();
+    let excerpt = staging_dir.join("interaction.mp4");
+    std::fs::write(&excerpt, b"fake-derived-video-bytes").unwrap();
+
+    let registered = babata(&temp)
+        .args([
+            "--json",
+            "process",
+            "register",
+            "--pipeline",
+            "agent_import",
+            "--revision",
+            revision,
+            "--kind",
+            "video_excerpt",
+            "--provider",
+            "local_extract",
+            "--input-sha256",
+            asset_sha,
+            "--input-asset-id",
+            asset_id,
+            "--output-file",
+            &excerpt.to_string_lossy(),
+            "--model",
+            "ffmpeg",
+            "--tool-version",
+            "7.1",
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let registered: Value = serde_json::from_slice(&registered).unwrap();
+
+    let shown = babata(&temp)
+        .args([
+            "--json",
+            "process",
+            "show-run",
+            "--run",
+            registered["run_id"].as_str().unwrap(),
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let shown: Value = serde_json::from_slice(&shown).unwrap();
+    assert_eq!(shown["run"]["target_kind"], "video_excerpt");
+    assert_eq!(shown["derivatives"][0]["kind"], "video_excerpt");
+    assert_eq!(shown["derivatives"][0]["input_asset_id"], asset_id);
+    let logical_path = shown["derivatives"][0]["logical_path"].as_str().unwrap();
+    assert!(temp.path().join(logical_path).exists());
+    assert_eq!(
+        shown["derivatives"][0]["output_sha256"],
+        sha256_hex(b"fake-derived-video-bytes")
+    );
+}
+
+#[test]
 fn process_failed_run_then_successful_retry_keeps_both() {
     let temp = tempdir().unwrap();
     let media = temp.path().join("lecture.mp4");

@@ -1313,6 +1313,9 @@ fn kind_requires_asset(kind: DerivativeKind) -> bool {
             | DerivativeKind::Subtitle
             | DerivativeKind::VisualDescription
             | DerivativeKind::KeyFrame
+            | DerivativeKind::AudioExcerpt
+            | DerivativeKind::VideoExcerpt
+            | DerivativeKind::AttachmentExcerpt
             | DerivativeKind::MediaMetadata
     )
 }
@@ -1334,10 +1337,12 @@ fn ensure_asset_kind(kind: DerivativeKind, asset: &NewAsset) -> Result<(), Appli
                 || media_type.starts_with("video/")
                 || media_type == "application/pdf"
         }
-        DerivativeKind::Transcript | DerivativeKind::Subtitle => {
+        DerivativeKind::AudioExcerpt | DerivativeKind::Transcript | DerivativeKind::Subtitle => {
             media_type.starts_with("audio/") || media_type.starts_with("video/")
         }
-        DerivativeKind::MediaMetadata
+        DerivativeKind::VideoExcerpt => media_type.starts_with("video/"),
+        DerivativeKind::AttachmentExcerpt
+        | DerivativeKind::MediaMetadata
         | DerivativeKind::Summary
         | DerivativeKind::Tags
         | DerivativeKind::StructuredResult => true,
@@ -1385,6 +1390,9 @@ fn derivative_kind_name(kind: DerivativeKind) -> &'static str {
         DerivativeKind::Summary => "summary",
         DerivativeKind::VisualDescription => "visual_description",
         DerivativeKind::KeyFrame => "key_frame",
+        DerivativeKind::AudioExcerpt => "audio_excerpt",
+        DerivativeKind::VideoExcerpt => "video_excerpt",
+        DerivativeKind::AttachmentExcerpt => "attachment_excerpt",
         DerivativeKind::Tags => "tags",
         DerivativeKind::StructuredResult => "structured_result",
         DerivativeKind::MediaMetadata => "media_metadata",

@@ -494,8 +494,11 @@ for ($captureNumber = 0; $captureNumber -lt $captureMarkers.Count; $captureNumbe
         $cell = $_.Groups['phrases'].Value
         @($blockPhrases | Where-Object { -not $cell.Contains($_) }).Count -eq 0
     })
-    if ($blockIndexRows.Count -ne 1 -or $blockIndexRows[0].Groups['status'].Value -ne $itemStatus) {
+    if ($blockIndexRows.Count -ne 1) {
         throw "Intent/plan governance capture $itemId does not match exactly one fast-index row and status."
+    }
+    if ($blockIndexRows[0].Groups['status'].Value -ne $itemStatus) {
+        throw "Intent/plan governance capture $itemId status does not match its fast-index row."
     }
     $sourceAnchorPattern = '(?m)^- 来源锚点：[^\r\n]*' + [regex]::Escape($itemId) + '[^\r\n]*$'
     $structuredPlanLinks = @([regex]::Matches($activePlan, $sourceAnchorPattern)).Count

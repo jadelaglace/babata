@@ -26,6 +26,10 @@ const MIGRATIONS: &[(&str, &str)] = &[
         "0005_process_result_invalidation.sql",
         include_str!("../../../../03_migrations/02_derived/0005_process_result_invalidation.sql"),
     ),
+    (
+        "0006_c1b_excerpt_kinds.sql",
+        include_str!("../../../../03_migrations/02_derived/0006_c1b_excerpt_kinds.sql"),
+    ),
 ];
 
 const PRECOMMIT_V3_CHECKSUM: &str =
@@ -141,7 +145,7 @@ mod tests {
                 .query_row("SELECT COUNT(*) FROM schema_migrations", [], |row| row
                     .get::<_, i64>(0))
                 .unwrap(),
-            5
+            6
         );
         assert_eq!(
             connection

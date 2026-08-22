@@ -14,5 +14,6 @@ pub mod onenote;
 pub mod wechat;
 pub mod wechat_recovery;
 pub mod xiaohongshu;
+pub mod youtube;
 pub mod yuque;
 pub mod zhihu;

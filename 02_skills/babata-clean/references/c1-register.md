@@ -48,6 +48,9 @@ transcript
 subtitle
 visual_description
 key_frame
+audio_excerpt
+video_excerpt
+attachment_excerpt
 media_metadata
 ```
 

@@ -92,6 +92,7 @@ Usage。00_c 是严重阻塞/漂移/冲突时才使用的逐字恢复证据，�
 | --- | --- | --- |
 | `SPEC-OUTPUTS` | [`../02_skills/00_specs/09_outputs.md`](../02_skills/00_specs/09_outputs.md) | reusable output contract |
 | `PROFILE-SEMANTIC-OBSIDIAN` | [`../02_skills/00_specs/templates/semantic-obsidian-profile.md`](../02_skills/00_specs/templates/semantic-obsidian-profile.md) | accepted semantic Obsidian profile |
+| `PROFILE-SEMANTIC-COURSE-OBSIDIAN` | [`../02_skills/00_specs/templates/semantic-course-obsidian-profile.md`](../02_skills/00_specs/templates/semantic-course-obsidian-profile.md) | course-neutral candidate profile; first real-use validation is Cherno |
 | `SKILL-COLLECT` | [`../02_skills/babata-collect/SKILL.md`](../02_skills/babata-collect/SKILL.md) | 单一 C0 收集入口 |
 | `SKILL-CLEAN` | [`../02_skills/babata-clean/SKILL.md`](../02_skills/babata-clean/SKILL.md) | provider-neutral C1/C1B 清洗入口 |
 

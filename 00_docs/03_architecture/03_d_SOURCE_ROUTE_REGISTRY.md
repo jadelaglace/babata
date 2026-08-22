@@ -60,6 +60,7 @@
 | source.kimi | Kimi 对话 | 登录态浏览器读取明确历史/会话，薄命令只固化已证明重采 | 登录并给出会话、时间或数量范围 | E3：真实候选、完整正文和结构化读取已证明 | runtime adapter 未启用；附件、深研产物和长期重采未闭合 | disabled |
 | source.chatgpt | ChatGPT 对话 | 日常范围用登录态浏览器；账号 bootstrap 可用官方 Data Export | 登录并给出会话范围；全量需 Data Controls 明确确认 | E3：真实候选、正文和结构化引用读取已证明 | runtime descriptor 未登记；附件/画布/项目和增量重采未闭合 | absent |
 | source.local_files | 本地文件/目录 | 核心文件选择器、拖放或受控目录扫描 | 明确文件、目录或 watch scope | E2：显式 file/export 的 hash、保存和回读已证明 | source descriptor 未登记；缺日常候选、逐项状态和 typed recollection route | absent |
+| source.youtube | YouTube 明确播放列表/视频 | yt-dlp 取得白名单 metadata 与媒体，验证 cache manifest 后交统一 Collector | 用户明确给出 playlist/video URL 和范围；不扩张到账号/频道 | E3：真实 cache manifest 的候选、选择、正式保存和 3/3 unchanged 重采已证明 | 首版只接受已准备且完整映射的 cache manifest；adapter 不下载、不枚举频道/账号 | enabled |
 | source.first_party | 第一方创作 | Workspace create/revise/annotate，不走来源 Collector | 明确新建、修订或批注动作 | E2：版本、关系、回读和故障补偿已证明 | source descriptor 未登记；不得用收集状态机替代作品版本语义 | absent |
 
 `current_status` 是本表对 runtime descriptor 的文档镜像。若命令输出与本文冲突，以 runtime 为
