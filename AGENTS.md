@@ -11,7 +11,7 @@ this before any other state change:
 
 1. Call the available Goal/task-state API. A missing result is `unknown`; it is
    not evidence that work is unfinished and cannot change an active or terminal state.
-2. Immediately read `00_docs/04_process/04_f_ACTIVE_PLAN.md` and execute only the
+2. Immediately read `00_docs/04_process/04_c_ACTIVE_PLAN.md` and execute only the
    item named by its single `CURRENT-ACTIVE` marker.
 3. Do not select work from summaries, recent messages, old plan IDs, or the queue.
    A queued item marked `requires-explicit-resume` stays queued until the user
@@ -24,7 +24,7 @@ outcome, reconcile that external state and run this hook only when control/conte
 or the governing task may also have been lost.
 
 The lifecycle contract is owned by
-`00_docs/04_process/04_g_INTENT_AND_PLAN_GOVERNANCE.md`. This shallow hook only
+`00_docs/04_process/04_a_DEVELOPMENT_PROCESS.md`. This shallow hook only
 routes recovery to that authority; it does not become a second product or plan authority.
 
 <!-- /BABATA-RECOVERY-HOOK: v1 -->

@@ -170,14 +170,14 @@ $documents = [ordered]@{
     cleanMetadata = Read-RepoFile '02_skills\babata-clean\agents\openai.yaml'
 }
 
-foreach ($name in @('requirements', 'prd', 'acceptance', 'process', 'tests', 'outputs', 'profile', 'cleanSkill')) {
+foreach ($name in @('outputs', 'profile', 'cleanSkill')) {
     Assert-Contains $documents[$name] 'C2B-DOCS-FIRST-GATE' "C2B-DOCS-FIRST-GATE in $name"
     Assert-Contains $documents[$name] 'C1B-FORMAL-HANDOFF-GATE' "C1B-FORMAL-HANDOFF-GATE in $name"
 }
-foreach ($name in @('requirements', 'prd', 'acceptance', 'process', 'tests', 'outputs', 'profile')) {
+foreach ($name in @('outputs', 'profile')) {
     Assert-Contains $documents[$name] 'OBSIDIAN-HUMAN-VIEW-BOUNDARY' "OBSIDIAN-HUMAN-VIEW-BOUNDARY in $name"
 }
-foreach ($name in @('requirements', 'prd', 'acceptance', 'process', 'tests', 'outputs', 'profile')) {
+foreach ($name in @('outputs', 'profile')) {
     Assert-Contains $documents[$name] 'C2B-KNOWLEDGE-UNIVERSE-GATE' "C2B-KNOWLEDGE-UNIVERSE-GATE in $name"
     Assert-Contains $documents[$name] 'C2B-PACKAGE-OWNED-COURSE-MAP' "C2B-PACKAGE-OWNED-COURSE-MAP in $name"
     Assert-Contains $documents[$name] 'C2B-MECE-COURSE-MAP-GATE' "C2B-MECE-COURSE-MAP-GATE in $name"
@@ -186,9 +186,13 @@ foreach ($name in @('requirements', 'prd', 'acceptance', 'process', 'tests', 'ou
     Assert-Contains $documents[$name] 'C2B-RIGHT-GROWING-MINDMAP-GATE' "C2B-RIGHT-GROWING-MINDMAP-GATE in $name"
     Assert-Contains $documents[$name] 'C2B-RESPONSIVE-MAP-GATE' "C2B-RESPONSIVE-MAP-GATE in $name"
 }
-foreach ($name in @('requirements', 'prd', 'acceptance', 'process', 'tests')) {
-    Assert-Matches $documents[$name] '(?is)课程\s*index.*宇宙级大\s*Index|宇宙级大\s*Index.*课程\s*index' "course-index versus universe-index boundary in $name"
-}
+Assert-Contains $documents.requirements 'Obsidian 等输出是可删除重建的阅读视图，不是新的权威存储' 'rebuildable-view requirement'
+Assert-Contains $documents.requirements 'C1B 在完整文字基础上判断哪些图片、音频、视频片段或附件对理解不可替代' 'C1B requirement'
+Assert-Contains $documents.requirements '课程输出使用唯一 live' 'unique-live requirement'
+Assert-Contains $documents.prd 'publisher 只发布通过完整性和链接验证的 package 到唯一 live' 'verified package publication behavior'
+Assert-Contains $documents.acceptance 'publisher 只复制已验证 package，唯一 live 不成为 writer' 'publisher acceptance boundary'
+Assert-Contains $documents.process 'read-back、hash、链接、package、恢复或用户可见结果' 'output verification process'
+Assert-Contains $documents.tests 'publisher 只复制已验证 package；唯一 live 不反写知识' 'output verification coverage'
 Assert-Matches $documents.outputs '(?is)course index.*universe-level\s+large index|universe-level\s+large index.*course index' 'course-index versus universe-index boundary in outputs'
 Assert-Matches $documents.profile '(?is)course index.*universe-level large index|universe-level large index.*course index' 'course-index versus universe-index boundary in profile'
 Assert-Matches $documents.cleanSkill '(?is)does not reread\s+the\s+external sovereign original' 'C1B-to-C2B no-original-reread boundary'
@@ -246,7 +250,8 @@ Assert-Contains $renderer 'internal-link' 'Obsidian native internal-link nodes'
 Assert-Contains $renderer '> [!info]- 位图版本（打印 / 离线 / 渲染回退）' 'default-collapsed PNG fallback callout'
 Assert-Contains $renderer '> ![[media/财务管理课程脑图.png|760]]' 'explicit readable PNG fallback width'
 Assert-Contains $documents.usage 'DOC-AUTHORITY-BOUNDARY: usage-status' 'usage-status authority role'
-Assert-Contains $documents.usage 'obsidian://open?vault=Obsidian%20Vault&file=Babata%2FMBA%2F%E8%B4%A2%E5%8A%A1%E7%AE%A1%E7%90%86%2Findex.md' 'current user-facing Obsidian URI in usage status'
+Assert-Contains $documents.usage '专用 MBA/Cherno Obsidian publisher' 'specialized route status'
+Assert-Contains $documents.usage '不是通用 capability' 'specialized/general capability boundary'
 Assert-Contains $documents.outputs 'The current course path belongs to usage status' 'output-spec URI ownership boundary'
 Assert-Contains $documents.profile 'exact live URI registered by the course manifest/usage status' 'profile URI ownership boundary'
 foreach ($name in @('requirements', 'prd', 'acceptance', 'process', 'tests', 'outputs', 'profile')) {

@@ -22,12 +22,12 @@ Babata 是一个本地优先的个人资料与知识系统。它面向微信、�
 > 新 session、上下文压缩、可能丢失控制权/上下文的 Agent 交接或中断、执行状态不确定的长暂停，
 > 以及收到“继续”“恢复”等明确恢复指令后，先调用环境可用的 Goal/task-state API；空结果只记为
 > `unknown`。随后立即读取
-> [Active Plan](00_docs/04_process/04_f_ACTIVE_PLAN.md)，只执行其唯一 `CURRENT-ACTIVE` 指向的活动项。
+> [Active Plan](00_docs/04_process/04_c_ACTIVE_PLAN.md)，只执行其唯一 `CURRENT-ACTIVE` 指向的活动项。
 > 不从摘要、最近消息、旧 AP 或队列选择目标；`requires-explicit-resume` 队列项必须等待用户明确
 > 恢复，不能自动晋升。当前 turn 和任务身份完整、且明确返回结果的普通同步工具/命令/API 失败只在
 > 原地处理或重试，不触发完整恢复；有状态操作结果不明时先核对外部状态，只有控制上下文或 governing
 > task 也可能丢失时才执行完整钩子。详细生命周期只由
-> [Intent and Plan Governance](00_docs/04_process/04_g_INTENT_AND_PLAN_GOVERNANCE.md) 定义，本段只是
+> [Process and Recovery Governance](00_docs/04_process/04_a_DEVELOPMENT_PROCESS.md) 定义，本段只是
 > 浅层强制入口，不是第二份计划权威。
 
 > [!IMPORTANT]
@@ -78,7 +78,7 @@ flowchart LR
 08_adapters/    浏览器和受控外围适配边界
 ```
 
-正常文档解释从[文档控制面](00_docs/README.md)进入；恢复工作则先遵守上面的强制入口。日常用户意图在[当前有效意图集](00_docs/00_requirements/00_b_USER_WORDING.md)，可执行产品意图在[当前需求](00_docs/00_requirements/00_a_REQUIREMENTS.md)，严重阻塞或漂移恢复才查[逐字恢复账本](00_docs/00_requirements/00_c_USER_WORDING_RECOVERY.md)。系统边界在[架构](00_docs/03_architecture/03_a_ARCHITECTURE.md)，个人知识宇宙见[设计基线](00_docs/03_architecture/03_e_PERSONAL_KNOWLEDGE_UNIVERSE.md)。当前 phase 与真实使用状态只查 [Usage Status](00_docs/04_process/04_b_USAGE_STATUS.md)。
+正常文档解释从[文档控制面](00_docs/README.md)进入；恢复工作先遵守上面的强制入口。当前意图与可执行需求统一见[当前意图与需求](00_docs/00_requirements/00_a_REQUIREMENTS.md)，系统边界见[当前架构](00_docs/03_architecture/03_a_ARCHITECTURE.md)，来源路线见[路线注册表](00_docs/03_architecture/03_b_SOURCE_ROUTE_REGISTRY.md)，当前真实成果与未完成项只查[使用状态](00_docs/04_process/04_b_USAGE_STATUS.md)。P0-P9 历史和精选原话见[收官归档](00_docs/90_archive/2026-08-23_P0-P9_CLOSEOUT.md)，不得从归档恢复任务。
 
 ## 本地构建
 

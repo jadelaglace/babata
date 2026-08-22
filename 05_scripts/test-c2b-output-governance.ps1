@@ -160,9 +160,9 @@ try {
         param($caseRoot)
         Remove-MarkerOnce (Join-Path $caseRoot '02_skills\00_specs\09_outputs.md') 'C2B-DOCS-FIRST-GATE'
     }
-    Assert-CheckerFails -Name 'usage-loses-current-obsidian-uri' -ExpectedMessage 'current user-facing Obsidian URI in usage status' -Mutate {
+    Assert-CheckerFails -Name 'usage-loses-specialized-route-status' -ExpectedMessage 'specialized route status' -Mutate {
         param($caseRoot)
-        Remove-MarkerOnce (Join-Path $caseRoot '00_docs\04_process\04_b_USAGE_STATUS.md') 'obsidian://open?vault=Obsidian%20Vault&file=Babata%2FMBA%2F%E8%B4%A2%E5%8A%A1%E7%AE%A1%E7%90%86%2Findex.md'
+        Remove-MarkerOnce (Join-Path $caseRoot '00_docs\04_process\04_b_USAGE_STATUS.md') '专用 MBA/Cherno Obsidian publisher'
     }
     Assert-CheckerFails -Name 'outputs-hardcodes-live-obsidian-uri' -ExpectedMessage 'concrete live Obsidian URI outside usage status: outputs' -Mutate {
         param($caseRoot)
@@ -260,9 +260,9 @@ try {
         }
         Set-Content -LiteralPath $path -Value $text -Encoding utf8
     }
-    Assert-CheckerFails -Name 'missing-requirements-docs-first' -ExpectedMessage 'C2B-DOCS-FIRST-GATE in requirements' -Mutate {
+    Assert-CheckerFails -Name 'requirements-loses-rebuildable-view' -ExpectedMessage 'rebuildable-view requirement' -Mutate {
         param($caseRoot)
-        Remove-MarkerOnce (Join-Path $caseRoot '00_docs\00_requirements\00_a_REQUIREMENTS.md') 'C2B-DOCS-FIRST-GATE'
+        Remove-MarkerOnce (Join-Path $caseRoot '00_docs\00_requirements\00_a_REQUIREMENTS.md') 'Obsidian 等输出是可删除重建的阅读视图，不是新的权威存储'
     }
     Assert-CheckerFails -Name 'missing-profile-mece-map' -ExpectedMessage 'C2B-MECE-COURSE-MAP-GATE in profile' -Mutate {
         param($caseRoot)

@@ -7,7 +7,7 @@ exact `source.*` route is `disabled`, `unavailable`, absent, or unknown, even if
 browser can read the source.
 
 In this repository, `DOC-ROUTES` at
-`00_docs/03_architecture/03_d_SOURCE_ROUTE_REGISTRY.md` owns route evidence, authorization and gaps.
+`00_docs/03_architecture/03_b_SOURCE_ROUTE_REGISTRY.md` owns route evidence, authorization and gaps.
 `DOC-USAGE` owns concrete source completion. Do not copy their current status or counts into this index.
 
 ## Recipe routing
