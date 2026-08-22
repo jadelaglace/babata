@@ -70,6 +70,18 @@ function Resolve-RecoveryOptimizationCaptureFixture {
         ('$1`resolved`$2$3' + "`r`n`r`n``resolved_by``：test terminal。`r`n"),
         3
     )
+    $text = $text.Replace(
+        '| 旧 DOCX删掉、MP4保护、C1/C1B/C2B、Obsidian | 2026-08-22 | `active` |',
+        '| 旧 DOCX删掉、MP4保护、C1/C1B/C2B、Obsidian | 2026-08-22 | `resolved` |'
+    )
+    $text = $text.Replace(
+        '| 升级、不要阻塞、直接继续、常规动作 | 2026-08-22 | `active` |',
+        '| 升级、不要阻塞、直接继续、常规动作 | 2026-08-22 | `resolved` |'
+    )
+    $text = $text.Replace(
+        '| 百炼千问、花钱不要问、查价格、记录 | 2026-08-22 | `active` |',
+        '| 百炼千问、花钱不要问、查价格、记录 | 2026-08-22 | `resolved` |'
+    )
     Set-Content -LiteralPath $path -Value $text -Encoding utf8
 }
 
