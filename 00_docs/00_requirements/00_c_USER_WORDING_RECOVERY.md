@@ -21,6 +21,7 @@
 
 | 极简检索词 | 时段/入口 | 当前状态 | 常规去向或覆盖关系 |
 | --- | --- | --- | --- |
+| obsidian标题、L001、操作干嘛了、ID不能当标题 | 2026-08-22 | `active` | `DOC-ACTIVE-PLAN` AP-20260821-02；课节显示名/文件名改为 `L###-<可读内容或操作名称>`，video ID 仅作稳定身份和 metadata |
 | 旧 DOCX删掉、MP4保护、C1/C1B/C2B、Obsidian | 2026-08-22 | `active` | `DOC-ACTIVE-PLAN` AP-20260821-02；替代链路验证后删除旧 DOCX，MP4 继续只读保护 |
 | 升级、不要阻塞、直接继续、常规动作 | 2026-08-22 | `active` | `DOC-ACTIVE-PLAN` AP-20260821-02；直接升级，常规工具/调用动作不得反复设用户 gate |
 | 百炼千问、花钱不要问、查价格、记录 | 2026-08-22 | `active` | `DOC-ACTIVE-PLAN` AP-20260821-02；百炼/千问调用免逐次询问，Agent 负责实时查价与成本记录 |
@@ -1194,3 +1195,20 @@ verbatim sha256：`d5b0e5a722f9e46136069ec0323e10d4bb467fa94c877e7d1e0eeccecd4a1
 删除。`E:\Cherno` 的 MP4 源视频继续只读，不覆盖、不删除。
 
 > 完成 Cherno 三套课程缓存治理：以稳定 video ID 命名并用元数据保留 YouTube 原始标题与播放列表身份；评估并实施合适的 ffmpeg 媒体规范化派生；旧 DOCX删掉，从权威视频音频经 Babata 重建可追溯 C1/C1B/C2B，并导出唯一可重建的 Obsidian 阅读视图。当前先完成全量盘点、缺集补取与快速方案定稿，保护 E:\Cherno 现有文件不被覆盖或删除。
+
+### 2026-08-22：Cherno Obsidian 课节标题必须是可读的操作/内容名称
+
+<!-- DOCS-FIRST-CAPTURE: DFC-20260822-04; schema=v1 -->
+
+capture time：`2026-08-22`。来源：当前用户对话。
+
+verbatim sha256：`5214dde99c1770975e93c93166b1f3c1168dcb95755017fd6e487fe3c0283be5`。
+
+极简检索词：`obsidian标题`；`L001`；`操作干嘛了`；`ID不能当标题`。
+
+状态：`active`。
+
+目标去向：`AP-20260821-02`；修正 Cherno C2B 用户可见课节标题。稳定 video ID 继续只作文件名和
+metadata 身份；标题必须采用 `L001-<可读内容/操作名称>` 形式，表达这一节讲什么、做什么。
+
+> obsidian标题你又是同样问题，id为什么拿来当标题。标题是类似L001-什么的什么操作干嘛了 类似这样。

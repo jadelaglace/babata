@@ -23,6 +23,7 @@ COURSES = {
     "game-engine": {"course_key": "cherno-game-engine", "short_name": "Game Engine"},
     "opengl": {"course_key": "cherno-opengl", "short_name": "OpenGL"},
 }
+OBSIDIAN_NOTE_FORBIDDEN_RE = re.compile(r'[<>:"/\\|?*\[\]#^\x00-\x1f]')
 
 
 def utc_now() -> str:
@@ -46,6 +47,14 @@ def write_json(path: Path, value: Any) -> None:
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
     os.replace(temporary, path)
+
+
+def lesson_note_name(position: int, display_title: str) -> str:
+    readable = OBSIDIAN_NOTE_FORBIDDEN_RE.sub(" ", str(display_title))
+    readable = re.sub(r"\s+", " ", readable).strip(" .")
+    if not readable:
+        raise RuntimeError(f"Lesson {position} has no readable display title")
+    return f"L{position:03d}-{readable[:96].rstrip(' .')}"
 
 
 def run(command: list[str], *, timeout: int = 2100) -> subprocess.CompletedProcess[str]:
@@ -580,8 +589,14 @@ Missing lessons:
             "repair_request_sha256": repair_request_hash or None,
         }
 
+        display_by_video = {
+            row["video_id"]: read_json(stage / row["learning"]["path"])["display_title"] for row in course_rows
+        }
         note_by_video = {
-            row["video_id"]: f"L{int(row['playlist_position_observed']):03d}-{row['video_id']}" for row in course_rows
+            row["video_id"]: lesson_note_name(
+                int(row["playlist_position_observed"]), display_by_video[row["video_id"]]
+            )
+            for row in course_rows
         }
         sections = []
         for index, domain in enumerate(domains, start=1):
@@ -598,7 +613,7 @@ Missing lessons:
                             "unit_id": video_id,
                             "video_id": video_id,
                             "note": note_by_video[video_id],
-                            "title": next(row["original_title"] for row in course_rows if row["video_id"] == video_id),
+                            "title": display_by_video[video_id],
                         }
                         for video_id in domain["video_ids"]
                     ],

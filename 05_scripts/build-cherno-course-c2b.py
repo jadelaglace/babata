@@ -22,6 +22,8 @@ from PIL import Image
 
 WIKI_LINK_RE = re.compile(r"!??\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]")
 CONTROL_RE = re.compile(r"(?i)\b(qwen|dashscope|prompt[_ -]?version|credential_source|provider_input_sha256)\b")
+OBSIDIAN_NOTE_FORBIDDEN_RE = re.compile(r'[<>:"/\\|?*\[\]#^\x00-\x1f]')
+LESSON_NOTE_RE = re.compile(r"^L\d{3}-(.+)$")
 
 
 def utc_now() -> str:
@@ -49,6 +51,16 @@ def write_json(path: Path, value: Any) -> None:
 
 def yaml_string(value: Any) -> str:
     return json.dumps(str(value), ensure_ascii=False)
+
+
+def lesson_note_name(position: int, display_title: str) -> str:
+    readable = OBSIDIAN_NOTE_FORBIDDEN_RE.sub(" ", str(display_title))
+    readable = re.sub(r"\s+", " ", readable).strip(" .")
+    if not readable:
+        raise RuntimeError(f"Lesson {position} has no readable display title")
+    # Keep Windows/Obsidian path components comfortably below common limits.
+    readable = readable[:96].rstrip(" .")
+    return f"L{position:03d}-{readable}"
 
 
 def run(command: list[str], *, timeout: int = 1800) -> subprocess.CompletedProcess[str]:
@@ -105,6 +117,25 @@ def verify_package(package: Path, manifest_path: Path) -> dict[str, Any]:
 
     markdown = [path for path in files if path.suffix.lower() == ".md"]
     by_stem = {path.stem: path for path in markdown}
+    lesson_notes = []
+    for note in markdown:
+        text = note.read_text(encoding="utf-8-sig")
+        if "\nvideo_id:" not in text:
+            continue
+        match = LESSON_NOTE_RE.fullmatch(note.stem)
+        if match is None or re.fullmatch(r"[A-Za-z0-9_-]{11}", match.group(1)):
+            raise RuntimeError(f"Lesson filename is not a readable L### title: {relative(package, note)}")
+        video_match = re.search(r'(?m)^video_id: "([A-Za-z0-9_-]{11})"$', text)
+        if video_match is None or video_match.group(1) in note.stem:
+            raise RuntimeError(f"Stable video ID leaked into the user-visible lesson title: {relative(package, note)}")
+        h1 = next((line[2:].strip() for line in text.splitlines() if line.startswith("# ")), "")
+        if h1 != note.stem:
+            raise RuntimeError(f"Lesson H1 must match its readable filename: {relative(package, note)}")
+        if f"lesson_title: {yaml_string(note.stem)}" not in text:
+            raise RuntimeError(f"Lesson metadata does not preserve the readable title: {relative(package, note)}")
+        lesson_notes.append(note)
+    if len(lesson_notes) != int(manifest.get("source_denominator", 0)):
+        raise RuntimeError("Readable lesson-title coverage does not match the source denominator")
     referenced_media: set[str] = set()
     for note in markdown:
         text = note.read_text(encoding="utf-8-sig")
@@ -230,6 +261,17 @@ def build_course(
     if len(planned_ids) != len(set(planned_ids)) or set(planned_ids) != set(observed_ids):
         raise RuntimeError(f"Presentation units do not exactly cover observed playlist identities for {course_slug}")
 
+    lesson_note_by_video: dict[str, str] = {}
+    lesson_title_by_video: dict[str, str] = {}
+    for row in course_rows:
+        video_id = str(row["video_id"])
+        learning_value = read_json(learning_path.parent / row["learning"]["path"])
+        note_name = lesson_note_name(int(row["playlist_position_observed"]), learning_value["display_title"])
+        if note_name in lesson_note_by_video.values():
+            raise RuntimeError(f"Duplicate readable lesson filename for {course_slug}: {note_name}")
+        lesson_note_by_video[video_id] = note_name
+        lesson_title_by_video[video_id] = note_name
+
     copied_media: list[dict[str, Any]] = []
     visual_index: list[str] = []
     for unit in plan_units:
@@ -240,6 +282,8 @@ def build_course(
         c1b_registration = c1b_reg_by_video[video_id]
         learning_file = learning_path.parent / row["learning"]["path"]
         learning_value = read_json(learning_file)
+        lesson_note = lesson_note_by_video[video_id]
+        lesson_title = lesson_title_by_video[video_id]
         transcript = next(value for value in c1_item["derivatives"] if value["kind"] == "transcript")
         transcript_path = c1_path.parent / transcript["path"]
         if sha256_file(transcript_path) != transcript["sha256"]:
@@ -251,13 +295,14 @@ def build_course(
             "variant: c2b",
             "status: pending_user_acceptance",
             f"video_id: {yaml_string(video_id)}",
+            f"lesson_title: {yaml_string(lesson_title)}",
             f"original_title: {yaml_string(row['original_title'])}",
             f"source_url: {yaml_string(row['source_url'])}",
             f"source_revision_id: {yaml_string(row['c0']['revision_id'])}",
             f"semantic_id: {yaml_string(knowledge_by_video[video_id]['semantic_id'])}",
             "---",
             "",
-            f"# {learning_value['display_title']}",
+            f"# {lesson_title}",
             "",
             learning_value["summary"].strip(),
             "",
@@ -317,20 +362,20 @@ def build_course(
                         "",
                     ]
                 )
-            visual_index.append(f"- [[{unit['note']}|{learning_value['display_title']}]]：{len(media_rows)} 项")
+            visual_index.append(f"- [[{lesson_note}|{lesson_title}]]：{len(media_rows)} 项")
         transcript_lines = transcript_path.read_text(encoding="utf-8-sig").splitlines()
         note_lines.extend(["", "> [!note]- 完整时间戳转录（C1）", ">"])
         note_lines.extend(["> " + line for line in transcript_lines])
         note_lines.append("")
-        (package / f"{unit['note']}.md").write_text("\n".join(note_lines), encoding="utf-8")
+        (package / f"{lesson_note}.md").write_text("\n".join(note_lines), encoding="utf-8")
 
     for section in plan["outline"]["sections"]:
         lines = [f"# {section['title']}", "", section["description"], "", "## 实现规则与边界", ""]
         lines.extend(f"- {rule}" for rule in section["rules"])
         lines.extend(["", "## 课次", ""])
         for unit in section["units"]:
-            display = read_json(learning_path.parent / learning_by_video[unit["video_id"]]["learning"]["path"])["display_title"]
-            lines.append(f"- [[{unit['note']}|{display}]]")
+            video_id = unit["video_id"]
+            lines.append(f"- [[{lesson_note_by_video[video_id]}|{lesson_title_by_video[video_id]}]]")
         lines.append("")
         (package / f"{section['note']}.md").write_text("\n".join(lines), encoding="utf-8")
 
@@ -459,8 +504,8 @@ def build_course(
     for section in plan["outline"]["sections"]:
         index_lines.extend([f"### {section['title']}", "", f"- [[{section['note']}]]"])
         for unit in section["units"]:
-            display = read_json(learning_path.parent / learning_by_video[unit["video_id"]]["learning"]["path"])["display_title"]
-            index_lines.append(f"- [[{unit['note']}|{display}]]")
+            video_id = unit["video_id"]
+            index_lines.append(f"- [[{lesson_note_by_video[video_id]}|{lesson_title_by_video[video_id]}]]")
         index_lines.append("")
     index_lines.extend(["## 学习支持", ""] + [f"- [[{row['note']}]]" for row in plan["learning_support"]] + [""])
     (package / "index.md").write_text("\n".join(index_lines), encoding="utf-8")

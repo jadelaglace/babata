@@ -13,7 +13,7 @@
 
 ### AP-20260821-02：Cherno 课程缓存治理与 Babata 重洗
 
-- 来源锚点：`DFC-20260821-02`、`DFC-20260822-01`、`DFC-20260822-02`、`DFC-20260822-03`；GitHub Issue #190；draft PR #191。
+- 来源锚点：`DFC-20260821-02`、`DFC-20260822-01`、`DFC-20260822-02`、`DFC-20260822-03`、`DFC-20260822-04`；GitHub Issue #190；draft PR #191。
 - Goal 锚点：Goal API 返回的 Cherno 三套课程缓存治理目标，状态 `active`。
 - 状态转换类型：`user-explicit-goal-start`
 - 状态转换依据：用户明确启动 Cherno 三套课程缓存治理 Goal，并另以 `DFC-20260821-03` 授权
@@ -68,6 +68,11 @@
   缺集证据仍见 `cherno-course-gap-acquisition-20260821-v1`。
 - 当前检查点（2026-08-22）：269/269 C1B 已正式注册，课程知识登记 269/269、3 门课程和 lens 已完成；三门 C2B package 均通过
   engineering check，已发布到各自唯一 Obsidian live。发布状态保持 `published_pending_user_acceptance`，不得代替用户做视觉验收。
+- 新增用户纠正（2026-08-22）：Cherno Obsidian 课节的用户可见标题/文件名不得把 `video_id` 当标题；应使用
+  `L###-<可读内容或操作名称>` 表达本节讲什么、做什么，`video_id` 仅保留为稳定身份、文件关联和 metadata。
+  本轮已只重建 C2B package 并原子替换 live，115/123/31 个课节均通过可读标题、H1/文件名一致、ID 不泄漏标题、
+  唯一 ID 和 publication hash 回读；未重跑 C0/ASR/C1/C1B/知识登记。证据入口为
+  `cherno-course-c2b-full-20260822-v1` 的 package manifest、publication receipt 和 `publication-round.json`。
 - 下一步：等待用户对 C++、Game Engine、OpenGL 三个 live 进行内容与视觉验收；验收前不得关闭 Goal 或重发布。不得重跑已终态的缺集、manifest、全量 C0、ASR、C1、C1B 或课程登记。
 
 ## 2. 下次开工队列（禁止恢复时自动执行）
