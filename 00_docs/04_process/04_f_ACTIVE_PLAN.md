@@ -66,8 +66,9 @@
 - 证据入口：`D:\BabataData\04_runtime\staging\model-workspaces\cherno-course-stage2-20260821-v1\`
   下 `results/source-manifest.json`、`results/representative-samples.json`、`inventory/`、`REPORT.md`；
   缺集证据仍见 `cherno-course-gap-acquisition-20260821-v1`。
-- 下一步：并行执行长视频分块视觉路线和 269 节课程学习整理；随后完成 269 项正式 C1B、课程中立知识登记/C2B package 和三门课唯一
-  Obsidian live。不得重跑已终态的缺集、manifest、全量 C0、代表处理或 unchanged 重采。
+- 当前检查点（2026-08-22）：269/269 C1B 已正式注册，课程知识登记 269/269、3 门课程和 lens 已完成；三门 C2B package 均通过
+  engineering check，已发布到各自唯一 Obsidian live。发布状态保持 `published_pending_user_acceptance`，不得代替用户做视觉验收。
+- 下一步：等待用户对 C++、Game Engine、OpenGL 三个 live 进行内容与视觉验收；验收前不得关闭 Goal 或重发布。不得重跑已终态的缺集、manifest、全量 C0、ASR、C1、C1B 或课程登记。
 
 ## 2. 下次开工队列（禁止恢复时自动执行）
 
