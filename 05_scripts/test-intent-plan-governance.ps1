@@ -63,7 +63,14 @@ function Resolve-RecoveryOptimizationCaptureFixture {
         '目标去向：`AP-20260821-02`；先分析本地缓存和来源元数据，再按正式 Babata 链路处理。',
         "目标去向：``AP-20260821-02``；先分析本地缓存和来源元数据，再按正式 Babata 链路处理。`r`n`r`n``resolved_by``：test terminal。"
     )
-    Set-Content -LiteralPath $path -Value ($prefix + $capture + $suffix) -Encoding utf8
+    $text = $prefix + $capture + $suffix
+    $text = [regex]::Replace(
+        $text,
+        '(?ms)(<!-- DOCS-FIRST-CAPTURE: DFC-20260822-0[1-3]; schema=v1 -->.*?^状态：)`active`(。)(.*?)(?=^<!-- DOCS-FIRST-CAPTURE:|\z)',
+        ('$1`resolved`$2$3' + "`r`n`r`n``resolved_by``：test terminal。`r`n"),
+        3
+    )
+    Set-Content -LiteralPath $path -Value $text -Encoding utf8
 }
 
 function Add-ActivePlanFixture {
