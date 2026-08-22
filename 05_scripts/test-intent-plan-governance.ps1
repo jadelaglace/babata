@@ -66,9 +66,12 @@ function Resolve-RecoveryOptimizationCaptureFixture {
     $text = $prefix + $capture + $suffix
     $text = [regex]::Replace(
         $text,
-        '(?ms)(<!-- DOCS-FIRST-CAPTURE: DFC-20260822-0[1-3]; schema=v1 -->.*?^状态：)`active`(。)(.*?)(?=^<!-- DOCS-FIRST-CAPTURE:|\z)',
-        ('$1`resolved`$2$3' + "`r`n`r`n``resolved_by``：test terminal。`r`n"),
-        3
+        '(?ms)(<!-- DOCS-FIRST-CAPTURE: DFC-20260822-0[1-4]; schema=v1 -->.*?^状态：)`active`(。)(.*?)(?=^<!-- DOCS-FIRST-CAPTURE:|\z)',
+        ('$1`resolved`$2$3' + "`r`n`r`n``resolved_by``：test terminal。`r`n")
+    )
+    $text = $text.Replace(
+        '| obsidian标题、L001、操作干嘛了、ID不能当标题 | 2026-08-22 | `active` |',
+        '| obsidian标题、L001、操作干嘛了、ID不能当标题 | 2026-08-22 | `resolved` |'
     )
     $text = $text.Replace(
         '| 旧 DOCX删掉、MP4保护、C1/C1B/C2B、Obsidian | 2026-08-22 | `active` |',
