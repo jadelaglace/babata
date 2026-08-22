@@ -9,10 +9,27 @@
 
 ## 1. 当前活动项（恢复时先读，最多一个）
 
-<!-- CURRENT-ACTIVE: none -->
+<!-- CURRENT-ACTIVE: AP-20260823-01 -->
 
-当前无活动项。收官后的 usage/development/defect/release 规则见 `DOC-PROCESS` §8；当前发布与
-版本基线见 `DOC-USAGE` §21。日常使用不得从本文件恢复成产品开发任务。
+### AP-20260823-01：P0-P9 收官文档归档与现行权威收束
+
+- 来源锚点：2026-08-23 当前用户对话；用户先要求制定全面归档/精简计划，随后明确回复“可以 执行”。
+- transition：`user-explicit-goal-start`。
+- transition evidence：user-explicit-goal-start：用户明确授权执行已汇报的 P0-P9 文档归档与现行
+  权威收束计划；未授权创建新的产品能力或重跑已关闭 usage。
+- 用户目标：先冻结并归档当前 Docs，提炼 P0-P9 的真实需求、流程、规范和经验，显式保留未完成、
+  暂缓与跳过事项，减少日常文档数量并聚焦 usage stage 与后续真实工作。
+- 当前状态：`in_progress / stage-1-baseline-and-classification`。
+- 声明终端：当前 Docs 可由冻结 Git identity 与 manifest 精确恢复；现行权威链职责单一且显著收束；
+  P0-P9 经验、精选原话、终态和开放项各有唯一去向；引用、恢复钩子、mutation 和 full gate 通过；
+  通过 Pull Request 合并并完成 terminal cleanup。
+- 受保护边界：不改变 Babata 产品行为、runtime capability 或已关闭 usage；不重跑 MBA、Cherno、P9
+  或 TC-10；保留本轮开始前已捕获的 Backs 原话；不把 TC-11、通用 Obsidian/Web 或外部主权
+  navigator 伪装为已完成。
+- Agent 临时子计划：冻结基线和依赖矩阵；建立 keep/distill/archive/open/drop 判定；设计最小权威链；
+  先归档后按上游到下游迁移；更新引用/checker/mutation；运行文档与全仓门禁并交付前后对照。
+- 下一步：创建 GitHub Issue 与 `codex/` 分支，冻结当前文档清单/hash 和依赖判定表。
+- 恢复入口：本文、本分支 Git 状态、Issue/PR 和归档 manifest。
 
 ## 2. 下次开工队列（禁止恢复时自动执行）
 
