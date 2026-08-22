@@ -350,13 +350,20 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 - 三门课 269/269 source manifest 已冻结；本地映射为 6 `exact` + 263 `high`，0 unresolved。
   稳定主身份和新物理文件名采用 YouTube `video_id`，原始标题、URL、playlist identity 与观测顺序
   作为 metadata 保存，playlist position 不承担稳定身份。
-- `source.youtube` 窄 Collector route 已登记为 enabled。三门课各一个代表视频经真实 cache manifest
-  正式保存为 C0，`session_01M0JENV8336BMFQYRHBCZ7Z6N` 的 3/3 item/revision/managed asset 已回读；
-  随后 3/3 重采均为 `unchanged` 且 `new_revision_id=null`。首版 route 只消费已准备且完整映射的
-  cache manifest，不下载媒体，也不遍历频道或账号。
-- 三个代表视频已派生完整时长 mono/16 kHz FLAC 并完成 ffprobe 与 SHA-256 回读。首次百炼 ASR
-  仍等待用户确认可能产生的费用；C1、C1B/C2B 和 Obsidian 发布均未开始，通用
-  `outputs.obsidian` 仍为 unavailable。
+- `source.youtube` 窄 Collector route 已登记为 enabled。`session_01M0JJ9YA4DTWT3JJMD4V54WPP`
+  已将冻结 cache manifest 的 269/269 item/revision/managed asset 正式保存为 C0；43,483,878,072
+  bytes 的 SHA-256 和大小逐项回读一致。此前 3 个代表项的显式 recollect 均为 `unchanged`，但本次
+  新 collect session 为相同字节追加了 ordinal 2，故如实保留为重复 capture 而不冒充 unchanged。
+  首版 route 只消费已准备且完整映射的 cache manifest，不下载媒体，也不遍历频道或账号。
+- 三个代表视频已用 `fun-asr` 完成 1544.127 秒全长识别；官方北京地域单价为 0.00022 元/秒，
+  免费额度抵扣前估算 0.339709 元，provider 未返回实际 usage，故登记 `{}` 而不伪造。临时
+  `file_url` 已移除，3/3 transcript 和 3/3 structured result 均正式登记为 C1，6/6 managed
+  文件 SHA-256 回读通过。全量 269/269 ASR 已完成，538 个 transcript/structured-result 已正式
+  登记并逐项回读；幂等复跑为 0 新建、538 复用。31 个旧 DOCX 已在逐文件路径/大小/SHA-256
+  清单冻结后移入 Windows 回收站，原 MP4 未删除、未覆盖。269/269 中文单课学习候选和 3/3 课程级
+  presentation plan 已完成并通过逐文件 hash/敏感字段审计；Qwen 实际用量为 4,742,450 input +
+  319,246 output tokens，按公示单价预估 13.315852 元，免费额度仍为 unknown。C1B/C2B 和 Obsidian 发布尚未完成，通用 `outputs.obsidian` 仍为
+  unavailable。
 - 证据：`D:\BabataData\04_runtime\staging\model-workspaces\cherno-course-stage2-20260821-v1\`
   下 `results/source-manifest.json`、`results/representative-samples.json`、`inventory/` 和 `REPORT.md`；
   缺集证据见 `cherno-course-gap-acquisition-20260821-v1\acquisition-manifest.json`。
@@ -366,7 +373,8 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 | 使用事实 | 主要证据位置 |
 | --- | --- |
 | Cherno C++ 缺集补取 | `D:\BabataData\04_runtime\staging\model-workspaces\cherno-course-gap-acquisition-20260821-v1\acquisition-manifest.json` 与目标盘 SHA-256 read-back |
-| Cherno 269 项 metadata/映射和三样本正式 C0 | `cherno-course-stage2-20260821-v1` 的 source manifest、inventory、代表样本记录，以及 raw SQLite/managed asset read-back |
+| Cherno 269 项 metadata/映射和正式 C0 | `cherno-course-stage2-20260821-v1` 的 source manifest、inventory，以及 `session_01M0JJ9YA4DTWT3JJMD4V54WPP` 的 269/269 raw SQLite/managed asset read-back |
+| Cherno 三样本正式 C1 | `cherno-course-asr-pilot-20260822-v1` 的 manifest、pricing、REPORT 和 6 个 core registration read-back |
 | P8 来源广度、回收和缺口 | `BABATA_RECOVERY_HOME` 下对应 P8 batch/summary |
 | P8.4–P8.6 的 70 条权威存量 | `BABATA_EVIDENCE_HOME` / `BABATA_DATA_HOME` 中对应 manifest、receipt 与 SQLite read-back |
 | MBA 763/763 C1 | `BABATA_DATA_HOME` 中 MBA C1 覆盖账和 managed derivatives |

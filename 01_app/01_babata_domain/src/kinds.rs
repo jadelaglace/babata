@@ -77,6 +77,9 @@ pub enum DerivativeKind {
     Summary,
     VisualDescription,
     KeyFrame,
+    AudioExcerpt,
+    VideoExcerpt,
+    AttachmentExcerpt,
     Tags,
     StructuredResult,
     MediaMetadata,
@@ -101,6 +104,18 @@ mod tests {
         assert_eq!(
             serde_json::to_string(&SourceKind::FirstParty).unwrap(),
             "\"first_party\""
+        );
+        assert_eq!(
+            serde_json::to_string(&DerivativeKind::AudioExcerpt).unwrap(),
+            "\"audio_excerpt\""
+        );
+        assert_eq!(
+            serde_json::to_string(&DerivativeKind::VideoExcerpt).unwrap(),
+            "\"video_excerpt\""
+        );
+        assert_eq!(
+            serde_json::to_string(&DerivativeKind::AttachmentExcerpt).unwrap(),
+            "\"attachment_excerpt\""
         );
     }
 }

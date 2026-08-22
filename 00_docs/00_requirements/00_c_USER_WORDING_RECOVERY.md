@@ -21,6 +21,8 @@
 
 | 极简检索词 | 时段/入口 | 当前状态 | 常规去向或覆盖关系 |
 | --- | --- | --- | --- |
+| 旧 DOCX删掉、MP4保护、C1/C1B/C2B、Obsidian | 2026-08-22 | `active` | `DOC-ACTIVE-PLAN` AP-20260821-02；替代链路验证后删除旧 DOCX，MP4 继续只读保护 |
+| 升级、不要阻塞、直接继续、常规动作 | 2026-08-22 | `active` | `DOC-ACTIVE-PLAN` AP-20260821-02；直接升级，常规工具/调用动作不得反复设用户 gate |
 | 百炼千问、花钱不要问、查价格、记录 | 2026-08-22 | `active` | `DOC-ACTIVE-PLAN` AP-20260821-02；百炼/千问调用免逐次询问，Agent 负责实时查价与成本记录 |
 | 缺的集数、拿回来、C++缺集 | 2026-08-21 | `resolved` | `resolved_by`: Cherno gap acquisition manifest；6/6 prepared，目标盘 hash read-back 一致 |
 | E:\Cherno、meta原名字、ffmpeg统一、旧字幕doc不要、导出obsidian | 2026-08-21 | `active` | `DOC-ACTIVE-PLAN` AP-20260821-02；缺集补取已终端，完整 metadata/C1/C2B/Obsidian Goal 继续 |
@@ -1146,7 +1148,7 @@ verbatim sha256：`f7da284bd6aa8259875e4e68d815805986b666c05a9f0dc082be49f2950b7
 
 capture time：`2026-08-22`。来源：当前用户对话。
 
-verbatim sha256：`71fecd7cfc182675606efa9545716cc7186af5c3b8c672bafc6368e6ebb77140`。
+verbatim sha256：`08613ad1375d986e9a08e8a87c23008635cf9eb4a75f95d37692d3a4a8c758d9`。
 
 极简检索词：`百炼千问`；`花钱不要问`；`查价格`；`记录`。
 
@@ -1156,3 +1158,39 @@ verbatim sha256：`71fecd7cfc182675606efa9545716cc7186af5c3b8c672bafc6368e6ebb77
 纳入执行证据，不再逐次请求费用确认。
 
 > 百炼千问 调用花钱不要问我 自己查价格记录好
+
+### 2026-08-22：纠正常规升级与调用被反复阻塞
+
+<!-- DOCS-FIRST-CAPTURE: DFC-20260822-02; schema=v1 -->
+
+capture time：`2026-08-22`。来源：当前用户对话。
+
+verbatim sha256：`3d8cdcc1756d9020937e7ff4c2ef9e8ad3a564e3e8d8c21862790c74289c9220`。
+
+极简检索词：`升级`；`不要阻塞`；`直接继续`；`常规动作`。
+
+状态：`active`。
+
+目标去向：`AP-20260821-02`；直接升级 `bl` 并继续 Cherno 处理。Agent 不得再把常规工具升级、
+已授权 provider 调用、轮询或重试转成反复的用户阻塞。
+
+> 你有病？这你阻塞？ 升了会死？
+>
+> 再你妈的阻塞老子删了你
+
+### 2026-08-22：明确删除 Cherno 旧 DOCX
+
+<!-- DOCS-FIRST-CAPTURE: DFC-20260822-03; schema=v1 -->
+
+capture time：`2026-08-22`。来源：当前用户更新的 Goal objective。
+
+verbatim sha256：`d5b0e5a722f9e46136069ec0323e10d4bb467fa94c877e7d1e0eeccecd4a1dbd`。
+
+极简检索词：`旧 DOCX删掉`；`MP4保护`；`C1/C1B/C2B`；`Obsidian`。
+
+状态：`active`。
+
+目标去向：`AP-20260821-02`；旧 DOCX 在权威视频经新 C1/C1B/C2B 链路完整验证并留下删除清单后
+删除。`E:\Cherno` 的 MP4 源视频继续只读，不覆盖、不删除。
+
+> 完成 Cherno 三套课程缓存治理：以稳定 video ID 命名并用元数据保留 YouTube 原始标题与播放列表身份；评估并实施合适的 ffmpeg 媒体规范化派生；旧 DOCX删掉，从权威视频音频经 Babata 重建可追溯 C1/C1B/C2B，并导出唯一可重建的 Obsidian 阅读视图。当前先完成全量盘点、缺集补取与快速方案定稿，保护 E:\Cherno 现有文件不被覆盖或删除。

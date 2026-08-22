@@ -38,7 +38,7 @@ deletable workspace; it is never formal C1 or a downstream C2 package.
       ],
       "derivatives": [
         {
-          "kind": "extracted_text|ocr_text|transcript|summary|structured_result|tags|key_frame",
+          "kind": "extracted_text|ocr_text|transcript|summary|structured_result|tags|key_frame|audio_excerpt|video_excerpt|attachment_excerpt",
           "path": "results/<file>",
           "sha256": "<output-hash>",
           "loss_notes": []

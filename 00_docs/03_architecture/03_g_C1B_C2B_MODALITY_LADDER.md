@@ -75,7 +75,8 @@ Agent 可以使用 `ffmpeg`、OpenCV、Pillow 或其他受控工具完成筛选�
 
 `C1B-FORMAL-HANDOFF-GATE`：正式 C1B 不以 staging 目录为权威。完整 C1 可以复用已有 active
 derivative，不重复登记；每项本质判断登记为 `structured_result`，每个必要视觉片段登记为
-`key_frame`（其他模态使用对应 kind），全部由 Rust core 导入 managed C1。课程级注册账本必须
+`key_frame`，必要听觉、连续画面和附件片段分别登记为 `audio_excerpt`、`video_excerpt` 和
+`attachment_excerpt`，全部由 Rust core 导入 managed C1。课程级注册账本必须
 逐项携带 C0/C1 身份、run/derivative、logical path 和 output hash，并由 C2B builder 强制校验；
 旧 C2B package、外部原件和 Obsidian Vault 均不能补写该账本。
 

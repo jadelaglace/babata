@@ -22,6 +22,10 @@ formal registration or publication.
   Current activation and course coverage belong to usage status, not this reusable contract.
 - Note template: `02_skills/00_specs/templates/semantic-obsidian-note.md`
 - Accepted semantic Obsidian profile: `02_skills/00_specs/templates/semantic-obsidian-profile.md`
+- Course-neutral candidate profile: `02_skills/00_specs/templates/semantic-course-obsidian-profile.md`.
+  It uses `babata.course-presentation-plan/v1`, preserves the same package-owned map and responsive-view gates,
+  and publishes to the plan-declared `Babata/<collection>/<short_name>/index.md`. Its first real-use validation
+  is Cherno; that scoped delivery must not claim generic `outputs.obsidian` activation.
 - Rebuildable full-course runner: `05_scripts/build-template-preserving-c2b.ps1`; every run starts
   from a source C1 map and a fresh staging root, then materializes package and Vault from the approved
   semantic template. Every mapped module leaf is content-first and carries the complete hash-checked C1
@@ -56,6 +60,10 @@ formal registration or publication.
   presentation migration may copy existing package content, rename learning-support notes, update index/Mermaid
   internal links and rebuild manifest hashes. Its receipt proves all other Markdown/media bytes unchanged and
   preserves course acceptance/closure; it does not invoke content generation, C1B, knowledge registration or closure.
+- `semantic-course-obsidian/v1` is the course-neutral adapter for non-MBA course collections. Its plan owns
+  course identity/version, collection display segment, outline, learning support, course-map display domains and
+  exact live path. It consumes the same formal C1B/knowledge gates and reuses the accepted presentation rules,
+  but keeps a separate schema/profile identity so MBA-specific evidence and paths are never relabeled as generic.
 - Historical MBA rollout path: `babata.mba-course-c2b-plan/v1` and the current generic scripts remain evidence
   for accepted C1B/content/profile/package/live instances, but their singular foundation/discipline/branch
   registration is not conformant for new formal registrations. Compatibility work must preserve those accepted
