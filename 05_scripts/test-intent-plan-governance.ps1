@@ -203,7 +203,7 @@ try {
         param($caseRoot)
         Add-Content -LiteralPath (Join-Path $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md') -Value "`n### 2099-01-01：遗漏结构`n`n> 新的治理输入。`n" -Encoding utf8
     }
-    Assert-CheckerFails 'recovery-index-misses-latest-phrase' 'latest capture must map to exactly one fast-index row' {
+    Assert-CheckerFails 'recovery-index-misses-latest-phrase' 'does not match exactly one fast-index row and status' {
         param($caseRoot)
         Replace-Once $caseRoot '00_docs\00_requirements\00_c_USER_WORDING_RECOVERY.md' '| 缺的集数、拿回来、C++缺集 |' '| 缺的集数、拿回来、课程缺集 |'
     }

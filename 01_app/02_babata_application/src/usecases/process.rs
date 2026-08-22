@@ -1337,15 +1337,12 @@ fn ensure_asset_kind(kind: DerivativeKind, asset: &NewAsset) -> Result<(), Appli
                 || media_type.starts_with("video/")
                 || media_type == "application/pdf"
         }
-        DerivativeKind::AudioExcerpt => {
+        DerivativeKind::AudioExcerpt | DerivativeKind::Transcript | DerivativeKind::Subtitle => {
             media_type.starts_with("audio/") || media_type.starts_with("video/")
         }
         DerivativeKind::VideoExcerpt => media_type.starts_with("video/"),
-        DerivativeKind::AttachmentExcerpt => true,
-        DerivativeKind::Transcript | DerivativeKind::Subtitle => {
-            media_type.starts_with("audio/") || media_type.starts_with("video/")
-        }
-        DerivativeKind::MediaMetadata
+        DerivativeKind::AttachmentExcerpt
+        | DerivativeKind::MediaMetadata
         | DerivativeKind::Summary
         | DerivativeKind::Tags
         | DerivativeKind::StructuredResult => true,
