@@ -6,7 +6,8 @@
 
 ## 1. 文档职责
 
-本文定义 P0–P9 的稳定含义、交付顺序、phase gate、工程工作流和验证节奏。它不定义新产品行为，
+本文定义 P0–P9 的稳定含义、交付顺序、phase gate，以及收官后的使用、开发、缺陷和发布纪律。
+它不定义新产品行为，
 不维护来源/课程/批次的当前数量，也不保存逐次运行日志。当前 phase 和真实使用进度唯一见
 `04_b_USAGE_STATUS.md`；产品行为见 PRD，完成口径见 AC，测试步骤见 TC。
 
@@ -261,14 +262,52 @@ capability/phase/usage 完成。结果进入 runtime receipt，不写 PRD/AC/TC�
 语义未改变的下游文档不机械改写。candidate supplement 不能静默成为现行 requirements、PRD、
 architecture 或 current status。
 
-## 8. Git 与交付纪律
+## 8. 使用、开发、缺陷与发布纪律
 
-1. 常规工作从 GitHub Issue 和短生命周期 `codex/` 分支开始，通过 PR 合并；不直接推 main。
-2. Issue 写清范围、非目标、AC/TC、数据/权限影响和退出条件。
-3. 工作区已有用户改动默认保留；不 reset、checkout 或删除无关内容。
-4. 真实数据、媒体、SQLite、模型输出、日志、secret、browser profile 和生成视图不进入 Git。
-5. 小型措辞可合并 housekeeping；需求语义、writer/data boundary、schema、安全和权限单独立项。
-6. 失败、受限和未覆盖项如实保留，不为关闭 Issue 压成成功。
+P0–P9 收官后默认进入 **usage stage**。是否需要 Issue/分支/PR 取决于有没有改变 Babata 本体，
+不取决于一次材料处理有多大。
+
+### 8.1 日常使用
+
+1. 用现有 Babata 收集、清洗、登记、生成或发布一个明确授权的资料范围，是 usage，不要求为了
+   开跑而创建 GitHub Issue、开发分支或 PR。
+2. 真实数据、媒体、SQLite、模型输出、日志、secret、browser profile、生成视图和逐次 receipt
+   继续留在 Git 外数据根。只在当前使用结论发生变化时更新 `DOC-USAGE`。
+3. 每个新 execution round/关键 usage receipt 必须记录 `babata_build.version`、`release_tag`、
+   `git_commit` 和 `worktree_dirty`；还应保留实际 profile、配置、provider/model 版本。无 tag、dirty
+   或临时 commit 可以运行，但必须如实标记，不能冒充正式发布版本。
+4. 只有 Git 外 receipt 或运行结果时不制造仓库提交。仅回写 usage 状态或证据指针的低风险
+   housekeeping 不要求 Issue；经对应文档 checker 后可直接提交 main，也可在需要 review 时用短 PR。
+5. 使用失败、受限和未覆盖项如实保留，不为结束一次使用而压成成功。
+
+### 8.2 缺陷收集与修复
+
+1. 使用中发现异常，先在 Git 外 defect ledger 留下观测版本/tag/commit/dirty、授权范围、最小复现、
+   预期/实际结果、严重度、日志/receipt 指针和临时绕行；状态使用 `observed / triaged / deferred /
+   promoted-for-fix / fixed / verified`。
+2. 记录 Bug 不等于立即修复。冻结 execution round 内不边跑边改代码；普通缺陷进入轮次 defect
+   ledger，轮次到终端后再决定是否晋升为修复工作。
+3. 只有决定修复时才创建 GitHub Issue，冻结修复范围和回归证据，再按开发流程实施。不能用新版本
+   的修复证据改写旧 usage round 的实际结果。
+
+### 8.3 Babata 本体开发
+
+新增产品能力、改变行为/合同/schema/migration、安全或权限边界、升级会改变运行结果的依赖，
+以及已晋升的 Bug 修复，均是 development：从 GitHub Issue 和短生命周期 `codex/` 分支开始，
+通过 PR 与适用门禁合并，不直接推 main。Issue 写清范围、非目标、AC/TC、数据/权限影响和退出条件。
+工作区已有用户改动默认保留；不 reset、checkout 或删除无关内容。
+
+### 8.4 版本与发布
+
+1. `01_app/Cargo.toml` 的 `[workspace.package].version` 是 Babata 产品版本唯一 Git 权威；所有 Rust
+   crate 继承该版本，`babata --version` 必须返回相同值。
+2. 版本遵循 SemVer；兼容 Bug 修复升 patch，兼容新能力升 minor，破坏性合同/数据迁移升 major。
+   `0.x` 明确表示 public-beta/尚未承诺 1.0 稳定性；需要候选版时使用 SemVer prerelease。
+3. 发布 tag 固定为 annotated `vMAJOR.MINOR.PATCH[-prerelease]`。tag 的版本必须与 workspace version
+   一致，目标 commit 必须可从 `main` 到达，工作区干净且适用发布门禁已通过；已推送 tag 不移动。
+4. 每个正式使用范围优先选择一个发布 tag；若必须使用未发布 commit，receipt 必须记录完整 commit
+   和 dirty 状态。旧 receipt 不倒填不存在的 tag。
+5. 当前发布与实际使用状态由 `DOC-USAGE` 记录；版本文件和 tag 证明代码身份，不替代 usage 验收。
 
 ## 9. 验证节奏
 

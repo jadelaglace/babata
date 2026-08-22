@@ -6,7 +6,7 @@
 
 [![Engineering gates](https://github.com/jadelaglace/babata/actions/workflows/engineering-gates.yml/badge.svg)](https://github.com/jadelaglace/babata/actions/workflows/engineering-gates.yml) ![Rust 1.85+](https://img.shields.io/badge/Rust-1.85%2B-000000?logo=rust) ![Local first](https://img.shields.io/badge/data-local--first-0f766e)
 
-<sub>Post-2.0 reboot · Rust-first · single repository · under active development</sub>
+<sub>Post-2.0 reboot · v0.1.0 public beta · usage stage</sub>
 
 </div>
 
@@ -31,8 +31,9 @@ Babata 是一个本地优先的个人资料与知识系统。它面向微信、�
 > 浅层强制入口，不是第二份计划权威。
 
 > [!IMPORTANT]
-> Babata 仍处于开发阶段，不是面向普通用户的稳定发行版。当前 phase、真实范围、完成度和
-> 未完成项只查 [Usage Status](00_docs/04_process/04_b_USAGE_STATUS.md)。
+> Babata 当前为 `v0.1.0` public beta，P0–P9 已收官并进入 usage stage；它尚不承诺 `1.0.0`
+> 稳定性。当前发布、真实范围、完成度和未完成项只查
+> [Usage Status](00_docs/04_process/04_b_USAGE_STATUS.md)。
 
 <!-- /BABATA-RECOVERY-HOOK: v1 -->
 
@@ -128,5 +129,7 @@ Rust package。边界变更运行 `check-boundary`，合并前运行 `check-full
 结论。P0-P9 的稳定含义见[开发流程](00_docs/04_process/04_a_DEVELOPMENT_PROCESS.md)，当前
 真实结果和证据入口只查 [Usage Status](00_docs/04_process/04_b_USAGE_STATUS.md)。
 
-日常开发从 GitHub Issue 开始，使用 `codex/` 短分支并通过 Pull Request 合并。提交前请阅读
-[提交与验收纪律](00_docs/04_process/04_a_DEVELOPMENT_PROCESS.md#14-提交与验收纪律)。
+日常使用 Babata 处理材料不要求 Issue 或 PR；execution round/关键 receipt 会记录 Babata 版本、
+tag、commit 和 dirty 状态。新增能力、行为/合同变化和已决定修复的 Bug 才进入 GitHub Issue、
+`codex/` 短分支与 Pull Request。Bug 的观察收集与代码修复保持分离。详见
+[使用、开发、缺陷与发布纪律](00_docs/04_process/04_a_DEVELOPMENT_PROCESS.md#8-使用开发缺陷与发布纪律)。

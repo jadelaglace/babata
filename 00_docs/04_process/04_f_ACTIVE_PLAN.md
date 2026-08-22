@@ -11,8 +11,8 @@
 
 <!-- CURRENT-ACTIVE: none -->
 
-当前无活动项。Cherno 终态见 `DOC-USAGE` §20、运行回执、Issue #190、PR #191 和 Git 历史；
-不得从本文件恢复或重跑。
+当前无活动项。收官后的 usage/development/defect/release 规则见 `DOC-PROCESS` §8；当前发布与
+版本基线见 `DOC-USAGE` §21。日常使用不得从本文件恢复成产品开发任务。
 
 ## 2. 下次开工队列（禁止恢复时自动执行）
 

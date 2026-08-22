@@ -63,6 +63,11 @@ try {
     if ($passLedger.status -ne 'passed' -or $passLedger.actual_terminal -ne 'candidate_ready' -or @($passLedger.stages).Count -ne 2) {
         throw 'Passing round ledger is incomplete.'
     }
+    if ($passLedger.babata_build.version -ne '0.1.0' -or
+        $passLedger.babata_build.git_commit -notmatch '^[0-9a-f]{40}$' -or
+        $null -eq $passLedger.babata_build.PSObject.Properties['worktree_dirty']) {
+        throw 'Passing round ledger is missing the Babata build identity.'
+    }
 
     $reused = Invoke-TestRound -Plan $passPlanPath -OutputRoot $passRoot
     if ($reused.exit_code -eq 0 -or -not (($reused.output -join "`n").Contains('Refusing to reuse existing round root'))) {

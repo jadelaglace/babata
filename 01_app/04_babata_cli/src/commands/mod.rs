@@ -31,7 +31,7 @@ pub use views::ViewsCommand;
 pub use workspace::{AnnotateInput, NoteInput, ReviseInput, WorkspaceCommand};
 
 #[derive(Debug, Parser)]
-#[command(name = "babata")]
+#[command(name = "babata", version)]
 pub struct Cli {
     #[arg(long, global = true)]
     pub json: bool,

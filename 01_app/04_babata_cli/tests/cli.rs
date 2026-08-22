@@ -8,6 +8,16 @@ fn babata(temp: &tempfile::TempDir) -> Command {
     command
 }
 
+#[test]
+fn cli_reports_the_workspace_release_version() {
+    let temp = tempdir().unwrap();
+    babata(&temp)
+        .arg("--version")
+        .assert()
+        .success()
+        .stdout("babata 0.1.0\n");
+}
+
 fn capture_text(temp: &tempfile::TempDir, text: &str) -> Value {
     let output = babata(temp)
         .args([

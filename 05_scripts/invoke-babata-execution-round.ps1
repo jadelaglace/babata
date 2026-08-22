@@ -59,6 +59,47 @@ function Get-OptionalArray {
     return @($property.Value)
 }
 
+function Get-BabataBuildIdentity {
+    $manifestPath = Join-Path $RepoRoot '01_app\Cargo.toml'
+    $manifest = Get-Content -LiteralPath $manifestPath -Raw -Encoding utf8
+    $versionMatch = [regex]::Match(
+        $manifest,
+        '(?ms)^\[workspace\.package\]\s+.*?^version\s*=\s*"(?<version>[^"]+)"\s*$'
+    )
+    if (-not $versionMatch.Success) {
+        throw "Babata workspace version is missing from $manifestPath"
+    }
+
+    $LASTEXITCODE = 0
+    $commit = (& git -C $RepoRoot rev-parse HEAD 2>$null | Select-Object -First 1)
+    $commitExitCode = $LASTEXITCODE
+    if ($commitExitCode -ne 0 -or [string]::IsNullOrWhiteSpace($commit)) {
+        throw "Cannot resolve Babata Git commit from $RepoRoot"
+    }
+    $commit = $commit.Trim()
+    $version = $versionMatch.Groups['version'].Value
+    $LASTEXITCODE = 0
+    $releaseTag = @(& git -C $RepoRoot tag --points-at $commit --list "v$version" 2>$null |
+        Where-Object { $_ -eq "v$version" } | Select-Object -First 1)
+    $tagExitCode = $LASTEXITCODE
+    if ($tagExitCode -ne 0) {
+        throw "Cannot resolve Babata Git tag from $RepoRoot"
+    }
+    $LASTEXITCODE = 0
+    $status = @(& git -C $RepoRoot status --porcelain=v1 --untracked-files=normal 2>$null)
+    $statusExitCode = $LASTEXITCODE
+    if ($statusExitCode -ne 0) {
+        throw "Cannot resolve Babata worktree status from $RepoRoot"
+    }
+
+    return [pscustomobject][ordered]@{
+        version = $version
+        release_tag = if ($releaseTag.Count -eq 1) { [string]$releaseTag[0] } else { $null }
+        git_commit = $commit
+        worktree_dirty = ($status.Count -gt 0)
+    }
+}
+
 function Expand-RoundToken {
     param([Parameter(Mandatory)][string]$Value)
 
@@ -272,6 +313,7 @@ foreach ($entry in $explicitFrozenPaths) {
 }
 
 $frozenBaseline = @($frozenPathSet | Sort-Object | ForEach-Object { Get-PathFingerprint -Path $_ })
+$babataBuild = Get-BabataBuildIdentity
 New-Item -ItemType Directory -Path $RoundRoot | Out-Null
 $logsRoot = Join-Path $RoundRoot 'logs'
 New-Item -ItemType Directory -Path $logsRoot | Out-Null
@@ -292,6 +334,7 @@ $ledger = [ordered]@{
     finished_at = $null
     repo_root = $RepoRoot
     round_root = $RoundRoot
+    babata_build = $babataBuild
     plan = [ordered]@{
         source = $PlanPath
         snapshot = $snapshotPath
