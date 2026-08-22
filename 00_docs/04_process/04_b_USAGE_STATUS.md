@@ -363,7 +363,18 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
   `cherno-course-knowledge-registration-20260822-v1`、`cherno-course-learning-full-20260822-v1` 和
   `cherno-course-c2b-full-20260822-v1`；最终发布回执为后者的 `publication-round.json`。
 
-## 21. 证据索引
+## 21. Babata 当前发布与使用基线
+
+- 当前产品版本为 `0.1.0`，发布标识为 annotated Git tag `v0.1.0`，生命周期为
+  `public-beta / usage-stage`。`0.x` 不冒充 `1.0.0` 稳定承诺。
+- 唯一版本源是 `01_app/Cargo.toml` 的 `[workspace.package].version`；六个 Rust crate 继承该值，
+  `babata --version` 返回同一版本。tag 解析实际 release commit；本文不维护第二份 commit hash。
+- 从本基线后的 execution round ledger 自动记录 `babata_build.version`、`release_tag`、`git_commit`
+  和 `worktree_dirty`。既有历史 receipt 保留原有代码/配置/hash 证据，不倒填当时不存在的 tag。
+- 日常材料处理属于 usage，不因使用 Babata 自动创建 Issue/PR。Bug 先进入 Git 外 defect ledger；
+  只有决定修复或改变 Babata 本体时才转为 development Issue、短分支、PR 和后续版本。
+
+## 22. 证据索引
 
 | 使用事实 | 主要证据位置 |
 | --- | --- |

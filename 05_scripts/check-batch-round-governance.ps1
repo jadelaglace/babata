@@ -55,6 +55,8 @@ if ($documents.rollout.Contains('BATCH-ROUND-TERMINAL-GATE')) {
 }
 Assert-Contains $runner 'babata.execution-round-plan/v1' 'round plan schema'
 Assert-Contains $runner 'babata.execution-round-ledger/v1' 'round ledger schema'
+Assert-Contains $runner 'babata_build' 'Babata build identity in round ledger'
+Assert-Contains $runner 'worktree_dirty' 'Babata worktree identity in round ledger'
 Assert-Contains $runner 'record_and_continue' 'non-invalidating continuation policy'
 Assert-Contains $runner 'abort_round' 'invalidating abort policy'
 Assert-Contains $runner 'Refusing to reuse existing round root' 'fresh round root rejection'

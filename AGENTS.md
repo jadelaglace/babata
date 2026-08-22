@@ -33,10 +33,16 @@ routes recovery to that authority; it does not become a second product or plan a
   `C:\Users\Aiano\Babata-2.0-frozen`.
 - This root is the Babata Git repository; use `main` and the configured `origin`
   unless the user gives a different Git instruction.
-- Regular work starts from a GitHub Issue, uses a short-lived branch, and is
-  merged through a Pull Request after applicable checks. Do not use `main` as
-  the daily development branch or push directly to it unless the user gives an
-  explicit emergency instruction.
+- Routine use of an existing Babata release to process authorized material does
+  not require a GitHub Issue, development branch, or Pull Request. Record the
+  Babata version/tag/commit/dirty state in the external execution receipt.
+- Product features, behavior or contract changes, schema/migration work, and
+  promoted bug fixes start from a GitHub Issue, use a short-lived `codex/`
+  branch, and merge through a Pull Request after applicable checks. A low-risk
+  usage-status or evidence-pointer writeback may be committed as housekeeping
+  without an Issue after its scoped document checks.
+- Collect observed bugs with their build identity and evidence before deciding
+  to fix them. Do not mutate implementation inside a frozen usage round.
 - `00_docs/` is the current product and delivery authority for the reboot.
 - Do not create independent module repositories, cross-module APIs, or formal
   handoff packages before a running local raw-to-view loop proves the need.
