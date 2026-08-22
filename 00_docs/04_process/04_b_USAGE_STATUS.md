@@ -339,34 +339,29 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 
 ## 20. Cherno 课程缓存当前使用状态
 
-- 2026-08-21 用户授权的三套缓存当前共有 269 个 MP4：C++ 115、OpenGL 31、Game Engine 123；
-  另有 31 个旧 OpenGL DOCX，已明确从后续新 C1 输入排除，但尚未删除。
-- 当前 269 个 MP4 均为 1920x1080 H.264/AAC；帧率按来源分布为 23.976/24/25/
-  29.97/30/60 fps。该差异不构成原件重编码理由。
-- 当前三个 YouTube playlist 分母为 115/31/123。OpenGL 与 Game Engine 逐项顺序和时长全匹配；
-  C++ 的 109 个旧文件经规范化标题与时长绑定后全部有对应项，另外 6 个新项确认为真实缺集。
-- C++ 缺失的 playlist positions 110–115 已用稳定 video ID 文件名补取到 `E:\Cherno\C++`；
-  6/6 为 1080p H.264/AAC，staging 与目标盘 SHA-256 一致，目录 MP4 数为 115。
-- 三门课 269/269 source manifest 已冻结；本地映射为 6 `exact` + 263 `high`，0 unresolved。
-  稳定主身份和新物理文件名采用 YouTube `video_id`，原始标题、URL、playlist identity 与观测顺序
-  作为 metadata 保存，playlist position 不承担稳定身份。
-- `source.youtube` 窄 Collector route 已登记为 enabled。`session_01M0JJ9YA4DTWT3JJMD4V54WPP`
-  已将冻结 cache manifest 的 269/269 item/revision/managed asset 正式保存为 C0；43,483,878,072
-  bytes 的 SHA-256 和大小逐项回读一致。此前 3 个代表项的显式 recollect 均为 `unchanged`，但本次
-  新 collect session 为相同字节追加了 ordinal 2，故如实保留为重复 capture 而不冒充 unchanged。
-  首版 route 只消费已准备且完整映射的 cache manifest，不下载媒体，也不遍历频道或账号。
-- 三个代表视频已用 `fun-asr` 完成 1544.127 秒全长识别；官方北京地域单价为 0.00022 元/秒，
-  免费额度抵扣前估算 0.339709 元，provider 未返回实际 usage，故登记 `{}` 而不伪造。临时
-  `file_url` 已移除，3/3 transcript 和 3/3 structured result 均正式登记为 C1，6/6 managed
-  文件 SHA-256 回读通过。全量 269/269 ASR 已完成，538 个 transcript/structured-result 已正式
-  登记并逐项回读；幂等复跑为 0 新建、538 复用。31 个旧 DOCX 已在逐文件路径/大小/SHA-256
-  清单冻结后移入 Windows 回收站，原 MP4 未删除、未覆盖。269/269 中文单课学习候选和 3/3 课程级
-  presentation plan 已完成并通过逐文件 hash/敏感字段审计；Qwen 实际用量为 4,742,450 input +
-  319,246 output tokens，按公示单价预估 13.315852 元，免费额度仍为 unknown。C1B/C2B 和 Obsidian 发布尚未完成，通用 `outputs.obsidian` 仍为
-  unavailable。
-- 证据：`D:\BabataData\04_runtime\staging\model-workspaces\cherno-course-stage2-20260821-v1\`
-  下 `results/source-manifest.json`、`results/representative-samples.json`、`inventory/` 和 `REPORT.md`；
-  缺集证据见 `cherno-course-gap-acquisition-20260821-v1\acquisition-manifest.json`。
+- 2026-08-22 Cherno 三套课程已由用户验收并关闭：C++ 115、OpenGL 31、Game Engine 123，合计
+  269/269。6 个真实缺集已补齐；三门 source manifest 为 6 `exact` + 263 `high`、0 unresolved。
+- YouTube `video_id` 是稳定身份和新媒体文件名；原始标题、URL、playlist identity、观测顺序、
+  时长与哈希保存在 metadata，playlist position 不承担稳定身份。Obsidian 用户可见文件名、H1
+  和索引链接采用 `L###-<可读内容或操作名称>`；269/269 可读标题通过检查，video ID 不泄漏为标题。
+- 269 个原 MP4 均为 1920x1080 H.264/AAC，但保留来源帧率 23.976/24/25/29.97/30/60 fps，
+  不统一重编码原件。Babata 只按处理需要生成 mono/16 kHz FLAC、联系表、关键帧和视频片段等
+  可重建派生；`E:\Cherno` 原 MP4 未删除、未覆盖。
+- `source.youtube` 窄 Collector route 为 enabled；`session_01M0JJ9YA4DTWT3JJMD4V54WPP` 已完成
+  269/269 C0 和 43,483,878,072 bytes 逐项 SHA-256/大小回读。全量 ASR、538 个 C1 derivative、
+  269/269 C1B、269/269 单课知识登记和 3/3 课程计划均完成并验证。31 个旧 DOCX 在替代链完整
+  注册和删除清单冻结后移入 Windows 回收站，当前 `E:\Cherno` 为 269 MP4、0 DOCX。
+- ASR 按官方北京地域 0.00022 元/秒估算上限 93.173341 元，provider 未返回实际 usage，故不伪造
+  实际扣费。Qwen 课程学习实际用量为 4,742,450 input + 319,246 output tokens，按公示单价预估
+  13.315852 元，免费额度抵扣仍为 unknown。
+- 三套 `semantic-course-obsidian/v1` package 已通过工程 checker 并原子发布到唯一 Obsidian live；
+  publication receipt 哈希逐项通过，旧 live 已归档。用户以 `DFC-20260822-05` 接受新版标题和当前
+  发布结果，状态为 `accepted / closed`。专用 course publisher/profile 的交付不冒充通用
+  `outputs.obsidian` capability；后者仍为 `unavailable / unplanned`。
+- 主要证据位于 `cherno-course-stage2-20260821-v1`、`cherno-course-gap-acquisition-20260821-v1`、
+  `cherno-course-asr-full-20260822-v1`、`cherno-course-c1b-vision-full-20260822-v1`、
+  `cherno-course-knowledge-registration-20260822-v1`、`cherno-course-learning-full-20260822-v1` 和
+  `cherno-course-c2b-full-20260822-v1`；最终发布回执为后者的 `publication-round.json`。
 
 ## 21. 证据索引
 
@@ -375,6 +370,8 @@ package/live 和用户验收；不自动扩大为全部 MBA 课程完成，也�
 | Cherno C++ 缺集补取 | `D:\BabataData\04_runtime\staging\model-workspaces\cherno-course-gap-acquisition-20260821-v1\acquisition-manifest.json` 与目标盘 SHA-256 read-back |
 | Cherno 269 项 metadata/映射和正式 C0 | `cherno-course-stage2-20260821-v1` 的 source manifest、inventory，以及 `session_01M0JJ9YA4DTWT3JJMD4V54WPP` 的 269/269 raw SQLite/managed asset read-back |
 | Cherno 三样本正式 C1 | `cherno-course-asr-pilot-20260822-v1` 的 manifest、pricing、REPORT 和 6 个 core registration read-back |
+| Cherno 全量 C1/C1B/知识登记 | `cherno-course-asr-full-20260822-v1`、`cherno-course-c1b-vision-full-20260822-v1`、`cherno-course-knowledge-registration-20260822-v1` 的逐项 ledger/read-back |
+| Cherno C2B、可读标题、发布与验收 | `cherno-course-c2b-full-20260822-v1` 的三套 package manifest/verification/publication receipt、`publication-round.json`，以及 `DFC-20260822-05` |
 | P8 来源广度、回收和缺口 | `BABATA_RECOVERY_HOME` 下对应 P8 batch/summary |
 | P8.4–P8.6 的 70 条权威存量 | `BABATA_EVIDENCE_HOME` / `BABATA_DATA_HOME` 中对应 manifest、receipt 与 SQLite read-back |
 | MBA 763/763 C1 | `BABATA_DATA_HOME` 中 MBA C1 覆盖账和 managed derivatives |
