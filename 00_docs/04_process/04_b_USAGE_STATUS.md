@@ -102,7 +102,7 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 
 | 项目 | 状态 | 下一授权条件 |
 | --- | --- | --- |
-| 本轮 Docs 收束 | `in_progress` | `DOC-ACTIVE-PLAN` AP-20260823-01 |
+| P0-P9 Docs 收束 | `completed / merged` | PR #194；merge `aaa4d0fe18c378cb5e58751f1eb981608673466e`；旧全文冻结于 `9182a77` |
 | Backs 记忆档案与年度归档分析 | `adopted requirement / not-started` | 本轮 Docs 终端后由用户明确启动新的 usage/development scope |
 | 132 个微信群聊 | `deferred-by-user` | 用户明确恢复 |
 | Bilibili | `deferred-by-user` | 用户明确恢复 |

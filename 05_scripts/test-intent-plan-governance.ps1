@@ -91,9 +91,9 @@ try {
         param($caseRoot)
         Add-Content -LiteralPath (Join-Path $caseRoot '00_docs\04_process\04_c_ACTIVE_PLAN.md') -Value "`n<!-- CURRENT-ACTIVE: none -->" -Encoding utf8
     }
-    Assert-CheckerFails 'active-item-loses-terminal' 'active item field' {
+    Assert-CheckerFails 'active-marker-loses-item' 'active item heading' {
         param($caseRoot)
-        Replace-Once $caseRoot '00_docs\04_process\04_c_ACTIVE_PLAN.md' '- 声明终端：' '- 完成说明：'
+        Replace-Once $caseRoot '00_docs\04_process\04_c_ACTIVE_PLAN.md' '<!-- CURRENT-ACTIVE: none -->' '<!-- CURRENT-ACTIVE: AP-TEST-01 -->'
     }
     Assert-CheckerFails 'process-allows-summary-authorization' 'recovery lifecycle contract' {
         param($caseRoot)
