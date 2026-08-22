@@ -5,7 +5,7 @@ $requiredMarkers = @{
     '00_docs/03_architecture/03_a_ARCHITECTURE.md' = @(
         'BABATA_EVIDENCE_HOME',
         'BABATA_RECOVERY_HOME',
-        '04_runtime/staging/model-workspaces/'
+        'staging、模型 workspace、execution ledger、缓存和日志位于 Git 外'
     )
     '02_skills/babata-clean/SKILL.md' = @(
         '04_runtime/staging/model-workspaces/'
