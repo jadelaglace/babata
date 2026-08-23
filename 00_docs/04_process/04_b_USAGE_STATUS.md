@@ -15,9 +15,9 @@
 | 项目 | 当前值 |
 | --- | --- |
 | 生命周期 | `public-beta / usage-stage` |
-| 产品版本 | `0.2.0` release candidate |
-| release tag | pending annotated `v0.2.0` |
-| release commit | pending merge and release writeback |
+| 产品版本 | `0.2.0` |
+| release tag | annotated `v0.2.0` |
+| release commit | 以 `v0.2.0^{}` 解析结果为准；本文不维护第二份 commit hash |
 | 唯一版本源 | `01_app/Cargo.toml` `[workspace.package].version` |
 | GitHub Release | 不创建；当前只维护 Git tag |
 
@@ -36,7 +36,7 @@ tool version、调用量、价格依据和实际或估算成本。
 | Knowledge/search/sublibrary | `enabled` | 核心登记、关系、检索和通用物化能力已有真实使用 |
 | `outputs` Markdown/JSON | `enabled` | 通用输出合同与实现存在 |
 | 专用 MBA/Cherno Obsidian publisher | `proven-specialized-route` | 已真实交付，但不是通用 capability |
-| `source.yitang` | `enabled / release-pending` | 成对回放、渲染全文和正文图片的 prepared-manifest Collector 路线已通过真实样本 |
+| `source.yitang` | `enabled` | 成对回放、渲染全文和正文图片的 prepared-manifest Collector 路线已通过真实样本并随 v0.2.0 发布 |
 | `outputs.obsidian` | `unavailable / unplanned` | 不因专用 publisher 倒签 |
 | `outputs.web` | `unavailable / unplanned` | 未实现 |
 | external snapshot/diff/navigator | `candidate / not-adopted` | Backs 可先做有界 profile |
@@ -100,7 +100,8 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 - 大文件整读和跨 session 伪 revision 两个真实缺陷已在 Issue #196 范围内修复并复验；修复后峰值
   工作集低于 20 MB，新 session 和显式 recollect 都保持 revision 数不变。修复前产生的 ordinal 2
   revision 作为缺陷证据保留，不删除或伪装成来源变化。
-- 当前状态：`real-path-passed / release-pending`；未触发 C1，provider/model 调用为 0，成本 0 CNY。
+- 当前状态：`released in v0.2.0 / real-path-passed`；PR #197 已合并，Issue #196 已关闭；未触发 C1，
+  provider/model 调用为 0，成本 0 CNY。
 
 证据：`D:\BabataData\04_runtime\staging\model-workspaces\yitang-ai-knowledge-management-source-20260823-v1`。
 
@@ -120,7 +121,7 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 | 项目 | 状态 | 下一授权条件 |
 | --- | --- | --- |
 | P0-P9 Docs 收束 | `completed / merged` | PR #194；merge `aaa4d0fe18c378cb5e58751f1eb981608673466e`；旧全文冻结于 `9182a77` |
-| 一堂系列后续内容 | `current sample passed / future scope not-authorized` | 用户提供下一组明确 replay/document pair |
+| 一堂系列后续内容 | `v0.2.0 route released / future scope not-authorized` | 用户提供下一组明确 replay/document pair |
 | Backs 记忆档案与年度归档分析 | `R1 passed dry-run / awaiting explicit next-stage authorization` | 2,492 exact groups / 7,907 occurrences 经当前 SHA-256 与 5,415 次直接全流比较通过；1,867 组可提出 oldest survivor，624 组 unresolved，1 个零字节组排除；理论节省 6,286,713,054 bytes，其中 resolved dry-run 5,046,508,103 bytes；未移动/删除/隔离/建链接；终端见 `D:\BabataData\04_runtime\staging\model-workspaces\backs-memory-archive-r1-20260823-v1\terminal-receipt.json` |
 | 132 个微信群聊 | `deferred-by-user` | 用户明确恢复 |
 | Bilibili | `deferred-by-user` | 用户明确恢复 |
