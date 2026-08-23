@@ -100,10 +100,21 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 - 大文件整读和跨 session 伪 revision 两个真实缺陷已在 Issue #196 范围内修复并复验；修复后峰值
   工作集低于 20 MB，新 session 和显式 recollect 都保持 revision 数不变。修复前产生的 ordinal 2
   revision 作为缺陷证据保留，不删除或伪装成来源变化。
-- 当前状态：`released in v0.2.0 / real-path-passed`；PR #197 已合并，Issue #196 已关闭；未触发 C1，
-  provider/model 调用为 0，成本 0 CNY。
+- 该单课后续使用轮已完成完整 C1/C1B：9,824 秒音频得到 1,571 句 transcript 与脱敏 structured ASR，
+  最后一句距音频尾部 30 ms；C1B 从 110 张原生文稿图片中保留 4 张不可由正文等价替代的架构图。
+- Qwen 细粒度知识与课程总览建议均已接受；课程 `course_01M0PVXA89E4BSD24HHV0NXRRM`、专用课程镜头和
+  materialization 已登记验证，课程状态 `accepted / closed`。
+- `semantic-course-obsidian/v1` package 已发布到唯一 live
+  `C:\Users\Aiano\Documents\Obsidian Vault\Babata\一堂\AI×知识管理开放麦\`；13/13 文件、
+  12 个内部链接、4 个媒体链接及 package/live SHA-256 全部通过。
+- 本轮 ASR 按北京地域 0.00022 元/秒估算 2.16128 元；Qwen 返回 17,670 input + 2,655 output
+  tokens，按调用时 `qwen-plus` 非思考价格估算 0.019446 元；合计估算 2.180726 元。provider 未返回
+  实际扣费，免费额度抵扣 unknown。
+- 专用 Obsidian publisher 的成功不把通用 `outputs.obsidian` 提升为 enabled；后续一堂系列仍逐项
+  等待用户明确 replay/document pair。
 
-证据：`D:\BabataData\04_runtime\staging\model-workspaces\yitang-ai-knowledge-management-source-20260823-v1`。
+证据：`D:\BabataData\04_runtime\staging\model-workspaces\yitang-ai-knowledge-management-source-20260823-v1`；
+闭合终端：`D:\BabataData\04_runtime\staging\model-workspaces\yitang-ai-knowledge-management-clean-c2b-20260823-v1\terminal-receipt.json`。
 
 ## 9. P9 与恢复当前成果
 
@@ -143,6 +154,6 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 | Cherno C0-C2B | `model-workspaces\cherno-course-*-2026082*-v1`；最终 `cherno-course-c2b-full-20260822-v1` |
 | P9/TC-10 | `p9-github-external-backup-restore-20260820-v1.receipt.json` |
 | Backs R0/R1 | `model-workspaces\backs-memory-archive-r0-20260823-v1`；R1 终端 `backs-memory-archive-r1-20260823-v1\terminal-receipt.json` |
-| 一堂真实样本与 `source.yitang` | `model-workspaces\yitang-ai-knowledge-management-source-20260823-v1`；终端 `terminal-receipt.json` |
+| 一堂真实样本、C1/C1B、知识与 Obsidian | 来源 `model-workspaces\yitang-ai-knowledge-management-source-20260823-v1`；闭合 `model-workspaces\yitang-ai-knowledge-management-clean-c2b-20260823-v1\terminal-receipt.json` |
 
 旧失败批次和旧 candidate 只用于追溯，不作为当前产品定义或状态。

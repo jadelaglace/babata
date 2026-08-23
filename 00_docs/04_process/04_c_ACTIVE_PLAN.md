@@ -11,8 +11,10 @@
 
 <!-- CURRENT-ACTIVE: none -->
 
-当前没有活动任务。一堂真实样本、`source.yitang`、PR #197、Issue #196 和 `v0.2.0` 已终态；结果由
-`DOC-USAGE`、Git tag 和 Git 外 terminal receipt 保存，不得从本文重跑。Backs 仍只保留在 held 队列。
+当前没有活动任务。一堂《AI×知识管理》单课已完成 C1/C1B、知识登记、专用 Obsidian 发布与验证，
+状态 `accepted / closed`；终端由
+`D:\BabataData\04_runtime\staging\model-workspaces\yitang-ai-knowledge-management-clean-c2b-20260823-v1\terminal-receipt.json`
+保存，不得从本文重跑。Backs 仍只保留在 held 队列。
 
 ## 2. 下次开工队列（禁止恢复时自动执行）
 
