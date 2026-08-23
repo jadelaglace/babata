@@ -11,22 +11,21 @@
 
 <!-- CURRENT-ACTIVE: none -->
 
-当前没有活动任务。Backs R2-A 已达到 `passed_r2a_approval_package_ready`：1,867 个 resolved groups
-形成 1,867 个 survivor、2,988 个拟隔离 occurrence 和逐项恢复映射；独立 verifier 通过，`D:\Backs`
-未发生源文件动作。终端由
-`D:\BabataData\04_runtime\staging\model-workspaces\backs-memory-archive-r2a-20260823-v1\terminal-receipt.json`
-保存，不得重跑 R2-A 来代替 R2-B 授权。
+当前没有活动任务。Backs R2-B 已达到 `passed_r2b_recoverable_quarantine`：2,988/2,988 个授权
+occurrences、5,046,508,103 bytes 已移入独立隔离区，1,867/1,867 survivors 原位回读通过，2,952 个
+目录路径保持不变，独立 verifier 通过；本轮没有永久删除。终端由
+`D:\BabataData\04_runtime\staging\model-workspaces\backs-memory-archive-r2b-20260823-v1\terminal-receipt.json`
+保存，不得重跑 R2-B。
 
 ## 2. 下次开工队列（禁止恢复时自动执行）
 
-### AP-20260823-06：Backs R2-B 可恢复隔离（待单独授权）
+### AP-20260823-07：Backs R2-C 隔离观察与去重收口
 
-- promotion policy：`requires-explicit-resume`；必须由用户明确批准执行可恢复隔离，R2-A 完成不构成批准。
-- scope：仅限 R2-A 的 2,988 个候选、5,046,508,103 bytes；其中 11 个 medium-confidence groups
-  必须在 R2-B 授权中单独确认是否纳入。
-- protected boundary：624 个 unresolved groups、零字节、垃圾、近似内容、截图 OCR 和年度归档继续排除；
-  R2-B 也不授权永久删除。
-- next action：获得明确授权后，先冻结实际 quarantine root、空间/冲突预检、逐项 fail-closed move 和
-  before/after/restore receipt；否则保持 held。
-- recovery entry：上述 R2-A `terminal-receipt.json`、`quarantine-candidates.jsonl`、`restore-map.jsonl`
-  和 `medium-confidence-review.jsonl`。
+- promotion policy：`requires-explicit-resume`；R2-B 完成不自动启动 R2-C。
+- scope：以 R2-B terminal、隔离区、restore map 和保留后的 `D:\Backs` 为冻结输入，完成观察期回读、
+  恢复可用性抽验和精确去重阶段收口。
+- protected boundary：不永久删除隔离区；624 个 unresolved、零字节、垃圾、近似内容、截图 OCR 和年度
+  归档仍不进入本阶段；在用户明确命名的有界阶段内不做文件级重复确认。
+- next action：用户明确要求完成 R2-C 后开新 round；否则保持 held。
+- recovery entry：上述 R2-B `terminal-receipt.json`、`verification-receipt.json`、`restore-map.jsonl` 和
+  quarantine root。
