@@ -11,20 +11,22 @@
 
 <!-- CURRENT-ACTIVE: none -->
 
-当前没有活动任务。一堂《AI×知识管理》单课已完成 C1/C1B、知识登记、专用 Obsidian 发布与验证，
-状态 `accepted / closed`；终端由
-`D:\BabataData\04_runtime\staging\model-workspaces\yitang-ai-knowledge-management-clean-c2b-20260823-v1\terminal-receipt.json`
-保存，不得从本文重跑。Backs 仍只保留在 held 队列。
+当前没有活动任务。Backs R2-A 已达到 `passed_r2a_approval_package_ready`：1,867 个 resolved groups
+形成 1,867 个 survivor、2,988 个拟隔离 occurrence 和逐项恢复映射；独立 verifier 通过，`D:\Backs`
+未发生源文件动作。终端由
+`D:\BabataData\04_runtime\staging\model-workspaces\backs-memory-archive-r2a-20260823-v1\terminal-receipt.json`
+保存，不得重跑 R2-A 来代替 R2-B 授权。
 
 ## 2. 下次开工队列（禁止恢复时自动执行）
 
-### AP-20260823-05：Backs 下一阶段（范围待用户明确）
+### AP-20260823-06：Backs R2-B 可恢复隔离（待单独授权）
 
-- promotion policy：`held-by-user`；用户于 2026-08-23 明确要求“先挂起”。
-- 来源：R1 `passed_r1_dry_run` 终端；R1 只形成可审阅清单，没有执行源文件动作。
-- 当前结论：可可靠提出 survivor 的 1,867 组与 `unresolved` 的 624 组必须保持区分；零字节不作为
-  空间去重动作。后续可选范围尚未由用户确定，不从历史摘要自行选择。
-- 下一动作：用户明确批准并指定下一阶段范围后，再冻结新的 round；在此之前不审阅为删除批准、
-  不移动/删除/隔离/建链接，也不自动处理垃圾、近似内容或年度归档。
-- 恢复入口：上述 R1 `terminal-receipt.json`、`summary.json`、`oldest-survivor-decisions.jsonl` 和
-  `unresolved.jsonl`。
+- promotion policy：`requires-explicit-resume`；必须由用户明确批准执行可恢复隔离，R2-A 完成不构成批准。
+- scope：仅限 R2-A 的 2,988 个候选、5,046,508,103 bytes；其中 11 个 medium-confidence groups
+  必须在 R2-B 授权中单独确认是否纳入。
+- protected boundary：624 个 unresolved groups、零字节、垃圾、近似内容、截图 OCR 和年度归档继续排除；
+  R2-B 也不授权永久删除。
+- next action：获得明确授权后，先冻结实际 quarantine root、空间/冲突预检、逐项 fail-closed move 和
+  before/after/restore receipt；否则保持 held。
+- recovery entry：上述 R2-A `terminal-receipt.json`、`quarantine-candidates.jsonl`、`restore-map.jsonl`
+  和 `medium-confidence-review.jsonl`。
