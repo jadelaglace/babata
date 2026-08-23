@@ -149,6 +149,15 @@ fn p7_source_descriptors() -> Vec<CapabilityDescriptor> {
             "source.youtube",
             "Explicit YouTube playlist/video caches can be admitted from a validated manifest with stable video IDs, original titles, playlist metadata, exact media hashes, and unchanged recollection through the core",
         ),
+        CapabilityDescriptor {
+            id: CapabilityId::new("source.yitang"),
+            status: CapabilityStatus::Enabled,
+            activation_phase: "usage-0.2".to_owned(),
+            reason: Some(
+                "One explicitly authorised Yitang replay/document pair can be admitted from a validated full-document manifest with exact replay, export, and image hashes and unchanged recollection through the core"
+                    .to_owned(),
+            ),
+        },
     ]
 }
 

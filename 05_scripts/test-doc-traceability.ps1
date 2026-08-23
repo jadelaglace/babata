@@ -77,6 +77,12 @@ try {
         $lines = @(Get-Content -Encoding utf8 $path | Where-Object { $_ -notmatch '^\| source\.youtube \|' })
         Write-Text $path ($lines -join "`n")
     }
+    Assert-Fails 'missing-yitang-route' 'source.yitang' {
+        param($case)
+        $path = Join-Path $case '00_docs\03_architecture\03_b_SOURCE_ROUTE_REGISTRY.md'
+        $lines = @(Get-Content -Encoding utf8 $path | Where-Object { $_ -notmatch '^\| source\.yitang \|' })
+        Write-Text $path ($lines -join "`n")
+    }
 
     Write-Output 'Document traceability mutation tests passed.'
 }

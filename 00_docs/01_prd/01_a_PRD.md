@@ -41,6 +41,8 @@
 3. 正常路线优先成熟官方能力、CLI/SDK、浏览器和现成工具；回退与限制对用户可见。
 4. text、file、export、first-party 和已验证 prefetched handoff 最终进入同一个正式 writer。
 5. 授权只覆盖声明范围；不因一次登录自动扩大到账号全量或其他来源。
+6. 一个来源候选可以是回放、可读文稿和正文图片组成的复合对象；候选展示共同身份和完整性限制，
+   选中后作为一个 item 连同全部必需资产提交统一 writer，部分取得保持 failed/prepared 而非 saved。
 
 ## 5. PRD-02：逐项状态、重试和重收集
 
@@ -49,6 +51,8 @@
 3. 重收集 unchanged 时只追加 observation，不制造 revision；changed 时追加可追溯新 revision。
 4. 用户能够看到失败原因、是否可重试、下一动作和没有处理的范围。
 5. 完整运行结束时给出冻结分母和终端矩阵，不用抽样或 checkpoint 冒充全量。
+6. 复合对象的内容指纹覆盖正文与每个必需资产；全部 identity/hash 未变化才是 unchanged，任一依赖
+   缺失、移除或身份漂移都必须显式失败或报告 removed，不得静默沿用旧附件。
 
 ## 6. PRD-03：原件、第一方内容和派生保持可辨别
 

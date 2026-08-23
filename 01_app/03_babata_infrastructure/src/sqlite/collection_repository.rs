@@ -607,7 +607,7 @@ mod tests {
     use babata_domain::{
         AssetRole, CandidateEnvelope, CandidatePayload, CandidateSummary, CapabilityStatus,
         CollectionItemState, CollectionSelection, CollectionSessionId, CollectionSessionState,
-        ContentType, ItemId, Metadata, RecollectionState, RouteCoverage, Sha256,
+        ContentType, ItemId, LogicalPath, Metadata, RecollectionState, RouteCoverage, Sha256,
         SourceRouteDescriptor, SourceRouteId, UtcTimestamp,
     };
     use rusqlite::params;
@@ -687,10 +687,12 @@ mod tests {
                 && let (Some(path), AcquisitionOutcome::Found { assets, .. }) =
                     (&self.attachment_path, &mut outcome)
             {
+                let bytes = std::fs::read(path).unwrap();
                 assets.push(CaptureImportAsset {
                     path: path.clone(),
                     role: AssetRole::Original,
-                    expected_sha256: None,
+                    expected_sha256: Some(Sha256::of_bytes(&bytes)),
+                    expected_byte_size: Some(bytes.len() as u64),
                     ..CaptureImportAsset::default()
                 });
             }
@@ -1082,6 +1084,33 @@ mod tests {
         assert_eq!(table_count(&repository, "revisions"), 1);
         assert_eq!(table_count(&repository, "assets"), 1);
 
+        let second_session = service
+            .start(StartCollectionCommand {
+                route_id: SourceRouteId("source.kimi".to_owned()),
+                source_reference: "submitted:asset-again".to_owned(),
+                scope_description: "the same candidate collected in a new session".to_owned(),
+                authorisation_id: "fixture-authorisation".to_owned(),
+            })
+            .unwrap();
+        let repeated = service
+            .select(CollectionSelection {
+                session_id: second_session.session_id,
+                candidate_ids: vec!["asset".to_owned()],
+                scope_description: "the same candidate and attachment".to_owned(),
+                confirmed: true,
+                authorised_context: "fixture-authorisation".to_owned(),
+                requested_attachments: true,
+            })
+            .unwrap();
+        assert_eq!(repeated[0].item_id.as_ref(), Some(&item_id));
+        assert_eq!(repeated[0].revision_id, selected[0].revision_id);
+        assert_eq!(table_count(&repository, "revisions"), 1);
+        assert_eq!(table_count(&repository, "assets"), 1);
+        assert_eq!(
+            table_count(&repository, "collection_recollection_checks"),
+            1
+        );
+
         drop(service);
         drop(repository);
         let reopened_repository = crate::sqlite::open_collection_database(&paths, 100).unwrap();
@@ -1100,7 +1129,83 @@ mod tests {
         assert_eq!(table_count(&reopened_repository, "assets"), 1);
         assert_eq!(
             table_count(&reopened_repository, "collection_recollection_checks"),
-            1
+            2
+        );
+    }
+
+    #[test]
+    fn cross_session_reuse_fails_when_managed_asset_is_tampered() {
+        let temporary = tempdir().unwrap();
+        let paths = DataPaths::new(temporary.path().to_path_buf());
+        ensure_layout(&paths).unwrap();
+        let attachment = temporary.path().join("original.mp4");
+        std::fs::write(&attachment, b"real attachment bytes").unwrap();
+        let repository = crate::sqlite::open_collection_database(&paths, 100).unwrap();
+        let outcomes = Arc::new(Mutex::new(HashMap::from([(
+            "asset".to_owned(),
+            found_with_fingerprint("asset", "stable body", "stable-content"),
+        )])));
+        let service = CollectorSessionService::new(
+            repository.clone(),
+            FileAssetStore::new(paths.clone()),
+            SystemClock,
+            vec![Box::new(FixtureAdapter {
+                outcomes,
+                attachment_path: Some(attachment.to_string_lossy().into_owned()),
+            })],
+        );
+        let first = service
+            .start(StartCollectionCommand {
+                route_id: SourceRouteId("source.kimi".to_owned()),
+                source_reference: "submitted:asset".to_owned(),
+                scope_description: "one candidate with its attachment".to_owned(),
+                authorisation_id: "fixture-authorisation".to_owned(),
+            })
+            .unwrap();
+        let selected = service
+            .select(CollectionSelection {
+                session_id: first.session_id,
+                candidate_ids: vec!["asset".to_owned()],
+                scope_description: "the displayed candidate and attachment".to_owned(),
+                confirmed: true,
+                authorised_context: "fixture-authorisation".to_owned(),
+                requested_attachments: true,
+            })
+            .unwrap();
+        let revision_id = selected[0].revision_id.clone().unwrap();
+        let stored = repository.list_assets_for_revision(&revision_id).unwrap();
+        let logical = LogicalPath::parse(&stored[0].logical_path).unwrap();
+        std::fs::write(paths.resolve_logical(&logical).unwrap(), b"tampered bytes").unwrap();
+
+        let second = service
+            .start(StartCollectionCommand {
+                route_id: SourceRouteId("source.kimi".to_owned()),
+                source_reference: "submitted:asset-again".to_owned(),
+                scope_description: "the same candidate collected in a new session".to_owned(),
+                authorisation_id: "fixture-authorisation".to_owned(),
+            })
+            .unwrap();
+        let repeated = service
+            .select(CollectionSelection {
+                session_id: second.session_id,
+                candidate_ids: vec!["asset".to_owned()],
+                scope_description: "the same candidate and attachment".to_owned(),
+                confirmed: true,
+                authorised_context: "fixture-authorisation".to_owned(),
+                requested_attachments: true,
+            })
+            .unwrap();
+        assert_eq!(repeated[0].state, CollectionItemState::Failed);
+        assert!(
+            repeated[0]
+                .reason
+                .as_deref()
+                .is_some_and(|reason| reason.contains("managed asset failed SHA-256 read-back"))
+        );
+        assert_eq!(table_count(&repository, "revisions"), 1);
+        assert_eq!(
+            table_count(&repository, "collection_recollection_checks"),
+            0
         );
     }
 

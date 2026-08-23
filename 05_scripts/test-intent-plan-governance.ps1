@@ -93,7 +93,15 @@ try {
     }
     Assert-CheckerFails 'active-marker-loses-item' 'active item heading' {
         param($caseRoot)
-        Replace-Once $caseRoot '00_docs\04_process\04_c_ACTIVE_PLAN.md' '<!-- CURRENT-ACTIVE: none -->' '<!-- CURRENT-ACTIVE: AP-TEST-01 -->'
+        $path = Join-Path $caseRoot '00_docs\04_process\04_c_ACTIVE_PLAN.md'
+        $text = Get-Content -LiteralPath $path -Raw -Encoding utf8
+        $mutated = [regex]::Replace(
+            $text,
+            '(?m)^<!-- CURRENT-ACTIVE: (?:[A-Za-z0-9-]+|none) -->\r?$',
+            '<!-- CURRENT-ACTIVE: AP-TEST-01 -->'
+        )
+        if ($mutated -eq $text) { throw 'Active marker mutation fixture is missing.' }
+        [IO.File]::WriteAllText($path, $mutated, [Text.UTF8Encoding]::new($false))
     }
     Assert-CheckerFails 'process-allows-summary-authorization' 'recovery lifecycle contract' {
         param($caseRoot)

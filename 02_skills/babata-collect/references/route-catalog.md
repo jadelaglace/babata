@@ -18,6 +18,7 @@ In this repository, `DOC-ROUTES` at
 | `source.evernote` | `source-evernote.md` |
 | `source.doubao` | `source-doubao.md` |
 | `source.youtube` | `source-youtube.md` |
+| `source.yitang` | `source-yitang.md` |
 | Website, browser, desktop app, unknown or any other named platform | `source-browser-and-ui.md` |
 
 Only load one source reference after reading the shared collection contract. A source-specific recipe is

@@ -7,6 +7,13 @@ Set-StrictMode -Version Latest
 $runner = Join-Path $PSScriptRoot 'invoke-babata-execution-round.ps1'
 $root = Join-Path ([IO.Path]::GetTempPath()) ('babata-round-test-' + [Guid]::NewGuid().ToString('N'))
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$manifest = Get-Content -LiteralPath (Join-Path $repo '01_app\Cargo.toml') -Raw -Encoding utf8
+$versionMatch = [regex]::Match(
+    $manifest,
+    '(?ms)^\[workspace\.package\]\s+.*?^version\s*=\s*"(?<version>[^"]+)"\s*$'
+)
+if (-not $versionMatch.Success) { throw 'Test cannot resolve the Babata workspace version.' }
+$expectedVersion = $versionMatch.Groups['version'].Value
 
 function Write-TestJson {
     param([Parameter(Mandatory)][string]$Path, [Parameter(Mandatory)]$Value)
@@ -63,7 +70,7 @@ try {
     if ($passLedger.status -ne 'passed' -or $passLedger.actual_terminal -ne 'candidate_ready' -or @($passLedger.stages).Count -ne 2) {
         throw 'Passing round ledger is incomplete.'
     }
-    if ($passLedger.babata_build.version -ne '0.1.0' -or
+    if ($passLedger.babata_build.version -ne $expectedVersion -or
         $passLedger.babata_build.git_commit -notmatch '^[0-9a-f]{40}$' -or
         $null -eq $passLedger.babata_build.PSObject.Properties['worktree_dirty']) {
         throw 'Passing round ledger is missing the Babata build identity.'

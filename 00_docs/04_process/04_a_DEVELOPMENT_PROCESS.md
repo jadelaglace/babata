@@ -12,7 +12,7 @@ P0-P9 的完整开发过程和 phase gate 已关闭并进入 `DOC-P0-P9-ARCHIVE`
 
 ## 2. 当前生命周期
 
-Babata 当前是 `v0.1.0 / public-beta / usage-stage`。默认动作是使用现有能力处理明确授权资料，而不是
+Babata 当前是 `v0.2.0 / public-beta / usage-stage`。默认动作是使用现有能力处理明确授权资料，而不是
 继续扩张产品。
 
 | 工作类型 | 是否需要 Issue/branch/PR | 状态与证据 |

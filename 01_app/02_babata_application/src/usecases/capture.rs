@@ -814,6 +814,7 @@ fn validate_candidate(candidate: &CandidateEnvelope) -> Result<(), ApplicationEr
             | "source.onenote"
             | "source.local_files"
             | "source.youtube"
+            | "source.yitang"
             | "source.browser_pages"
             | "source.browser_bookmarks"
     ) {
@@ -867,6 +868,11 @@ fn validate_candidate(candidate: &CandidateEnvelope) -> Result<(), ApplicationEr
         "source.youtube" if candidate.content_type != ContentType::Video => {
             return Err(ApplicationError::Conflict(
                 "YouTube prepared-cache candidates must declare video content".to_owned(),
+            ));
+        }
+        "source.yitang" if candidate.content_type != ContentType::Video => {
+            return Err(ApplicationError::Conflict(
+                "Yitang replay/document candidates must declare video content".to_owned(),
             ));
         }
         _ => {}
@@ -2177,6 +2183,28 @@ pub(crate) mod tests {
             },
             context: Some("YouTube / C++".to_owned()),
             native_id: Some("18c3MTX0PK0".to_owned()),
+            common_metadata: CommonSourceMetadata::default(),
+        };
+        assert!(validate_candidate(&candidate).is_ok());
+        candidate.content_type = ContentType::Document;
+        assert!(validate_candidate(&candidate).is_err());
+    }
+
+    #[test]
+    fn yitang_candidate_is_limited_to_video_content() {
+        let payload = "Yitang rendered document";
+        let mut candidate = CandidateEnvelope {
+            protocol_version: "1".to_owned(),
+            route_id: SourceRouteId("source.yitang".to_owned()),
+            source_reference: "https://air.yitang.top/live/replay_1".to_owned(),
+            content_type: ContentType::Video,
+            payload_sha256: Sha256::of_bytes(payload.as_bytes()),
+            metadata: Metadata::empty(),
+            payload: CandidatePayload::Text {
+                text: payload.to_owned(),
+            },
+            context: Some("一堂 / fixture".to_owned()),
+            native_id: Some("replay:replay_1|document:document_1".to_owned()),
             common_metadata: CommonSourceMetadata::default(),
         };
         assert!(validate_candidate(&candidate).is_ok());
