@@ -123,6 +123,8 @@ usage: scope-specific pending | accepted | closed | deferred
 - `DOC-ROUTES` 保存逐来源正常路线、授权、证据和当前 capability；usage 范围不进入 route registry。
 - `babata-collect` 是单一收集入口，内部按 source route/recipe 分发。
 - 浏览器或 Agent acquisition handoff 必须绑定来源、会话、完整消息/附件和 hash；临时路径不能进入 ready metadata。
+- 浏览器登录态可取得受控页面/API 和已渲染正文，但只能生成 Git 外 prepared manifest；manifest 对
+  复合 item 的稳定 source pairing、正文和每个必需资产声明 size/hash，Rust adapter 全量复核后才交唯一 writer。
 - Agent 可在授权范围内连续导航、轮询和重试，但不能自动扩张 scope、启动 C1 或接受知识建议。
 
 ## 9. C1A/C1B 与 C2A/C2B

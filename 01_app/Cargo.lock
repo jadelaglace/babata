@@ -92,7 +92,7 @@ dependencies = [
 
 [[package]]
 name = "babata-application"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "babata-domain",
  "serde",
@@ -104,7 +104,7 @@ dependencies = [
 
 [[package]]
 name = "babata-cli"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "assert_cmd",
  "babata-application",
@@ -120,7 +120,7 @@ dependencies = [
 
 [[package]]
 name = "babata-domain"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -132,7 +132,7 @@ dependencies = [
 
 [[package]]
 name = "babata-infrastructure"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "aes",
  "babata-application",
@@ -158,7 +158,7 @@ dependencies = [
 
 [[package]]
 name = "babata-local-api"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "babata-application",
  "babata-domain",
@@ -173,7 +173,7 @@ dependencies = [
 
 [[package]]
 name = "babata-worker"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "babata-application",
  "babata-domain",

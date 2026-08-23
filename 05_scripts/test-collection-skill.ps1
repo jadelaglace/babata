@@ -75,6 +75,14 @@ try {
         Set-Content -Encoding utf8 -LiteralPath $path -Value $text
     }
 
+    Assert-CheckerFails -Name 'yitang-loses-full-document-boundary' -ExpectedMessage 'complete rendered-document boundary' -Mutate {
+        param($caseRoot)
+        $path = Join-Path $caseRoot 'references\source-yitang.md'
+        $text = Get-Content -Raw -Encoding utf8 -LiteralPath $path
+        $text = $text.Replace('full virtual scroll', 'visible first screen')
+        Set-Content -Encoding utf8 -LiteralPath $path -Value $text
+    }
+
     Assert-CheckerFails -Name 'ui-description-too-long' -ExpectedMessage 'short_description must contain 25-64 characters' -Mutate {
         param($caseRoot)
         $path = Join-Path $caseRoot 'agents\openai.yaml'

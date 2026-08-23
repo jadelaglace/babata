@@ -20,6 +20,8 @@ pub struct FileAssetStore {
 }
 
 impl FileAssetStore {
+    const HASH_BUFFER_BYTES: usize = 128 * 1024;
+
     pub fn new(paths: DataPaths) -> Self {
         Self { paths }
     }
@@ -38,6 +40,19 @@ impl FileAssetStore {
     }
     fn io(error: io::Error) -> ApplicationError {
         ApplicationError::Asset(format!("filesystem {:?} failure", error.kind()))
+    }
+    fn hash_file(path: &Path) -> Result<Sha256, ApplicationError> {
+        let mut reader = BufReader::new(fs::File::open(path).map_err(Self::io)?);
+        let mut hasher = Hasher::new();
+        let mut buffer = vec![0_u8; Self::HASH_BUFFER_BYTES];
+        loop {
+            let count = reader.read(&mut buffer).map_err(Self::io)?;
+            if count == 0 {
+                break;
+            }
+            hasher.update(&buffer[..count]);
+        }
+        Sha256::parse(format!("{:x}", hasher.finalize())).map_err(ApplicationError::from)
     }
     #[cfg(feature = "test-support")]
     fn fault(point: &str) -> bool {
@@ -148,7 +163,7 @@ impl FileAssetStore {
                 let mut writer = BufWriter::new(output);
                 let mut hasher = Hasher::new();
                 let mut copied = 0_u64;
-                let mut buffer = vec![0_u8; 128 * 1024];
+                let mut buffer = vec![0_u8; Self::HASH_BUFFER_BYTES];
                 loop {
                     let count = reader.read(&mut buffer).map_err(Self::io)?;
                     if count == 0 {
@@ -352,8 +367,7 @@ impl AssetStorePort for FileAssetStore {
     }
 
     fn hash(&self, source: &str) -> Result<Sha256, ApplicationError> {
-        let bytes = fs::read(source).map_err(Self::io)?;
-        Sha256::parse(format!("{:x}", Hasher::digest(bytes))).map_err(ApplicationError::from)
+        Self::hash_file(Path::new(source))
     }
 
     fn finalize(&self, asset: &StagedAsset) -> Result<FinalizeAssetOutcome, ApplicationError> {
@@ -373,9 +387,7 @@ impl AssetStorePort for FileAssetStore {
         if final_path.exists() {
             match &asset.sha256 {
                 Some(expected) => {
-                    let existing = fs::read(&final_path).map_err(Self::io)?;
-                    let hash = Sha256::parse(format!("{:x}", Hasher::digest(existing)))
-                        .map_err(ApplicationError::from)?;
+                    let hash = Self::hash_file(&final_path)?;
                     if &hash != expected {
                         return Err(ApplicationError::Integrity(
                             "asset hash collision".to_owned(),
@@ -416,10 +428,7 @@ impl AssetStorePort for FileAssetStore {
             return Ok(false);
         }
         match &asset.sha256 {
-            Some(expected) => {
-                let bytes = fs::read(path).map_err(Self::io)?;
-                Ok(&Sha256::of_bytes(&bytes) == expected)
-            }
+            Some(expected) => Ok(&Self::hash_file(&path)? == expected),
             None => Ok(fs::metadata(path).map_err(Self::io)?.len() == asset.byte_size),
         }
     }
@@ -435,8 +444,7 @@ impl AssetStorePort for FileAssetStore {
 
     fn hash_logical(&self, logical_path: &LogicalPath) -> Result<Sha256, ApplicationError> {
         let path = self.paths.resolve_logical(logical_path).map_err(Self::io)?;
-        let bytes = fs::read(path).map_err(Self::io)?;
-        Ok(Sha256::of_bytes(&bytes))
+        Self::hash_file(&path)
     }
 
     fn stage_derived_file(
@@ -593,6 +601,88 @@ mod tests {
         );
         assert_eq!(first.logical_path, second.logical_path);
         assert!(!store.staged_path(&second.staging_key).exists());
+    }
+
+    #[test]
+    fn large_asset_hash_verify_and_reuse_are_chunked_and_consistent() {
+        let temporary = tempdir().unwrap();
+        let paths = DataPaths::new(temporary.path().to_path_buf());
+        crate::paths::ensure_layout(&paths).unwrap();
+        let input = temporary.path().join("large.bin");
+        let bytes = vec![b'x'; FileAssetStore::HASH_BUFFER_BYTES * 3 + 17];
+        std::fs::write(&input, &bytes).unwrap();
+        let store = FileAssetStore::new(paths);
+
+        let first = store
+            .stage(
+                &input.to_string_lossy(),
+                AssetRole::Original,
+                "op_large_one",
+            )
+            .unwrap();
+        assert_eq!(
+            store.hash(&input.to_string_lossy()).unwrap(),
+            Sha256::of_bytes(&bytes)
+        );
+        assert_eq!(
+            store.finalize(&first).unwrap(),
+            FinalizeAssetOutcome::Created
+        );
+        assert!(store.verify(&first).unwrap());
+        assert_eq!(
+            store.hash_logical(&first.logical_path).unwrap(),
+            first.sha256.clone().unwrap()
+        );
+
+        let second = store
+            .stage(
+                &input.to_string_lossy(),
+                AssetRole::Original,
+                "op_large_two",
+            )
+            .unwrap();
+        assert_eq!(
+            store.finalize(&second).unwrap(),
+            FinalizeAssetOutcome::Reused
+        );
+    }
+
+    #[test]
+    fn reuse_rejects_tampered_content_addressed_bytes() {
+        let temporary = tempdir().unwrap();
+        let paths = DataPaths::new(temporary.path().to_path_buf());
+        crate::paths::ensure_layout(&paths).unwrap();
+        let input = temporary.path().join("fixture.bin");
+        std::fs::write(&input, vec![b'a'; FileAssetStore::HASH_BUFFER_BYTES + 1]).unwrap();
+        let store = FileAssetStore::new(paths.clone());
+
+        let first = store
+            .stage(
+                &input.to_string_lossy(),
+                AssetRole::Original,
+                "op_tamper_one",
+            )
+            .unwrap();
+        store.finalize(&first).unwrap();
+        let final_path = paths.resolve_logical(&first.logical_path).unwrap();
+        std::fs::write(
+            final_path,
+            vec![b'b'; FileAssetStore::HASH_BUFFER_BYTES + 1],
+        )
+        .unwrap();
+        assert!(!store.verify(&first).unwrap());
+
+        let second = store
+            .stage(
+                &input.to_string_lossy(),
+                AssetRole::Original,
+                "op_tamper_two",
+            )
+            .unwrap();
+        assert!(matches!(
+            store.finalize(&second),
+            Err(ApplicationError::Integrity(message)) if message == "asset hash collision"
+        ));
     }
 
     #[test]

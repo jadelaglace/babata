@@ -150,7 +150,7 @@ foreach ($source in @(
     'source.wechat_favorites', 'source.wechat_articles', 'source.wechat_channels',
     'source.wechat_chats', 'source.zhihu', 'source.bilibili', 'source.xiaohongshu',
     'source.douyin', 'source.browser_bookmarks', 'source.browser_pages', 'source.doubao',
-    'source.kimi', 'source.chatgpt', 'source.local_files', 'source.youtube', 'source.first_party'
+    'source.kimi', 'source.chatgpt', 'source.local_files', 'source.youtube', 'source.yitang', 'source.first_party'
 )) {
     if (@([regex]::Matches($routes, "(?m)^\| $([regex]::Escape($source)) \|")).Count -ne 1) {
         throw "Route registry must contain exactly one row for $source"

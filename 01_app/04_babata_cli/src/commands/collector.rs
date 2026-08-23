@@ -22,6 +22,7 @@ use babata_infrastructure::{
         wechat::WechatArticleOpenCliAdapter,
         wechat_recovery::WechatRecoveryAdapter,
         xiaohongshu::XiaohongshuOpenCliAdapter,
+        yitang::YitangPreparedManifestAdapter,
         youtube::YouTubePreparedCacheAdapter,
         yuque::YuqueOpenCliAdapter,
         zhihu::ZhihuOpenCliAdapter,
@@ -286,6 +287,7 @@ fn source_adapters(
         )),
         Box::new(LocalFilesAdapter::new(local_file_strategy)),
         Box::new(YouTubePreparedCacheAdapter),
+        Box::new(YitangPreparedManifestAdapter),
     ];
     for route in [
         "source.douyin",

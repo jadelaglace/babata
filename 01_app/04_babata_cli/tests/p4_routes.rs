@@ -89,6 +89,9 @@ fn collector_is_enabled_without_promoting_partially_proven_source_routes() {
     assert!(capabilities.as_array().unwrap().iter().any(|capability| {
         capability["id"] == "source.youtube" && capability["status"] == "enabled"
     }));
+    assert!(capabilities.as_array().unwrap().iter().any(|capability| {
+        capability["id"] == "source.yitang" && capability["status"] == "enabled"
+    }));
 }
 
 #[test]

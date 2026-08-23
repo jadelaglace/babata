@@ -3,8 +3,9 @@ use std::collections::HashSet;
 use babata_domain::{
     CandidatePayload, CandidateSummary, CollectionItemState, CollectionItemStatus,
     CollectionSelection, CollectionSession, CollectionSessionId, CollectionSessionState, ItemId,
-    Metadata, RawState, RecollectionOutcome, RecollectionState, SourceAccessState,
-    SourceLimitation, SourceObservationId, SourceObservationKind, SourceRouteId,
+    LogicalPath, Metadata, RawState, RecollectionOutcome, RecollectionState, RevisionId,
+    SourceAccessState, SourceKind, SourceLimitation, SourceObservationId, SourceObservationKind,
+    SourceRouteId,
 };
 
 use crate::{
@@ -413,15 +414,29 @@ where
             };
         match acquisition {
             AcquisitionOutcome::Found { candidate, assets } => {
-                match self.capture_candidate(&session, candidate_id, adapter, *candidate, assets) {
-                    Ok(outcome) => self.repository.transition_item(
+                let candidate = *candidate;
+                let saved = match self.reuse_unchanged_candidate(
+                    &session,
+                    candidate_id,
+                    adapter,
+                    &candidate,
+                    &assets,
+                ) {
+                    Ok(Some(existing)) => Ok(existing),
+                    Ok(None) => self
+                        .capture_candidate(&session, candidate_id, adapter, candidate, assets)
+                        .map(|outcome| (outcome.item_id, outcome.revision_id)),
+                    Err(error) => Err(error),
+                };
+                match saved {
+                    Ok((item_id, revision_id)) => self.repository.transition_item(
                         session_id,
                         candidate_id,
                         CollectionItemState::Saved,
                         None,
                         false,
-                        Some(&outcome.item_id),
-                        Some(&outcome.revision_id),
+                        Some(&item_id),
+                        Some(&revision_id),
                         false,
                         &self.clock.now(),
                     ),
@@ -469,6 +484,117 @@ where
                 )
             }
         }
+    }
+
+    fn reuse_unchanged_candidate(
+        &self,
+        session: &CollectionSession,
+        candidate_id: &str,
+        adapter: &dyn SourceAdapterPort,
+        candidate: &babata_domain::CandidateEnvelope,
+        imports: &[crate::CaptureImportAsset],
+    ) -> Result<Option<(ItemId, RevisionId)>, ApplicationError> {
+        let Some(current_fingerprint) = content_fingerprint(&candidate.metadata) else {
+            return Ok(None);
+        };
+        let provider = candidate
+            .route_id
+            .0
+            .strip_prefix("source.")
+            .unwrap_or(&candidate.route_id.0);
+        let Some(source) = self
+            .repository
+            .find_source(SourceKind::External, provider, None)?
+        else {
+            return Ok(None);
+        };
+        let identity = format!("{provider}:{}", candidate.source_reference);
+        let Some((item, revision)) = self
+            .repository
+            .find_by_source_identity(&source.id, &identity)?
+        else {
+            return Ok(None);
+        };
+        if content_fingerprint(&revision.metadata).as_deref() != Some(&current_fingerprint) {
+            return Ok(None);
+        }
+
+        let existing_assets = self.repository.list_assets_for_revision(&revision.id)?;
+        if existing_assets.len() != imports.len() {
+            return Err(ApplicationError::Integrity(
+                "unchanged content fingerprint has a different asset denominator".to_owned(),
+            ));
+        }
+        let mut matched = vec![false; existing_assets.len()];
+        for import in imports {
+            let (Some(expected_sha256), Some(expected_byte_size)) =
+                (&import.expected_sha256, import.expected_byte_size)
+            else {
+                return Ok(None);
+            };
+            let Some((index, existing)) =
+                existing_assets.iter().enumerate().find(|(index, asset)| {
+                    !matched[*index]
+                        && asset.role == import.role
+                        && asset.sha256.as_ref() == Some(expected_sha256)
+                        && asset.byte_size == expected_byte_size
+                        && asset.integrity_method == import.integrity_method
+                })
+            else {
+                return Err(ApplicationError::Integrity(
+                    "unchanged content fingerprint has different asset identity".to_owned(),
+                ));
+            };
+            let logical_path = LogicalPath::parse(&existing.logical_path)?;
+            if self.assets.hash_logical(&logical_path)? != *expected_sha256 {
+                return Err(ApplicationError::Integrity(
+                    "unchanged candidate managed asset failed SHA-256 read-back".to_owned(),
+                ));
+            }
+            matched[index] = true;
+        }
+
+        let checked_at = self.clock.now();
+        let outcome = RecollectionOutcome {
+            item_id: item.id.clone(),
+            state: RecollectionState::Unchanged,
+            previous_revision_id: revision.id.clone(),
+            new_revision_id: None,
+            reason: None,
+            checked_at: checked_at.clone(),
+        };
+        let observation = NewSourceObservation {
+            id: SourceObservationId::new(),
+            item_id: item.id.clone(),
+            revision_id: revision.id.clone(),
+            capture_operation_id: None,
+            collection_session_id: Some(session.session_id.clone()),
+            candidate_id: Some(candidate_id.to_owned()),
+            kind: SourceObservationKind::Recollection,
+            recollection_state: Some(RecollectionState::Unchanged),
+            source_native_id: candidate.native_id.clone(),
+            source_locator: Some(candidate.source_reference.clone()),
+            context: candidate.context.clone(),
+            common_metadata: candidate.common_metadata.clone(),
+            provider_metadata: candidate.metadata.clone(),
+            reason: None,
+            observed_at: checked_at.clone(),
+        };
+        self.repository
+            .record_recollection(&outcome, Some(&observation))?;
+        let _ = self
+            .repository
+            .record_route_evidence(&crate::ports::NewRouteEvidence {
+                route_id: session.route_id.0.clone(),
+                authorization_id: session.authorisation_id.clone(),
+                source_reference: candidate.source_reference.clone(),
+                item_id: item.id.clone(),
+                revision_id: revision.id.clone(),
+                coverage: adapter.coverage(),
+                reimported: true,
+                recorded_at: checked_at,
+            });
+        Ok(Some((item.id, revision.id)))
     }
 
     fn capture_candidate(

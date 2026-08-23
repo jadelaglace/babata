@@ -46,7 +46,8 @@ $requiredFiles = @(
     'references\source-onenote.md',
     'references\source-evernote.md',
     'references\source-doubao.md',
-    'references\source-browser-and-ui.md'
+    'references\source-browser-and-ui.md',
+    'references\source-yitang.md'
 )
 foreach ($relativePath in $requiredFiles) {
     if (-not (Test-Path -LiteralPath (Join-Path $SkillRoot $relativePath) -PathType Leaf)) {
@@ -65,6 +66,7 @@ $catalog = Get-Content -Raw -Encoding utf8 -LiteralPath (Join-Path $SkillRoot 'r
 $onenote = Get-Content -Raw -Encoding utf8 -LiteralPath (Join-Path $SkillRoot 'references\source-onenote.md')
 $evernote = Get-Content -Raw -Encoding utf8 -LiteralPath (Join-Path $SkillRoot 'references\source-evernote.md')
 $doubao = Get-Content -Raw -Encoding utf8 -LiteralPath (Join-Path $SkillRoot 'references\source-doubao.md')
+$yitang = Get-Content -Raw -Encoding utf8 -LiteralPath (Join-Path $SkillRoot 'references\source-yitang.md')
 $metadata = Get-Content -Raw -Encoding utf8 -LiteralPath (Join-Path $SkillRoot 'agents\openai.yaml')
 
 Assert-Contains $skill 'name: babata-collect' 'the aggregate Skill name'
@@ -88,6 +90,7 @@ if ($catalog -match '(?m)^\|.*\|\s*(?:enabled|disabled|unavailable|absent)\s*\|\
 Assert-Matches $catalog '(?m)^\| `source\.onenote` \| `source-onenote\.md` \|' 'OneNote recipe navigation'
 Assert-Matches $catalog '(?m)^\| `source\.evernote` \| `source-evernote\.md` \|' 'Evernote recipe navigation'
 Assert-Matches $catalog '(?m)^\| `source\.doubao` \| `source-doubao\.md` \|' 'Doubao recipe navigation'
+Assert-Matches $catalog '(?m)^\| `source\.yitang` \| `source-yitang\.md` \|' 'Yitang recipe navigation'
 Assert-Contains $onenote 'pair:<absolute-path-to.mht>|<absolute-path-to.pdf>' 'OneNote pair source shape'
 Assert-Contains $onenote 'mht-list:<absolute-path-a.mht>|<absolute-path-b.mht>|...' 'OneNote MHT-list source shape'
 Assert-Contains $evernote 'notes:<absolute-path-to-export.notes>' 'Evernote source shape'
@@ -96,6 +99,9 @@ Assert-Contains $doubao 'conversations:<id>,<id>,...' 'Doubao explicit batch sco
 Assert-Contains $doubao 'has_more=false' 'Doubao pagination completion condition'
 Assert-Contains $doubao 'complete pagination with no repeated/missing message IDs' 'Doubao pagination integrity condition'
 Assert-Contains $doubao 'recollect --item <item_id>' 'Doubao per-item recollection boundary'
+Assert-Contains $yitang 'babata.yitang-source-manifest/v1' 'Yitang prepared manifest contract'
+Assert-Contains $yitang 'full virtual scroll' 'Yitang complete rendered-document boundary'
+Assert-Contains $yitang 'without a new revision' 'Yitang idempotent recollection boundary'
 Assert-Contains $skill 'stable, accurate, real, then fast' 'the stable-accurate-real-fast order'
 Assert-Contains $metadata 'Use $babata-collect' 'Skill UI invocation prompt'
 Assert-Contains $metadata 'display_name: "Babata Collect"' 'consistent Skill UI name'

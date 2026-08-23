@@ -61,6 +61,7 @@
 | source.chatgpt | ChatGPT 对话 | 日常范围用登录态浏览器；账号 bootstrap 可用官方 Data Export | 登录并给出会话范围；全量需 Data Controls 明确确认 | E3：真实候选、正文和结构化引用读取已证明 | runtime descriptor 未登记；附件/画布/项目和增量重采未闭合 | absent |
 | source.local_files | 本地文件/目录 | 核心文件选择器、拖放或受控目录扫描 | 明确文件、目录或 watch scope | E2：显式 file/export 的 hash、保存和回读已证明 | source descriptor 未登记；缺日常候选、逐项状态和 typed recollection route | absent |
 | source.youtube | YouTube 明确播放列表/视频 | yt-dlp 取得白名单 metadata 与媒体，验证 cache manifest 后交统一 Collector | 用户明确给出 playlist/video URL 和范围；不扩张到账号/频道 | E3：真实 cache manifest 的候选、选择、正式保存和 3/3 unchanged 重采已证明 | 首版只接受已准备且完整映射的 cache manifest；adapter 不下载、不枚举频道/账号 | enabled |
+| source.yitang | 一堂回放与配套文稿 | 登录态浏览器取得明确回放的安全字段和完整渲染文稿，公共 CDN 下载媒体/图片，validated prepared manifest 交统一 Collector | 用户明确给出成对 replay/document URL；登录态只覆盖该对象，不扩张到其他课程或账号范围 | E3：真实《AI×知识管理》开放麦完成全文虚拟滚动、回放/110 张正文图片取得、候选选择、正式保存和 unchanged 重采 | 需要可用登录态完成 acquisition；adapter 只接受成对完整 manifest，不保存用户身份、讨论、点赞、cookie 或加密 API body | enabled |
 | source.first_party | 第一方创作 | Workspace create/revise/annotate，不走来源 Collector | 明确新建、修订或批注动作 | E2：版本、关系、回读和故障补偿已证明 | source descriptor 未登记；不得用收集状态机替代作品版本语义 | absent |
 
 `current_status` 是本表对 runtime descriptor 的文档镜像。若命令输出与本文冲突，以 runtime 为

@@ -15,9 +15,9 @@
 | 项目 | 当前值 |
 | --- | --- |
 | 生命周期 | `public-beta / usage-stage` |
-| 产品版本 | `0.1.0` |
-| release tag | annotated `v0.1.0` |
-| release commit | `58d5ce62819e82f1506068b6ff0ddbdefc13877a` |
+| 产品版本 | `0.2.0` release candidate |
+| release tag | pending annotated `v0.2.0` |
+| release commit | pending merge and release writeback |
 | 唯一版本源 | `01_app/Cargo.toml` `[workspace.package].version` |
 | GitHub Release | 不创建；当前只维护 Git tag |
 
@@ -36,6 +36,7 @@ tool version、调用量、价格依据和实际或估算成本。
 | Knowledge/search/sublibrary | `enabled` | 核心登记、关系、检索和通用物化能力已有真实使用 |
 | `outputs` Markdown/JSON | `enabled` | 通用输出合同与实现存在 |
 | 专用 MBA/Cherno Obsidian publisher | `proven-specialized-route` | 已真实交付，但不是通用 capability |
+| `source.yitang` | `enabled / release-pending` | 成对回放、渲染全文和正文图片的 prepared-manifest Collector 路线已通过真实样本 |
 | `outputs.obsidian` | `unavailable / unplanned` | 不因专用 publisher 倒签 |
 | `outputs.web` | `unavailable / unplanned` | 未实现 |
 | external snapshot/diff/navigator | `candidate / not-adopted` | Backs 可先做有界 profile |
@@ -87,7 +88,23 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 成本记录：ASR 按北京地域 0.00022 元/秒估算上限 93.173341 元，provider 未返回实际 usage；Qwen
 课程学习为 4,742,450 input + 319,246 output tokens，调用时估算 13.315852 元，免费额度抵扣 unknown。
 
-## 8. P9 与恢复当前成果
+## 8. 一堂当前成果
+
+- 用户明确给出的《AI×知识管理》开放麦回放/文稿 pair 已完整取得；后续系列仍逐项等待用户授权。
+- 完整虚拟滚动得到 666 个原生 block、398 个非空 block、27 个标题和 110 张正文图片；回放为
+  9,824.015 秒、2,649,314,076 bytes，来源和全部保留资产 size/SHA-256 回读通过。
+- `source.yitang` 将 replay sid + document token/ACL 绑定为一个复合 item；115/115 assets 已保存，
+  缺失、hash 漂移、pairing 漂移、加密正文替代或未声明附件均 fail closed。
+- MPMux 与 HLS/ffmpeg stream copy 都可作为 acquisition 方式，但必须归一为本地 MP4 + duration +
+  size/SHA-256 manifest；本样本已用 ffmpeg 无损取得，不重复下载。
+- 大文件整读和跨 session 伪 revision 两个真实缺陷已在 Issue #196 范围内修复并复验；修复后峰值
+  工作集低于 20 MB，新 session 和显式 recollect 都保持 revision 数不变。修复前产生的 ordinal 2
+  revision 作为缺陷证据保留，不删除或伪装成来源变化。
+- 当前状态：`real-path-passed / release-pending`；未触发 C1，provider/model 调用为 0，成本 0 CNY。
+
+证据：`D:\BabataData\04_runtime\staging\model-workspaces\yitang-ai-knowledge-management-source-20260823-v1`。
+
+## 9. P9 与恢复当前成果
 
 - private backup repo：`jadelaglace/babata-p9-encrypted-backup`；外部 commit
   `a9ac5e36f0b4d732f69448bc30f7b33a4c7865bb`。
@@ -98,12 +115,13 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 
 终端 receipt：`D:\BabataData\04_runtime\staging\p9-github-external-backup-restore-20260820-v1.receipt.json`。
 
-## 9. 当前开放、暂缓和未开始
+## 10. 当前开放、暂缓和未开始
 
 | 项目 | 状态 | 下一授权条件 |
 | --- | --- | --- |
 | P0-P9 Docs 收束 | `completed / merged` | PR #194；merge `aaa4d0fe18c378cb5e58751f1eb981608673466e`；旧全文冻结于 `9182a77` |
-| Backs 记忆档案与年度归档分析 | `adopted requirement / not-started` | 本轮 Docs 终端后由用户明确启动新的 usage/development scope |
+| 一堂系列后续内容 | `current sample passed / future scope not-authorized` | 用户提供下一组明确 replay/document pair |
+| Backs 记忆档案与年度归档分析 | `R1 passed dry-run / awaiting explicit next-stage authorization` | 2,492 exact groups / 7,907 occurrences 经当前 SHA-256 与 5,415 次直接全流比较通过；1,867 组可提出 oldest survivor，624 组 unresolved，1 个零字节组排除；理论节省 6,286,713,054 bytes，其中 resolved dry-run 5,046,508,103 bytes；未移动/删除/隔离/建链接；终端见 `D:\BabataData\04_runtime\staging\model-workspaces\backs-memory-archive-r1-20260823-v1\terminal-receipt.json` |
 | 132 个微信群聊 | `deferred-by-user` | 用户明确恢复 |
 | Bilibili | `deferred-by-user` | 用户明确恢复 |
 | 通用 external navigator | `candidate / not-adopted` | Backs 有界试用证据和后续采用决定 |
@@ -113,7 +131,7 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 
 这些项目不是 Active Plan 队列，不能在 session 恢复时自动执行。
 
-## 10. 主要证据入口
+## 11. 主要证据入口
 
 | 使用事实 | Evidence 入口 |
 | --- | --- |
@@ -123,5 +141,7 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 | MBA 呈现 v2 | `mba-course-presentation-rollout-20260817-v3\rollout-receipt.json` |
 | Cherno C0-C2B | `model-workspaces\cherno-course-*-2026082*-v1`；最终 `cherno-course-c2b-full-20260822-v1` |
 | P9/TC-10 | `p9-github-external-backup-restore-20260820-v1.receipt.json` |
+| Backs R0/R1 | `model-workspaces\backs-memory-archive-r0-20260823-v1`；R1 终端 `backs-memory-archive-r1-20260823-v1\terminal-receipt.json` |
+| 一堂真实样本与 `source.yitang` | `model-workspaces\yitang-ai-knowledge-management-source-20260823-v1`；终端 `terminal-receipt.json` |
 
 旧失败批次和旧 candidate 只用于追溯，不作为当前产品定义或状态。

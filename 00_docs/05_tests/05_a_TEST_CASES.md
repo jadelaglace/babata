@@ -19,6 +19,16 @@
 预期：只有选中对象进入 C0；source/native ID、路径/URL、时间、附件和 hash 可回读；未选对象没有
 正式身份；路线、授权和限制与 `DOC-ROUTES` 一致。
 
+### TC-01A：一堂复合对象真实路径
+
+1. 对用户明确给出的一个 replay/document URL pair，经登录态浏览器取得安全字段和完整虚拟滚动正文，
+   下载回放与正文图片并生成 prepared manifest。
+2. 核对 replay sid、document token/ACL pairing、全文末尾、媒体时长以及正文和每项资产 size/SHA-256。
+3. 发现并只选择该候选，经 Collector 保存后回读 item、revision、正文和全部 managed assets。
+
+预期：回放、可读全文和声明图片作为一个 `source.yitang` item 保存；API 加密载荷、用户身份、讨论、
+点赞和 cookie 不进入 C0；未授权的文稿内链接不被递归收集。
+
 ## 3. TC-02：局部失败、重试与重收集
 
 追溯：`AC-02`。
@@ -29,6 +39,9 @@
 
 预期：成功项不重跑；failed reason 和 retryability 可见；unchanged/inaccessible/removed 只追加
 observation；changed 只追加一个 revision；终端矩阵与冻结分母一致。
+
+对复合 manifest 另做三项 negative：破坏一个附件 hash、移除一个必需资产、改变 replay/document
+pairing，均必须在正式写入前 fail closed；用未变化真实 manifest 重采必须 `unchanged` 且无新 revision。
 
 ## 4. TC-03：C0、第一方、C1、C2 和 C3 边界
 

@@ -15,7 +15,7 @@ fn cli_reports_the_workspace_release_version() {
         .arg("--version")
         .assert()
         .success()
-        .stdout("babata 0.1.0\n");
+        .stdout("babata 0.2.0\n");
 }
 
 fn capture_text(temp: &tempfile::TempDir, text: &str) -> Value {

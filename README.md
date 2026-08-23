@@ -6,7 +6,7 @@
 
 [![Engineering gates](https://github.com/jadelaglace/babata/actions/workflows/engineering-gates.yml/badge.svg)](https://github.com/jadelaglace/babata/actions/workflows/engineering-gates.yml) ![Rust 1.85+](https://img.shields.io/badge/Rust-1.85%2B-000000?logo=rust) ![Local first](https://img.shields.io/badge/data-local--first-0f766e)
 
-<sub>Post-2.0 reboot · v0.1.0 public beta · usage stage</sub>
+<sub>Post-2.0 reboot · v0.2.0 public beta · usage stage</sub>
 
 </div>
 
@@ -31,7 +31,7 @@ Babata 是一个本地优先的个人资料与知识系统。它面向微信、�
 > 浅层强制入口，不是第二份计划权威。
 
 > [!IMPORTANT]
-> Babata 当前为 `v0.1.0` public beta，P0–P9 已收官并进入 usage stage；它尚不承诺 `1.0.0`
+> Babata 当前为 `v0.2.0` public beta，P0–P9 已收官并进入 usage stage；它尚不承诺 `1.0.0`
 > 稳定性。当前发布、真实范围、完成度和未完成项只查
 > [Usage Status](00_docs/04_process/04_b_USAGE_STATUS.md)。
 
