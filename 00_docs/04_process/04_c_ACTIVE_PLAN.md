@@ -11,12 +11,10 @@
 
 <!-- CURRENT-ACTIVE: none -->
 
-当前没有活动任务。Backs R2-C v2 已达到 `passed_r2c_exact_dedupe_closed`：2,988/2,988 隔离对象与
-1,867/1,867 survivors 全量回读通过，2,988/2,988 独立恢复演练通过且临时派生已清理，源树、2,952 个
-目录路径和隔离区无漂移；replacement verifier 通过。1,867 个 resolved exact groups 已收口，624 个
-unresolved 与一个零字节组继续明确保留；隔离区未永久删除。终端由
-`D:\BabataData\04_runtime\staging\model-workspaces\backs-memory-archive-r2c-20260823-v2\terminal-receipt.json`
-保存，不得重跑 R2-C；v1 只保留失败证据。
+当前没有活动任务。Backs R0-R2 独立审计已达到 `passed_backs_r0_r2_audit`：源树、目录、隔离区、
+survivors、分母和恢复映射均无业务漂移；唯一发现的 v2 post-terminal verifier 证据链缺陷已通过追加式
+closure 修复，冻结 terminal 未改写。624 个 unresolved groups 和一个零字节组继续保留，R3 未启动。
+审计终端位于 `D:\BabataData\04_runtime\staging\model-workspaces\backs-memory-archive-audit-20260824-v1\terminal-receipt.json`。
 
 ## 2. 下次开工队列（禁止恢复时自动执行）
 
