@@ -9,12 +9,17 @@
 
 ## 1. 当前活动项（恢复时先读，最多一个）
 
-<!-- CURRENT-ACTIVE: none -->
+<!-- CURRENT-ACTIVE: backs-r4-informative-content-cleaning -->
 
-当前没有活动任务。Backs R3 已达到 `passed_r3_junk_governance_closed`：1,639 个高置信程序垃圾对象进入可恢复隔离，
-独立验证与全量恢复演练通过，临时恢复派生已清理；唯一执行工具缺陷已通过 `closure-correction.json` 修正证据口径。
-358 个 unresolved 匹配、120 个零字节匹配、截图和歧义内容均保留，R4 内容清洗与 R5 年度归档不自动启动。
-终端见 `D:\BabataData\04_runtime\staging\model-workspaces\backs-memory-archive-r3-20260824-v1\closure-receipt.json`。
+### Backs R4：有信息内容清洗
+
+- transition: `user-explicit-goal-start`; evidence: 用户明确要求“快速 review，没问题就 r4”，且 R3 只读复核无阻断问题。
+- goal: 对 `D:\Backs` 中截图、照片、文本、日常日志及其他可能有记忆价值的对象，生成可追溯的 C1/C1B 清洗结果。
+- stage: `probe-passed-full-round-not-started`
+- terminal: 形成 R4 acceptance matrix、逐项处理状态、C1/C1B provenance 与失败/不确定清单；未完成项明确 skipped/blocked，不冒充完成。
+- protected boundary: C0/source、R3 snapshot、R3 quarantine 和原路径只读；不重跑 R3，不永久删除，不启动 R5 年度 `归档分析/`，不直接发布 Obsidian。
+- subplan: 已完成 requirements/PRD/AC/architecture 读取、范围冻结、21,112 项候选哈希清单和 17 项本地探针；下一步先为选定对象建立真实 C0 身份，再分批执行 C1/C1B。完整逐项 OCR/清洗与正式登记尚未开始。
+- evidence: `D:\BabataData\04_runtime\staging\model-workspaces\backs-memory-archive-r4-20260829-v1\scope.json`、`probe-report.json`、`REPORT.md`；R3 终端仍见 `D:\BabataData\04_runtime\staging\model-workspaces\backs-memory-archive-r3-20260824-v1\closure-receipt.json`。
 
 ## 2. 下次开工队列（禁止恢复时自动执行）
 
