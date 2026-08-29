@@ -133,7 +133,7 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 | --- | --- | --- |
 | P0-P9 Docs 收束 | `completed / merged` | PR #194；merge `aaa4d0fe18c378cb5e58751f1eb981608673466e`；旧全文冻结于 `9182a77` |
 | 一堂系列后续内容 | `v0.2.0 route released / future scope not-authorized` | 用户提供下一组明确 replay/document pair |
-| Backs 记忆档案与年度归档分析 | `R2-C passed / resolved exact-dedupe closed / audit passed / R3 not started` | 2026-08-24 独立审计再次全量回读隔离区 2,988/2,988 files、5,046,508,103 bytes 与 1,867/1,867 oldest survivors；恢复映射无重复目标、路径逃逸或冲突；`D:\Backs` 31,861 files、211,140,905,937 bytes 和 2,952 个目录路径无漂移。1,867 个 resolved exact groups 已收口，624 个 unresolved 和 1 个零字节组继续保留，未永久删除。审计发现 v2 冻结 terminal 仍命名旧 verifier 且冻结 ledger 无法包含其后的失败 attempt；已用追加式 closure 将 literal-path replacement verifier 设为 canonical，未改写历史 terminal。审计终端见 `D:\BabataData\04_runtime\staging\model-workspaces\backs-memory-archive-audit-20260824-v1\terminal-receipt.json` |
+| Backs 记忆档案与年度归档分析 | `R3 passed / recoverable quarantine closed / R4-R5 not started` | R3 已按高置信路径规则隔离 1,639 个明显程序垃圾文件、3,048,234,195 bytes；`D:\Backs` 现为 30,222 files、208,092,671,742 bytes，2,952 个目录路径保持不变。独立 verifier 和 1,639/1,639 全量恢复演练通过，临时恢复根已清理；12 张 post-R3 结构截图已固化。358 个 unresolved exact 匹配和 120 个零字节匹配继续保留，截图、歧义项、近似内容、内容清洗和年度归档均未处理，隔离区未永久删除。执行中发现的 1 个 manifest 证据工具缺陷已修复并以追加 correction 收口。终端见 `D:\BabataData\04_runtime\staging\model-workspaces\backs-memory-archive-r3-20260824-v1\closure-receipt.json`，纠正见同目录 `closure-correction.json` |
 | 132 个微信群聊 | `deferred-by-user` | 用户明确恢复 |
 | Bilibili | `deferred-by-user` | 用户明确恢复 |
 | 通用 external navigator | `candidate / not-adopted` | Backs 有界试用证据和后续采用决定 |
@@ -153,7 +153,7 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 | MBA 呈现 v2 | `mba-course-presentation-rollout-20260817-v3\rollout-receipt.json` |
 | Cherno C0-C2B | `model-workspaces\cherno-course-*-2026082*-v1`；最终 `cherno-course-c2b-full-20260822-v1` |
 | P9/TC-10 | `p9-github-external-backup-restore-20260820-v1.receipt.json` |
-| Backs R0/R1/R2-A/R2-B/R2-C | `model-workspaces\backs-memory-archive-r0-20260823-v1`；R1 终端 `backs-memory-archive-r1-20260823-v1\terminal-receipt.json`；R2-A 终端 `backs-memory-archive-r2a-20260823-v1\terminal-receipt.json`；R2-B 终端 `backs-memory-archive-r2b-20260823-v1\terminal-receipt.json`；R2-C 冻结终端 `backs-memory-archive-r2c-20260823-v2\terminal-receipt.json`，追加纠错 `post-terminal-evidence-closure.json`；独立审计 `backs-memory-archive-audit-20260824-v1\terminal-receipt.json`；v1 只保留失败证据 |
+| Backs R0/R1/R2-A/R2-B/R2-C/R3 | `model-workspaces\backs-memory-archive-r0-20260823-v1`；R1 终端 `backs-memory-archive-r1-20260823-v1\terminal-receipt.json`；R2-A 终端 `backs-memory-archive-r2a-20260823-v1\terminal-receipt.json`；R2-B 终端 `backs-memory-archive-r2b-20260823-v1\terminal-receipt.json`；R2-C 冻结终端 `backs-memory-archive-r2c-20260823-v2\terminal-receipt.json`，追加纠错 `post-terminal-evidence-closure.json`；独立审计 `backs-memory-archive-audit-20260824-v1\terminal-receipt.json`；R3 closure `backs-memory-archive-r3-20260824-v1\closure-receipt.json`，追加纠正 `closure-correction.json`；R3 v1 失败 attempt 与 defect ledger 同目录保留 |
 | 一堂真实样本、C1/C1B、知识与 Obsidian | 来源 `model-workspaces\yitang-ai-knowledge-management-source-20260823-v1`；闭合 `model-workspaces\yitang-ai-knowledge-management-clean-c2b-20260823-v1\terminal-receipt.json` |
 
 旧失败批次和旧 candidate 只用于追溯，不作为当前产品定义或状态。
