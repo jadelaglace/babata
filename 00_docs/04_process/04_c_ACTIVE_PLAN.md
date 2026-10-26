@@ -11,18 +11,13 @@
 
 <!-- CURRENT-ACTIVE: none -->
 
-当前没有活动任务。一堂真实样本、`source.yitang`、PR #197、Issue #196 和 `v0.2.0` 已终态；结果由
-`DOC-USAGE`、Git tag 和 Git 外 terminal receipt 保存，不得从本文重跑。Backs 仍只保留在 held 队列。
+无。豆包 C2B 已闭环，终态证据见 `D:\BabataData\04_runtime\receipts\doubao-c2-full-closure-20261024\terminal-receipt.json`。
+
+Kimi 最近 3 条试点已核验收口：3 saved/ready、15 消息、3/3 hash 回读和 unchanged 重采，无新增 revision，C1 未触发。终态：`D:\BabataData\04_runtime\receipts\kimi-pilot-20261026\terminal-receipt.json`。能力表 disabled 而 Collector 仍执行的缺陷已留证；不得自动扩量或重跑，修复及通用启用是另一个开发范围。
 
 ## 2. 下次开工队列（禁止恢复时自动执行）
 
-### AP-20260823-05：Backs 下一阶段（范围待用户明确）
+无可自动晋升项目。
 
-- promotion policy：`held-by-user`；用户于 2026-08-23 明确要求“先挂起”。
-- 来源：R1 `passed_r1_dry_run` 终端；R1 只形成可审阅清单，没有执行源文件动作。
-- 当前结论：可可靠提出 survivor 的 1,867 组与 `unresolved` 的 624 组必须保持区分；零字节不作为
-  空间去重动作。后续可选范围尚未由用户确定，不从历史摘要自行选择。
-- 下一动作：用户明确批准并指定下一阶段范围后，再冻结新的 round；在此之前不审阅为删除批准、
-  不移动/删除/隔离/建链接，也不自动处理垃圾、近似内容或年度归档。
-- 恢复入口：上述 R1 `terminal-receipt.json`、`summary.json`、`oldest-survivor-decisions.jsonl` 和
-  `unresolved.jsonl`。
+
+
