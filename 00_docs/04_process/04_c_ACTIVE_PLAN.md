@@ -11,12 +11,13 @@
 
 <!-- CURRENT-ACTIVE: none -->
 
-当前没有活动项。Backs R5 已达到 `published_pending_user_acceptance` 工程终态；完成事实与内容
-safety repair 见 `DOC-USAGE` 和
-`D:\BabataData\04_runtime\staging\model-workspaces\backs-memory-archive-r5-20260829-v1\terminal-receipt.json`。
-用户验收保持独立，不能由 Agent 自动改写为 accepted；也不得从该终态自动启动后续来源、通用能力或
-R3 quarantine 永久处置。
+无。豆包 C2B 已闭环，终态证据见 `D:\BabataData\04_runtime\receipts\doubao-c2-full-closure-20261024\terminal-receipt.json`。
+
+Kimi 最近 3 条试点已核验收口：3 saved/ready、15 消息、3/3 hash 回读和 unchanged 重采，无新增 revision，C1 未触发。终态：`D:\BabataData\04_runtime\receipts\kimi-pilot-20261026\terminal-receipt.json`。能力表 disabled 而 Collector 仍执行的缺陷已留证；不得自动扩量或重跑，修复及通用启用是另一个开发范围。
 
 ## 2. 下次开工队列（禁止恢复时自动执行）
 
-当前没有排队项；R5 终态后不得自动启动其他来源、Web 输出或通用 Obsidian capability。
+无可自动晋升项目。
+
+
+
