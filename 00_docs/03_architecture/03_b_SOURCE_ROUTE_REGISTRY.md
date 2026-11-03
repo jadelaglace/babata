@@ -57,7 +57,7 @@
 | source.browser_bookmarks | 浏览器书签 | 官方 Netscape HTML 导出保留层级，再按所选 URL 取得正文/附件 | 一个导出文件或明确书签文件夹 | E3：真实导出解析、层级保存和代表页面正文取得已证明 | runtime adapter 未启用；历史记录/页面正文不是书签文件本身 | disabled |
 | source.browser_pages | 当前页/选区 | 用户已登录浏览器内读取明确页面/选区，未来窄入口复用统一 Collector | 页面、站点或 visible-set 范围 | E3：真实页面候选和明确选择 acquisition 已证明 | runtime adapter 未启用；保真页面、附件和重采合同未闭合 | disabled |
 | source.doubao | 豆包对话 | 已登录 Chrome 发现明确 conversation IDs，分页到完整并取得声明附件 | 登录并给出会话、时间、数量或 visible-set | E3：显式批次、长对话完整分页、附件校验和逐项重采已证明 | 普通图片/音频/引用页等新 shape 仍需各自实证 | enabled |
-| source.kimi | Kimi 对话 | 登录态浏览器读取明确历史/会话，薄命令只固化已证明重采 | 登录并给出会话、时间或数量范围 | E3：真实候选、完整正文和结构化读取已证明 | runtime adapter 未启用；附件、深研产物和长期重采未闭合 | disabled |
+| source.kimi | Kimi 对话 | 登录态浏览器读取明确历史/会话；账号级范围由只读 ListChats 分页生成 Git 外 manifest，adapter 校验终止证据后按显式 chat ID 逐项读取 | 登录并给出会话、时间或数量范围；账号级需 `manifest:<path>` 且逐项显式选择 | E3：真实候选、完整正文和结构化读取已证明；manifest 路线在隔离数据根用 UUID 与 XID 样本验证 | runtime adapter 未启用；`recent:` 窗口不代表账号全量，历史列表穷尽只由 manifest 终止证据证明；引用块顺序可变会产生假修订；附件、深研产物和长期重采未闭合 | disabled |
 | source.chatgpt | ChatGPT 对话 | 日常范围用登录态浏览器；账号 bootstrap 可用官方 Data Export | 登录并给出会话范围；全量需 Data Controls 明确确认 | E3：真实候选、正文和结构化引用读取已证明 | runtime descriptor 未登记；附件/画布/项目和增量重采未闭合 | absent |
 | source.local_files | 本地文件/目录 | 核心文件选择器、拖放或受控目录扫描 | 明确文件、目录或 watch scope | E2：显式 file/export 的 hash、保存和回读已证明 | source descriptor 未登记；缺日常候选、逐项状态和 typed recollection route | absent |
 | source.youtube | YouTube 明确播放列表/视频 | yt-dlp 取得白名单 metadata 与媒体，验证 cache manifest 后交统一 Collector | 用户明确给出 playlist/video URL 和范围；不扩张到账号/频道 | E3：真实 cache manifest 的候选、选择、正式保存和 3/3 unchanged 重采已证明 | 首版只接受已准备且完整映射的 cache manifest；adapter 不下载、不枚举频道/账号 | enabled |
