@@ -117,6 +117,7 @@
 4. 通用 snapshot/diff/navigator 仍是候选方向，不能因 Backs 需求已采用就声明 capability 已实现。
 5. 飞书 WBS 可以通过 Babata 的薄 Skill 接受自然语言查询、按明确进度更新和新建待办；
    复用现成工具，飞书保留任务权威与 native writer。不新建计划主库、同步或 Goal 前置。
+   Babata 使用独立维护的本地 WBS 业务规则，不与 Hermes 共用或自动跟随其修改。
 
 ### 9.2 `D:\Backs` 专用记忆档案目标
 

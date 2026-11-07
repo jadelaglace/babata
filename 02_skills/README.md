@@ -19,6 +19,7 @@
 6. runtime capability 以 `babata --json capabilities list` 为准；当前使用结果只查 `DOC-USAGE`。
    WBS 薄 Skill 不是 Rust capability；其宿主发现与飞书可用性分别验证。
 
-`babata-wbs` 依赖目标宿主已有的 `feishu-wbs-task-management` 和 `lark-base`，按需读
-`lark-shared`；本仓只维护薄入口，不复制私有表坐标、业务字段字典或登录凭据。
+`babata-wbs` 依赖目标宿主 `.agents/skills` 下独立维护的 `feishu-wbs` 和 `lark-base`，按需读
+`lark-shared`；不调用 Hermes 或旧名 WBS 副本，不自动同步两套业务规则。
+`feishu-wbs` 供薄路由加载或显式调用；本仓只维护薄入口，不复制私有表坐标、业务字段字典或凭据。
 安装时把该目录链接或复制到目标宿主的 Skill 发现目录；存在目录不等于宿主已成功加载。
