@@ -29,6 +29,18 @@
 预期：回放、可读全文和声明图片作为一个 `source.yitang` item 保存；API 加密载荷、用户身份、讨论、
 点赞和 cookie 不进入 C0；未授权的文稿内链接不被递归收集。
 
+### TC-01B：千问原生范围与媒体
+
+1. 冻结授权可见集合的 history 页/cursor/空页证据，并逐会话取得分页结束的原生消息。
+2. 根据直接用户指令标出排除的原生行和继承字段；保留与排除构成原分母的完整、不重叠分区。
+3. 获取保留消息声明的全部媒体并核验 hash；长正文经 prefetched Collector 保存后回读，排除部分
+   不进入正式正文或附件，多个媒体 URL 对应同一二进制时保留全部映射而不重复登记 managed path。
+4. 破坏 hash、遗漏媒体、重复/外来原生行或未结束分页，确认正式写入前拒绝；禁用 route 不能 start。
+5. 新 API acquisition 执行逐项重采；无 fresh handoff 时必须 inaccessible，不以存储快照证明 unchanged。
+
+预期：原生消息及范围位置可精确回读，managed hashes 全部一致；history 无显式终止标志时只声明
+观察到的可见集合；原生渲染响应变化导致的 changed 如实保留，不声称全部 unchanged；不启动 C1。
+
 ## 3. TC-02：局部失败、重试与重收集
 
 追溯：`AC-02`。

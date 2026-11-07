@@ -57,6 +57,7 @@
 | source.browser_bookmarks | 浏览器书签 | 官方 Netscape HTML 导出保留层级，再按所选 URL 取得正文/附件 | 一个导出文件或明确书签文件夹 | E3：真实导出解析、层级保存和代表页面正文取得已证明 | runtime adapter 未启用；历史记录/页面正文不是书签文件本身 | disabled |
 | source.browser_pages | 当前页/选区 | 用户已登录浏览器内读取明确页面/选区，未来窄入口复用统一 Collector | 页面、站点或 visible-set 范围 | E3：真实页面候选和明确选择 acquisition 已证明 | runtime adapter 未启用；保真页面、附件和重采合同未闭合 | disabled |
 | source.doubao | 豆包对话 | 已登录 Chrome 发现明确 conversation IDs，分页到完整并取得声明附件 | 登录并给出会话、时间、数量或 visible-set | E3：显式批次、长对话完整分页、附件校验和逐项重采已证明 | 普通图片/音频/引用页等新 shape 仍需各自实证 | enabled |
+| source.qianwen | 千问对话 | 已登录官网原生 history/message API，经外部明确 native handoff 与媒体 hash 校验交统一 Collector | 登录并明确可见会话或原生 ID 范围；对象内排除需直接用户指令 | E3：原生行候选、选择、正文与图片/视频媒体保存、逐项回读和 fresh API 重采已证明 | 成功空 history 末页无显式终止标志，仅证明观察到的可见集合；新附件 shape 需实证；原生 HTML/JS 重生成可能产生 changed | enabled |
 | source.kimi | Kimi 对话 | 登录态浏览器读取明确历史/会话，薄命令只固化已证明重采 | 登录并给出会话、时间或数量范围 | E3：真实候选、完整正文和结构化读取已证明 | runtime adapter 未启用；附件、深研产物和长期重采未闭合 | disabled |
 | source.chatgpt | ChatGPT 对话 | 日常范围用登录态浏览器；账号 bootstrap 可用官方 Data Export | 登录并给出会话范围；全量需 Data Controls 明确确认 | E3：真实候选、正文和结构化引用读取已证明 | runtime descriptor 未登记；附件/画布/项目和增量重采未闭合 | absent |
 | source.local_files | 本地文件/目录 | 核心文件选择器、拖放或受控目录扫描 | 明确文件、目录或 watch scope | E2：显式 file/export 的 hash、保存和回读已证明 | source descriptor 未登记；缺日常候选、逐项状态和 typed recollection route | absent |

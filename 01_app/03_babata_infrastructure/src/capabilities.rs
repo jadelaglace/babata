@@ -133,6 +133,7 @@ pub fn all_descriptors() -> Vec<CapabilityDescriptor> {
 
 fn p7_source_descriptors() -> Vec<CapabilityDescriptor> {
     vec![
+        CapabilityDescriptor::enabled("source.qianwen", "usage-0.2"),
         enabled_p7_source(
             "source.onenote",
             "One explicitly authorised official PDF/MHT pair can be structurally verified, collected as complementary exports, and recollected through the core",
