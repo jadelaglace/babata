@@ -1,0 +1,4 @@
+interface:
+  display_name: "Babata WBS"
+  short_description: "Query and update personal WBS with existing Feishu tools"
+  default_prompt: "Use $babata-wbs to review my WBS and preview only evidence-backed changes."

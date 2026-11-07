@@ -40,6 +40,7 @@ tool version、调用量、价格依据和实际或估算成本。
 | `outputs.obsidian` | `unavailable / unplanned` | 不因专用 publisher 倒签 |
 | `outputs.web` | `unavailable / unplanned` | 未实现 |
 | external snapshot/diff/navigator | `candidate / not-adopted` | Backs 可先做有界 profile |
+| WBS 薄 Skill | `local-installed / host-discovered / request-dry-run-verified` | 复用本机 WBS 与飞书 Skills；不属于 Rust capability。自然触发的模型自动选择、真实鉴权/schema/写后回读尚未验证，不称真实任务更新成功；证据见 §11 |
 
 ## 4. P0-P9 收官状态
 
@@ -150,6 +151,7 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 
 | 使用事实 | Evidence 入口 |
 | --- | --- |
+| WBS 薄 Skill 本地安装与非变更 dry run | `D:/BabataData/04_runtime/receipts/babata-wbs-209-dryrun-20261107/`：`host-discovery.json` 为本地 Codex app-server 实际 skills/list 与可读性记录；`request-dryrun.json` 为合成目标 GET/POST/PATCH 请求构造断言。未读写真实 WBS，未证明模型自动选择或真实 API/写后回读；不推断用户验收。 |
 | 千问全量可见集合与外卖剔除 | `D:\BabataData\04_runtime\staging\model-workspaces\qianwen-chat-recovery-20261107-v1\terminal-receipt.json`；四样本先试点、其余十八全量，全部原生行/范围/媒体 SHA-256 回读通过；22 项 fresh API 重采为 13 unchanged、9 changed，后者保留原生 HTML/JS/渲染字段变化形成的新 revision，不能称全部 unchanged；51 个媒体 URL 对应的逐 revision 唯一二进制见回执；完整 acquisition 仍留 Git 外；随后识别两条二维码为外卖饮品活动入口，经既有 Collector 追加范围修正版，当前 C0 不含这两条及对应图片；旧 immutable revisions 保留为历史，不宣称物理清除。 |
 | 整理前完整 Docs | Git commit `9182a77` |
 | P8 来源广度、深度和登记 | `BABATA_RECOVERY_HOME` / `BABATA_EVIDENCE_HOME` 对应 P8 manifests/receipts |
