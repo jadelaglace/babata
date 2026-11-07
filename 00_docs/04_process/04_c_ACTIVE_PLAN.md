@@ -9,15 +9,20 @@
 
 ## 1. 当前活动项（恢复时先读，最多一个）
 
-<!-- CURRENT-ACTIVE: none -->
+<!-- CURRENT-ACTIVE: qianwen-chat-recovery-20261107 -->
 
-无。豆包 C2B 已闭环，终态证据见 `D:\BabataData\04_runtime\receipts\doubao-c2-full-closure-20261024\terminal-receipt.json`。
-
-Kimi 最近 3 条试点已核验收口：3 saved/ready、15 消息、3/3 hash 回读和 unchanged 重采，无新增 revision，C1 未触发。终态：`D:\BabataData\04_runtime\receipts\kimi-pilot-20261026\terminal-receipt.json`。能力表 disabled 而 Collector 仍执行的缺陷已留证；不得自动扩量或重跑，修复及通用启用是另一个开发范围。
+- Source/transition：2026-11-07 用户明确新启动；Goal active，原话：
+  “借鉴豆包，先试点，后全量 ，取回qianwen.com/chat 自己拆好 issue 到闭环，不懂就网络搜”。
+- Goal：取回已登录用户千问聊天；先冻结完整可发现会话分母，代表样本试点验证，再全量 C0 收集。
+- Scope amendment：用户补充“纯点外卖的 排除”；仅纯外卖下单会话排除，混合/不确定会话保留待审；不删除远端。
+- Stage：只读路线调查；复用豆包的完整分页、附件校验、正式 writer 和逐项终端经验；按缺口拆 Issue。
+- Terminal：试点通过、全量逐项 terminal matrix、原件/附件 hash/read-back、必要 Issue/PR 闭合，
+  Usage 与 Git 外 receipt；登录/访问阻塞必须如实留证，不能把可见子集冒充全量。
+- Protected：仅千问授权账号；不发送聊天、不删除远端资料，不把 runtime/登录/原文纳入 Git；
+  Backs 等历史终态不重跑；用户 acceptance 独立；冻结 usage round 中不修改实现。
+- Next：检查豆包路线和现有浏览器登录工具，建立 Issue、codex 分支与外部 evidence；只读发现会话和数据形状。
+- Recovery：本项 + `D:\BabataData\04_runtime\staging\model-workspaces\qianwen-chat-recovery-20261107-v1\`。
 
 ## 2. 下次开工队列（禁止恢复时自动执行）
 
-无可自动晋升项目。
-
-
-
+当前没有排队项；不得自动启动其他来源、Web 输出或通用 Obsidian capability。
