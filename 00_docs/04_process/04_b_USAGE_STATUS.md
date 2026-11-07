@@ -150,7 +150,7 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 
 | 使用事实 | Evidence 入口 |
 | --- | --- |
-| 千问全量可见集合与外卖剔除 | `D:\BabataData\04_runtime\staging\model-workspaces\qianwen-chat-recovery-20261107-v1\terminal-receipt.json`；四样本先试点、其余十八全量，全部原生行/范围/媒体 SHA-256 回读通过；22 项 fresh API 重采为 13 unchanged、9 changed，后者保留原生 HTML/JS/渲染字段变化形成的新 revision，不能称全部 unchanged；51 个媒体 URL 对应的逐 revision 唯一二进制见回执；完整 acquisition 仍留 Git 外；随后识别两条二维码为外卖饮品活动入口，经既有 Collector 追加范围修正版，当前 C0 不含这两条及对应图片；旧 immutable revisions 保留为历史，不宣称物理清除。 |
+| 千问全量可见集合与外卖剔除 | `D:\BabataData\04_runtime\staging\model-workspaces\qianwen-chat-recovery-20261107-v1\terminal-receipt.json`；四样本先试点、其余十八全量，全部原生行/范围/媒体 SHA-256 回读通过；22 项 fresh API 重采为 13 unchanged、9 changed，后者保留原生 HTML/JS/渲染字段变化形成的新 revision，不能称全部 unchanged；51 个媒体 URL 对应的逐 revision 唯一二进制见回执；完整 acquisition 仍留 Git 外；随后识别两条二维码为外卖饮品活动入口，经既有 Collector 追加范围修正版，当前 C0 不含这两条及对应图片；旧 immutable revisions 保留为历史，不宣称物理清除。PR #208 已合并、#204–207 已关闭；工程与文档检查通过，当前仍为未单独发布的来源能力。 |
 | 整理前完整 Docs | Git commit `9182a77` |
 | P8 来源广度、深度和登记 | `BABATA_RECOVERY_HOME` / `BABATA_EVIDENCE_HOME` 对应 P8 manifests/receipts |
 | MBA 13 门课程 | `D:\BabataData\04_runtime\staging\execution-rounds\` 和 `model-workspaces\mba-*` |
