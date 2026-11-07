@@ -1,11 +1,11 @@
 use std::collections::HashSet;
 
 use babata_domain::{
-    CandidatePayload, CandidateSummary, CollectionItemState, CollectionItemStatus,
-    CollectionSelection, CollectionSession, CollectionSessionId, CollectionSessionState, ItemId,
-    LogicalPath, Metadata, RawState, RecollectionOutcome, RecollectionState, RevisionId,
-    SourceAccessState, SourceKind, SourceLimitation, SourceObservationId, SourceObservationKind,
-    SourceRouteId,
+    CandidatePayload, CandidateSummary, CapabilityStatus, CollectionItemState,
+    CollectionItemStatus, CollectionSelection, CollectionSession, CollectionSessionId,
+    CollectionSessionState, ItemId, LogicalPath, Metadata, RawState, RecollectionOutcome,
+    RecollectionState, RevisionId, SourceAccessState, SourceKind, SourceLimitation,
+    SourceObservationId, SourceObservationKind, SourceRouteId,
 };
 
 use crate::{
@@ -651,11 +651,20 @@ where
         &self,
         route_id: &SourceRouteId,
     ) -> Result<&dyn SourceAdapterPort, ApplicationError> {
-        self.adapters
+        let adapter = self
+            .adapters
             .iter()
             .find(|adapter| adapter.describe().id == *route_id)
             .map(Box::as_ref)
-            .ok_or_else(|| ApplicationError::capability_unavailable(route_id.0.clone(), "P4"))
+            .ok_or_else(|| ApplicationError::capability_unavailable(route_id.0.clone(), "P4"))?;
+        let descriptor = adapter.describe();
+        if descriptor.status != CapabilityStatus::Enabled {
+            return Err(ApplicationError::capability_unavailable(
+                descriptor.id.0,
+                descriptor.activation_phase,
+            ));
+        }
+        Ok(adapter)
     }
 }
 

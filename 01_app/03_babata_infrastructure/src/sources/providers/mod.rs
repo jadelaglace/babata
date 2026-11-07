@@ -11,6 +11,7 @@ pub mod first_party;
 pub mod kimi;
 pub mod local_files;
 pub mod onenote;
+pub mod qianwen;
 pub mod wechat;
 pub mod wechat_recovery;
 pub mod xiaohongshu;

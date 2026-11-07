@@ -19,6 +19,7 @@ use babata_infrastructure::{
         kimi::KimiOpenCliAdapter,
         local_files::{LocalFileStrategy, LocalFilesAdapter},
         onenote::OneNoteExportAdapter,
+        qianwen::QianwenOpenCliAdapter,
         wechat::WechatArticleOpenCliAdapter,
         wechat_recovery::WechatRecoveryAdapter,
         xiaohongshu::XiaohongshuOpenCliAdapter,
@@ -234,6 +235,9 @@ fn source_adapters(
 > {
     let mut adapters: Vec<Box<dyn babata_application::ports::SourceAdapterPort>> = vec![
         Box::new(OneNoteExportAdapter),
+        Box::new(QianwenOpenCliAdapter::from_acquisition_handoffs(
+            &handoffs.qianwen,
+        )?),
         Box::new(EvernoteNotesAdapter::new(
             config
                 .paths()
@@ -309,6 +313,7 @@ fn source_adapters(
 
 #[derive(Debug, Default)]
 struct AcquisitionHandoffPaths {
+    qianwen: Vec<PathBuf>,
     doubao: Vec<PathBuf>,
     wechat_favorites: Vec<PathBuf>,
     wechat_chats: Vec<PathBuf>,
@@ -331,6 +336,7 @@ fn partition_acquisition_handoffs(
             )
         })?;
         match header.get("provider").and_then(serde_json::Value::as_str) {
+            Some("qianwen") => partitioned.qianwen.push(path.clone()),
             Some("doubao") => partitioned.doubao.push(path.clone()),
             Some("wechat") => match header.get("route_id").and_then(serde_json::Value::as_str) {
                 Some("source.wechat_favorites") => {
