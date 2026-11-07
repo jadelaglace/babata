@@ -39,6 +39,7 @@ external source / first-party input
 | 数据类 | 权威 | 允许 writer | 删除/恢复边界 |
 | --- | --- | --- | --- |
 | 外部原件和目录 | 外部主权库 | 外部系统；特定清理 profile 需显式授权 | 默认不改；Backs 见 §11 |
+| 飞书 WBS 任务 | 飞书原生表 | 授权 lark-cli 调用飞书 native writer | 无本地任务主库；薄 Skill 不复制任务权威 |
 | C0 与 managed asset | Babata raw authority | application/core -> infrastructure | append/revision；完整性关键 |
 | 第一方内容与人工决定 | Babata core authority | application/core | 真实修订追加，审阅独立 |
 | C1A/C1B | processing authority | application service 验证 processor result 后登记 | 可重建，不覆盖 C0 |
