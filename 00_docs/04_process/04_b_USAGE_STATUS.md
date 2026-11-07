@@ -57,7 +57,7 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 | P8 有界深度样本 | 14/14 纳入来源、70 条样本达到 A2 或更高 | Bilibili 整体暂缓 |
 | P8 主权准备/登记 | 70/70 A3 判断；45 prepared/C0-B；70/70 registered/C0-C | 不代表全来源都达到同一深度 |
 | 微信/豆包授权回收 | 用户授权范围已处理 | 132 个微信群聊用户暂缓 |
-| 千问授权可见集合 C0 回收 | 观察到 23 会话；排除外卖后 22 会话/44 条原生行已正式登记，122 条外卖相关行与 6 处继承外卖上下文已排除 | history 成功空末页无显式终止标志，不声称隐藏/删除历史；C1 未启动，用户验收不推断 |
+| 千问授权可见集合 C0 回收 | 观察到 23 会话；排除外卖后 22 会话/42 条原生行已正式登记，124 条外卖相关行与 6 处继承外卖上下文已排除 | history 成功空末页无显式终止标志，不声称隐藏/删除历史；C1 未启动，用户验收不推断 |
 | 新来源扩张 | 已保留真实缺口和已耗尽路线 | 当前暂停，不重复失败路线 |
 
 具体 route evidence、授权和 runtime status 见 `DOC-ROUTES`；具体输入和 receipt 在
@@ -150,7 +150,7 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 
 | 使用事实 | Evidence 入口 |
 | --- | --- |
-| 千问全量可见集合与外卖剔除 | `D:\BabataData\04_runtime\staging\model-workspaces\qianwen-chat-recovery-20261107-v1\terminal-receipt.json`；四样本先试点、其余十八全量，全部原生行/范围/媒体 SHA-256 回读通过；22 项 fresh API 重采为 13 unchanged、9 changed，后者保留原生 HTML/JS/渲染字段变化形成的新 revision，不能称全部 unchanged；53 个媒体 URL 对应的逐 revision 唯一二进制见回执；完整 acquisition 仍留 Git 外。 |
+| 千问全量可见集合与外卖剔除 | `D:\BabataData\04_runtime\staging\model-workspaces\qianwen-chat-recovery-20261107-v1\terminal-receipt.json`；四样本先试点、其余十八全量，全部原生行/范围/媒体 SHA-256 回读通过；22 项 fresh API 重采为 13 unchanged、9 changed，后者保留原生 HTML/JS/渲染字段变化形成的新 revision，不能称全部 unchanged；51 个媒体 URL 对应的逐 revision 唯一二进制见回执；完整 acquisition 仍留 Git 外；随后识别两条二维码为外卖饮品活动入口，经既有 Collector 追加范围修正版，当前 C0 不含这两条及对应图片；旧 immutable revisions 保留为历史，不宣称物理清除。 |
 | 整理前完整 Docs | Git commit `9182a77` |
 | P8 来源广度、深度和登记 | `BABATA_RECOVERY_HOME` / `BABATA_EVIDENCE_HOME` 对应 P8 manifests/receipts |
 | MBA 13 门课程 | `D:\BabataData\04_runtime\staging\execution-rounds\` 和 `model-workspaces\mba-*` |
