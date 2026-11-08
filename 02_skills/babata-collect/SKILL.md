@@ -35,6 +35,7 @@ Then read exactly one relevant source reference:
 - Evernote / 印象笔记: [references/source-evernote.md](references/source-evernote.md)
 - 豆包: [references/source-doubao.md](references/source-doubao.md)
 - 千问: [references/source-qianwen.md](references/source-qianwen.md)
+- 元宝: [references/source-yuanbao.md](references/source-yuanbao.md)
 - YouTube: [references/source-youtube.md](references/source-youtube.md)
 - 一堂 / Yitang: [references/source-yitang.md](references/source-yitang.md)
 - Website, browser, desktop app, or unknown source:

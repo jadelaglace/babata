@@ -41,6 +41,19 @@
 预期：原生消息及范围位置可精确回读，managed hashes 全部一致；history 无显式终止标志时只声明
 观察到的可见集合；原生渲染响应变化导致的 changed 如实保留，不声称全部 unchanged；不启动 C1。
 
+### TC-01C：元宝显式原生会话适配器
+
+1. 对授权测试会话完成原生 API 读取与分页，保留 `convs` 行、原生消息身份和 `multiMediaInfo`；
+   下载声明的媒体并准备 Git 外 handoff。测试登记使用隔离数据根，不处理历史用户库。
+2. 用明确 ID/URL 和 handoff 发现候选；只有选中的会话经统一 Collector 保存。回读原生正文、
+   来源 URL、时间、revision 与每项 managed 媒体 size/SHA-256；本地媒体路径不进入正式正文。
+3. 缺少媒体、hash/size 错误、外来或重复消息、分页未结束和错误来源 URL 均必须拒绝。
+4. 重新读取平台后重采；无新 handoff 时 inaccessible，相同 payload/媒体 unchanged 且不增 revision；
+   内容改变时追加 revision，损坏输入不得修改既有成功版本。
+
+预期：正文和媒体均可核对，声明上传大小与平台副本大小分别保留；平台转码不冒称上传原字节无损。
+只证明实际覆盖的消息/媒体 shape，不扩张到账号全量或自动启动 C1/C2。
+
 ## 3. TC-02：局部失败、重试与重收集
 
 追溯：`AC-02`。
