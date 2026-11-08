@@ -21,6 +21,7 @@ pub fn descriptors() -> Vec<SourceRouteDescriptor> {
         providers::youtube::descriptor(),
         providers::yitang::descriptor(),
         providers::qianwen::QianwenOpenCliAdapter::descriptor(),
+        providers::yuanbao::YuanbaoNativeAdapter::descriptor(),
         providers::first_party::descriptor(),
     ]
 }

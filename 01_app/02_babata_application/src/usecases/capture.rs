@@ -806,6 +806,7 @@ fn validate_candidate(candidate: &CandidateEnvelope) -> Result<(), ApplicationEr
             | "source.douyin"
             | "source.doubao"
             | "source.qianwen"
+            | "source.yuanbao"
             | "source.chatgpt"
             | "source.yuque"
             | "source.wechat_articles"
@@ -892,6 +893,7 @@ fn validate_candidate(candidate: &CandidateEnvelope) -> Result<(), ApplicationEr
             | "source.douyin"
             | "source.doubao"
             | "source.qianwen"
+            | "source.yuanbao"
             | "source.chatgpt"
             | "source.yuque"
     ) && !matches!(

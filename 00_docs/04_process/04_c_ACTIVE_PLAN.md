@@ -9,25 +9,20 @@
 
 ## 1. 当前活动项（恢复时先读，最多一个）
 
-<!-- CURRENT-ACTIVE: qianwen-chat-recovery-20261107 -->
+<!-- CURRENT-ACTIVE: yuanbao-adapter-20261108 -->
 
-### qianwen-chat-recovery-20261107
+### yuanbao-adapter-20261108
 
-- 来源锚点：2026-11-07 用户明确新启动，原话：
-  “借鉴豆包，先试点，后全量 ，取回qianwen.com/chat 自己拆好 issue 到闭环，不懂就网络搜”。
-- 用户补充原话（2026-11-07）：“补充下  纯点外卖的 排除”。
-- transition：用户启动千问授权回收。
-- transition evidence：Goal active；直接用户指令及本项补充范围为依据。
-- 用户目标：取回已登录用户千问聊天；先冻结完整可发现会话分母，代表样本试点验证，再全量 C0 收集。
-- Scope amendment：用户最新明确“c0 阶段混入了外卖的部分 切掉”；整段纯外卖会话排除，混合会话按原生轮次剔除下单、支付、配送和对应上下文，仅其余内容登记 C0；保留 Git 外未修改 acquisition 与精确排除位置，不删除远端。
-- 当前状态：C0 全量完成，Rust/adapter 检查已通过，最终文档边界检查与既有 #204-207 Issue/PR 收口。
-- Findings：两条扫码记录实际指向 newyear_drinks/ShanGou 活动，已通过 Collector 追加范围修正版；旧 immutable revisions 仍保留历史，不做物理清除。23 个观察到的会话共 166 条原生行；排除 1 个纯外卖会话及混合会话中的外卖轮次，共排除 124 行、保留 22 会话/42 行。22 项 fresh API 重采为 13 unchanged、9 changed：后者原生响应中的 HTML/JS 与渲染耗时发生变化，已保留新 revision，不能称全部 unchanged。51 个媒体 URL、51 个逐 revision 唯一二进制映射通过原文/范围/hash 全量回读与 SQLite 检查。完整 acquisition 与精确排除清单留 Git 外。
-- 声明终端：试点通过、全量逐项 terminal matrix、原件/附件 hash/read-back、必要 Issue/PR 闭合，
-  Usage 与 Git 外 receipt；登录/访问阻塞必须如实留证，不能把可见子集冒充全量。
-- 受保护边界：仅千问授权账号；不发送聊天、不删除远端资料，不把 runtime/登录/原文纳入 Git；
-  Backs 等历史终态不重跑；用户 acceptance 独立；冻结 usage round 中不修改实现。
-- 下一步：完成边界检查、提交 PR 并合并关闭既有 Issue，更新 terminal-receipt.json 的 delivery，清除此临时项并完成 Goal。history 最老边界返回成功空页但没有显式终止标志，不能声称覆盖被删除或未暴露数据。
-- 恢复入口：本项 + `D:\BabataData\04_runtime\staging\model-workspaces\qianwen-chat-recovery-20261107-v1\`。
+- 来源锚点：用户原文“简单写个元宝对话适配器 给你做了两个测试对话 仅仅写适配器用”。
+- transition：显式新任务，恢复此前暂缓的适配器开发；历史 C0 回收任务不重跑。
+- transition evidence：接单前 CURRENT-ACTIVE 为 none；本轮直接用户指令明确适配器及两个测试会话范围。
+- 用户目标：复用现有来源与统一 Collector/writer，为 source.yuanbao 增加最小对话适配器；只用用户新建的两个测试对话验证。
+- 当前状态：Issue #217 / codex/yuanbao-adapter-217；实现、定向测试与两个真实测试会话已通过，4条原生消息/1张图片回读一致，fresh重采2/2 unchanged；原历史库逻辑hash不变。
+- 声明终端：候选发现、显式选择、正文/媒体保存、逐项回读与重收集通过；适用工程检查、Issue/短分支/PR 与 docs 状态一致。
+- 受保护边界：远端只读，不发送/删除对话，不处理旧199会话或扩展其他来源，不启动C1/C2；测试登记使用隔离 Git 外数据根。
+- route：复用千问 native handoff -> Collector 模式，新增 source.yuanbao 的显式 ID/URL、完整 speechesV2/媒体校验和 fresh-handoff 重采；不新增浏览器框架或 schema。
+- 下一步：完成全套工程/边界检查，复核 diff，PR 合并后回写交付证据并移除本临时项。
+- 恢复入口：D:/BabataData/04_runtime/receipts/yuanbao-adapter-20261108/。
 
 ## 2. 下次开工队列（禁止恢复时自动执行）
 
