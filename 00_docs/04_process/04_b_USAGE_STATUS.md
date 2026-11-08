@@ -38,7 +38,7 @@ tool version、调用量、价格依据和实际或估算成本。
 | 专用 MBA/Cherno Obsidian publisher | `proven-specialized-route` | 已真实交付，但不是通用 capability |
 | `source.yitang` | `enabled` | 成对回放、渲染全文和正文图片的 prepared-manifest Collector 路线已通过真实样本并随 v0.2.0 发布 |
 | `source.qianwen` | `enabled`（当前构建） | 原生对话与媒体 C0 回收及外卖范围修正已验证；PR #208 已合并，尚未随新版本发布，不属于 v0.2.0 release 基线 |
-| `source.yuanbao` | `enabled`（当前构建） | 显式原生 handoff 接统一 Collector，文字/图片保存与 fresh 重采已在用户提供的两个测试对话验证；不是账号全量任务，尚未随新版本发布 |
+| `source.yuanbao` | `enabled`（当前构建） | 显式原生 handoff 接统一 Collector，文字/图片保存与 fresh 重采已在用户提供的两个测试对话验证；PR #218 已合并；不是账号全量任务，尚未随新版本发布 |
 | `outputs.obsidian` | `unavailable / unplanned` | 不因专用 publisher 倒签 |
 | `outputs.web` | `unavailable / unplanned` | 未实现 |
 | external snapshot/diff/navigator | `candidate / not-adopted` | Backs 可先做有界 profile |
@@ -180,6 +180,6 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 
 | 千问与元宝正式 C0 2026-11-08 核验 | `completed / C0 registered / verified`：千问 22 个 item、32 个 ready revision、当前 42 条原生行的范围与全部历史版本正文/资产 SHA-256 已只读核验，既有外卖排除与历史保留边界不变。元宝经现成 capture export --provider yuanbao --native-id 登记 199 个 item/199 个 ready revision；原始 JSON 逐字节保留，790 条消息身份与来源 URL 回读一致。129 个媒体 URL 对应 82 份唯一文件，在所属 revision 下形成 98 个媒体 attachment occurrence；另登记 20 份媒体映射清单，保留转码限制与示例占位引用。全部 managed 文件 size/hash、SQLite quick_check/foreign_key_check 和 pending/orphan 检查通过。该轮 source.yuanbao 尚 absent，采用通用导入；后续适配器限定测试见下一行。该轮未改产品实现、未直接写库、未新增远端访问或启动 C1/C2，零新增模型调用；用户验收不推断。冻结输入、构建身份、逐项矩阵和终态：D:/BabataData/04_runtime/receipts/qianwen-yuanbao-c0-20261108/terminal-receipt.json；独立核验见同目录 qianwen-verification.json 与 yuanbao-verification.json。 |
 
-| 元宝对话适配器 2026-11-08 限定开发验证 | `implemented / real-path verified`：source.yuanbao 已接统一 Collector，仅接受显式 ID/URL 与完成分页的原生 handoff。用户新建的两个测试会话在 Git 外隔离数据根完成候选、选择、4 条原生消息与 1 张图片的保存；消息、来源、时间、全部 managed SHA-256 回读通过；重新读取平台后 2/2 unchanged，缺少 fresh handoff 时 2/2 inaccessible，均未增 revision。已覆盖定向负例与长正文/changed 重采的隔离工程测试。原历史库 199 个会话的 item/revision/asset 行前后逻辑 hash 一致，无历史批次重跑。测试图平台 JPEG 为 79,437 字节，上传元数据为 471,438 字节，保留原声明和保存 hash，不声称上传原字节无损。适配器不内置账号发现/下载；其他媒体 shape、legacy 与长分页的适配器真实路径不外推。未启动 C1/C2，零新增模型调用，用户验收不推断。Issue #217；测试终态、构建与范围：D:/BabataData/04_runtime/receipts/yuanbao-adapter-20261108/real-v1/terminal-receipt.json；交付回执：同目录上级 terminal-receipt.json。尚未随新版本发布。 |
+| 元宝对话适配器 2026-11-08 限定开发验证 | `implemented / real-path verified`：source.yuanbao 已接统一 Collector，仅接受显式 ID/URL 与完成分页的原生 handoff。用户新建的两个测试会话在 Git 外隔离数据根完成候选、选择、4 条原生消息与 1 张图片的保存；消息、来源、时间、全部 managed SHA-256 回读通过；重新读取平台后 2/2 unchanged，缺少 fresh handoff 时 2/2 inaccessible，均未增 revision。已覆盖定向负例与长正文/changed 重采的隔离工程测试。原历史库 199 个会话的 item/revision/asset 行前后逻辑 hash 一致，无历史批次重跑。测试图平台 JPEG 为 79,437 字节，上传元数据为 471,438 字节，保留原声明和保存 hash，不声称上传原字节无损。适配器不内置账号发现/下载；其他媒体 shape、legacy 与长分页的适配器真实路径不外推。未启动 C1/C2，零新增模型调用，用户验收不推断。PR #218 已合并、Issue #217 已关闭；本地全套检查与 GitHub 必需检查通过；测试终态、构建与范围：D:/BabataData/04_runtime/receipts/yuanbao-adapter-20261108/real-v1/terminal-receipt.json；交付回执：同目录上级 terminal-receipt.json。尚未随新版本发布。 |
 
 旧失败批次和旧 candidate 只用于追溯，不作为当前产品定义或状态。
