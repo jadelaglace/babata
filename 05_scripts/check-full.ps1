@@ -48,6 +48,10 @@ if ($Scope -in @('All', 'Rust')) {
 }
 
 if ($Scope -in @('All', 'Adapters')) {
+    Invoke-TimedCheck 'Qianwen OpenCLI tests' {
+        node --experimental-vm-modules --test (Join-Path $repo '08_adapters/03_opencli/qwen/full.test.js')
+        Assert-NativeCommandPassed 'Qianwen OpenCLI tests'
+    }
     Invoke-TimedCheck 'TypeScript tests' {
         Push-Location $browserAdapter
         try {
