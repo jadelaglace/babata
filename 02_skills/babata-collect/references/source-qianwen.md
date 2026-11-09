@@ -1,7 +1,16 @@
 # Qianwen Native Conversation Recipe
 
 Query runtime capability before use: `babata --json capabilities list` must enable `source.qianwen`.
-Use the signed-in Qianwen website through OpenCLI browser eval only as acquisition; no prompt is sent.
+Use the signed-in Qianwen website through the read-only OpenCLI `qwen detail-full` adapter
+(`08_adapters/03_opencli/qwen/full.js`) or browser eval as acquisition; no prompt is sent.
+The adapter accepts one 32-hex session ID or `/chat/<id>` URL, calls the official
+`/api/v1/session/msg/list` endpoint, and returns the native message rows. It does not write C0;
+formal collection still uses the native handoff and unified Collector below.
+Install the standalone entry by copying `full.js` into `~/.opencli/clis/qwen/` on an
+existing OpenCLI installation; preserve any existing override. Run
+`opencli qwen detail-full <id-or-url> -f json`. The request reads at most 100 native
+rows and rejects `have_next_page=true`; it does not implement continuation or download
+attachments. `Complete` means the native message page terminated, not media/C0 completeness.
 Keep responses, scope manifests, downloaded media and browser state outside Git and managed C0.
 
 ## Discovery and scope

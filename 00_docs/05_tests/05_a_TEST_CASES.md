@@ -41,6 +41,12 @@
 预期：原生消息及范围位置可精确回读，managed hashes 全部一致；history 无显式终止标志时只声明
 观察到的可见集合；原生渲染响应变化导致的 changed 如实保留，不声称全部 unchanged；不启动 C1。
 
+千问只读 `qwen detail-full` 入口另外验证：明确 ID/URL 通过官方 GET 消息接口返回未截断原生行；
+错误/缺失 HTTP 状态、业务错误、无分页终止标志、未结束分页、空链或外来会话必须拒绝。
+`Complete` 只证明该消息页结束，不证明附件下载或 C0 登记。运行
+`node --experimental-vm-modules --test 08_adapters/03_opencli/qwen/full.test.js`，
+再用授权测试会话验证真实登录态读取；输出留 Git 外，不发送消息或触发 C1/C2。
+
 ### TC-01C：元宝显式原生会话适配器
 
 1. 对授权测试会话完成原生 API 读取与分页，保留 `convs` 行、原生消息身份和 `multiMediaInfo`；
