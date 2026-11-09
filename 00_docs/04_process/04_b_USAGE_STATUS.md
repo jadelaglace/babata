@@ -37,7 +37,7 @@ tool version、调用量、价格依据和实际或估算成本。
 | `outputs` Markdown/JSON | `enabled` | 通用输出合同与实现存在 |
 | 专用 MBA/Cherno Obsidian publisher | `proven-specialized-route` | 已真实交付，但不是通用 capability |
 | `source.yitang` | `enabled` | 成对回放、渲染全文和正文图片的 prepared-manifest Collector 路线已通过真实样本并随 v0.2.0 发布 |
-| `source.qianwen` | `enabled`（当前构建） | 原生对话与媒体 C0 回收及外卖范围修正已验证；新增只读 OpenCLI `qwen detail-full` 适配器（`08_adapters/03_opencli/qwen/full.js`），两个测试会话已由 detail-full 真实读取；入口收尾跟踪 Issue #221，PR #208 已合并，适配器尚未随新版本发布，不属于 v0.2.0 release 基线 |
+| `source.qianwen` | `enabled`（当前构建） | 原生对话与媒体 C0 回收及外卖范围修正已验证；新增只读 OpenCLI `qwen detail-full` 适配器（`08_adapters/03_opencli/qwen/full.js`），两个测试会话已由 detail-full 真实读取；入口 PR #222 已合并、Issue #221 已关闭，PR #208 已合并，适配器尚未随新版本发布，不属于 v0.2.0 release 基线 |
 | `source.yuanbao` | `enabled`（当前构建） | 显式原生 handoff 接统一 Collector，文字/图片保存与 fresh 重采已在用户提供的两个测试对话验证；PR #218 已合并；不是账号全量任务，尚未随新版本发布 |
 | `outputs.obsidian` | `unavailable / unplanned` | 不因专用 publisher 倒签 |
 | `outputs.web` | `unavailable / unplanned` | 未实现 |
@@ -154,7 +154,7 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 | 使用事实 | Evidence 入口 |
 | --- | --- |
 | 千问全量可见集合与外卖剔除 | `D:\BabataData\04_runtime\staging\model-workspaces\qianwen-chat-recovery-20261107-v1\terminal-receipt.json`；4 项试点后完成其余 18 项；原生行、范围与媒体 SHA-256 回读通过，fresh API 重采 13 unchanged / 9 changed（原生 HTML/JS 与渲染字段变化）。当前 C0 及历史保留边界见 §5，逐项矩阵与媒体清单见回执。PR #208 已合并、Issue #204–207 已关闭；终态全套检查通过，日志为同目录 `full-check-closure.log`。 |
-| 千问轻量对话适配器 2026-11-09 收尾 | `implemented / real-path verified`：`08_adapters/03_opencli/qwen/full.js` 只读调用官方消息接口，接受显式 ID/URL；校验 HTTP、业务码、会话归属和 `have_next_page=false`，完整返回原生行。两个既有测试会话经此入口真实读取，各 1 个原生会话行，request_messages / response_messages 数组全部保留；不把对话界面气泡数当原生行数。6 个定向测试覆盖长正文、身份、HTTP/业务错误与分页负例，已接工程 gate；OpenCLI validate 通过。仅单页最多 100 行，分页未结束即拒绝，不下载附件或写 C0，未启动 C1/C2；尚未随新版本发布，用户验收不推断。Issue #221；交付与原生读取证据：D:/BabataData/04_runtime/receipts/qianwen-adapter-closure-20261109/terminal-receipt.json。 |
+| 千问轻量对话适配器 2026-11-09 收尾 | `implemented / real-path verified`：`08_adapters/03_opencli/qwen/full.js` 只读调用官方消息接口，接受显式 ID/URL；校验 HTTP、业务码、会话归属和 `have_next_page=false`，完整返回原生行。两个既有测试会话经此入口真实读取，各 1 个原生会话行，request_messages / response_messages 数组全部保留；不把对话界面气泡数当原生行数。6 个定向测试覆盖长正文、身份、HTTP/业务错误与分页负例，已接工程 gate；OpenCLI validate 通过。仅单页最多 100 行，分页未结束即拒绝，不下载附件或写 C0，未启动 C1/C2；尚未随新版本发布，用户验收不推断。PR #222 已合并、Issue #221 已关闭；本地全套与 GitHub Rust/适配器/文档检查通过；交付与原生读取证据：D:/BabataData/04_runtime/receipts/qianwen-adapter-closure-20261109/terminal-receipt.json。 |
 | 整理前完整 Docs | Git commit `9182a77` |
 | P8 来源广度、深度和登记 | `BABATA_RECOVERY_HOME` / `BABATA_EVIDENCE_HOME` 对应 P8 manifests/receipts |
 | MBA 13 门课程 | `D:\BabataData\04_runtime\staging\execution-rounds\` 和 `model-workspaces\mba-*` |
