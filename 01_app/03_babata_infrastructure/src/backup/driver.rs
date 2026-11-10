@@ -467,6 +467,7 @@ fn create_collection_files(
     let mut entries = Vec::new();
     let mut exclusions = Vec::new();
     let mut root_manifest = Vec::new();
+    let mut historical_groups = Vec::new();
     validate_exclusions(roots, snapshot_root, declared_exclusions)?;
     for (alias, source_root) in roots {
         if !source_root.is_dir() {
@@ -508,16 +509,7 @@ fn create_collection_files(
                 }
                 continue;
             }
-            if path
-                .file_name()
-                .and_then(|name| name.to_str())
-                .is_some_and(|name| name.to_lowercase().contains("browser-profile"))
-            {
-                return Err(ApplicationError::Integrity(
-                    "browser profile requires an explicit reviewed exclusion/protection rule"
-                        .to_owned(),
-                ));
-            }
+            require_profile_rule(path)?;
             if let Some(reason) = credential_exclusion(path, password_file) {
                 exclusions.push(SnapshotExclusion {
                     root_alias: (*alias).to_owned(),
@@ -532,14 +524,17 @@ fn create_collection_files(
             if !entry.file_type().is_file() {
                 continue;
             }
-            if sqlite_sidecar_base(path).is_some() {
+            if active_sidecar(alias, source_root, path)? {
                 continue;
             }
             let destination = data_root.join(relative);
-            let (byte_size, sha256) = if is_sqlite_file(path)? {
+            let (byte_size, sha256) = if active_database(alias, &relative_path) {
                 snapshot_database(path, &destination, busy_timeout_ms)?;
                 hash_file(&destination)?
             } else {
+                if is_sqlite_file(path)? {
+                    historical_groups.push(sqlite_group_fingerprint(path)?);
+                }
                 copy_and_hash_stable(path, &destination)?
             };
             entries.push(SnapshotManifestEntry {
@@ -556,6 +551,13 @@ fn create_collection_files(
         }
     }
 
+    for group in historical_groups {
+        if sqlite_group_fingerprint(&group.0)? != group {
+            return Err(ApplicationError::Conflict(
+                "historical SQLite group changed during snapshot".to_owned(),
+            ));
+        }
+    }
     write_collection_manifest(
         snapshot_root,
         snapshot_id,
@@ -681,7 +683,7 @@ fn verify_snapshot_root(
             Ok((byte_size, _)) => {
                 summary.verified_files += 1;
                 summary.verified_bytes += byte_size;
-                if is_sqlite_file(&path)? {
+                if active_database(&entry.root_alias, &entry.relative_path) {
                     match verify_database(&path) {
                         Ok(()) => summary.databases_checked += 1,
                         Err(error) => record_class_failure(
@@ -878,6 +880,55 @@ fn sqlite_sidecar_base(path: &Path) -> Option<PathBuf> {
         .map(|_| base)
 }
 
+fn active_database(alias: &str, relative: &str) -> bool {
+    alias == "data" && DATABASE_PATHS.contains(&relative)
+}
+
+fn active_sidecar(alias: &str, source_root: &Path, path: &Path) -> Result<bool, ApplicationError> {
+    let Some(base) = sqlite_sidecar_base(path) else {
+        return Ok(false);
+    };
+    let relative = base
+        .strip_prefix(source_root)
+        .map_err(|error| ApplicationError::Integrity(error.to_string()))?;
+    Ok(active_database(alias, &normalized_relative_path(relative)?))
+}
+
+fn require_profile_rule(path: &Path) -> Result<(), ApplicationError> {
+    if path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .is_some_and(|name| name.to_lowercase().contains("browser-profile"))
+    {
+        return Err(ApplicationError::Integrity(
+            "browser profile requires an explicit reviewed exclusion/protection rule".to_owned(),
+        ));
+    }
+    Ok(())
+}
+
+type SqliteGroupFingerprint = (PathBuf, Vec<Option<(u64, std::time::SystemTime)>>);
+
+fn sqlite_group_fingerprint(path: &Path) -> Result<SqliteGroupFingerprint, ApplicationError> {
+    let mut files = Vec::new();
+    for suffix in ["", "-wal", "-shm", "-journal"] {
+        let mut name = path.as_os_str().to_os_string();
+        name.push(suffix);
+        let candidate = PathBuf::from(name);
+        match std::fs::metadata(&candidate) {
+            Ok(metadata) => files.push(Some((
+                metadata.len(),
+                metadata
+                    .modified()
+                    .map_err(|error| ApplicationError::Storage(error.to_string()))?,
+            ))),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => files.push(None),
+            Err(error) => return Err(ApplicationError::Storage(error.to_string())),
+        }
+    }
+    Ok((path.to_path_buf(), files))
+}
+
 fn is_sqlite_file(path: &Path) -> Result<bool, ApplicationError> {
     let mut file =
         File::open(path).map_err(|error| ApplicationError::Storage(error.to_string()))?;
@@ -1035,6 +1086,8 @@ mod tests {
         let db = roots[3].1.join("workspace.sqlite");
         let connection = rusqlite::Connection::open(&db).unwrap();
         connection.execute_batch("PRAGMA journal_mode=WAL; CREATE TABLE example (value TEXT); INSERT INTO example VALUES ('wal committed');").unwrap();
+        let source_bytes = std::fs::read(&db).unwrap();
+        let source_wal = std::fs::read(roots[3].1.join("workspace.sqlite-wal")).unwrap();
         let id = SnapshotId::new();
         let now = SystemClock.now();
         let files = create_collection_files(
@@ -1051,7 +1104,15 @@ mod tests {
             }],
         )
         .unwrap();
-        assert_eq!(files.file_count, 5);
+        assert_eq!(files.file_count, 7);
+        assert_eq!(
+            std::fs::read(output.path().join("assistant/workspace.sqlite")).unwrap(),
+            source_bytes
+        );
+        assert_eq!(
+            std::fs::read(output.path().join("assistant/workspace.sqlite-wal")).unwrap(),
+            source_wal
+        );
         assert!(
             output
                 .path()
@@ -1069,12 +1130,6 @@ mod tests {
             std::fs::read(&receipt).unwrap(),
             b"immutable historical evidence"
         );
-        let restored =
-            rusqlite::Connection::open(output.path().join("assistant/workspace.sqlite")).unwrap();
-        let value: String = restored
-            .query_row("SELECT value FROM example", [], |row| row.get(0))
-            .unwrap();
-        assert_eq!(value, "wal committed");
         let manifest: SnapshotManifest =
             serde_json::from_slice(&std::fs::read(output.path().join("manifest.json")).unwrap())
                 .unwrap();
@@ -1090,10 +1145,63 @@ mod tests {
             verify_snapshot_root(output.path(), &reference)
                 .unwrap()
                 .databases_checked,
-            1
+            0
         );
+        let restored =
+            rusqlite::Connection::open(output.path().join("assistant/workspace.sqlite")).unwrap();
+        let value: String = restored
+            .query_row("SELECT value FROM example", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(value, "wal committed");
         std::fs::remove_file(output.path().join("evidence/receipt.json")).unwrap();
         assert!(verify_snapshot_root(output.path(), &reference).is_err());
+    }
+
+    #[test]
+    fn historical_sqlite_bytes_are_not_rewritten_or_health_reinterpreted() {
+        let source = tempdir().unwrap();
+        let output = tempdir().unwrap();
+        let db = source.path().join("damaged-test-evidence.sqlite");
+        let bytes = [
+            b"SQLite format 3\0".as_slice(),
+            b"intentionally invalid historical fixture",
+        ]
+        .concat();
+        std::fs::write(&db, &bytes).unwrap();
+        let id = SnapshotId::new();
+        let now = SystemClock.now();
+        let result = create_collection_files(
+            &[("evidence", source.path().to_path_buf())],
+            output.path(),
+            id.clone(),
+            now.clone(),
+            100,
+            &source.path().join("key"),
+            &[],
+        )
+        .unwrap();
+        assert_eq!(
+            std::fs::read(output.path().join("evidence/damaged-test-evidence.sqlite")).unwrap(),
+            bytes
+        );
+        let reference = SnapshotRef {
+            id,
+            created_at: now,
+            manifest_sha256: result.manifest_sha256,
+        };
+        assert_eq!(
+            verify_snapshot_root(output.path(), &reference)
+                .unwrap()
+                .databases_checked,
+            0
+        );
+        let before = sqlite_group_fingerprint(&db).unwrap();
+        std::fs::write(
+            source.path().join("damaged-test-evidence.sqlite-wal"),
+            b"drift",
+        )
+        .unwrap();
+        assert_ne!(sqlite_group_fingerprint(&db).unwrap(), before);
     }
 
     #[test]
