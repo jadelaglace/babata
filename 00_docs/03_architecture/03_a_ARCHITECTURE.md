@@ -223,6 +223,9 @@ pre-clean inventory/hash/tree screenshots
 - 恢复不自动切换活动根；凭据恢复后重新授权。
 - 当前集合以 data/evidence/recovery/assistant root alias 记录来源、开始／结束时间和排除项；
   逐文件稳定拷贝和 SQLite backup API 不等于跨库全局事务。真实冻结需停止相关 writer 并验证库／资产关系。
+- 仅活动四个 canonical index 数据库使用 SQLite backup API；历史库／测试库是不可变证据，
+  原数据库及 WAL／sidecar 逐字节保留，不因 SQLite 文件头自动改写或按活动健康标准拒绝。
+  历史库组必须在无 writer 且组内元数据稳定的冻结窗口复制；漂移即失败，不拼接不同时点的 DB／WAL。
 - Evidence、未知 Recovery 和 Assistant 独有成果默认保护；Data staging/logs 不再整体排除。
   密码文件、明确凭据和浏览器登录态单列排除，安全配置／用户成果分开保全；`.env` 不是加密。
 - `BABATA_BACKUP_HOME` 是设施，不是第五业务根：工作盘准备／加密／check／隔离 restore →

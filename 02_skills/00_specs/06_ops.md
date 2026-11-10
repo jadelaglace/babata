@@ -14,6 +14,9 @@ File protocol (DOC-ARCH §7/§13, TC-10E):
   not authorization to process deferred sources. Credentials/login profiles are listed exclusions.
 - A manifest records each root, file hash and start/end time; cross-database freeze still
   requires quiesced writers and relationship verification by the execution round.
+- Only the four active canonical index databases use SQLite backup API. Historical
+  databases and their WAL/sidecars remain exact evidence bytes under a stable group
+  freeze; restore does not reinterpret historical fixtures as active database health.
 - State binds repository path/id and full snapshot id; legacy location-unknown states
   are not healthy. Existing restored v1 manifests remain verifiable without rewriting them.
 - Produce/check/restore on the working disk; delivery/independent verification and
