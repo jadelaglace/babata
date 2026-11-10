@@ -1,7 +1,10 @@
 # C1 Staging and Handoff Contract
 
 Use this contract for untrusted processing candidates and the manifest that binds them to C0. Staging is
-deletable workspace; it is never formal C1 or a downstream C2 package.
+candidate workspace; it is never formal C1 or a downstream C2 package. Existing paths remain
+compatible. Deletion/exclusion needs a proven survivor or rebuild recipe: paid results, unique
+material and durable manifests must be protected first. Durable evidence uses BABATA_EVIDENCE_HOME;
+new solution scripts use BABATA_ASSISTANT_HOME/solutions/<solution>/runtime/.
 
 ## Contents
 

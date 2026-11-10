@@ -146,6 +146,7 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 | TC-11 独立系统级 receipt | `not-run` | 用户明确提出系统级终验；不能从缺口自动重开主线 |
 | 豆包完整 C1 | `closed-with-losses / verified` | 按用户‘试着找一下不行拉倒，赶紧闭环 c1’完成有界恢复并收口：保留 322 个文本 revision/1536 消息与前轮 57 份补充 C1；找回 116 个图片引用（115 个唯一图像）和 6 份本地匹配附件，新增 119 份正式 C1 并核验。55 个未恢复/视觉未成功对象与 6 份附件提取限制已逐项留证，不称无损完整 C1，无待用户决策或自动后续义务。详见 §11 恢复闭环回执。 |
 | 新 UI、桌面/移动端、更多输出 | `open / optional` | 真实使用需要 |
+| #220 薄协议－文件协议 | `implementation verified / actual delivery pending` | 四根与实际六分区合同、路径负例、多根备份 manifest 和仓库位置绑定已通过完整工程检查及真实 restic 临时小样；存量映射已追加终态，数据根临时目录已可逆归位。尚未完成真实当前集合 D 加密／隔离恢复、E 交付／恢复及经精确授权的退休；Issue 不据此关闭，未随新版本发布。 |
 
 这些项目不是 Active Plan 队列，不能在 session 恢复时自动执行。
 
@@ -153,6 +154,7 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 
 | 使用事实 | Evidence 入口 |
 | --- | --- |
+| #220 文件协议实施与真实验收 | `BABATA_EVIDENCE_HOME/issue220-implementation-20261110/REPORT.md`；旧 dry 在 `file-protocol-step5-dry-20261110/REPORT.md`。工程验证不代表真实全量备份或删除授权；历史回执不改写，实际 AC 与未决义务见 Issue #220 和实施回执。 |
 | 千问全量可见集合与外卖剔除 | `D:\BabataData\04_runtime\staging\model-workspaces\qianwen-chat-recovery-20261107-v1\terminal-receipt.json`；4 项试点后完成其余 18 项；原生行、范围与媒体 SHA-256 回读通过，fresh API 重采 13 unchanged / 9 changed（原生 HTML/JS 与渲染字段变化）。当前 C0 及历史保留边界见 §5，逐项矩阵与媒体清单见回执。PR #208 已合并、Issue #204–207 已关闭；终态全套检查通过，日志为同目录 `full-check-closure.log`。 |
 | 千问轻量对话适配器 2026-11-09 收尾 | `implemented / real-path verified`：`08_adapters/03_opencli/qwen/full.js` 只读调用官方消息接口，接受显式 ID/URL；校验 HTTP、业务码、会话归属和 `have_next_page=false`，完整返回原生行。两个既有测试会话经此入口真实读取，各 1 个原生会话行，request_messages / response_messages 数组全部保留；不把对话界面气泡数当原生行数。6 个定向测试覆盖长正文、身份、HTTP/业务错误与分页负例，已接工程 gate；OpenCLI validate 通过。仅单页最多 100 行，分页未结束即拒绝，不下载附件或写 C0，未启动 C1/C2；尚未随新版本发布，用户验收不推断。PR #222 已合并、Issue #221 已关闭；本地全套与 GitHub Rust/适配器/文档检查通过；交付与原生读取证据：D:/BabataData/04_runtime/receipts/qianwen-adapter-closure-20261109/terminal-receipt.json。 |
 | 整理前完整 Docs | Git commit `9182a77` |

@@ -26,6 +26,7 @@ $checks = [ordered]@{
     'Batch round runner tests' = 'test-babata-execution-round.ps1'
     'Batch round governance checker tests' = 'test-batch-round-governance.ps1'
     'Data-root boundaries' = 'check-data-root-boundaries.ps1'
+    'Data-root negative tests' = 'test-data-root-boundaries.ps1'
     'Auxiliary data-root migration tests' = 'test-auxiliary-data-root-migration.ps1'
 }
 
