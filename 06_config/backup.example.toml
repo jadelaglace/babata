@@ -1,3 +1,13 @@
 enabled = false
 activation_phase = "P8"
 repository = ""
+
+# Documentation only: runtime reads BABATA_BACKUP_HOME, BABATA_RESTIC_REPOSITORY,
+# BABATA_RESTIC_EXE and BABATA_RESTIC_PASSWORD_FILE. Never put key bytes here.
+# Produce and verify on the working disk; delivery does not change these variables.
+# Current coverage: data/evidence/recovery/assistant. Unknown unique staging/log
+# content is included. Credential/profile exclusions are listed in the manifest.
+# Delivery and retirement are separately authorized; this does not enable prune.
+# Optional BABATA_BACKUP_EXCLUSIONS_FILE: reviewed JSON array with root_alias,
+# relative_path (exact subtree, no glob) and nonempty reason. Protect unique work
+# before excluding profiles or deferred content. No automatic profile exclusion.

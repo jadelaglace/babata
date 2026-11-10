@@ -57,7 +57,7 @@ flowchart LR
 
 | 原则 | 含义 |
 | --- | --- |
-| Local first | 正式数据只进入外部 `BABATA_DATA_HOME` 的编号分区；开发证据和待收集恢复材料使用独立本地根，三者都不进入 Git。 |
+| Local first | 知识数据、持久证据、恢复材料和助理资产分属四个 Git 外根；助理内容不自动成为第二知识库。 |
 | One authority | 浏览器、CLI、Skill、脚本和 Agent 只提交候选或调用能力；正式持久化由 Rust application/core 经 infrastructure 完成。 |
 | Preserve provenance | 原件尽量 append-only；来源、哈希、附件、处理器、版本、状态和历史都可追溯。 |
 | Rebuild downstream | 派生物与视图按层级重建；删除 C2 展示结果不能损伤 C0/C1 或人工记录。 |
@@ -99,16 +99,19 @@ $env:BABATA_DATA_HOME = 'D:\BabataData'
 cargo run --manifest-path ./01_app/Cargo.toml -p babata-cli -- data status
 ```
 
-开发和真实验收还应把证据与未正式收集的恢复材料放在另外两个 Git 外本地根：
+证据、未正式收集的恢复材料和助理方案资产使用另外三个 Git 外本地根：
 
 ```powershell
 $env:BABATA_EVIDENCE_HOME = 'D:\BabataEvidence'
 $env:BABATA_RECOVERY_HOME = 'D:\BabataRecovery'
+$env:BABATA_ASSISTANT_HOME = 'D:\BabataAssistant'
 ```
 
 `BABATA_EVIDENCE_HOME` 不是正式备份；`BABATA_RECOVERY_HOME` 可以保存已校验的
 C0-A1/C0-A2 captured 或 prepared 主权材料，但它们还不是 registered C0-C；
 活动 `BABATA_DATA_HOME` 顶层只保留 `00_inbox` 至 `05_logs` 六个编号分区。
+`BABATA_ASSISTANT_HOME` 使用 `solutions/<solution>/runtime/` 与 `workspaces/`；
+现有知识处理工作区原位兼容。四根文件协议与备份边界见 `DOC-ARCH` §7、§13。
 
 日常快速反馈默认运行 `check-fast`；可以用 `-RustPackage <crate>` 只检查和测试受影响的
 Rust package。边界变更运行 `check-boundary`，合并前运行 `check-full`：

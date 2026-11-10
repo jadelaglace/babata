@@ -4,11 +4,17 @@
 root = "C:\\Users\\Aiano\\BabataData"
 
 # Development evidence and not-yet-captured recovery material use separate,
-# Git-external roots. The migration/verification scripts read these environment
-# variables; they are not additional Babata persistence authorities.
+# Git-external roots. Migration/verification and backup callers read these
+# environment variables; auxiliary files do not become a second knowledge writer.
 # BABATA_EVIDENCE_HOME=C:\\Users\\Aiano\\BabataEvidence
 # BABATA_RECOVERY_HOME=C:\\Users\\Aiano\\BabataRecovery
 
 # No production credentials belong in this repository or this template.
+# BABATA_ASSISTANT_HOME=D:\\BabataAssistant
+# Four roots must be outside Git and disjoint. Assistant uses
+# solutions/<solution>/runtime/{scripts,cli,...} and workspaces/<task-or-run>.
+# This TOML is documentation, not an automatically loaded runtime configuration.
+# The backup caller reads environment variables; existing knowledge
+# 04_runtime/staging/model-workspaces/ remains compatible.
 [providers.bailian]
 enabled = false

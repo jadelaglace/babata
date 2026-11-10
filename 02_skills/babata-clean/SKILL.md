@@ -16,6 +16,11 @@ are replaceable or complementary adapters. None of them owns C1 or writes SQLite
 
 Use `BABATA_DATA_HOME/04_runtime/staging/model-workspaces/<task>/` for working files. A result is
 formal C1 only after the Rust application/core accepts it through `babata process register`.
+Existing knowledge workspaces stay here without forced migration. New solution scripts/CLI
+belong under `BABATA_ASSISTANT_HOME/solutions/<solution>/runtime/`; non-knowledge workspaces
+use that solution's `workspaces/<task-or-run>`. Durable receipts and manifests belong under
+`BABATA_EVIDENCE_HOME`. Runtime location alone never proves data disposable: preserve paid
+results, unknown unique material and lineage before excluding or cleaning a workspace.
 
 ## Non-negotiable boundaries
 

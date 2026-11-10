@@ -10,7 +10,7 @@
 
 ## 2. 架构原则
 
-1. **本地优先**：正式数据位于 Git 外 `BABATA_DATA_HOME`，代码和可审阅合同位于 Git。
+1. **本地优先**：知识数据位于 Git 外 `BABATA_DATA_HOME`；证据、恢复和助理资产按 §7 隔离，代码和可审阅合同位于 Git。
 2. **唯一 writer**：正式身份、版本、状态和关系只由 Rust application/core 经 infrastructure 写入。
 3. **原件优先**：C0、第一方内容和人工决定不可被模型、索引或输出覆盖。
 4. **派生可重建**：C1/C2/C3 按各自合同删除、重建和验证，不反向改变上游。
@@ -101,11 +101,21 @@ validate scope -> stage metadata/assets -> write transaction -> finalize assets
 活动 `BABATA_DATA_HOME` 顶层保持六个编号分区：
 
 ```text
-00_inbox/  01_raw/  02_processed/  03_core/  04_runtime/  05_logs/
+00_inbox/  01_raw/  02_derived/  03_views/  04_runtime/  05_logs/
 ```
 
-- `BABATA_EVIDENCE_HOME` 保存开发/验收证据，不是正式备份。
-- `BABATA_RECOVERY_HOME` 保存已验证但尚未 registered 的恢复材料，不冒充 C0-C。
+- `BABATA_EVIDENCE_HOME` 保存持久 receipt、manifest、snapshot、verification 和决策，不是正式备份。
+- `BABATA_RECOVERY_HOME` 保存待消化／未知唯一恢复材料和恢复工具，不冒充 C0-C。
+- `BABATA_ASSISTANT_HOME` 保存非知识的助理方案资产：`solutions/<solution>/runtime/{scripts,cli,...}`
+  及 `solutions/<solution>/workspaces/<task-or-run>`，按真实调用增量建立；Git 管理的产品代码仍在 Git。
+- 四根必须在 Git 外、互不重合／嵌套；以实际解析路径检查，不追随 junction/symlink 越界。
+- `04_runtime` 用于知识处理过程数据；既有 `04_runtime/staging/model-workspaces/` 原位 legacy 兼容，
+  不强迁，不因路径名把付费结果、持久证据或未知唯一内容判为可删／可排除。新方案脚本外置 Assistant。
+- WBS 的权威仍在飞书，证据进 Evidence/wbs，方案工作区进 Assistant；model-value 同样拆分，
+  助理文件只有显式 promotion 经原 Rust writer 才成为正式知识，不直接修改 canonical SQLite。
+- 薄 run manifest 可聚合记录身份、producer/build、输入、root alias＋相对路径、size/hash（可 unknown）、
+  角色／状态／敏感性／retention／备份分类／依赖／可选晋升，不强迫旧文件逐个补 sidecar。
+- 历史回执原字节保留；追加路径终态映射，活动入口适配新路径，历史脚本不得盲执行或全局替换。
 - staging、模型 workspace、execution ledger、缓存和日志位于 Git 外；仓库只保存 schema、Skill、模板和 checker。
 - SQLite migration 由 application/infrastructure 控制；任何兼容 fallback 必须显式、可测试且不静默降级。
 
@@ -211,6 +221,16 @@ pre-clean inventory/hash/tree screenshots
 - 恢复验证包括数据库打开/migration compatibility、integrity/foreign keys、资产存在性和声明范围 hash。
 - C0/第一方/人工决定损坏 fail closed；声明可重建的 C2/C3 缺失进入 missing 清单而不冒充 C0 损坏。
 - 恢复不自动切换活动根；凭据恢复后重新授权。
+- 当前集合以 data/evidence/recovery/assistant root alias 记录来源、开始／结束时间和排除项；
+  逐文件稳定拷贝和 SQLite backup API 不等于跨库全局事务。真实冻结需停止相关 writer 并验证库／资产关系。
+- Evidence、未知 Recovery 和 Assistant 独有成果默认保护；Data staging/logs 不再整体排除。
+  密码文件、明确凭据和浏览器登录态单列排除，安全配置／用户成果分开保全；`.env` 不是加密。
+- `BABATA_BACKUP_HOME` 是设施，不是第五业务根：工作盘准备／加密／check／隔离 restore →
+  独立盘交付／独立恢复验证 → 授权后退出旧历史和工作盘成品。程序变量不随交付改到备份盘。
+- state 绑定 repository 路径与 snapshot 实际存在性；旧 state 无位置时记 legacy unknown，不能报健康。
+  交付记录与生产记录分开，不伪造本地仍有成品。缺空间不能先删唯一好备份；受控替换另需精确授权。
+- 一个当前批次可由同批多根 snapshot 构成；无长期历史，未知历史内容先保全。外部自主库及用户暂缓
+  范围为显式例外；交付后新生成 receipt 另附保护或下一批补入，不承诺备份包含自身生成过程。
 
 ## 14. 验收追溯
 
