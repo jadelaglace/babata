@@ -58,6 +58,36 @@ impl ResticConfig {
         self.run(["check"].as_slice()).map(|_| ())
     }
 
+    pub fn require_snapshot(&self, snapshot_id: &str) -> Result<(), ApplicationError> {
+        let output = self.run(&["snapshots", "--json"])?;
+        let snapshots: Vec<serde_json::Value> = serde_json::from_str(&output)
+            .map_err(|error| ApplicationError::Integrity(error.to_string()))?;
+        if snapshots
+            .iter()
+            .any(|value| value.get("id").and_then(|id| id.as_str()) == Some(snapshot_id))
+        {
+            Ok(())
+        } else {
+            Err(ApplicationError::Integrity(
+                "snapshot is absent from the configured repository".to_owned(),
+            ))
+        }
+    }
+
+    pub fn repository_id(&self) -> Result<String, ApplicationError> {
+        let output = self.run(&["cat", "config"])?;
+        let value: serde_json::Value = serde_json::from_str(&output)
+            .map_err(|error| ApplicationError::Integrity(error.to_string()))?;
+        value
+            .get("id")
+            .and_then(|id| id.as_str())
+            .filter(|id| !id.is_empty())
+            .map(str::to_owned)
+            .ok_or_else(|| {
+                ApplicationError::Integrity("repository config has no identity".to_owned())
+            })
+    }
+
     pub fn backup(
         &self,
         working_directory: &std::path::Path,
@@ -118,6 +148,9 @@ impl ResticConfig {
         command
             .arg("--repo")
             .arg(&self.repository)
+            .arg("--no-cache")
+            .env_remove("RESTIC_PASSWORD")
+            .env_remove("RESTIC_PASSWORD_COMMAND")
             .env("RESTIC_PASSWORD_FILE", &self.password_file)
             .args(arguments);
         if let Some(working_directory) = working_directory {

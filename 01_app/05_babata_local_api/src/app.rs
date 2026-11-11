@@ -857,7 +857,7 @@ mod tests {
     }
 
     #[test]
-    fn browser_api_discovers_before_explicit_selection_and_writes_only_selected() {
+    fn browser_api_rejects_disabled_source_before_discovery() {
         let temporary = tempdir().unwrap();
         babata_infrastructure::paths::ensure_layout(&babata_infrastructure::paths::DataPaths::new(
             temporary.path().to_path_buf(),
@@ -883,69 +883,15 @@ mod tests {
             "installationId": "test-installation",
             "candidates": [candidate("https://example.test/one", "One"), candidate("https://example.test/two", "Two")],
         });
-        let started = dispatch(
+        let error = dispatch(
             &config,
             "POST",
             "/v1/collector/sessions",
             Some(TOKEN),
             &serde_json::to_vec(&start).unwrap(),
         )
-        .unwrap();
-        assert_eq!(started.status, 201);
-        let started: Value = serde_json::from_slice(&started.body).unwrap();
-        let session = started["data"]["session"]["session_id"].as_str().unwrap();
-        let candidates = started["data"]["candidates"].as_array().unwrap();
-        assert_eq!(candidates.len(), 2);
-        let selected_candidate = candidates[0]["candidate_id"].as_str().unwrap();
-
-        let unconfirmed = json!({
-            "sessionId": session,
-            "candidateIds": [selected_candidate],
-            "scopeDescription": "one visible test page",
-            "confirmed": false,
-        });
-        assert_eq!(
-            dispatch(
-                &config,
-                "POST",
-                "/v1/collector/select",
-                Some(TOKEN),
-                &serde_json::to_vec(&unconfirmed).unwrap(),
-            )
-            .unwrap_err()
-            .status_code(),
-            409
-        );
-        let empty_status = dispatch(
-            &config,
-            "GET",
-            &format!("/v1/collector/status?session={session}"),
-            Some(TOKEN),
-            b"",
-        )
-        .unwrap();
-        let empty_status: Value = serde_json::from_slice(&empty_status.body).unwrap();
-        assert_eq!(empty_status["data"].as_array().unwrap().len(), 0);
-
-        let confirmed = json!({
-            "sessionId": session,
-            "candidateIds": [selected_candidate],
-            "scopeDescription": "one visible test page",
-            "confirmed": true,
-        });
-        let selected = dispatch(
-            &config,
-            "POST",
-            "/v1/collector/select",
-            Some(TOKEN),
-            &serde_json::to_vec(&confirmed).unwrap(),
-        )
-        .unwrap();
-        let selected: Value = serde_json::from_slice(&selected.body).unwrap();
-        let items = selected["data"].as_array().unwrap();
-        assert_eq!(items.len(), 1);
-        assert_eq!(items[0]["state"], "saved");
-        assert!(items[0]["item_id"].as_str().is_some());
+        .unwrap_err();
+        assert_eq!(error.status_code(), 503);
     }
 
     fn test_config(path: &std::path::Path) -> AppConfig {

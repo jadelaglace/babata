@@ -34,6 +34,8 @@ Then read exactly one relevant source reference:
 - OneNote: [references/source-onenote.md](references/source-onenote.md)
 - Evernote / 印象笔记: [references/source-evernote.md](references/source-evernote.md)
 - 豆包: [references/source-doubao.md](references/source-doubao.md)
+- 千问: [references/source-qianwen.md](references/source-qianwen.md)
+- 元宝: [references/source-yuanbao.md](references/source-yuanbao.md)
 - YouTube: [references/source-youtube.md](references/source-youtube.md)
 - 一堂 / Yitang: [references/source-yitang.md](references/source-yitang.md)
 - Website, browser, desktop app, or unknown source:
@@ -57,6 +59,8 @@ Then read exactly one relevant source reference:
    OCR/ASR, semantic digest, or knowledge commands as part of collection.
 6. Do not split, merge, deduplicate, infer hierarchy, or rewrite source material during preparation or C0 capture.
    Preserve actual exports and record limitations. Later C1 may independently read C0.
+   Explicit user exclusions inside an object are scope selection: record exact native row/field positions,
+   retain the unmodified acquisition externally, and submit only retained content and its assets.
 
 ## Workflow
 

@@ -29,6 +29,37 @@
 预期：回放、可读全文和声明图片作为一个 `source.yitang` item 保存；API 加密载荷、用户身份、讨论、
 点赞和 cookie 不进入 C0；未授权的文稿内链接不被递归收集。
 
+### TC-01B：千问原生范围与媒体
+
+1. 冻结授权可见集合的 history 页/cursor/空页证据，并逐会话取得分页结束的原生消息。
+2. 根据直接用户指令标出排除的原生行和继承字段；保留与排除构成原分母的完整、不重叠分区。
+3. 获取保留消息声明的全部媒体并核验 hash；长正文经 prefetched Collector 保存后回读，排除部分
+   不进入正式正文或附件，多个媒体 URL 对应同一二进制时保留全部映射而不重复登记 managed path。
+4. 破坏 hash、遗漏媒体、重复/外来原生行或未结束分页，确认正式写入前拒绝；禁用 route 不能 start。
+5. 新 API acquisition 执行逐项重采；无 fresh handoff 时必须 inaccessible，不以存储快照证明 unchanged。
+
+预期：原生消息及范围位置可精确回读，managed hashes 全部一致；history 无显式终止标志时只声明
+观察到的可见集合；原生渲染响应变化导致的 changed 如实保留，不声称全部 unchanged；不启动 C1。
+
+千问只读 `qwen detail-full` 入口另外验证：明确 ID/URL 通过官方 GET 消息接口返回未截断原生行；
+错误/缺失 HTTP 状态、业务错误、无分页终止标志、未结束分页、空链或外来会话必须拒绝。
+`Complete` 只证明该消息页结束，不证明附件下载或 C0 登记。运行
+`node --experimental-vm-modules --test 08_adapters/03_opencli/qwen/full.test.js`，
+再用授权测试会话验证真实登录态读取；输出留 Git 外，不发送消息或触发 C1/C2。
+
+### TC-01C：元宝显式原生会话适配器
+
+1. 对授权测试会话完成原生 API 读取与分页，保留 `convs` 行、原生消息身份和 `multiMediaInfo`；
+   下载声明的媒体并准备 Git 外 handoff。测试登记使用隔离数据根，不处理历史用户库。
+2. 用明确 ID/URL 和 handoff 发现候选；只有选中的会话经统一 Collector 保存。回读原生正文、
+   来源 URL、时间、revision 与每项 managed 媒体 size/SHA-256；本地媒体路径不进入正式正文。
+3. 缺少媒体、hash/size 错误、外来或重复消息、分页未结束和错误来源 URL 均必须拒绝。
+4. 重新读取平台后重采；无新 handoff 时 inaccessible，相同 payload/媒体 unchanged 且不增 revision；
+   内容改变时追加 revision，损坏输入不得修改既有成功版本。
+
+预期：正文和媒体均可核对，声明上传大小与平台副本大小分别保留；平台转码不冒称上传原字节无损。
+只证明实际覆盖的消息/媒体 shape，不扩张到账号全量或自动启动 C1/C2。
+
 ## 3. TC-02：局部失败、重试与重收集
 
 追溯：`AC-02`。
@@ -165,7 +196,23 @@ Backs snapshot 或正式知识记录。
 
 预期：C0/第一方损坏 fail closed；声明可重建 C2/C3 缺失进入 missing 清单；活动根未切换；凭据需重授权。
 
+### TC-10E：四根、当前集合与交付位置
+
+1. 用临时四根测试重叠／嵌套、Git 内路径、错分区、相对路径逃逸、junction；非法输入必须拒绝。
+2. 合规 legacy workspace 原位通过；将未知／付费成果放入 staging，确认纳入，凭据／浏览器登录态
+   显式排除并列理由；历史 receipt 的源 hash 不变。
+3. 对四根生成一致 SQLite／逐文件 hash 清单并恢复；注入少文件／hash 错误，关键持久内容必须失败。
+4. state 指向另一仓库、snapshot 缺失或旧 state 无位置时不得报健康；交付中断不退出旧好备份。
+     历史 SQLite／WAL 原字节与 hash 保留，不按活动库做 header 重写；活动 canonical 库仍经一致 API，
+     组内漂移拒绝，故意损坏的历史测试证据不冒充活动库健康缺陷。
+5. 真实授权集合另记录冻结范围／截止点、数据库资产关联、工作盘产出和独立盘恢复；
+   未授权删除、外部自主库和暂缓对象不动，交付后回执另附保护或下一批补入。
+
+预期：fixture 只证明机制；真实集合／容量／中断与恢复另有证据，不因工程测试关闭数据验收。
+
 ## 12. TC-11：完整本地 raw-to-view 闭环
+
+文件协议相关验证另见 TC-10E；工程 fixture 不能替代真实当前恢复集合。
 
 追溯：`AC-11`。
 

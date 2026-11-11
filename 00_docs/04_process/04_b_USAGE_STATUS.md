@@ -37,6 +37,8 @@ tool version、调用量、价格依据和实际或估算成本。
 | `outputs` Markdown/JSON | `enabled` | 通用输出合同与实现存在 |
 | 专用 MBA/Cherno Obsidian publisher | `proven-specialized-route` | 已真实交付，但不是通用 capability |
 | `source.yitang` | `enabled` | 成对回放、渲染全文和正文图片的 prepared-manifest Collector 路线已通过真实样本并随 v0.2.0 发布 |
+| `source.qianwen` | `enabled`（当前构建） | 原生对话与媒体 C0 回收及外卖范围修正已验证；新增只读 OpenCLI `qwen detail-full` 适配器（`08_adapters/03_opencli/qwen/full.js`），两个测试会话已由 detail-full 真实读取；入口 PR #222 已合并、Issue #221 已关闭，PR #208 已合并，适配器尚未随新版本发布，不属于 v0.2.0 release 基线 |
+| `source.yuanbao` | `enabled`（当前构建） | 显式原生 handoff 接统一 Collector，文字/图片保存与 fresh 重采已在用户提供的两个测试对话验证；PR #218 已合并；不是账号全量任务，尚未随新版本发布 |
 | `outputs.obsidian` | `unavailable / unplanned` | 不因专用 publisher 倒签 |
 | `outputs.web` | `unavailable / unplanned` | 未实现 |
 | external snapshot/diff/navigator | `candidate / not-adopted` | Backs 可先做有界 profile |
@@ -57,6 +59,8 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 | P8 有界深度样本 | 14/14 纳入来源、70 条样本达到 A2 或更高 | Bilibili 整体暂缓 |
 | P8 主权准备/登记 | 70/70 A3 判断；45 prepared/C0-B；70/70 registered/C0-C | 不代表全来源都达到同一深度 |
 | 微信/豆包授权回收 | 用户授权范围已处理 | 132 个微信群聊用户暂缓 |
+| 千问授权可见集合 C0 回收 | `completed / C0 registered`；观察到 23 会话，排除外卖后保留 22 会话/42 条原生行；排除 124 条外卖相关行、6 处继承上下文，含后补识别的两条饮品活动二维码及对应图片 | 仅覆盖观察到的可见集合；旧历史版本与完整采集留存，未物理清除；C1 未启动，用户验收不推断 |
+| 元宝全量对话取回与正式登记（2026-11-08 复核） | `completed / C0 registered with source fidelity limits`：已取回 API 可见范围 199/199 个会话、790 条原生消息，经既有通用 export/attach-assets writer 登记；199 份原始 JSON、82 份唯一媒体（79 图片、2 PDF、1 TXT）、129 个 URL 映射及 20 份媒体映射清单全部回读核验 | 正文缺口 0；16 个资源 ID（13 张唯一图片）仅证明平台副本，未证明上传原字节无损；不声称服务器未暴露历史完整。该批次使用通用导入；后续适配器开发仅用两个独立测试对话，未重跑此历史批次；未启动 C1/C2，回执见 §11 |
 | 新来源扩张 | 已保留真实缺口和已耗尽路线 | 当前暂停，不重复失败路线 |
 
 具体 route evidence、授权和 runtime status 见 `DOC-ROUTES`；具体输入和 receipt 在
@@ -142,6 +146,7 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 | TC-11 独立系统级 receipt | `not-run` | 用户明确提出系统级终验；不能从缺口自动重开主线 |
 | 豆包完整 C1 | `closed-with-losses / verified` | 按用户‘试着找一下不行拉倒，赶紧闭环 c1’完成有界恢复并收口：保留 322 个文本 revision/1536 消息与前轮 57 份补充 C1；找回 116 个图片引用（115 个唯一图像）和 6 份本地匹配附件，新增 119 份正式 C1 并核验。55 个未恢复/视觉未成功对象与 6 份附件提取限制已逐项留证，不称无损完整 C1，无待用户决策或自动后续义务。详见 §11 恢复闭环回执。 |
 | 新 UI、桌面/移动端、更多输出 | `open / optional` | 真实使用需要 |
+| #220 薄协议－文件协议 | `8/8 AC verified / authorized retirement complete` | PR #224、#226 已合并，未随新版本发布。D 产出、E 交付及双方隔离恢复通过：78,817 文件全量 SHA-256、4 活动库、跨库／资产关系与敏感附录均正常。经精确授权，E 七旧快照及 D 八组指定冗余／交付／验证副本／旧 state 已退出；E 清理后全仓库 read-data 通过，仅留同一当前批次五个组成快照。删除后 74,750 原文件在位、4,067 授权旧 occurrence 退出、3,821 survivor 再 hash、四活动库及真实位置／state 复核通过。程序变量留 D；D 无本地成品，ops status 如实为 degraded，E 交付另记。未知材料、legacy 工作区、外部／暂缓范围保留；原保守冻结集合恢复干净布局依赖保全映射。最后授权／清理／核验回执明确下一批保护。 |
 
 这些项目不是 Active Plan 队列，不能在 session 恢复时自动执行。
 
@@ -149,6 +154,9 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 
 | 使用事实 | Evidence 入口 |
 | --- | --- |
+| #220 文件协议实施与真实验收 | `BABATA_EVIDENCE_HOME/issue220-implementation-20261110/REPORT.md`；实际位置见同目录 `CURRENT-BATCH.json`，最终核验见 `post-retirement-audit-20261111/terminal.json`，八项 AC 见 `closure-20261111/AC-MATRIX.json`。原请求／精确授权／逐组清理回执保留；旧 dry 为历史输入，不能替代真实验收。 |
+| 千问全量可见集合与外卖剔除 | `D:\BabataData\04_runtime\staging\model-workspaces\qianwen-chat-recovery-20261107-v1\terminal-receipt.json`；4 项试点后完成其余 18 项；原生行、范围与媒体 SHA-256 回读通过，fresh API 重采 13 unchanged / 9 changed（原生 HTML/JS 与渲染字段变化）。当前 C0 及历史保留边界见 §5，逐项矩阵与媒体清单见回执。PR #208 已合并、Issue #204–207 已关闭；终态全套检查通过，日志为同目录 `full-check-closure.log`。 |
+| 千问轻量对话适配器 2026-11-09 收尾 | `implemented / real-path verified`：`08_adapters/03_opencli/qwen/full.js` 只读调用官方消息接口，接受显式 ID/URL；校验 HTTP、业务码、会话归属和 `have_next_page=false`，完整返回原生行。两个既有测试会话经此入口真实读取，各 1 个原生会话行，request_messages / response_messages 数组全部保留；不把对话界面气泡数当原生行数。6 个定向测试覆盖长正文、身份、HTTP/业务错误与分页负例，已接工程 gate；OpenCLI validate 通过。仅单页最多 100 行，分页未结束即拒绝，不下载附件或写 C0，未启动 C1/C2；尚未随新版本发布，用户验收不推断。PR #222 已合并、Issue #221 已关闭；本地全套与 GitHub Rust/适配器/文档检查通过；交付与原生读取证据：D:/BabataData/04_runtime/receipts/qianwen-adapter-closure-20261109/terminal-receipt.json。 |
 | 整理前完整 Docs | Git commit `9182a77` |
 | P8 来源广度、深度和登记 | `BABATA_RECOVERY_HOME` / `BABATA_EVIDENCE_HOME` 对应 P8 manifests/receipts |
 | MBA 13 门课程 | `D:\BabataData\04_runtime\staging\execution-rounds\` 和 `model-workspaces\mba-*` |
@@ -170,5 +178,11 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 | 豆包第一批 2026-10-26 C2B 闭环 | `closed / machine-verified / user acceptance not-inferred`：第一批 `261026` 已完成 C2B 工程闭环。C1B 为 322/322；Knowledge 登记 316 个 revision、707 个 semantic entries；dense preview 707/707；core output 为 `output_01M5VZ4430X32Q7W7P6PG75N6K`。C2B live 为 `D:\BabataData\03_views\doubao-c2b-20261026`，独立重建为 `D:\BabataData\03_views\doubao-c2b-20261026-independent`；Obsidian live 为 `C:\Users\Aiano\Documents\Obsidian Vault\Babata\Doubao`。终态回执 `D:\BabataData\04_runtime\receipts\doubao-c2-full-closure-20261024\terminal-receipt.json`，Obsidian 回执 `D:\BabataData\04_runtime\receipts\doubao-c2-full-closure-20261024\obsidian-export-receipt.json`。C0/C1 未改变；仍保留 55 个缺失对象、6 个部分附件限制、154 个视频仅卡片元数据。`user_acceptance` 保持 `not-inferred`。 |
 
 | Kimi 2026-10-26 最近 3 条试点 | `pilot-verified-with-route-policy-defect / user acceptance not-inferred`：冻结的 3 个对话取得完整结构化正文，共 15 条消息，经 Rust Collector 登记为 3 个 ready revision；原文身份及 SHA-256、SQL 回读、3/3 unchanged 重采、未新增 revision、SQLite quick_check/foreign_key_check 均通过。数据位于 `D:\BabataData`。20 个 file 字段均为搜索引用 PDF 元数据，未发现上传附件；附件二进制、深研产物、长对话分页及全量范围未验证。实测能力表仍为 `source.kimi: disabled`，但 Collector 接受并保存，已登记为策略执行缺陷；本试点不宣称通用 route 已启用。持久浏览器会话须串行调用。C1 未要求或触发，无新增模型费用。终态与缺陷：`D:\BabataData\04_runtime\receipts\kimi-pilot-20261026\terminal-receipt.json`、同目录 `defect-ledger.json`。 |
+
+| 元宝 2026-11-07 全量主权取回 | acquisition-closed-with-fidelity-limits / verified：新列表 36、旧会话列表 170 的并集为 198，默认历史另补 1 个真实 ID；最终逐 ID 核对仍为 199，199/199 正文与 790 条原生消息已保存并 fresh read-back，分页全部终止。本轮通过 GET /api/conv/{id} 补回 162 个旧 UUID 正文/670 条消息，保留此前 37 个成功正文；先前将 v1/detail 的 21000 解释为旧正文不可恢复的结论已被推翻。129 个有效媒体 URL 映射对应 82 份唯一文件（79 图片、2 PDF、1 TXT），图片解码、PDF 打开与全包 312 文件 hash 回读通过；旧包 449 文件再次校验通过且未覆盖。16 个资源 ID（13 张唯一图片）的普通下载、v1 签名原图与直接 COS 均返回平台 JPEG，和上传元数据声明大小不符；可用内容已存，原始上传字节无损未证实，逐项见 fidelity-ledger.json。2 个 example.com 示例图 URL 原文保留，不计用户附件。当前独立包入口 D:/BabataData/00_inbox/yuanbao-recovery-gap-20261107/README.md；终态 D:/BabataData/04_runtime/receipts/yuanbao-recovery-gap-20261107/terminal-receipt.json，取代前轮 source-losses 判断。仅证明当前账户 API 暴露集合，不声称服务器未暴露历史也已找回。该 acquisition 轮关闭时 source.yuanbao absent、正式 C0-C 登记 0；后续通过既有通用 writer 的正式登记与回读见下一行。原取回包、旧回执与保真限制保留；该轮适配器暂缓，后续用户显式恢复的限定开发结果见后续行，未启动 C1/C2。 |
+
+| 千问与元宝正式 C0 2026-11-08 核验 | `completed / C0 registered / verified`：千问 22 个 item、32 个 ready revision、当前 42 条原生行的范围与全部历史版本正文/资产 SHA-256 已只读核验，既有外卖排除与历史保留边界不变。元宝经现成 capture export --provider yuanbao --native-id 登记 199 个 item/199 个 ready revision；原始 JSON 逐字节保留，790 条消息身份与来源 URL 回读一致。129 个媒体 URL 对应 82 份唯一文件，在所属 revision 下形成 98 个媒体 attachment occurrence；另登记 20 份媒体映射清单，保留转码限制与示例占位引用。全部 managed 文件 size/hash、SQLite quick_check/foreign_key_check 和 pending/orphan 检查通过。该轮 source.yuanbao 尚 absent，采用通用导入；后续适配器限定测试见下一行。该轮未改产品实现、未直接写库、未新增远端访问或启动 C1/C2，零新增模型调用；用户验收不推断。冻结输入、构建身份、逐项矩阵和终态：D:/BabataData/04_runtime/receipts/qianwen-yuanbao-c0-20261108/terminal-receipt.json；独立核验见同目录 qianwen-verification.json 与 yuanbao-verification.json。 |
+
+| 元宝对话适配器 2026-11-08 限定开发验证 | `implemented / real-path verified`：source.yuanbao 已接统一 Collector，仅接受显式 ID/URL 与完成分页的原生 handoff。用户新建的两个测试会话在 Git 外隔离数据根完成候选、选择、4 条原生消息与 1 张图片的保存；消息、来源、时间、全部 managed SHA-256 回读通过；重新读取平台后 2/2 unchanged，缺少 fresh handoff 时 2/2 inaccessible，均未增 revision。已覆盖定向负例与长正文/changed 重采的隔离工程测试。原历史库 199 个会话的 item/revision/asset 行前后逻辑 hash 一致，无历史批次重跑。测试图平台 JPEG 为 79,437 字节，上传元数据为 471,438 字节，保留原声明和保存 hash，不声称上传原字节无损。适配器不内置账号发现/下载；其他媒体 shape、legacy 与长分页的适配器真实路径不外推。未启动 C1/C2，零新增模型调用，用户验收不推断。PR #218 已合并、Issue #217 已关闭；本地全套检查与 GitHub 必需检查通过；测试终态、构建与范围：D:/BabataData/04_runtime/receipts/yuanbao-adapter-20261108/real-v1/terminal-receipt.json；交付回执：同目录上级 terminal-receipt.json。尚未随新版本发布。 |
 
 旧失败批次和旧 candidate 只用于追溯，不作为当前产品定义或状态。
