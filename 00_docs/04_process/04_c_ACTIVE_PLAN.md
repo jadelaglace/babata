@@ -9,19 +9,9 @@
 
 ## 1. 当前活动项（恢复时先读，最多一个）
 
-<!-- CURRENT-ACTIVE: kimi-closure-20261111 -->
+<!-- CURRENT-ACTIVE: none -->
 
-### kimi-closure-20261111
-
-- 来源锚点：用户原话“替 Kimi 闭环”。
-- transition：none -> started。
-- transition evidence：本轮直接用户请求；Goal unknown，原计划无活动项。
-- 用户目标：接手 Issue #201 / PR #202，补齐工程与 docs 收尾。
-- 当前状态：339 条取回及验收回执已核对，371 文件只读 hash 通过；代码与 TC/recipe 已补齐，完整 gate 收敛中。
-- 声明终端：检查通过、合并 PR、写回 receipt/Usage 并清理活动项。
-- 受保护边界：不重跑历史回收，不写资料库或成品；source.kimi 保持 disabled；未解决缺口保留 #229。
-- 下一步：完成 full/boundary gate，更新并合并 PR #202。
-- 恢复入口：C:/Users/Aiano/Babata-issue-201；D:/BabataData/04_runtime/receipts/kimi-adapter-closure-20261111/。
+当前没有活动项。
 
 ## 2. 下次开工队列（禁止恢复时自动执行）
 
