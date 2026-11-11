@@ -39,7 +39,7 @@ tool version、调用量、价格依据和实际或估算成本。
 | `source.yitang` | `enabled` | 成对回放、渲染全文和正文图片的 prepared-manifest Collector 路线已通过真实样本并随 v0.2.0 发布 |
 | `source.qianwen` | `enabled`（当前构建） | 原生对话与媒体 C0 回收及外卖范围修正已验证；新增只读 OpenCLI `qwen detail-full` 适配器（`08_adapters/03_opencli/qwen/full.js`），两个测试会话已由 detail-full 真实读取；入口 PR #222 已合并、Issue #221 已关闭，PR #208 已合并，适配器尚未随新版本发布，不属于 v0.2.0 release 基线 |
 | `source.yuanbao` | `enabled`（当前构建） | 显式原生 handoff 接统一 Collector，文字/图片保存与 fresh 重采已在用户提供的两个测试对话验证；PR #218 已合并；不是账号全量任务，尚未随新版本发布 |
-| `source.kimi` | `disabled` | 显式 manifest/UUID/XID 读取实现已提交 PR #202；账号取回与用户验收见 §5/§11。引用顺序假修订、会话稳定性、附件二进制与长期重采缺口由 #229 保留，合并不等于启用 |
+| `source.kimi` | `disabled` | 显式 manifest/UUID/XID 读取及分页校验已随 PR #202 合并，Issue #201 已关闭；当前本地 full/boundary 与 GitHub 三类检查通过，未随新版本发布。账号取回与用户验收见 §5/§11；引用顺序假修订、会话稳定性、附件二进制与长期重采缺口由 #229 保留，合并不等于启用 |
 | `outputs.obsidian` | `unavailable / unplanned` | 不因专用 publisher 倒签 |
 | `outputs.web` | `unavailable / unplanned` | 未实现 |
 | external snapshot/diff/navigator | `candidate / not-adopted` | Backs 可先做有界 profile |
