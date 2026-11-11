@@ -35,7 +35,7 @@ function countMatchingKeys(value, matcher) {
 // Read both payloads over the page's own session, so a chat that the UI never renders
 // still has a complete, verifiable body. The session token stays inside the page.
 async function readConversation(page, chatId) {
-    const onKimi = await page.evaluate("location.hostname.endsWith('kimi.com')").catch(() => false);
+    const onKimi = await page.evaluate("['www.kimi.com', 'kimi.com'].includes(location.hostname)").catch(() => false);
     if (!onKimi) {
         await page.goto(KIMI_URL, { waitUntil: 'none' });
         await page.wait(1);
@@ -59,25 +59,38 @@ async function readConversation(page, chatId) {
             const chatResult = await post('GetChat', { chatId: ${JSON.stringify(chatId)} });
             if (chatResult.status === 404) return { removed: true };
             if (chatResult.status === 401) return { unauthorised: true };
+            if (!Number.isInteger(chatResult.status) || chatResult.status < 200 || chatResult.status >= 300) return { error: 'GetChat failed', status: chatResult.status };
             if (!chatResult.payload) return { error: 'GetChat returned non-JSON', status: chatResult.status };
+            if (chatResult.payload.chat?.id !== ${JSON.stringify(chatId)}) return { error: 'GetChat returned a different or missing chat' };
             const messages = [];
             const pages = [];
             let pageToken = '';
             let guard = 0;
+            const seenTokens = new Set();
             do {
                 const messageResult = await post('ListMessages', {
                     chatId: ${JSON.stringify(chatId)}, pageSize: 100, pageToken,
                 });
                 if (messageResult.status === 404) return { removed: true };
                 if (messageResult.status === 401) return { unauthorised: true };
+                if (!Number.isInteger(messageResult.status) || messageResult.status < 200 || messageResult.status >= 300) return { error: 'ListMessages failed', status: messageResult.status };
                 if (!messageResult.payload) {
                     return { error: 'ListMessages returned non-JSON', status: messageResult.status };
                 }
                 const body = messageResult.payload;
+                // Protobuf JSON may omit the default empty repeated field on the final page.
+                if (!body || typeof body !== 'object' || Array.isArray(body) ||
+                    (!Array.isArray(body.messages) && Object.keys(body).length !== 0)) {
+                    return { error: 'ListMessages returned an invalid messages page' };
+                }
                 const batch = Array.isArray(body.messages) ? body.messages : [];
                 messages.push(...batch);
                 pages.push({ count: batch.length, response: body });
                 pageToken = body.nextPageToken || body.next_page_token || '';
+                if (typeof pageToken !== 'string' || (pageToken && seenTokens.has(pageToken))) {
+                    return { error: 'ListMessages returned an invalid or repeated page token' };
+                }
+                if (pageToken) seenTokens.add(pageToken);
                 guard += 1;
             } while (pageToken && guard < ${MAX_MESSAGE_PAGES});
             return {

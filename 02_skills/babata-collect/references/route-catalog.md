@@ -19,6 +19,7 @@ In this repository, `DOC-ROUTES` at
 | `source.doubao` | `source-doubao.md` |
 | `source.qianwen` | `source-qianwen.md` |
 | `source.yuanbao` | `source-yuanbao.md` |
+| `source.kimi` | `source-kimi.md` |
 | `source.youtube` | `source-youtube.md` |
 | `source.yitang` | `source-yitang.md` |
 | Website, browser, desktop app, unknown or any other named platform | `source-browser-and-ui.md` |

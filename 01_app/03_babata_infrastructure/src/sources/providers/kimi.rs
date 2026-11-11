@@ -220,6 +220,14 @@ fn acquisition_from_detail(
             reason: "Kimi returned no structured conversation".to_owned(),
         });
     };
+    if rows.len() != 1
+        || row.get("ChatId").and_then(Value::as_str) != Some(chat_id)
+        || row.pointer("/Chat/id").and_then(Value::as_str) != Some(chat_id)
+    {
+        return Err(ApplicationError::Integrity(
+            "Kimi detail-full must return exactly the requested chat".to_owned(),
+        ));
+    }
     if row.get("Complete").and_then(Value::as_bool) != Some(true) {
         return Err(ApplicationError::Integrity(
             "Kimi message pagination was incomplete; C0 was not written".to_owned(),
@@ -237,6 +245,17 @@ fn acquisition_from_detail(
         .ok_or_else(|| {
             ApplicationError::Integrity("Kimi detail-full has no Messages array".to_owned())
         })?;
+    if row.get("MessageCount").and_then(Value::as_u64) != Some(messages.len() as u64)
+        || row.get("MessagePages").and_then(Value::as_u64).unwrap_or(0) == 0
+        || !matches!(
+            row.get("Termination").and_then(Value::as_str),
+            Some("no-token" | "empty-final-page")
+        )
+    {
+        return Err(ApplicationError::Integrity(
+            "Kimi detail-full has inconsistent message or termination evidence".to_owned(),
+        ));
+    }
     let payload = serde_json::to_string_pretty(&serde_json::json!({
         "platform": "kimi",
         "chat_id": chat_id,
@@ -321,6 +340,9 @@ fn classify_failure(stderr: &[u8]) -> ApplicationError {
     } else if normalized.contains("login")
         || normalized.contains("connect")
         || normalized.contains("permission")
+        || normalized.contains("http 401")
+        || normalized.contains("http 403")
+        || normalized.contains("session token is unavailable")
     {
         ApplicationError::Conflict(message)
     } else if normalized.contains("non-json") {
@@ -451,12 +473,14 @@ fn validate_manifest(manifest: &ChatManifest) -> Result<(), ApplicationError> {
         return Err(integrity("listing has no termination evidence"));
     }
     let last = enumeration.pages.len() - 1;
-    let mut listed = 0;
+    let mut listed = 0usize;
     for (index, page) in enumeration.pages.iter().enumerate() {
         if page.page != index + 1 || page.has_next != (index != last) {
             return Err(integrity("page chain is not contiguous or not terminated"));
         }
-        listed += page.count;
+        listed = listed
+            .checked_add(page.count)
+            .ok_or_else(|| integrity("page counts overflow"))?;
     }
     if manifest.chats.is_empty()
         || listed != enumeration.total_listed
@@ -727,5 +751,74 @@ mod tests {
         assert_eq!(envelope_context(&recent), RECENT_CONTEXT);
         recent.hierarchy.clear();
         assert_eq!(envelope_context(&recent), RECENT_CONTEXT);
+    }
+
+    #[test]
+    fn detail_requires_one_matching_complete_conversation() {
+        let candidate = discover(&manifest()).unwrap().remove(0).summary;
+        let valid = serde_json::json!([{
+            "ChatId": UUID_ID, "Chat": {"id": UUID_ID},
+            "Messages": [{"id": "m1", "content": "native text"}],
+            "MessageCount": 1, "MessagePages": 1,
+            "Complete": true, "Termination": "no-token"
+        }]);
+        let first = acquisition_from_detail(&candidate, UUID_ID, &valid).unwrap();
+        let AcquisitionOutcome::Found {
+            candidate: envelope,
+            assets,
+        } = first
+        else {
+            panic!("expected found")
+        };
+        assert!(assets.is_empty());
+        assert_eq!(envelope.native_id.as_deref(), Some(UUID_ID));
+        let CandidatePayload::Text { text } = &envelope.payload;
+        assert_eq!(envelope.payload_sha256, Sha256::of_bytes(text.as_bytes()));
+        let restored: Value = serde_json::from_str(text).unwrap();
+        assert_eq!(restored["messages"], valid[0]["Messages"]);
+        let AcquisitionOutcome::Found {
+            candidate: repeated,
+            ..
+        } = acquisition_from_detail(&candidate, UUID_ID, &valid).unwrap()
+        else {
+            panic!("expected found")
+        };
+        assert_eq!(envelope.payload_sha256, repeated.payload_sha256);
+        for (key, value) in [
+            ("ChatId", Value::from(XID_ID)),
+            ("Chat", serde_json::json!({"id": XID_ID})),
+            ("Complete", Value::from(false)),
+            ("MessageCount", Value::from(2)),
+            ("MessagePages", Value::from(0)),
+            ("Termination", Value::from("page-limit")),
+            ("Messages", Value::Null),
+        ] {
+            let mut corrupt = valid.clone();
+            corrupt[0][key] = value;
+            assert!(
+                matches!(
+                    acquisition_from_detail(&candidate, UUID_ID, &corrupt),
+                    Err(ApplicationError::Integrity(_))
+                ),
+                "{key}"
+            );
+        }
+        let multiple = serde_json::json!([valid[0], valid[0]]);
+        assert!(acquisition_from_detail(&candidate, UUID_ID, &multiple).is_err());
+        assert!(matches!(
+            acquisition_from_detail(&candidate, UUID_ID, &serde_json::json!([])),
+            Ok(AcquisitionOutcome::Inaccessible { .. })
+        ));
+        for message in [
+            "Kimi session expired (HTTP 401)",
+            "ListMessages HTTP 403",
+            "Kimi session token is unavailable in the page",
+        ] {
+            let stderr = serde_json::json!({"error": {"message": message}}).to_string();
+            assert!(matches!(
+                classify_failure(stderr.as_bytes()),
+                ApplicationError::Conflict(_)
+            ));
+        }
     }
 }

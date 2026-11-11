@@ -60,6 +60,26 @@
 预期：正文和媒体均可核对，声明上传大小与平台副本大小分别保留；平台转码不冒称上传原字节无损。
 只证明实际覆盖的消息/媒体 shape，不扩张到账号全量或自动启动 C1/C2。
 
+### TC-01D：Kimi 显式清单与完整消息读取
+
+1. 在 Git 外准备 `babata.kimi-chat-manifest/v1` 清单：readiness 为 prepared，account 仅含
+   display_name；enumeration 包含 method=`ChatService/ListChats`、captured_at、terminated、
+   total_listed 与连续的 pages（page/count/has_next）；chats 仅含 chat_id/title/update_time。
+   单独留存原列表响应、工具版本、页首尾 ID 与 token hash；清单本身不保存 token/credential。
+2. 校验唯一 UUID/XID、非空清单、页数与条目总数一致、最后一页 has_next=false；破坏 schema、
+   readiness、字段、计数、页链、ID 或终止证据必须拒绝；manifest 不枚举账号，也不采集未选对象。
+3. 运行 `node --experimental-vm-modules --test 08_adapters/03_opencli/kimi/detail-full.test.js`。
+   覆盖显式 ID/URL、长结构化消息、完整 token 分页、protobuf 空尾页、错误 HTTP/JSON、401 有界
+   重试、404、身份错配、异常页与重复 token；50 页上限仍有 token 时 Complete=false。
+4. Rust provider 测试须拒绝多行、外来 chat、消息数不符和未结束分页；同一有效输入产生相同
+   payload hash。404 映射 removed，401/403/缺会话映射 inaccessible，不写新正文。
+5. 只有运行时明确启用后，才能在隔离数据根进行 discover/select/save/read-back，覆盖旧 XID
+   和 UUID；重采未变化响应不得新增 revision/asset；未选择和原已保存对象不被改写或删除。
+
+预期：单条消息分页结束与账号列表穷尽分开验证；仅元数据的附件不声称二进制完整。引用顺序变化
+造成的假修订必须保留为已知缺陷，不能用相同字节输入测试宣称已修复；旧真实运行证据也不能
+自动启用 capability。本场景不启动 C1/C2、不发送或删除远端消息。
+
 ## 3. TC-02：局部失败、重试与重收集
 
 追溯：`AC-02`。
