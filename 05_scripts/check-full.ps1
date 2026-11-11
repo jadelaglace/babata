@@ -48,6 +48,10 @@ if ($Scope -in @('All', 'Rust')) {
 }
 
 if ($Scope -in @('All', 'Adapters')) {
+    Invoke-TimedCheck 'Kimi OpenCLI tests' {
+        node --experimental-vm-modules --test (Join-Path $repo '08_adapters/03_opencli/kimi/detail-full.test.js')
+        Assert-NativeCommandPassed 'Kimi OpenCLI tests'
+    }
     Invoke-TimedCheck 'Qianwen OpenCLI tests' {
         node --experimental-vm-modules --test (Join-Path $repo '08_adapters/03_opencli/qwen/full.test.js')
         Assert-NativeCommandPassed 'Qianwen OpenCLI tests'

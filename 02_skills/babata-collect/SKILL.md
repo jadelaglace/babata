@@ -36,6 +36,7 @@ Then read exactly one relevant source reference:
 - 豆包: [references/source-doubao.md](references/source-doubao.md)
 - 千问: [references/source-qianwen.md](references/source-qianwen.md)
 - 元宝: [references/source-yuanbao.md](references/source-yuanbao.md)
+- Kimi: [references/source-kimi.md](references/source-kimi.md)
 - YouTube: [references/source-youtube.md](references/source-youtube.md)
 - 一堂 / Yitang: [references/source-yitang.md](references/source-yitang.md)
 - Website, browser, desktop app, or unknown source:
