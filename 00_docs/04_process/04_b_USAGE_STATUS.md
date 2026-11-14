@@ -139,7 +139,7 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 | 项目 | 状态 | 下一授权条件 |
 | --- | --- | --- |
 | P0-P9 Docs 收束 | `completed / merged` | PR #194；merge `aaa4d0fe18c378cb5e58751f1eb981608673466e`；旧全文冻结于 `9182a77` |
-| #233 搜索调研与 PNG 原子 | `implemented / local-verified / PR-open` | #210 / Epic #203 第一条；PR #234，两个原子可独立及组合，本地 .agents 已安装，旧报告入口复用。Rust 1.100.0 最终 All gate 85.4s 通过；远端 CI 按该 PR 当前 SHA 查询，不从本地通过推断。未合并、未发布，宿主自动选择和用户验收不推断 |
+| #233 搜索调研与 PNG 原子 | `implemented / verified / delivered-for-review` | #210 / Epic #203 第一条；PR #234 保持 open。两原子独立及组合、本地 .agents 入口和旧报告兼容已验证；Rust 1.100.0 最终 All gate 85.4s 通过，远端 run `43575162022` 在 `5273e00` 的 Rust／适配器／文档全部成功。后继仅状态维护按 scoped docs 检查；最终 head/CI 身份查外部 terminal receipt。不合并、不发布，宿主自动选择和用户验收不推断 |
 | 一堂系列后续内容 | `v0.2.0 route released / future scope not-authorized` | 用户提供下一组明确 replay/document pair |
 | Backs 记忆档案与年度归档分析 | `externalized / closed` | 最终自主库为 `E:\Backs`：12 个快照、34,701 个文件、216,126,221,452 个声明字节通过终态审计；`_VAULT\Obsidian` 保存年度阅读导航，`_records` 保存原始目录树和 34,701 条 occurrence，`managed-records` 保存 1,822 个 C0、4,220 个派生记录和 5,936 个逐项 SHA-256 通过的 blob。目录骨架全量演练与 12 快照实物抽样恢复通过。D 盘 Backs 来源、views、quarantine、R0-R6 workspace、执行脚本及专属 C0/C1 blob 已清理；共享 SQLite 仅保留不可变审计元数据，7 个跨来源共享 C0 哈希保留。终态见 `E:\Backs\_VAULT\_records\externalization-terminal-receipt.json`。 |
 | MBA 课程库收口 | `in-place / closed` | MBA 不迁移到 E 盘。D 盘 Babata C0 保留 763 个下载项、758 个唯一哈希和 106,583,439,764 字节原件；C1 保留 3,351 条派生记录，C2 保留 763 组 suggestion/review/semantic entry。C 盘最终 Obsidian 保留 13 门课程、784 个文件。763 条原下载路径清单与恢复脚本可重建最初目录结构。184 个 MBA/高顿 workspace、22 个 execution round 及明确的 MBA 旧 archive/receipt/lock/history 已清理，C0/C1/C2 实体与当前 Obsidian 未删除。终态见 `D:\BabataData\04_runtime\receipts\mba-closure-20260919\terminal-receipt.json`。 |
