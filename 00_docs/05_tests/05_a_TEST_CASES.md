@@ -259,6 +259,16 @@ knowledge/log/insight、verified package、唯一 live、证据回链和隔离�
 5. 真实研究结论直接调用渲染生成 PNG，不自动入库。分别记录独立两条路径和组合结果，
    研究核证、机械 QC、视觉检查及用户接受保持分离。
 
+### TC-08V：静态素材加工与视觉检查
+
+1. 单元／契约：over 手算值、alpha 与可见差异分列、尺寸保护、原件 hash 不变、symlink／超大／损坏输入
+   拒绝、同 run 复用与异请求冲突、manifest 缺失或篡改不 ready、适配器对空／截断／坏 JSON 判失败。
+2. 冻结 48 个逻辑验证项（V01–V16 识别、R01–R12 加工、Q01–Q12 质检反误报、B01–B08 边界路由），
+   开轮前冻结输入 hash、真值、profile、阈值、后端身份与调用预算；冻结轮内不边测边改。
+3. 至少一条真实语义视觉路径和一条真实复杂抠图路径；缺失时对应项 blocked，不用简单方法顶替。
+4. 交付逐题输入、已知答案、实际答案／图片、状态、耗时与真实 usage；失败、未测与修复后新变体复验分开。
+   #233 原子测试与正式 PNG 生命周期回归独立记录，不并入 48 题通过数。
+
 - authority/path/checker 变化必须运行文档 traceability、provenance 和 recovery-hook 检查。
 - 关键 fail-closed 规则至少有一个 mutation/negative test，证明故意破坏会被拒绝。
 - check 成功只证明输入范围和规则实际覆盖的内容；实时 capability、usage 和用户 acceptance 另行核对。

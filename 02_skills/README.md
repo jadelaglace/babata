@@ -6,7 +6,8 @@
 ├── babata-collect/           # 唯一收集入口：显式范围 -> C0
 ├── babata-clean/             # 清洗入口：C0 -> 可追溯 C1/C1B
 ├── babata-research/          # 独立网络搜索与调研，不自动登记 C0
-└── babata-render/            # 独立 PNG 输出，不研究／不改写内容
+├── babata-render/            # 画面制作：PNG 输出与静态素材加工，不研究／不改写内容
+└── babata-vision/            # 视觉：识别、比较、质量检查与诊断证据，不改素材
 ```
 
 ## 规则
@@ -19,3 +20,5 @@
 6. runtime capability 以 `babata --json capabilities list` 为准；当前使用结果只查 `DOC-USAGE`。
 7. 搜索调研与 PNG 可各自使用；调研汇报只是两者的组合，非第三套知识／状态权威。
    `research.mjs` 只记录宿主实际观察；正式 PNG 通过原 outputs 服务接纳。依赖与调用见各自 reference。
+8. 制作（render）与检查（vision）分开：修改透明内容归 render，测量／检查透明属性归 vision；
+   两者共用 `image_ops.py`／`vision_backend.py`，结果写 Git 外 run 目录，不写正式库，不新增第三个视觉入口。

@@ -1,4 +1,4 @@
 interface:
-  display_name: "Babata PNG 渲染"
-  short_description: "Render existing content into verified PNG images"
-  default_prompt: "Use $babata-render to render this existing content into PNG and review its visual completeness."
+  display_name: "Babata 画面制作"
+  short_description: "Render content to PNG and cut out, composite or resize static image assets"
+  default_prompt: "Use $babata-render to produce this PNG or image asset as new files and report parameters, hashes and limits."
