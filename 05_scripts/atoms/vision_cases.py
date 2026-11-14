@@ -840,7 +840,8 @@ def _b03(root, c, ins, r, step, _):
     real = r / "real"; real.mkdir(parents=True, exist_ok=True); shutil.copyfile(ins[0], real / "x.png")
     jn = r / "junction"
     if os.name == "nt" and not jn.exists():
-        subprocess.run(["cmd", "/c", "mklink", "/J", str(jn), str(real)], capture_output=True)
+        import _winapi
+        _winapi.CreateJunction(str(real), str(jn))
     out["junction_exit"] = step("probe via junction", ops("probe", jn / "x.png"))["exit"]
     out["in_git_exit"] = step("output inside Git", ops("resize", ins[0], "--width", "10", "--out", HERE / "b03-should-not-exist"))["exit"]
     out["in_git_created"] = (HERE / "b03-should-not-exist").exists()

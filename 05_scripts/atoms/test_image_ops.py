@@ -135,7 +135,8 @@ def test_input_through_junction_refused(tmp_path):
     real = tmp_path / "real"; real.mkdir()
     save(real / "x.png", solid(4, 4, (1, 1, 1, 255)))
     junction = tmp_path / "jn"
-    subprocess.run(["cmd", "/c", "mklink", "/J", str(junction), str(real)], check=True, capture_output=True)
+    import _winapi
+    _winapi.CreateJunction(str(real), str(junction))
     run(["probe", str(junction / "x.png")], expect=2)
 
 
