@@ -355,6 +355,15 @@ pub struct StartCollectionCommand {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CollectionCommitOperation {
+    pub protocol_version: String,
+    pub request_key: String,
+    pub input_sha256: Sha256,
+    pub selection: babata_domain::CollectionSelection,
+    pub result: Option<babata_domain::CollectionItemStatus>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RetryCollectionItemCommand {
     pub session_id: CollectionSessionId,
     pub candidate_id: String,

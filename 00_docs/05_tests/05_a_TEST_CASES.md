@@ -10,6 +10,12 @@
 
 ## 2. TC-01：来源候选与选择性收集
 
+收集原子补充（AC-02/09）：隔离根与冻结纯文本 handoff，验证原键重投、异输入冲突、并发、
+新会话 unchanged／changed、取消与重启。注入 C0 ready 后 collection 终态／operation 结果
+回写前中断，原键恢复必须保持 revision/observation 数不变；损坏 raw_text、非 ready、缺页、
+声明媒体及版本不符必须拒绝。验证旧数组／v2 成功 JSON、错误 stdout/stderr、非零退出和
+畸形 envelope；旧 CLI 路径回归。真实纯文本样本只能证明该范围，不外推附件／长分页。
+
 追溯：`AC-01`。
 
 1. 用真实授权来源发现多个带正文/附件和上下文的候选。

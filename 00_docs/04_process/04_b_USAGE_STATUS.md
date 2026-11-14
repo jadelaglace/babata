@@ -137,6 +137,7 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 
 | 项目 | 状态 | 下一授权条件 |
 | --- | --- | --- |
+| #210 最小收集原子样板 | `implemented / isolated-text verified / PR #232 open` | 独立分支 `codex/collect-atom-210`；冻结豆包纯文本的同键回放、输入冲突、Collector 写互斥与持久提交恢复已覆盖。10 个 CLI 集成测试、Rust 1.94.0 full gate、真实两消息隔离样本及代码提交的 GitHub Rust／适配器／架构文档检查通过；未改正式库、未启动 C1/C2，不代表附件／长分页／全账号／自主 runtime 或整个 #210/Epic 完成，未发布且不自动合并。交付终态见 §11。 |
 | P0-P9 Docs 收束 | `completed / merged` | PR #194；merge `aaa4d0fe18c378cb5e58751f1eb981608673466e`；旧全文冻结于 `9182a77` |
 | 一堂系列后续内容 | `v0.2.0 route released / future scope not-authorized` | 用户提供下一组明确 replay/document pair |
 | Backs 记忆档案与年度归档分析 | `externalized / closed` | 最终自主库为 `E:\Backs`：12 个快照、34,701 个文件、216,126,221,452 个声明字节通过终态审计；`_VAULT\Obsidian` 保存年度阅读导航，`_records` 保存原始目录树和 34,701 条 occurrence，`managed-records` 保存 1,822 个 C0、4,220 个派生记录和 5,936 个逐项 SHA-256 通过的 blob。目录骨架全量演练与 12 快照实物抽样恢复通过。D 盘 Backs 来源、views、quarantine、R0-R6 workspace、执行脚本及专属 C0/C1 blob 已清理；共享 SQLite 仅保留不可变审计元数据，7 个跨来源共享 C0 哈希保留。终态见 `E:\Backs\_VAULT\_records\externalization-terminal-receipt.json`。 |
@@ -153,10 +154,26 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 
 这些项目不是 Active Plan 队列，不能在 session 恢复时自动执行。
 
+### 10.1 #210：首次业务能力原子化的有界探索闭环
+
+2026-11-14，用户在讨论“这个算不算原子化的一个探索闭环”后明确要求“ok gh上记录清楚 docs”。
+本轮结论为：探索验证闭环成立，全面原子化、合并发布和整体产品验收尚未完成。
+
+- 原子粒度已验证为一个可独立理解、调用和验证的业务动作：将既有 Collector 会话中的冻结纯文本候选可靠登记为 C0；不是一个函数一个原子，也不是一个命令一个 Skill。
+- 保留完整收集／知识宇宙路径，增量暴露能力；CLI 与 Skill 调用说明复用 Collector/Capture 和唯一 Rust writer，没有第二套收集系统。
+- 输入／授权／身份／合同版本、机器结果、错误、幂等、查询与恢复已形成有界约定；同键回放与新的真实观察分开，不以反复抓取掩盖未知结果。
+- 已有实现、10 个 CLI 集成测试、正式 full gate、真实冻结两消息隔离样本和独立 PR #232，证据入口见 §11；真实样本只证明这一颗原子的登记／回放／查询，不是新一轮在线获取。
+- 因此证明现有 Babata 可以不推倒重来，逐步提炼可调用、可验证、可组合的业务零件；跨工作流广泛复用仍待真实 caller 验证，不据此先建通用原子平台。
+
+这是有界样板的探索与工程交付结论，不把整个收集者、图片／附件／长分页／全账号、全部知识宇宙链路的原子化或自主 runtime 标为完成。
+PR #232 仍未合并、未发布；#210 和 Epic #203 保持开放。用户同意记录本结论，不等于授权 merge／发布，也不是对全部能力或产品终验的替代。
+后续仍按“先样板、能用就不折腾、按实际需求逐个提炼”推进；本次只记录，不自动启动下一原子或重跑已完成样本。
+
 ## 11. 主要证据入口
 
 | 使用事实 | Evidence 入口 |
 | --- | --- |
+| #210 收集原子独立实施样板 | 用户授权“跑 不用和之前合并”；独立 PR #232，不混旧 WBS／采集批次，不自动 merge。`D:/BabataEvidence/collect-atom-implementation-20261114/REPORT.md`、`delivery-receipt.json`、`real-final/receipt.json` 与 `full-final.log` 保存终态。真实样本复用先前授权冻结捕获；源码仅留虚构测试身份，正文／原始响应／隔离库留 Git 外。恢复测试含持久状态故障注入，不冒称真实 kill 实验；全 Epic 及用户验收不推断。 |
 | #220 文件协议实施与真实验收 | `BABATA_EVIDENCE_HOME/issue220-implementation-20261110/REPORT.md`；实际位置和六个组成见同目录 `CURRENT-BATCH.json`；原终验 `post-retirement-audit-20261111/terminal.json`，八项 AC 见 `closure-20261111/AC-MATRIX.json`。有界收尾补备：`BABATA_EVIDENCE_HOME/file-protocol-supplement-20261114/REPORT.md`、`terminal.json`、`inputs.ndjson`、`ACCOUNTING.json`；原请求／授权／清理回执不改。旧 dry 不能替代真实验收。 |
 | 千问全量可见集合与外卖剔除 | `D:\BabataData\04_runtime\staging\model-workspaces\qianwen-chat-recovery-20261107-v1\terminal-receipt.json`；4 项试点后完成其余 18 项；原生行、范围与媒体 SHA-256 回读通过，fresh API 重采 13 unchanged / 9 changed（原生 HTML/JS 与渲染字段变化）。当前 C0 及历史保留边界见 §5，逐项矩阵与媒体清单见回执。PR #208 已合并、Issue #204–207 已关闭；终态全套检查通过，日志为同目录 `full-check-closure.log`。 |
 | 千问轻量对话适配器 2026-11-09 收尾 | `implemented / real-path verified`：`08_adapters/03_opencli/qwen/full.js` 只读调用官方消息接口，接受显式 ID/URL；校验 HTTP、业务码、会话归属和 `have_next_page=false`，完整返回原生行。两个既有测试会话经此入口真实读取，各 1 个原生会话行，request_messages / response_messages 数组全部保留；不把对话界面气泡数当原生行数。6 个定向测试覆盖长正文、身份、HTTP/业务错误与分页负例，已接工程 gate；OpenCLI validate 通过。仅单页最多 100 行，分页未结束即拒绝，不下载附件或写 C0，未启动 C1/C2；尚未随新版本发布，用户验收不推断。PR #222 已合并、Issue #221 已关闭；本地全套与 GitHub Rust/适配器/文档检查通过；交付与原生读取证据：D:/BabataData/04_runtime/receipts/qianwen-adapter-closure-20261109/terminal-receipt.json。 |

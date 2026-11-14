@@ -1,5 +1,7 @@
 use std::collections::HashSet;
 
+mod commit;
+
 use babata_domain::{
     CandidatePayload, CandidateSummary, CapabilityStatus, CollectionItemState,
     CollectionItemStatus, CollectionSelection, CollectionSession, CollectionSessionId,
@@ -111,6 +113,14 @@ where
         &self,
         selection: CollectionSelection,
     ) -> Result<Vec<CollectionItemStatus>, ApplicationError> {
+        let _guard = self.repository.acquire_collection_write()?;
+        self.select_locked(selection)
+    }
+
+    fn select_locked(
+        &self,
+        selection: CollectionSelection,
+    ) -> Result<Vec<CollectionItemStatus>, ApplicationError> {
         if !selection.confirmed {
             return Err(ApplicationError::Conflict(
                 "collection scope was not confirmed; C0 remains unchanged".to_owned(),
@@ -181,6 +191,7 @@ where
         &self,
         command: RetryCollectionItemCommand,
     ) -> Result<CollectionItemStatus, ApplicationError> {
+        let _guard = self.repository.acquire_collection_write()?;
         let current = self
             .status(&command.session_id)?
             .into_iter()
@@ -212,6 +223,12 @@ where
 
     #[allow(clippy::too_many_lines)]
     pub fn recollect(&self, item_id: &ItemId) -> Result<RecollectionOutcome, ApplicationError> {
+        let _guard = self.repository.acquire_collection_write()?;
+        self.recollect_locked(item_id)
+    }
+
+    #[allow(clippy::too_many_lines)]
+    fn recollect_locked(&self, item_id: &ItemId) -> Result<RecollectionOutcome, ApplicationError> {
         let (session_id, candidate_id) = self
             .repository
             .latest_saved_for_item(item_id)?

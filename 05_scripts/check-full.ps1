@@ -48,6 +48,9 @@ if ($Scope -in @('All', 'Rust')) {
 }
 
 if ($Scope -in @('All', 'Adapters')) {
+    Invoke-TimedCheck 'Doubao OpenCLI JSON contracts' {
+        & (Join-Path $PSScriptRoot 'test-doubao-opencli-json.ps1')
+    }
     Invoke-TimedCheck 'Kimi OpenCLI tests' {
         node --experimental-vm-modules --test (Join-Path $repo '08_adapters/03_opencli/kimi/detail-full.test.js')
         Assert-NativeCommandPassed 'Kimi OpenCLI tests'

@@ -69,6 +69,26 @@ retried once without restarting successful items.
 
 ## Fidelity and recollection
 
+### Frozen text commit atom (additive)
+
+For one complete, validated plain-text handoff already frozen in a Collector session:
+
+~~~text
+babata --json collector commit --request-key <stable-intent-key> --session <session_id> --candidate <id> --scope <selected-scope> --authorisation <same-reference> --confirm
+babata --json collector operation --request-key <stable-intent-key>
+~~~
+
+The version is babata.collection.commit/v1. Keep the same key and arguments for an interrupted
+intent; replay verifies persisted C0 and does not acquire again or add an observation. A busy
+Collector returns conflict with collector_busy: query first, then retry the same key when idle.
+Different frozen input or scope with the same key conflicts. A new live observation starts a new
+session and key; unchanged content may add that observation but not a revision. A failed terminal
+result is not success; preserve it and start a new explicitly scoped observation after repair.
+Do not use this initial atom for images, attachments, unknown block types, incomplete pagination,
+or live-only candidates; retain the existing complete acquisition/select path for those shapes.
+Only result.state=saved with item/revision and successful readback is registration. A null result
+is pending/unknown: rerun the original commit to reconcile. Cancellation never deletes saved C0.
+
 - Preserve stable IDs, message order, roles, text and declared attachment/media facts.
 - Exclude expiring signed URLs and transient block IDs from the stable content fingerprint.
 - Do not call C1 or interpret the conversation; collection ends at C0 read-back.

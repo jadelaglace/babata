@@ -12,3 +12,6 @@
 
 Only Rust infrastructure applies these migrations. Empty phase directories are
 intentional until their activation phase.
+
+Collection extension 0006 adds durable bounded commit/replay bindings. These remain
+in the same raw authority and must be retained for safe replay and recovery.

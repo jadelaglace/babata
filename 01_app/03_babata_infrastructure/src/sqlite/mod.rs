@@ -23,6 +23,7 @@ pub use migrate::{migrate_knowledge, migrate_raw};
 pub use raw_repository::SqliteRawRepository;
 pub use read_projection::SqliteReadProjection;
 
+mod collection_commit;
 mod collection_migrate;
 mod collection_repository;
 
@@ -238,6 +239,14 @@ pub mod test_support {
     use crate::paths::DataPaths;
 
     use super::open_connection;
+
+    /// Explicit test-only fault injection; never available in production builds.
+    ///
+    /// # Panics
+    /// Panics if the isolated test database cannot be opened.
+    pub fn open_raw_connection(path: &Path) -> rusqlite::Connection {
+        open_connection(path, 5_000).expect("isolated test database")
+    }
 
     #[derive(Debug, Clone)]
     pub struct CaptureOperationSnapshot {

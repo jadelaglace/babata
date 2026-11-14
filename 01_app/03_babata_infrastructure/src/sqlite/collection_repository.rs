@@ -13,6 +13,40 @@ use rusqlite::{OptionalExtension, Row, params};
 use super::SqliteRawRepository;
 
 impl CollectionRepositoryPort for SqliteRawRepository {
+    fn acquire_collection_write(
+        &self,
+    ) -> Result<
+        Box<dyn babata_application::ports::collection_repository::CollectionWriteGuard>,
+        ApplicationError,
+    > {
+        self.acquire_collection_write_impl()
+    }
+    fn bind_commit_operation(
+        &self,
+        operation: &babata_application::CollectionCommitOperation,
+    ) -> Result<babata_application::CollectionCommitOperation, ApplicationError> {
+        self.bind_commit_operation_impl(operation)
+    }
+    fn commit_operation(
+        &self,
+        key: &str,
+    ) -> Result<Option<babata_application::CollectionCommitOperation>, ApplicationError> {
+        self.commit_operation_impl(key)
+    }
+    fn complete_commit_operation(
+        &self,
+        key: &str,
+        result: &CollectionItemStatus,
+    ) -> Result<babata_application::CollectionCommitOperation, ApplicationError> {
+        self.complete_commit_operation_impl(key, result)
+    }
+    fn committed_candidate(
+        &self,
+        session: &CollectionSessionId,
+        candidate: &str,
+    ) -> Result<Option<(ItemId, RevisionId)>, ApplicationError> {
+        self.committed_candidate_impl(session, candidate)
+    }
     fn create_session(&self, session: &CollectionSession) -> Result<(), ApplicationError> {
         self.lock()?
             .execute(
@@ -44,7 +78,8 @@ impl CollectionRepositoryPort for SqliteRawRepository {
         let changed = self
             .lock()?
             .execute(
-                "UPDATE collection_sessions SET state = ?2, updated_at = ?3 WHERE session_id = ?1",
+                "UPDATE collection_sessions SET state = ?2, updated_at = ?3
+                 WHERE session_id = ?1 AND (state != 'cancelled' OR ?2 = 'cancelled')",
                 params![
                     session_id.to_string(),
                     session_state(state),
@@ -53,6 +88,12 @@ impl CollectionRepositoryPort for SqliteRawRepository {
             )
             .map_err(storage)?;
         if changed == 0 {
+            if self
+                .session(session_id)?
+                .is_some_and(|session| session.state == CollectionSessionState::Cancelled)
+            {
+                return Ok(());
+            }
             return Err(ApplicationError::NotFound(format!(
                 "collection session: {session_id}"
             )));
