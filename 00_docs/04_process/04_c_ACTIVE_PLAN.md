@@ -9,27 +9,13 @@
 
 ## 1. 当前活动项（恢复时先读，最多一个）
 
-<!-- CURRENT-ACTIVE: issue-235-render-vision -->
+<!-- CURRENT-ACTIVE: none -->
 
-### issue-235-render-vision
-
-- 来源锚点：[#235](https://github.com/jadelaglace/babata/issues/235)；候选
-  [`PRD`](../../proposals/2026-11-15-render-vision/PRD.md) 与
-  [`架构建议`](../../proposals/2026-11-15-render-vision/ARCHITECTURE.md)。
-- transition：2026-11-15 用户对三项拍板原话“全部接受”（静态首版边界、本地确定性优先＋真实后端、
-  48 题与调用上限作开轮起点），由 held 晋升为活动项。
-- transition evidence：`D:/BabataEvidence/render-vision-235/AUTHORIZATION-20261115.md`。
-- 用户目标：增强 babata-render（素材加工）、新建 babata-vision（识别／检查），低耦合真实后端，
-  带测试题与结果汇报。
-- 当前状态：分支 `codex/render-vision-proposal-235`（依赖 #234 基线）；合同、实现、两 Skill 与契约测试在推进，
-  48 题冻结轮见 Evidence 同目录。
-- 声明终端：48 题冻结轮跑完并交付逐题结果、修复后复验、旧回归记录，独立 PR 打开；不自动 merge／release。
-- 受保护边界：不改工厂库与 Hermes；不新增正式 writer；语义调用 ≤24＋4 次重试、费用上限见授权文件；
-  只外传自造或公开许可题图。
-- 下一步：按 Evidence 中 `RUN-STATE.json` 的最后完成阶段继续；不重跑已终态的冻结轮。
-- 恢复入口：`D:/BabataEvidence/render-vision-235/RUN-STATE.json`。
-
-独立 PR #234 的审阅、合并、发布和用户验收未被自动授权，不从旧 Goal 或摘要重跑实施。
+当前没有待执行开发项。#235 render＋vision 已按用户 2026-11-15“全部接受”实施到声明终端：
+冻结 48 题、轮后修复与新变体复验、既有回归和独立 PR 交付；结果见 `DOC-USAGE`，
+证据根 `D:/BabataEvidence/render-vision-235/`（`REPORT.md`、`RUN-STATE.json`）。Round-1 已终态，
+不从摘要或旧 Goal 重跑。PR 的审阅、合并、发布、技能安装和用户验收未被自动授权。
+独立 PR #234 同样保持待审，不从旧 Goal 或摘要重跑实施。
 
 ## 2. 下次开工队列（禁止恢复时自动执行）
 
