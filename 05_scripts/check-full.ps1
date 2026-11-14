@@ -48,6 +48,10 @@ if ($Scope -in @('All', 'Rust')) {
 }
 
 if ($Scope -in @('All', 'Adapters')) {
+    Invoke-TimedCheck 'Research and offline PNG atom tests' {
+        node --test (Join-Path $repo '05_scripts/atoms/research.test.mjs') (Join-Path $repo '05_scripts/atoms/render.test.mjs')
+        Assert-NativeCommandPassed 'content atom tests'
+    }
     Invoke-TimedCheck 'Kimi OpenCLI tests' {
         node --experimental-vm-modules --test (Join-Path $repo '08_adapters/03_opencli/kimi/detail-full.test.js')
         Assert-NativeCommandPassed 'Kimi OpenCLI tests'

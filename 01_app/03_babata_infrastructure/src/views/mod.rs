@@ -4,6 +4,7 @@ pub mod exports;
 pub mod manifest;
 pub mod obsidian;
 pub mod output;
+pub(crate) mod png;
 pub mod sublibrary;
 
 pub use dense_expression::DenseExpressionViewStore;

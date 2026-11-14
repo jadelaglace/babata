@@ -98,6 +98,21 @@ validate scope -> stage metadata/assets -> write transaction -> finalize assets
 
 ## 7. 数据根与运行边界
 
+### 搜索调研与 PNG 原子边界
+
+- `babata-research` 由宿主推理／搜索工具执行查询和核证；配套 run helper 只保存 Git 外冻结请求、
+  搜索观察、正文快照、结论及 hash，不是搜索 provider 或正式知识 writer。网页正文仍是外部候选，
+  综合结论是 machine 衍生物；研究完成不启用 disabled route 或绕过来源接纳。
+- `babata-render` 的浏览器 helper 接受冻结 Markdown/HTML 及限定本地资产，提供 long 与显式
+  `.page` 结构分页；页面禁用脚本、网络及登录态，资源经白名单提供，拒绝越界路径。它不是强 OS 沙箱。
+- 正式 `OutputKind::Png` 复用 `OutputService`/`OutputViewStore`。Rust 将受控内容交可替换 Node
+  renderer，并验证返回 PNG/元数据后写同一 C2 manifest；外围 helper 不写正式库／package。
+  凭据和浏览器依赖只在本地配置。renderer 不可用明确返回错误，不静默降级成文字。
+- PNG verify 验证冻结产物 hash、渲染元数据及当前权威输入绑定，不调用浏览器重新截图做字节比较。
+  明确 rebuild 才创建新 generation，旧 manifest 链保留；只在验证成功后返回 succeeded。
+- 临时渲染写 Assistant 工作区，持久研究／视觉证据写 Evidence。重放回读已存结果，输入改变
+  拒绝同 run；刷新／新内容用新 run。helper 的局部 receipt 不成为第二知识或输出权威。
+
 活动 `BABATA_DATA_HOME` 顶层保持六个编号分区：
 
 ```text

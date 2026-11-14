@@ -108,7 +108,7 @@ impl YuqueOpenCliAdapter {
                         String::from_utf8_lossy(&output.stderr).trim()
                     )));
                 }
-                if fs::metadata(&path).map(|meta| meta.len()).unwrap_or(0) == 0 {
+                if fs::metadata(&path).map_or(0, |meta| meta.len()) == 0 {
                     return Err(ApplicationError::Asset(
                         "Yuque image download produced an empty file".to_owned(),
                     ));

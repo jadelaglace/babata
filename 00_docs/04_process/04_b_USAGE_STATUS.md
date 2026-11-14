@@ -35,6 +35,7 @@ tool version、调用量、价格依据和实际或估算成本。
 | C1 处理与登记 | `enabled` | provider-neutral 清洗入口和实际文本/多模态使用已证明 |
 | Knowledge/search/sublibrary | `enabled` | 核心登记、关系、检索和通用物化能力已有真实使用 |
 | `outputs` Markdown/JSON | `enabled` | 通用输出合同与实现存在 |
+| 搜索调研／PNG 双原子（#233） | `implemented / local-verified / unreleased` | 宿主实际搜索＋可恢复研究 run；独立 Markdown/HTML 转图及组合已实测。正式 PNG 接既有 outputs，需本机 renderer／浏览器配置；不是新增搜索服务或自动入库。独立 PR 交付不自动 merge/release，证据见 §11 |
 | 专用 MBA/Cherno Obsidian publisher | `proven-specialized-route` | 已真实交付，但不是通用 capability |
 | `source.yitang` | `enabled` | 成对回放、渲染全文和正文图片的 prepared-manifest Collector 路线已通过真实样本并随 v0.2.0 发布 |
 | `source.qianwen` | `enabled`（当前构建） | 原生对话与媒体 C0 回收及外卖范围修正已验证；新增只读 OpenCLI `qwen detail-full` 适配器（`08_adapters/03_opencli/qwen/full.js`），两个测试会话已由 detail-full 真实读取；入口 PR #222 已合并、Issue #221 已关闭，PR #208 已合并，适配器尚未随新版本发布，不属于 v0.2.0 release 基线 |
@@ -138,6 +139,7 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 | 项目 | 状态 | 下一授权条件 |
 | --- | --- | --- |
 | P0-P9 Docs 收束 | `completed / merged` | PR #194；merge `aaa4d0fe18c378cb5e58751f1eb981608673466e`；旧全文冻结于 `9182a77` |
+| #233 搜索调研与 PNG 原子 | `implemented / local-verified / PR-pending` | #210 / Epic #203 第一条；两个原子可独立及组合，本地 .agents 已安装，旧报告入口复用。Rust 1.100.0 全套门禁通过，新增重放边界补回归；远端检查及 PR 状态随后回写。未合并、未发布，宿主自动选择和用户验收不推断 |
 | 一堂系列后续内容 | `v0.2.0 route released / future scope not-authorized` | 用户提供下一组明确 replay/document pair |
 | Backs 记忆档案与年度归档分析 | `externalized / closed` | 最终自主库为 `E:\Backs`：12 个快照、34,701 个文件、216,126,221,452 个声明字节通过终态审计；`_VAULT\Obsidian` 保存年度阅读导航，`_records` 保存原始目录树和 34,701 条 occurrence，`managed-records` 保存 1,822 个 C0、4,220 个派生记录和 5,936 个逐项 SHA-256 通过的 blob。目录骨架全量演练与 12 快照实物抽样恢复通过。D 盘 Backs 来源、views、quarantine、R0-R6 workspace、执行脚本及专属 C0/C1 blob 已清理；共享 SQLite 仅保留不可变审计元数据，7 个跨来源共享 C0 哈希保留。终态见 `E:\Backs\_VAULT\_records\externalization-terminal-receipt.json`。 |
 | MBA 课程库收口 | `in-place / closed` | MBA 不迁移到 E 盘。D 盘 Babata C0 保留 763 个下载项、758 个唯一哈希和 106,583,439,764 字节原件；C1 保留 3,351 条派生记录，C2 保留 763 组 suggestion/review/semantic entry。C 盘最终 Obsidian 保留 13 门课程、784 个文件。763 条原下载路径清单与恢复脚本可重建最初目录结构。184 个 MBA/高顿 workspace、22 个 execution round 及明确的 MBA 旧 archive/receipt/lock/history 已清理，C0/C1/C2 实体与当前 Obsidian 未删除。终态见 `D:\BabataData\04_runtime\receipts\mba-closure-20260919\terminal-receipt.json`。 |
@@ -157,6 +159,7 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 
 | 使用事实 | Evidence 入口 |
 | --- | --- |
+| #233 搜索调研与 PNG 2026-11-14 实施 | `D:/BabataEvidence/research-render-233/`：真实搜索、正文及结论在 `live-research/run/`；独立分页、组合及正式 PNG 实物和目视记录在 `final-round/`；最终 gate／构建／交付身份由 `terminal-receipt.json` 指定。正文和图不进 Git。正式首版沿用现有 record 投影，不声称完整正文／附件；依赖 probe 不等于启动测试，离线请求护栏不是强 OS 沙箱，视觉自审不是用户验收 |
 | #220 文件协议实施与真实验收 | `BABATA_EVIDENCE_HOME/issue220-implementation-20261110/REPORT.md`；实际位置和六个组成见同目录 `CURRENT-BATCH.json`；原终验 `post-retirement-audit-20261111/terminal.json`，八项 AC 见 `closure-20261111/AC-MATRIX.json`。有界收尾补备：`BABATA_EVIDENCE_HOME/file-protocol-supplement-20261114/REPORT.md`、`terminal.json`、`inputs.ndjson`、`ACCOUNTING.json`；原请求／授权／清理回执不改。旧 dry 不能替代真实验收。 |
 | 千问全量可见集合与外卖剔除 | `D:\BabataData\04_runtime\staging\model-workspaces\qianwen-chat-recovery-20261107-v1\terminal-receipt.json`；4 项试点后完成其余 18 项；原生行、范围与媒体 SHA-256 回读通过，fresh API 重采 13 unchanged / 9 changed（原生 HTML/JS 与渲染字段变化）。当前 C0 及历史保留边界见 §5，逐项矩阵与媒体清单见回执。PR #208 已合并、Issue #204–207 已关闭；终态全套检查通过，日志为同目录 `full-check-closure.log`。 |
 | 千问轻量对话适配器 2026-11-09 收尾 | `implemented / real-path verified`：`08_adapters/03_opencli/qwen/full.js` 只读调用官方消息接口，接受显式 ID/URL；校验 HTTP、业务码、会话归属和 `have_next_page=false`，完整返回原生行。两个既有测试会话经此入口真实读取，各 1 个原生会话行，request_messages / response_messages 数组全部保留；不把对话界面气泡数当原生行数。6 个定向测试覆盖长正文、身份、HTTP/业务错误与分页负例，已接工程 gate；OpenCLI validate 通过。仅单页最多 100 行，分页未结束即拒绝，不下载附件或写 C0，未启动 C1/C2；尚未随新版本发布，用户验收不推断。PR #222 已合并、Issue #221 已关闭；本地全套与 GitHub Rust/适配器/文档检查通过；交付与原生读取证据：D:/BabataData/04_runtime/receipts/qianwen-adapter-closure-20261109/terminal-receipt.json。 |
