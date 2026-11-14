@@ -11,9 +11,10 @@
 
 <!-- CURRENT-ACTIVE: none -->
 
-当前没有待执行开发项。#233 两原子实施已交付独立 PR #234，工程与真实路径证据提升至
-`DOC-USAGE` 和 Git 外 `D:/BabataEvidence/research-render-233/terminal-receipt.json`；
-PR 审阅、合并、发布及用户验收没有被自动授权。不得从旧 blocked Goal、摘要或旧工作树重跑实施。
+当前没有待执行开发项。#233 两原子及后继旧技能入口退出纠偏的结果见 `DOC-USAGE`，
+原实施证据为 `D:/BabataEvidence/research-render-233/terminal-receipt.json`，后继证据为
+同根 `legacy-skill-retirement-20261114/receipt.json`；后继不能改写原轮历史事实。
+独立 PR #234 的审阅、合并、发布和用户验收未被自动授权，不从旧 Goal 或摘要重跑实施。
 
 ## 2. 下次开工队列（禁止恢复时自动执行）
 
