@@ -78,6 +78,16 @@ validate scope -> stage metadata/assets -> write transaction -> finalize assets
 
 取消、异常、hash mismatch 或 finalize failure 必须保持非 ready，并允许安全重试或隔离清理。
 
+### 5.4 有界收集原子
+
+收集样板合同为 babata.collection.commit/v1：request key、既有 session、单一冻结豆包纯文本
+candidate 及显式 selection。核心计算完整候选／选择摘要，collection migration 持久保存键、
+摘要、原选择和结果，不另建库／writer。此记录是恢复关键，不是可丢 C3。Collector 写路径
+以同数据根的非阻塞 OS 文件锁互斥（旧 select/retry/recollect 与新 commit），进程退出释放；
+不承诺其他 raw writer 的跨入口并发。恢复按 session/candidate 查持久 observation，验证 ready
+revision 与正文 hash 后补终态，不新增观察；非 ready／冲突提交拒绝盲重试。新观察用新键。
+首版不声称附件、其他来源、外部 exactly-once 或自主 runtime 已完成。
+
 ## 6. 代码与依赖边界
 
 ```text

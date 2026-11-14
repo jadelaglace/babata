@@ -55,6 +55,11 @@
 6. 复合对象的内容指纹覆盖正文与每个必需资产；全部 identity/hash 未变化才是 unchanged，任一依赖
    缺失、移除或身份漂移都必须显式失败或报告 removed，不得静默沿用旧附件。
 
+collector commit 增量支持一个既有会话中冻结的豆包纯文本候选，使用显式范围、授权、确认与
+请求键。原键恢复先核对持久 observation、ready revision 和正文 hash；无提交才继续原输入，
+非 ready 前次提交 fail-closed。同键异输入冲突，新观察使用新键。collector operation 查询
+持久结果；取消不回滚成功 C0。首版不支持实时 URL、附件或其他来源；旧命令与 writer 保留。
+
 ## 6. PRD-03：原件、第一方内容和派生保持可辨别
 
 1. 原件/C0、第一方内容、C1 派生、知识记录、C2 输出和 C3 运行状态具有不同身份和 writer 边界。

@@ -931,24 +931,11 @@ fn run_opencli(args: &[&str]) -> Result<Value, ApplicationError> {
         .args(args)
         .output()
         .map_err(|error| ApplicationError::Asset(format!("unable to start OpenCLI: {error}")))?;
-    let bytes = if output.status.success() {
-        &output.stdout
-    } else {
-        &output.stderr
-    };
-    let value: Value = serde_json::from_slice(bytes).map_err(|_| {
-        ApplicationError::Integrity("OpenCLI returned a non-JSON response".to_owned())
-    })?;
-    if output.status.success() {
-        Ok(value)
-    } else {
-        let message = value
-            .pointer("/error/message")
-            .and_then(Value::as_str)
-            .unwrap_or("OpenCLI Doubao command failed")
-            .to_owned();
-        Err(ApplicationError::Storage(message))
-    }
+    crate::tools::opencli_json::decode_output(
+        output.status.success(),
+        &output.stdout,
+        &output.stderr,
+    )
 }
 
 fn validate_opencli_attachment_coverage(

@@ -16,13 +16,23 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 function Invoke-OpenCliJson {
-    param([Parameter(Mandatory = $true)][string[]]$Arguments)
+    param([Parameter(Mandatory = $true)][string[]]$Arguments, [switch]$ExpectArray)
 
     $output = & opencli @Arguments
     if ($LASTEXITCODE -ne 0) {
         throw "OpenCLI failed: opencli $($Arguments -join ' ')"
     }
-    return ($output | Out-String | ConvertFrom-Json)
+    $value = $output | Out-String | ConvertFrom-Json -NoEnumerate
+    $ok = $value.PSObject.Properties['ok']
+    if ($null -ne $ok) {
+        $data = $value.PSObject.Properties['data']
+        if ($ok.Value -isnot [bool] -or -not $ok.Value -or $null -eq $data -or $null -eq $data.Value) {
+            throw 'OpenCLI returned a failed or unsupported JSON envelope.'
+        }
+        $value = $data.Value
+    }
+    if ($ExpectArray -and $value -isnot [array]) { throw 'OpenCLI did not return an array.' }
+    return ,$value
 }
 
 function Get-PropertyValue {
@@ -84,7 +94,7 @@ function Test-DocxStructure {
     }
 }
 
-$detail = Invoke-OpenCliJson -Arguments @(
+$detail = Invoke-OpenCliJson -ExpectArray -Arguments @(
     'doubao', 'detail-full', $ConversationId,
     '-f', 'json',
     '--window', 'background',

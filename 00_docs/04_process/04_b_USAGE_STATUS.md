@@ -137,6 +137,7 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 
 | 项目 | 状态 | 下一授权条件 |
 | --- | --- | --- |
+| #210 最小收集原子样板 | `implemented / isolated-text verified / PR pending` | 独立分支 `codex/collect-atom-210`；冻结豆包纯文本的同键回放、输入冲突、Collector 写互斥与持久提交恢复已覆盖。10 个 CLI 集成测试、Rust 1.94.0 full gate 与一个真实两消息隔离样本通过；不代表附件／长分页／全账号／自主 runtime 已完成，未改正式库、未启动 C1/C2，未发布且不自动合并。证据见 §11。 |
 | P0-P9 Docs 收束 | `completed / merged` | PR #194；merge `aaa4d0fe18c378cb5e58751f1eb981608673466e`；旧全文冻结于 `9182a77` |
 | 一堂系列后续内容 | `v0.2.0 route released / future scope not-authorized` | 用户提供下一组明确 replay/document pair |
 | Backs 记忆档案与年度归档分析 | `externalized / closed` | 最终自主库为 `E:\Backs`：12 个快照、34,701 个文件、216,126,221,452 个声明字节通过终态审计；`_VAULT\Obsidian` 保存年度阅读导航，`_records` 保存原始目录树和 34,701 条 occurrence，`managed-records` 保存 1,822 个 C0、4,220 个派生记录和 5,936 个逐项 SHA-256 通过的 blob。目录骨架全量演练与 12 快照实物抽样恢复通过。D 盘 Backs 来源、views、quarantine、R0-R6 workspace、执行脚本及专属 C0/C1 blob 已清理；共享 SQLite 仅保留不可变审计元数据，7 个跨来源共享 C0 哈希保留。终态见 `E:\Backs\_VAULT\_records\externalization-terminal-receipt.json`。 |
@@ -157,6 +158,7 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 
 | 使用事实 | Evidence 入口 |
 | --- | --- |
+| #210 收集原子独立实施样板 | `D:/BabataEvidence/collect-atom-implementation-20261114/REPORT.md`、`real-final/receipt.json` 与 `full-final.log`。真实样本复用先前授权冻结捕获；源码仅留虚构测试身份，正文／原始响应／隔离库留 Git 外。恢复测试含持久状态故障注入，不冒称真实 kill 实验；全 Epic 及用户验收不推断。 |
 | #220 文件协议实施与真实验收 | `BABATA_EVIDENCE_HOME/issue220-implementation-20261110/REPORT.md`；实际位置和六个组成见同目录 `CURRENT-BATCH.json`；原终验 `post-retirement-audit-20261111/terminal.json`，八项 AC 见 `closure-20261111/AC-MATRIX.json`。有界收尾补备：`BABATA_EVIDENCE_HOME/file-protocol-supplement-20261114/REPORT.md`、`terminal.json`、`inputs.ndjson`、`ACCOUNTING.json`；原请求／授权／清理回执不改。旧 dry 不能替代真实验收。 |
 | 千问全量可见集合与外卖剔除 | `D:\BabataData\04_runtime\staging\model-workspaces\qianwen-chat-recovery-20261107-v1\terminal-receipt.json`；4 项试点后完成其余 18 项；原生行、范围与媒体 SHA-256 回读通过，fresh API 重采 13 unchanged / 9 changed（原生 HTML/JS 与渲染字段变化）。当前 C0 及历史保留边界见 §5，逐项矩阵与媒体清单见回执。PR #208 已合并、Issue #204–207 已关闭；终态全套检查通过，日志为同目录 `full-check-closure.log`。 |
 | 千问轻量对话适配器 2026-11-09 收尾 | `implemented / real-path verified`：`08_adapters/03_opencli/qwen/full.js` 只读调用官方消息接口，接受显式 ID/URL；校验 HTTP、业务码、会话归属和 `have_next_page=false`，完整返回原生行。两个既有测试会话经此入口真实读取，各 1 个原生会话行，request_messages / response_messages 数组全部保留；不把对话界面气泡数当原生行数。6 个定向测试覆盖长正文、身份、HTTP/业务错误与分页负例，已接工程 gate；OpenCLI validate 通过。仅单页最多 100 行，分页未结束即拒绝，不下载附件或写 C0，未启动 C1/C2；尚未随新版本发布，用户验收不推断。PR #222 已合并、Issue #221 已关闭；本地全套与 GitHub Rust/适配器/文档检查通过；交付与原生读取证据：D:/BabataData/04_runtime/receipts/qianwen-adapter-closure-20261109/terminal-receipt.json。 |

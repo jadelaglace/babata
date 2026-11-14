@@ -72,6 +72,25 @@ pub enum CollectorCommand {
         #[arg(long)]
         session: String,
     },
+    /// Commit one frozen text candidate with durable replay identity.
+    Commit {
+        #[arg(long)]
+        request_key: String,
+        #[arg(long)]
+        session: String,
+        #[arg(long)]
+        candidate: String,
+        #[arg(long)]
+        scope: String,
+        #[arg(long)]
+        authorisation: String,
+        #[arg(long)]
+        confirm: bool,
+    },
+    Operation {
+        #[arg(long)]
+        request_key: String,
+    },
     Retry {
         #[arg(long)]
         session: String,
@@ -101,6 +120,7 @@ pub enum CollectorCommand {
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
 pub enum CollectorExecution {
+    Operation(babata_application::CollectionCommitOperation),
     Session(babata_domain::CollectionSession),
     Candidates(Vec<babata_domain::CandidateSummary>),
     Items(Vec<babata_domain::CollectionItemStatus>),
@@ -166,6 +186,29 @@ pub fn execute(
         adapters,
     );
     match command {
+        CollectorCommand::Commit {
+            request_key,
+            session,
+            candidate,
+            scope,
+            authorisation,
+            confirm,
+        } => service
+            .commit(
+                &request_key,
+                CollectionSelection {
+                    session_id: CollectionSessionId::parse(session)?,
+                    candidate_ids: vec![candidate],
+                    scope_description: scope,
+                    confirmed: confirm,
+                    authorised_context: authorisation,
+                    requested_attachments: false,
+                },
+            )
+            .map(CollectorExecution::Operation),
+        CollectorCommand::Operation { request_key } => service
+            .operation(&request_key)
+            .map(CollectorExecution::Operation),
         CollectorCommand::Start {
             route,
             source,

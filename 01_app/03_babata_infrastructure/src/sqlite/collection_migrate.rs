@@ -4,6 +4,7 @@ use babata_application::ApplicationError;
 use rusqlite::{Connection, params};
 
 const MIGRATIONS: &[(&str, &str)] = &[
+    // Append only: existing checksums and data remain intact.
     (
         "0001_route_evidence.sql",
         include_str!("../../../../03_migrations/02_collection/0001_route_evidence.sql"),
@@ -23,6 +24,10 @@ const MIGRATIONS: &[(&str, &str)] = &[
     (
         "0005_candidate_common_metadata.sql",
         include_str!("../../../../03_migrations/02_collection/0005_candidate_common_metadata.sql"),
+    ),
+    (
+        "0006_commit_operations.sql",
+        include_str!("../../../../03_migrations/02_collection/0006_commit_operations.sql"),
     ),
 ];
 
@@ -158,7 +163,7 @@ mod tests {
                     |row| row.get::<_, i64>(0),
                 )
                 .unwrap(),
-            5
+            6
         );
     }
 
@@ -167,7 +172,7 @@ mod tests {
         let connection = Connection::open_in_memory().unwrap();
         crate::sqlite::migrate_raw(&connection).unwrap();
         migrate_collection(&connection).unwrap();
-        connection.execute("INSERT INTO collection_schema_migrations (version, name, applied_at, checksum_sha256) VALUES (6, 'future.sql', '2026-01-01T00:00:00Z', 'future')", []).unwrap();
+        connection.execute("INSERT INTO collection_schema_migrations (version, name, applied_at, checksum_sha256) VALUES (7, 'future.sql', '2026-01-01T00:00:00Z', 'future')", []).unwrap();
         assert!(
             migrate_collection(&connection)
                 .unwrap_err()

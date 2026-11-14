@@ -4,9 +4,31 @@ use babata_domain::{
     RecollectionOutcome, RevisionId, UtcTimestamp,
 };
 
-use crate::{ApplicationError, ports::NewSourceObservation};
+use crate::{ApplicationError, CollectionCommitOperation, ports::NewSourceObservation};
+
+/// Held across collection check/write/readback, released automatically on exit.
+pub trait CollectionWriteGuard {}
 
 pub trait CollectionRepositoryPort {
+    fn acquire_collection_write(&self) -> Result<Box<dyn CollectionWriteGuard>, ApplicationError>;
+    fn bind_commit_operation(
+        &self,
+        operation: &CollectionCommitOperation,
+    ) -> Result<CollectionCommitOperation, ApplicationError>;
+    fn commit_operation(
+        &self,
+        request_key: &str,
+    ) -> Result<Option<CollectionCommitOperation>, ApplicationError>;
+    fn complete_commit_operation(
+        &self,
+        request_key: &str,
+        result: &CollectionItemStatus,
+    ) -> Result<CollectionCommitOperation, ApplicationError>;
+    fn committed_candidate(
+        &self,
+        session_id: &CollectionSessionId,
+        candidate_id: &str,
+    ) -> Result<Option<(ItemId, RevisionId)>, ApplicationError>;
     fn create_session(&self, session: &CollectionSession) -> Result<(), ApplicationError>;
     fn update_session_state(
         &self,
