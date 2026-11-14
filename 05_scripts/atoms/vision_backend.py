@@ -65,6 +65,27 @@ def compose_labeled(paths: list[str], records: list[dict], limits) -> np.ndarray
     return np.asarray(sheet)
 
 
+def run_bounded(cmd, timeout):
+    """Run a command; on timeout kill the WHOLE process tree (Windows .cmd shims spawn children)."""
+    flags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8",
+                            errors="replace", creationflags=flags, start_new_session=os.name != "nt")
+    try:
+        out, err = proc.communicate(timeout=timeout)
+        return proc.returncode, out, err, False
+    except subprocess.TimeoutExpired:
+        if os.name == "nt":
+            subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)], capture_output=True)
+        else:
+            import signal
+            os.killpg(proc.pid, signal.SIGKILL)
+        try:
+            out, err = proc.communicate(timeout=10)
+        except subprocess.TimeoutExpired:
+            out, err = "", ""
+        return None, out, err, True
+
+
 def call_bl(image: str, prompt: str, model: str, timeout: int):
     exe = shutil.which("bl")
     if not exe:
@@ -72,23 +93,22 @@ def call_bl(image: str, prompt: str, model: str, timeout: int):
     cmd = [exe, "vision", "describe", "--image", image, "--prompt", prompt, "--model", model,
            "--output", "json", "--timeout", str(timeout), "--quiet"]
     started = time.time()
-    try:
-        proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout + 30)
-    except subprocess.TimeoutExpired:
-        return {"transport": "timeout", "elapsed_ms": int((time.time() - started) * 1000),
-                "note": "local wait stopped; remote state unknown, do not blindly resubmit"}
+    code, stdout, stderr, timed_out = run_bounded(cmd, timeout + 15)
     elapsed = int((time.time() - started) * 1000)
+    if timed_out:
+        return {"transport": "timeout", "elapsed_ms": elapsed,
+                "note": "local wait stopped and process tree killed; remote state unknown, do not blindly resubmit"}
     try:
-        data = json.loads(proc.stdout)
+        data = json.loads(stdout)
     except json.JSONDecodeError:
-        return {"transport": "bad-output", "exit": proc.returncode, "elapsed_ms": elapsed,
-                "stderr_tail": proc.stderr[-400:], "stdout_head": proc.stdout[:400]}
+        return {"transport": "bad-output", "exit": code, "elapsed_ms": elapsed,
+                "stderr_tail": stderr[-400:], "stdout_head": stdout[:400]}
     choice = (data.get("choices") or [{}])[0]
     msg = choice.get("message") or {}
-    return {"transport": "ok" if proc.returncode == 0 else f"exit-{proc.returncode}", "elapsed_ms": elapsed,
+    return {"transport": "ok" if code == 0 else f"exit-{code}", "elapsed_ms": elapsed,
             "content": msg.get("content"), "finish_reason": choice.get("finish_reason"), "usage": data.get("usage"),
             "model": data.get("model"), "request_id": data.get("id"),
-            "error": data.get("error") if proc.returncode else None}
+            "error": data.get("error") if code else None}
 
 
 def cmd_ask(args, limits):
@@ -125,13 +145,15 @@ def cmd_ask(args, limits):
                     img = io.resize_rgba(img, max(1, round(w * s)), max(1, round(h * s)))
                     sent_note.append(f"downscaled x{s:.4f} before sending")
                 sent = run.add("sent-image", "sent.png", img, relation="exact pixels sent to backend")
+            ident = backend_identity("bl", args.model or "qwen3-vl-plus")
             resp = call_bl(str(sent), args.prompt, args.model or "qwen3-vl-plus", args.timeout)
+            if resp.get("model"):
+                ident["model"] = resp["model"]
             if resp["transport"] != "ok":
                 return run.finish(recs, {"backend_response": resp}, [], {"sent": sent_note},
                                   [f"transport {resp['transport']}"], state="failed",
-                                  extra={"reason": resp["transport"], "producer_backend": backend_identity("bl", resp.get("model"))})
+                                  extra={"reason": resp["transport"], "producer_backend": ident})
             state, reason, parsed = validate_answer(resp["content"], resp["finish_reason"], args.expect)
-            ident = backend_identity("bl", resp.get("model"))
             measurements = {"elapsed_ms": resp["elapsed_ms"], "usage": resp["usage"], "finish_reason": resp["finish_reason"],
                             "request_id": resp["request_id"], "cost": "unknown (usage returned; price not settled here)"}
             raw = resp["content"]
@@ -150,10 +172,8 @@ def cmd_ask(args, limits):
 def backend_identity(kind: str, model):
     ident = {"adapter": "05_scripts/atoms/vision_backend.py", "adapter_version": ADAPTER_VERSION, "backend": kind, "model": model}
     if kind == "bl":
-        try:
-            ident["bl_version"] = subprocess.run([shutil.which("bl"), "--version"], capture_output=True, text=True, timeout=30).stdout.strip()
-        except Exception:
-            ident["bl_version"] = "unknown"
+        code, out, _, timed_out = run_bounded([shutil.which("bl"), "--version"], 20)
+        ident["bl_version"] = out.strip() if code == 0 and not timed_out else "unknown"
     return ident
 
 

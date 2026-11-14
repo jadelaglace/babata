@@ -328,6 +328,15 @@ def shift_any(mask: np.ndarray, radius: int) -> np.ndarray:
     return out
 
 
+def box_sum(values: np.ndarray, r: int) -> np.ndarray:
+    """Sum over a (2r+1)^2 window via an integral image (edges clipped)."""
+    h, w = values.shape
+    ii = np.zeros((h + 1, w + 1)); ii[1:, 1:] = values.cumsum(0).cumsum(1)
+    y0 = np.clip(np.arange(h) - r, 0, h); y1 = np.clip(np.arange(h) + r + 1, 0, h)
+    x0 = np.clip(np.arange(w) - r, 0, w); x1 = np.clip(np.arange(w) + r + 1, 0, w)
+    return ii[y1][:, x1] - ii[y0][:, x1] - ii[y1][:, x0] + ii[y0][:, x0]
+
+
 def boundary_len(opaque: np.ndarray) -> int:
     pad = np.pad(opaque, 1, constant_values=False)
     nb = ~pad[:-2, 1:-1] | ~pad[2:, 1:-1] | ~pad[1:-1, :-2] | ~pad[1:-1, 2:]
@@ -402,10 +411,12 @@ def fit_layer(layer: np.ndarray, width: int, height: int, mode: str) -> np.ndarr
 
 PROFILES = {
     # min_stray: components smaller than this many px (or fraction of subject) are specks.
-    "cutout": {"single_component": True, "max_mid_band": 0.05, "edge_px": (1.0, 3.5), "binary_ok": False},
-    "multi-part": {"single_component": False, "max_mid_band": 0.05, "edge_px": (1.0, 3.5), "binary_ok": False},
-    "translucent": {"single_component": False, "max_mid_band": None, "edge_px": None, "binary_ok": True},
-    "pixel-art": {"single_component": False, "max_mid_band": 0.0, "edge_px": None, "binary_ok": True},
+    # edge_px lower bound 0.3: below it the alpha is practically binary (stair-stepped); a crisp
+    # anti-aliased vector edge measures ~0.6-1.0 and must not be flagged.
+    "cutout": {"single_component": True, "max_mid_band": 0.05, "edge_px": (0.3, 3.5), "binary_ok": False, "attached_parts": False},
+    "multi-part": {"single_component": False, "max_mid_band": 0.05, "edge_px": (0.3, 3.5), "binary_ok": False, "attached_parts": True},
+    "translucent": {"single_component": False, "max_mid_band": None, "edge_px": None, "binary_ok": True, "attached_parts": True},
+    "pixel-art": {"single_component": False, "max_mid_band": 0.0, "edge_px": None, "binary_ok": True, "attached_parts": True},
 }
 
 
@@ -422,16 +433,24 @@ def measure_alpha(rgba: np.ndarray, profile: str, min_stray: int | None = None, 
     subject_area = max([c["area"] for c in comps], default=0)
     stray_limit = min_stray if min_stray is not None else max(50, int(0.002 * subject_area))
     big = [c for c in comps if c["area"] >= stray_limit]
-    specks = [c for c in comps if c["area"] < stray_limit]
-    # faint floating noise: visible (alpha>=16/255) islands not touching any big component
+    small = [c for c in comps if c["area"] < stray_limit]
+    attach_px = max(4, round(0.03 * max(h, w)))
+    attached = []
+    if prof["attached_parts"] and big and small:
+        # dots of i/j, diacritics, small detached parts close to a major shape are legal parts here
+        near_major = shift_any(np.isin(labels, [c["label"] for c in big]), attach_px)
+        attached = [c for c in small if near_major[labels == c["label"]].any()]
+    attached_ids = {c["label"] for c in attached}
+    specks = [c for c in small if c["label"] not in attached_ids]
+    # faint floating noise: visible (alpha>=16/255) islands not touching any opaque component
     faint = (a >= 16 / 255) & ~opaque
     faint_islands = []
     if faint.any():
-        near_big = shift_any(np.isin(labels, [c["label"] for c in big]), 3) if big else np.zeros_like(opaque)
+        near_any = shift_any(opaque, 3)
         fl, fstats = label(faint, 8)
         for st in fstats:
             sel = fl == st["label"]
-            if not (sel & near_big).any() and st["area"] >= 4:
+            if not (sel & near_any).any() and st["area"] >= 4:
                 faint_islands.append(st)
     mid = (a > 0.125) & (a <= 0.878)
     mid_ratio = float(mid.sum() / max(1, (a > 0).sum()))
@@ -448,7 +467,8 @@ def measure_alpha(rgba: np.ndarray, profile: str, min_stray: int | None = None, 
     holes = [s for s in hstats if s["bbox"][0] > 0 and s["bbox"][1] > 0 and s["bbox"][2] < w - 1 and s["bbox"][3] < h - 1]
     m = {
         "profile": profile, "alpha_coverage": round(coverage, 5), "components": len(comps),
-        "major_components": len(big), "stray_components": len(specks),
+        "major_components": len(big), "attached_small_parts": len(attached), "attach_px": attach_px,
+        "stray_components": len(specks),
         "stray_pixels": int(sum(c["area"] for c in specks)), "stray_limit_px": stray_limit,
         "faint_islands": len(faint_islands), "mid_band_ratio": round(mid_ratio, 5),
         "edge_transition_px": round(edge_px, 3), "boundary_px": blen,
@@ -493,16 +513,20 @@ def fringe_findings(rgba: np.ndarray, opaque: np.ndarray):
         return []
     lum = luminance(rgb) * 255
     spill = (rgb[..., 1] - np.maximum(rgb[..., 0], rgb[..., 2])) * 255
+    # compare each edge pixel with the interior NEAR IT (radius 10), not with a global mean:
+    # differently coloured parts and thin strokes without an interior are not judged against each other
+    count = box_sum(interior.astype(np.float64), 10)
+    has_local = count >= 8
+    local_lum = box_sum(lum * interior, 10) / np.maximum(count, 1)
+    local_spill = box_sum((spill >= 40) * interior, 10) / np.maximum(count, 1)
     out = []
     checks = [
-        ("bright-fringe", (lum >= 225), lambda: lum[interior].mean() < 190, "edge pixels near white while interior is darker"),
-        ("dark-fringe", (lum <= 35), lambda: lum[interior].mean() > 80, "edge pixels near black while interior is lighter"),
-        ("green-spill", (spill >= 40), lambda: (spill[interior] >= 40).mean() < 0.02, "green dominance on edge but not inside"),
+        ("bright-fringe", (lum >= 225) & (local_lum < 190), "edge pixels near white while the adjacent interior is darker"),
+        ("dark-fringe", (lum <= 35) & (local_lum > 80), "edge pixels near black while the adjacent interior is lighter"),
+        ("green-spill", (spill >= 40) & (local_spill < 0.02), "green dominance on the edge but not in the adjacent interior"),
     ]
-    for kind, cond, applies, basis in checks:
-        if not applies():
-            continue
-        flagged = ring & cond
+    for kind, cond, basis in checks:
+        flagged = ring & has_local & cond
         ratio = float(flagged.sum() / ring.sum())
         boxes = cluster_boxes(flagged, min_area=12, merge_radius=4)
         if boxes and flagged.sum() >= 24:
