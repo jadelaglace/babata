@@ -1,0 +1,8 @@
+{
+  "name": "babata-content-atoms",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test *.test.mjs" },
+  "dependencies": { "marked": "17.0.5", "playwright": "1.62.0" }
+}

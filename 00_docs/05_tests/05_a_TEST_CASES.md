@@ -246,6 +246,19 @@ knowledge/log/insight、verified package、唯一 live、证据回链和隔离�
 
 ## 13. Checker 和 mutation 规则
 
+### TC-08R：独立调研、PNG 与组合
+
+1. 真实搜索一个明确问题：短词起步、拆子问题、读一手正文后核查；冻结查询／工具／时间／来源／
+   读取范围。只返回调研结论，不调用 renderer 或写正式 C0；正文不可读显式失败。
+2. 用 run helper 保存并重放相同请求及结果；改同键输入、破坏正文或使用越界路径，必须拒绝；
+   新 run 表示刷新，不覆盖旧观察。未完成结论不伪装已核事实。
+3. 已有内容独立离线转 PNG，核图片尺寸、内容完整性、中文、表格、页界及视觉结果；
+   缺资产、远程资源、危险 HTML、超长／过宽内容和输出冲突必须失败。
+4. 正式 record 输出 PNG 后运行 status/verify/delete/rebuild；破坏图片／metadata／上游绑定，
+   verify 失败；修复／重建后通过且上游 hash 不变。renderer 失败不得制造成功包。
+5. 真实研究结论直接调用渲染生成 PNG，不自动入库。分别记录独立两条路径和组合结果，
+   研究核证、机械 QC、视觉检查及用户接受保持分离。
+
 - authority/path/checker 变化必须运行文档 traceability、provenance 和 recovery-hook 检查。
 - 关键 fail-closed 规则至少有一个 mutation/negative test，证明故意破坏会被拒绝。
 - check 成功只证明输入范围和规则实际覆盖的内容；实时 capability、usage 和用户 acceptance 另行核对。

@@ -211,11 +211,12 @@ fn explore_cli_rebuilds_searches_navigates_deletes_and_rebuilds_projection() {
     assert_eq!(searched["records"].as_array().unwrap().len(), 1);
     assert_eq!(searched["records"][0]["item_id"], item_id);
     assert_eq!(searched["records"][0]["record_kind"], "raw_item");
-    assert!(
-        !searched["records"][0]["reasons"]
+    assert_ne!(
+        searched["records"][0]["reasons"]
             .as_array()
             .unwrap()
-            .is_empty()
+            .as_slice(),
+        [] as [Value; 0]
     );
 
     let record_id = format!("item:{item_id}");
@@ -1391,7 +1392,7 @@ fn process_commit_failure_preserves_recoverable_c1_file_evidence() {
         .stdout
         .clone();
     let runs: Value = serde_json::from_slice(&runs).unwrap();
-    assert!(runs.as_array().unwrap().is_empty());
+    assert_eq!(runs.as_array().unwrap().as_slice(), [] as [Value; 0]);
 }
 
 #[test]
@@ -1440,7 +1441,7 @@ fn process_rejects_empty_text_and_invalid_json_before_creating_runs() {
         .stdout
         .clone();
     let runs: Value = serde_json::from_slice(&runs).unwrap();
-    assert!(runs.as_array().unwrap().is_empty());
+    assert_eq!(runs.as_array().unwrap().as_slice(), [] as [Value; 0]);
 }
 
 #[test]
@@ -2080,11 +2081,12 @@ fn p6_semantic_candidate_enters_three_realm_core_without_source_v2() {
         .stdout
         .clone();
     let entry_after_delete: Value = serde_json::from_slice(&entry_after_delete).unwrap();
-    assert!(
-        !entry_after_delete["dense_expressions"]
+    assert_ne!(
+        entry_after_delete["dense_expressions"]
             .as_array()
             .unwrap()
-            .is_empty()
+            .as_slice(),
+        [] as [Value; 0]
     );
     babata(&temp)
         .args([

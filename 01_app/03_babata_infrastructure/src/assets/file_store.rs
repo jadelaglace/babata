@@ -79,9 +79,7 @@ impl FileAssetStore {
         Ok(fs::read_dir(self.paths.orphan())
             .map_err(Self::io)?
             .any(|entry| {
-                entry
-                    .ok()
-                    .is_some_and(|entry| entry.file_name().to_string_lossy().starts_with(&prefix))
+                entry.is_ok_and(|entry| entry.file_name().to_string_lossy().starts_with(&prefix))
             }))
     }
     fn write_journal(

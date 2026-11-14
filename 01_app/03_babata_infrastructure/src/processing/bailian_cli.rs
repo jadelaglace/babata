@@ -46,8 +46,7 @@ impl BailianCliConfig {
                 .stdout(Stdio::null())
                 .stderr(Stdio::null())
                 .status()
-                .ok()
-                .is_some_and(|status| status.success());
+                .is_ok_and(|status| status.success());
             return Self {
                 enabled: authenticated,
                 executable: Some(executable),

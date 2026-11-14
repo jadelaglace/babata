@@ -20,6 +20,19 @@ pub struct OutputViewStore {
 }
 
 impl OutputViewStore {
+    fn render_artifact(
+        &self,
+        document: &OutputDocument,
+    ) -> Result<(Vec<u8>, Option<serde_json::Value>), ApplicationError> {
+        if document.kind == OutputKind::Png {
+            let (bytes, receipt) =
+                super::png::render(self.paths.root(), &render_markdown(document))?;
+            Ok((bytes, Some(receipt)))
+        } else {
+            Ok((render(document)?, None))
+        }
+    }
+
     pub fn new(paths: DataPaths) -> Self {
         Self { paths }
     }
@@ -95,13 +108,13 @@ impl OutputViewStore {
             }
             None
         };
+        let artifact_name = artifact_name(document.kind)?;
+        let (artifact, png_receipt) = self.render_artifact(document)?;
         if directory.exists() {
             self.ensure_safe_existing_directory(&document.id)?;
         } else {
             fs::create_dir(&directory).map_err(io_error)?;
         }
-        let artifact_name = artifact_name(document.kind)?;
-        let artifact = render(document)?;
         let output_sha256 = Sha256::of_bytes(&artifact);
         let generation = previous.as_ref().map_or(Ok(1), |manifest| {
             manifest
@@ -131,7 +144,7 @@ impl OutputViewStore {
                 previous_bytes,
             )?;
         }
-        for stale in ["output.md", "output.json"] {
+        for stale in ["output.md", "output.json", "output.png"] {
             let path = directory.join(stale);
             if stale != artifact_name && path.exists() {
                 fs::remove_file(path).map_err(io_error)?;
@@ -140,6 +153,8 @@ impl OutputViewStore {
         replace_file(directory.join(artifact_name), &artifact)?;
         let relative_root = format!("03_views/outputs/{}", document.id);
         let manifest = OutputManifest {
+            png_receipt_sha256: receipt_hash(png_receipt.as_ref())?,
+            png_receipt,
             schema_version: OUTPUT_MANIFEST_SCHEMA_VERSION.to_owned(),
             output_id: document.id.clone(),
             kind: document.kind,
@@ -176,6 +191,10 @@ impl OutputViewStore {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct OutputManifest {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    png_receipt: Option<serde_json::Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    png_receipt_sha256: Option<String>,
     schema_version: String,
     output_id: OutputId,
     kind: OutputKind,
@@ -306,7 +325,11 @@ impl OutputInputRef {
 
 impl OutputBuilderPort for OutputViewStore {
     fn supported_kinds(&self) -> Vec<OutputKind> {
-        vec![OutputKind::HumanReadable, OutputKind::Structured]
+        let mut kinds = vec![OutputKind::HumanReadable, OutputKind::Structured];
+        if super::png::configured() {
+            kinds.push(OutputKind::Png);
+        }
+        kinds
     }
 
     fn build(&self, document: &OutputDocument) -> Result<OutputBuild, ApplicationError> {
@@ -329,7 +352,11 @@ impl OutputBuilderPort for OutputViewStore {
             .iter()
             .map(OutputInputRef::from_document)
             .collect::<Vec<_>>();
-        let expected = Sha256::of_bytes(&render(document)?);
+        let expected = if document.kind == OutputKind::Png {
+            Sha256::parse(&manifest.output_sha256)?
+        } else {
+            Sha256::of_bytes(&render(document)?)
+        };
         let history = read_history(&self.ensure_safe_existing_directory(output_id)?, &manifest)?;
         let mut expected_differences = history.first().map_or_else(Vec::new, |previous| {
             compare_inputs(&previous.inputs, document)
@@ -353,12 +380,26 @@ impl OutputBuilderPort for OutputViewStore {
         let artifact = self
             .ensure_safe_existing_directory(output_id)?
             .join(&manifest.artifact_file);
-        let actual = if artifact.exists() {
-            Some(Sha256::of_bytes(&fs::read(artifact).map_err(io_error)?))
+        let bytes = if artifact.exists() {
+            Some(fs::read(artifact).map_err(io_error)?)
         } else {
             None
         };
+        let receipt_valid = if document.kind == OutputKind::Png {
+            match (&manifest.png_receipt, &manifest.png_receipt_sha256, &bytes) {
+                (Some(receipt), Some(hash), Some(bytes)) => {
+                    serde_json::to_vec(receipt)
+                        .is_ok_and(|value| Sha256::of_bytes(&value).as_str() == hash)
+                        && super::png::validate(receipt, &render_markdown(document), bytes).is_ok()
+                }
+                _ => false,
+            }
+        } else {
+            manifest.png_receipt.is_none() && manifest.png_receipt_sha256.is_none()
+        };
+        let actual = bytes.as_ref().map(|bytes| Sha256::of_bytes(bytes));
         let valid = manifest_matches_inputs
+            && receipt_valid
             && actual.as_ref() == Some(&expected)
             && manifest.state == OutputState::Succeeded;
         Ok(OutputVerification {
@@ -494,10 +535,12 @@ fn render(document: &OutputDocument) -> Result<Vec<u8>, ApplicationError> {
         }))
         .map_err(|error| ApplicationError::Integrity(error.to_string())),
         OutputKind::HumanReadable => Ok(render_markdown(document).into_bytes()),
-        OutputKind::Web | OutputKind::Obsidian => Err(ApplicationError::capability_unavailable(
-            format!("outputs.{:?}", document.kind).to_lowercase(),
-            "unplanned",
-        )),
+        OutputKind::Png | OutputKind::Web | OutputKind::Obsidian => {
+            Err(ApplicationError::capability_unavailable(
+                format!("outputs.{:?}", document.kind).to_lowercase(),
+                "unplanned",
+            ))
+        }
     }
 }
 
@@ -505,6 +548,7 @@ fn artifact_name(kind: OutputKind) -> Result<&'static str, ApplicationError> {
     match kind {
         OutputKind::HumanReadable => Ok("output.md"),
         OutputKind::Structured => Ok("output.json"),
+        OutputKind::Png => Ok("output.png"),
         OutputKind::Web | OutputKind::Obsidian => Err(ApplicationError::capability_unavailable(
             format!("outputs.{kind:?}").to_lowercase(),
             "unplanned",
@@ -637,6 +681,13 @@ fn io_error(error: io::Error) -> ApplicationError {
     ApplicationError::Storage(format!("C2 output filesystem {:?} failure", error.kind()))
 }
 
+fn receipt_hash(value: Option<&serde_json::Value>) -> Result<Option<String>, ApplicationError> {
+    value
+        .map(|value| serde_json::to_vec(value).map(|bytes| Sha256::of_bytes(&bytes).to_string()))
+        .transpose()
+        .map_err(|error| ApplicationError::Integrity(error.to_string()))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -644,6 +695,8 @@ mod tests {
     #[test]
     fn history_hash_accepts_saved_bytes_and_the_legacy_compact_contract() {
         let manifest = OutputManifest {
+            png_receipt: None,
+            png_receipt_sha256: None,
             schema_version: OUTPUT_MANIFEST_SCHEMA_VERSION.to_owned(),
             output_id: OutputId::parse("output_01J00000000000000000000000").unwrap(),
             kind: OutputKind::Structured,
