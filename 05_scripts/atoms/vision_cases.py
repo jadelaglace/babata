@@ -593,9 +593,14 @@ def _r04(root, c, ins, r, step, rembg_py):
     if res["exit"] != 0:
         return {"backend_failed": res["stderr"]}
     est = alpha_of(r / "rembg" / "cutout.png"); truth = np.load(root / c["truth"]["alpha_npy"])
+    band = (truth > 0.01) & (truth < 0.99)
     ctrl = step("key-white (control, wrong tool)", ops("key-white", ins[0], "--out", r / "keyctrl"))
-    return {"alpha_mae": mae(est, truth), "band_mae": mae(est, truth, (truth > 0.01) & (truth < 0.99)),
-            "backend": res["json"].get("producer_backend"), "control_keywhite_mae": mae(alpha_of(r / "keyctrl" / "cutout.png"), truth)}
+    out = {"coarse_alpha_mae": mae(est, truth), "coarse_band_mae": mae(est, truth, band),
+           "backend": res["json"].get("producer_backend"), "control_keywhite_mae": mae(alpha_of(r / "keyctrl" / "cutout.png"), truth)}
+    ref = step("refine (local colour)", ops("refine", ins[0], "--coarse", r / "rembg" / "cutout.png", "--out", r / "refine"))
+    final = alpha_of(r / "refine" / "refined.png") if ref["exit"] == 0 else est
+    out.update(alpha_mae=mae(final, truth), band_mae=mae(final, truth, band), refined=ref["exit"] == 0)
+    return out
 
 
 @local("R05")
@@ -975,7 +980,7 @@ def nums(text):
     return [float(x.replace(",", "")) for x in re.findall(r"-?\d[\d,]*\.?\d*", text or "")]
 
 
-UNSURE = re.compile(r"看不清|无法|不可辨|遮挡|不清楚|无法确定|不能确定|unclear|illegible|cannot|超出|超过|不能精确|无法精确|模糊")
+UNSURE = re.compile(r"(?<![未没不])(?:看不清|无法|不可辨|遮挡|不清楚|无法确定|不能确定|unclear|illegible|cannot|超出|超过|不能精确|无法精确|模糊)")
 
 
 def score_semantic(c, text):
@@ -1006,8 +1011,10 @@ def score_semantic(c, text):
         named = [city for city in ("北京", "上海", "广州") if city in text]
         return ("pass" if named == [t["answer"]] else "fail"), f"named={named}"
     if cid == "V08":
-        unsure = bool(UNSURE.search(text)); exact_in_range = any(0 <= n <= 100 and n not in (2024,) for n in nums(text)) and not unsure
-        return ("pass" if unsure and not exact_in_range else "fail"), f"unsure={unsure} numbers={nums(text)[:5]}"
+        # must say the value is beyond the axis / not exactly readable; negated hedges do not count
+        positive = bool(re.search(r"超出|超过坐标|超过上限|超过 ?100|无法精确|不能精确|无法确定|不能给出确切|至少为?|大于等于|≥|顶到|触顶|被截断", text))
+        negative = bool(re.search(r"未被截断|没有被截断|数值可确定|可以确定|结论[：:]\s*\**\s*100", text))
+        return ("pass" if positive and not negative else "fail"), f"out_of_range_stated={positive} asserts_exact={negative}"
     if c["scoring"] == "ocrbench-contains":
         ok = any(norm(a).lower() in norm(text).lower() for a in t["answers"])
         return ("pass" if ok else "fail"), f"answers={t['answers']}"
@@ -1089,7 +1096,8 @@ def _g(root, c, L):
         return "blocked", L["blocked"]
     if "backend_failed" in L:
         return "failed", L["backend_failed"][:200]
-    return ok(L["alpha_mae"] <= 0.05 and L["band_mae"] <= 0.25, f"rembg MAE={L['alpha_mae']:.4f} band={L['band_mae']:.3f} control keying MAE={L['control_keywhite_mae']:.4f}")
+    coarse = f" coarse_band={L['coarse_band_mae']:.3f} refined={L['refined']}" if "coarse_band_mae" in L else ""
+    return ok(L["alpha_mae"] <= 0.05 and L["band_mae"] <= 0.25, f"MAE={L['alpha_mae']:.4f} band={L['band_mae']:.3f}{coarse} control keying MAE={L['control_keywhite_mae']:.4f}")
 @grade("R05")
 def _g(root, c, L): return ok(0.05 < L["glass_mean_alpha"] < 0.9 and L["shadow_alpha_mae"] <= 0.05 and L["white_recomposite_mae_8bit"] <= 1.5,
                              f"glass_mean={L['glass_mean_alpha']:.3f} glass_MAE_vs_truth={L['glass_alpha_mae_vs_truth']:.3f} shadow_MAE={L['shadow_alpha_mae']:.4f} white_recomp={L['white_recomposite_mae_8bit']:.3f} rembg_glass={L.get('rembg_glass_mean_alpha')}")

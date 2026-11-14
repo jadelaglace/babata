@@ -13,6 +13,10 @@
 
     BABATA_REMBG_PYTHON=<独立 venv 的 python> python 05_scripts/atoms/vision_backend.py matte --image <in> --out <run> [--model isnet-general-use|u2net|birefnet-general]
 
+分割结果的边缘精修（可组合，不是真正的 matting 模型）：
+
+    python 05_scripts/atoms/image_ops.py refine <原图> --coarse <rembg cutout.png> --out <run> [--band 8]
+
 - 退出码：0 成功；2 输入无效／不支持／超限／冲突；3 完整性失败；4 后端不可用。
 - over 是 straight-alpha 8-bit 浮点计算后四舍五入，第一张为顶层；无色彩管理。
 - key-white 默认 `--connectivity border`：只有与图像边框连通的近白区域被去除；被主体包围的近白区记为发现。真正的环形镂空背景需显式 `global`。

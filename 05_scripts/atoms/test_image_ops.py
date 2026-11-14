@@ -219,3 +219,38 @@ def test_bl_adapter_handles_fake_backend_outputs(tmp_path, monkeypatch):
         monkeypatch.setattr(vb, "backend_identity", lambda k, m: {"backend": k, "model": m})
         code = vb.main(["ask", "--backend", "bl", "--image", p, "--prompt", "q", "--out", str(tmp_path / f"r{i}")])
         assert code == (0 if i == 2 else 3)
+
+
+def test_multibg_zoom_contains_edge_for_symmetric_subject(tmp_path):
+    yy, xx = np.mgrid[0:240, 0:320]
+    inside = ((xx - 160) / 100.0) ** 2 + ((yy - 120) / 80.0) ** 2 <= 1
+    arr = np.zeros((240, 320, 4), np.uint8); arr[inside] = (40, 40, 60, 255)
+    p = save(tmp_path / "ellipse.png", arr)
+    run(["multibg", p, "--out", str(tmp_path / "r")])
+    x0, y0, x1, y1 = manifest(tmp_path / "r")["measurements"]["zoom_box_inclusive"]
+    window = inside[y0:y1 + 1, x0:x1 + 1]
+    assert window.any() and not window.all()  # the zoom shows an actual edge, not flat interior
+
+
+def test_refine_improves_soft_edge_over_binary_coarse_mask(tmp_path):
+    h, w = 120, 160
+    yy, xx = np.mgrid[0:h, 0:w]
+    dist = np.hypot(xx - 80, yy - 60)
+    truth = np.clip((42 - dist) / 6.0, 0, 1)            # 6px soft edge
+    bg = np.stack([60 + 0 * xx, 160 + 0 * xx, 220 + 0 * xx], -1).astype(float)
+    fg = np.array([200.0, 60.0, 40.0])
+    img = np.zeros((h, w, 4), np.uint8)
+    img[..., :3] = np.floor(fg * truth[..., None] + bg * (1 - truth[..., None]) + 0.5); img[..., 3] = 255
+    coarse = np.zeros((h, w, 4), np.uint8); coarse[..., 3] = np.where(truth >= 0.5, 255, 0)
+    pi, pc = save(tmp_path / "img.png", img), save(tmp_path / "coarse.png", coarse)
+    run(["refine", pi, "--coarse", pc, "--out", str(tmp_path / "r")])
+    est = np.asarray(Image.open(tmp_path / "r" / "refined.png"))[..., 3] / 255.0
+    band = (truth > 0.01) & (truth < 0.99)
+    assert np.abs(est - truth)[band].mean() < 0.5 * np.abs(coarse[..., 3] / 255.0 - truth)[band].mean()
+
+
+def test_v08_grader_ignores_negated_hedges():
+    import vision_cases as vc
+    case = {"id": "V08", "truth": {}, "scoring": ""}
+    assert vc.score_semantic(case, "峰值未被截断或模糊处理，2024 年销量为 100，数值可确定。")[0] == "fail"
+    assert vc.score_semantic(case, "折线顶到坐标上限 100，实际值至少为 100，无法精确读出。")[0] == "pass"

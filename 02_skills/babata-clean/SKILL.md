@@ -7,6 +7,8 @@ description: >
   Babata revision. Route between deterministic local tools, QianWen Skills, Bailian CLI, and future
   adapters without giving any adapter database authority. Keep C0 read-only, use staging for
   candidates, and register accepted output only through `babata process register`.
+  Not for casual image reading, comparison or quality checks without C1 registration (use
+  babata-vision), nor for cutouts or compositing (use babata-render).
 ---
 
 # Babata Clean

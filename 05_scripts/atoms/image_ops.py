@@ -775,6 +775,63 @@ def cmd_resize(args, limits):
                           {"region": "full image"}, ["upscaling interpolates; it adds no detail"])
 
 
+def refine_alpha(rgba_src: np.ndarray, coarse: np.ndarray, band: int = 8, radii=(4, 8, 16)):
+    """Classical local-colour matting in a band around a coarse (segmentation) mask.
+
+    Definite foreground/background come from the eroded coarse mask; in the unknown band each pixel's
+    alpha is the projection of I-B onto F-B, with F and B the local means of nearby definite pixels.
+    Returns (alpha, info). Pixels with no local F or B keep the coarse value.
+    """
+    rgb = rgba_src[..., :3].astype(np.float64)
+    hard = coarse >= 0.5
+    fg = hard & ~shift_any(~hard, band)
+    bg = ~hard & ~shift_any(hard, band)
+    unknown = ~(fg | bg)
+    alpha = coarse.astype(np.float64).copy()
+    alpha[fg], alpha[bg] = 1.0, 0.0
+    todo = unknown.copy()
+    solved = np.zeros_like(unknown)
+    for r in radii:
+        if not todo.any():
+            break
+        nf, nb = box_sum(fg.astype(np.float64), r), box_sum(bg.astype(np.float64), r)
+        ok = todo & (nf >= 3) & (nb >= 3)
+        if not ok.any():
+            continue
+        F = np.stack([box_sum(rgb[..., i] * fg, r) for i in range(3)], -1) / np.maximum(nf, 1)[..., None]
+        B = np.stack([box_sum(rgb[..., i] * bg, r) for i in range(3)], -1) / np.maximum(nb, 1)[..., None]
+        d = F - B
+        den = (d * d).sum(-1)
+        good = ok & (den > 400)  # foreground/background colours must differ to be separable
+        est = np.clip(((rgb - B) * d).sum(-1) / np.maximum(den, 1e-9), 0, 1)
+        alpha[good] = est[good]
+        solved |= good
+        todo &= ~good
+    info = {"band_px": band, "radii": list(radii), "unknown_px": int(unknown.sum()), "solved_px": int(solved.sum()),
+            "kept_coarse_px": int(todo.sum())}
+    return alpha, info
+
+
+def cmd_refine(args, limits):
+    src, srec = load_image(args.input, "image", limits, args.exif)
+    coarse_img, crec = load_image(args.coarse, "coarse", limits, args.exif)
+    if coarse_img.shape != src.shape:
+        raise AtomError("invalid-input", "coarse matte size differs from image")
+    req = {"image": srec["sha256"], "coarse": crec["sha256"], "band": args.band, "exif": args.exif}
+    run = Run(args.out, "refine", req)
+    if (prev := run.existing()):
+        return prev
+    alpha, info = refine_alpha(src, coarse_img[..., 3] / 255.0, args.band)
+    rgb = src[..., :3].astype(np.float64) / 255.0
+    out = to_uint8(rgb, alpha)
+    with run:
+        run.add("refined", "refined.png", out, relation="original colours with locally solved alpha")
+        meas, finds = measure_alpha(out, args.profile)
+        meas["refine"] = info
+        return run.finish([srec, crec], meas, finds, {"region": "unknown band around the coarse matte"},
+                          ["local-colour model: fails where foreground and background colours are similar; colour is not un-mixed"])
+
+
 def cmd_probe(args, limits):
     img, rec = load_image(args.input, "input", limits, args.exif)
     rgb, a = to_float(img)
@@ -887,13 +944,17 @@ def cmd_multibg(args, limits):
     if args.zoom:
         zx0, zy0, zx1, zy1 = [int(v) for v in args.zoom.split(",")]
     else:
-        a = img[..., 3].astype(np.int32)
-        edge = (a > 0) & (a < 255)
-        if not edge.any():
-            edge = np.abs(np.diff(a, axis=0, prepend=0)) > 0
-        ys, xs = np.nonzero(edge) if edge.any() else (np.array([h // 2]), np.array([w // 2]))
-        cy, cx = int(np.median(ys)), int(np.median(xs))
+        # zoom where the most edge pixels are (a window that actually contains the edge),
+        # not the median of edge coordinates, which lands in the centre of symmetric shapes
+        a = img[..., 3]
+        opaque = a >= 128
+        edge = ((a > 0) & (a < 255)) | (opaque & shift_any(~opaque, 1))
         half = max(8, min(h, w) // 8)
+        if edge.any():
+            density = box_sum(edge.astype(np.float64), half)
+            cy, cx = (int(v) for v in np.unravel_index(int(np.argmax(density)), density.shape))
+        else:
+            cy, cx = h // 2, w // 2
         zx0, zy0, zx1, zy1 = max(0, cx - half), max(0, cy - half), min(w - 1, cx + half), min(h - 1, cy + half)
     crop = img[zy0:zy1 + 1, zx0:zx1 + 1]
     zf = max(1, min(8, 300 // max(1, max(crop.shape[:2]))))
@@ -1033,6 +1094,8 @@ def build_parser():
     s.add_argument("layers", nargs="+", help="first is top"); s.add_argument("--fit", choices=["none", "stretch", "contain"], default="none")
     s = add("resize", cmd_resize)
     s.add_argument("--width", type=int); s.add_argument("--height", type=int)
+    s = add("refine", cmd_refine); s.add_argument("--coarse", required=True); s.add_argument("--band", type=int, default=8)
+    s.add_argument("--profile", choices=list(PROFILES), default="translucent")
     s = sub.add_parser("probe"); s.add_argument("input"); s.add_argument("--out")
     s.add_argument("--exif", choices=["apply", "ignore"], default="apply"); s.set_defaults(fn=cmd_probe)
     s = add("measure", cmd_measure)

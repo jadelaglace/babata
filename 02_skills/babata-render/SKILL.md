@@ -29,7 +29,7 @@ metadata:
 | --- | --- |
 | 干净白底／棚拍 | `key-white`（默认只去掉与边框相连的白，白色主体内部保留） |
 | 绿幕／蓝幕 | `key-chroma` 带 despill |
-| 细发、玻璃、复杂背景 | 真实复杂后端 `vision_backend.py matte`；未配置则 **blocked**，不能用 keying 顶替 |
+| 细发、玻璃、复杂背景 | 真实复杂后端 `vision_backend.py matte`，可再 `refine` 精修边缘带；未配置则 **blocked**，不能用 keying 顶替。当前 rembg 是分割模型，远离主体的细发会丢失，须如实说明 |
 | 阴影被并进背景层 | `shadow-extract` 后 `over` 合成 |
 | 已有 RGBA 图层 | `over`（第一张在最上）、`resize`（预乘缩放，不出色边） |
 
