@@ -101,6 +101,9 @@ flowchart LR
 
 ## 6. 维护规则
 
+候选探索（非当前产品合同）：[#248 金融信源与低频信号方案](../proposals/2026-11-15-finance-source-signals/README.md)，
+归于 Epic #203／#212；仅调研与定义，未实施、不含交易授权。当前有效探索意图见 DOC-REQ 的 REQ-09B。
+
 已采纳提案记录（不属于当前权威注册表，现行合同已写入各权威文档）：[#235](https://github.com/jadelaglace/babata/issues/235) 的
 [render＋vision PRD](../proposals/2026-11-15-render-vision/PRD.md) 与
 [架构建议](../proposals/2026-11-15-render-vision/ARCHITECTURE.md)。2026-11-15 已采纳并实施中；
