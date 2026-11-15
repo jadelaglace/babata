@@ -152,6 +152,15 @@ Python 3.13.17／Rust 1.100.0 本地 All gate 195.1s、其中 boundary 40.1s 通
 
 ### 其他当前项
 
+#248 精选金融信源与低频信号的 discovery／候选方案已交付 PR #249（未合并）：逐字输入保存在 Git 外，
+候选方案见 `proposals/2026-11-15-finance-source-signals/README.md`，
+研究证据在 `D:/BabataEvidence/finance-stk02-discovery-20261115/`。
+未运行金融回测、未验证信源／信号效果、未实施或安装新金融能力，未接券商、交易、
+WBS 或推送自动化；StockMesh 仅只读核对。是否采纳方案及首轮范围由用户决定。
+本地完整 boundary 43.5s 通过，含文档与 mutation／negative checks；研究 run 已 finalized／
+integrity verified（21 观察，10 正文相关摘录、1 正文不可访问）；不把完整性检查当事实认证。
+未运行任何金融策略验收题或收益验证。最终提交与远端 CI 结果见本轮 `DELIVERY.json`，不预判。
+
 | 项目 | 状态 | 下一授权条件 |
 | --- | --- | --- |
 | #209 WBS 单入口与内部可替换任务源 | `implemented / local-verified / installed-local` | 2026-11-15 按最新纠偏，飞书适配已吸收进 babata-wbs，原独立 feishu-wbs 入口可恢复退出；6个安装文件与仓内源 hash 一致。内部契约定义选源、身份、完整性、差异写入和回读；私有连接迁入 Assistant 配置。实际宿主仅发现单一 WBS 入口，两种脱敏源形状替换演练、CLI dry-run 4/4及 All gate 100.2s 通过。业务规则／汇总模板不变，不自动迁移或双写。目前只维护飞书实现；替换演练不代表第二后端已可用。原 #239 两层发现为历史证据，最新PR／合并状态查本轮终态回执；真实任务未读写。模型自动选择与真实 API 原验收缺口仍保留。证据见 §11 |

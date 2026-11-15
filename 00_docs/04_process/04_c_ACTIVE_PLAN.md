@@ -11,11 +11,11 @@
 
 <!-- CURRENT-ACTIVE: none -->
 
-#241 的两个独立原子包已交付 PR #242；27 项自动测试、18 题作者场景走查、frontmatter 和
-本地 All／boundary 通过，具体结论和限制在 `DOC-USAGE` §10 及 Git 外
-`D:/BabataEvidence/git-server-atoms-20261115/REPORT.md`。当前 PR CI 已触发，不预判其结果。
-本次终端为 PR 交付，不自动安装、合并、清理或操作真实服务器；#238 和发丝队列不由此恢复。
-逐字输入、来源、验证及恢复证据已持久保留，本临时执行项退出恢复热路径。
+#248 调研／候选方案已交付 PR #249；本轮仅定义终态，不是金融功能可用或投资效果验收。
+完整方案在 `proposals/2026-11-15-finance-source-signals/README.md`，原话与研究证据在
+`D:/BabataEvidence/finance-stk02-discovery-20261115/`，当前交付状态由 DOC-USAGE 拥有。
+用户尚未选择首轮范围；不自动实施、接券商、交易、部署定时任务或恢复其他 PR／发丝队列。
+本次不合并、不安装、不改 WBS／StockMesh；#246 旧工作树既有 dirty 改动保留。
 
 ## 2. 下次开工队列（禁止恢复时自动执行）
 
