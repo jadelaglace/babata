@@ -92,7 +92,7 @@ jobs:
       - name: Install Python
         uses: actions/setup-python@v7
         with:
-          python-version: '3.11'
+          python-version: '3.14'
       - name: Install TypeScript dependencies
         working-directory: ./08_adapters/01_browser_extension
         run: npm ci

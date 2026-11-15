@@ -1,6 +1,6 @@
 # 视觉运行入口
 
-依赖 Python ≥3.11、Pillow、NumPy。输出 JSON；`--out` 是 Git 外绝对路径的新 run 目录，manifest.json 最后写入。
+依赖 Python 3.14、Pillow、NumPy。输出 JSON；`--out` 是 Git 外绝对路径的新 run 目录，manifest.json 最后写入。
 
     python 05_scripts/atoms/image_ops.py probe <img>
     python 05_scripts/atoms/image_ops.py measure <img> --out <run> --profile cutout|multi-part|translucent|pixel-art [--expect-parts N] [--layout]

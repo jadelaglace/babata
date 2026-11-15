@@ -1,6 +1,6 @@
 # 素材加工运行入口
 
-依赖 Python ≥3.11、Pillow、NumPy；OpenCV 不需要。所有命令输出 `babata.image-atom/v1` JSON 到 stdout，并在 `--out`（Git 外绝对路径、新目录）写产物和最后写入的 manifest.json。
+依赖 Python 3.14、Pillow、NumPy；OpenCV 不需要。所有命令输出 `babata.image-atom/v1` JSON 到 stdout，并在 `--out`（Git 外绝对路径、新目录）写产物和最后写入的 manifest.json。
 
     python 05_scripts/atoms/image_ops.py key-white <in> --out <run> [--level 248 --soft 28] [--connectivity border|global] [--keep-largest]
     python 05_scripts/atoms/image_ops.py key-chroma <in> --out <run> --color green|blue [--tolerance 60 --despill 0.8]
@@ -9,7 +9,7 @@
     python 05_scripts/atoms/image_ops.py resize <in> --width W [--height H] --out <run>
     python 05_scripts/atoms/image_ops.py verify --out <run>
 
-复杂抠图（本地 rembg，可替换）：
+复杂抠图（本地 rembg，可替换；rembg 目前要求 Python <3.14，因此装在独立 3.13 venv，由 `BABATA_REMBG_PYTHON` 指向，主流程仍用 3.14）：
 
     BABATA_REMBG_PYTHON=<独立 venv 的 python> python 05_scripts/atoms/vision_backend.py matte --image <in> --out <run> [--model isnet-general-use|u2net|birefnet-general]
 

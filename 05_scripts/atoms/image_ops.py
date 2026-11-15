@@ -57,7 +57,7 @@ def canonical_hash(value) -> str:
 
 
 def is_link(path: Path) -> bool:
-    """Symlink, junction or any other reparse point (works on Python 3.11, which lacks os.path.isjunction)."""
+    """Symlink, junction or any other reparse point (checked by attribute, independent of os.path.isjunction)."""
     if path.is_symlink():
         return True
     try:
