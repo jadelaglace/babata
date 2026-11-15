@@ -1,12 +1,12 @@
 # 可恢复研究 run
 
-在已定位 Babata 仓库根运行 Node helper。所有输入和 run 在 Git 外，不能放凭据或 cookie。helper 不联网；真实搜索与读取由宿主执行。
+在本 Skill 目录运行自带的 Node helper（`scripts/research.mjs`，只依赖 Node 内置模块）。所有输入和 run 在 Git 外，不能放凭据或 cookie。helper 不联网；真实搜索与读取由宿主执行。
 
-    node 05_scripts/atoms/research.mjs init --request <absolute-request.json> --run <absolute-new-run-dir>
-    node 05_scripts/atoms/research.mjs record --event <absolute-event.json> --run <run-dir>
-    node 05_scripts/atoms/research.mjs finish --conclusion <absolute-conclusion.json> --run <run-dir>
-    node 05_scripts/atoms/research.mjs status --run <run-dir>
-    node 05_scripts/atoms/research.mjs verify --run <run-dir>
+    node scripts/research.mjs init --request <absolute-request.json> --run <absolute-new-run-dir>
+    node scripts/research.mjs record --event <absolute-event.json> --run <run-dir>
+    node scripts/research.mjs finish --conclusion <absolute-conclusion.json> --run <run-dir>
+    node scripts/research.mjs status --run <run-dir>
+    node scripts/research.mjs verify --run <run-dir>
 
 - request：question、scope、producer 字符串，depth 为 sources 或 research；可附预算、日期和工具约束，全部纳入请求身份。
 - event：id（字母数字下划线横线）、kind、provider、实际 observed_at、status（succeeded/failed/inaccessible），失败须 reason。

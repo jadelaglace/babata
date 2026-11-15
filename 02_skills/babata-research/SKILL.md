@@ -2,14 +2,14 @@
 name: babata-research
 description: 搜索、核实或调研网络问题与话题，交付来源、证据或调研结论；可独立使用，不强制出报告图片或入知识库。已有内容转 PNG 用 babata-render。
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # Babata 搜索与调研
 
 把问题变成能使用、能核查的资料或结论。使用当前宿主的真实搜索／正文读取工具，不绑定搜索厂商、模型或执行机制。已有明确 URL 时直接读取，不为流程完整重复搜索。
 
-脚本根优先用本地 BABATA_REPO_HOME；否则定位当前 Babata checkout，核对 05_scripts/atoms/research.mjs 后运行。Skill 安装位置不等于仓库根；找不到脚本时仍可搜索回答，但必须说明可恢复 run 不可用，不能伪称已落盘。
+本 Skill 自带 run helper：本目录 `scripts/research.mjs`（只需 Node，无第三方包），切出仓库单独安装即可运行，不找、不依赖 Babata 仓库。没有 Node 时仍可搜索回答，但必须说明可恢复 run 不可用，不能伪称已落盘。
 
 ## 搜索与核证
 
@@ -20,7 +20,7 @@ metadata:
 
 ## 可恢复工作
 
-需要落盘／连续研究时，用 Git 外 Assistant 工作区保存 run，证据在 Evidence。读 [run 合同](references/run.md)，调用仓库 05_scripts/atoms/research.mjs 保存请求、实际查询观察、正文和结论。不为一次口头小查询强制制造完整项目树。
+需要落盘／连续研究时，用 Git 外 Assistant 工作区保存 run，证据在 Evidence。读 [run 合同](references/run.md)，调用本目录 `scripts/research.mjs` 保存请求、实际查询观察、正文和结论。不为一次口头小查询强制制造完整项目树。
 
 同 run 先 status/verify，再复用已有观察；刷新用新 run。helper 核文件身份与引用，不证明外部事实正确。异常 lock 先核 PID 和实际进程状态，无法排除活跃写入时不删；确认已终止并检查文件后才清理该精确 lock。
 
