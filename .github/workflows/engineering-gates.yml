@@ -37,6 +37,8 @@ jobs:
               - '05_scripts/check-fast.ps1'
               - '05_scripts/check-full.ps1'
             adapters:
+              - '02_skills/babata-git/**'
+              - '02_skills/babata-ops/**'
               - '.github/workflows/engineering-gates.yml'
               - '05_scripts/atoms/**'
               - '08_adapters/**'

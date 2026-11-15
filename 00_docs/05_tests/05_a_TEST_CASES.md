@@ -201,6 +201,20 @@ Agent 不替代用户视觉验收。
 预期：规则、模板和内部适配同属 `babata-wbs`，私有连接在 Git 外配置。存储实现可按窄契约替换，
 不改变业务规则／模板，不自动迁移、双写或回退；不新建 Rust、数据库、同步、Goal 或调度依赖。
 
+### TC-09G：独立 Git／Ops 原子
+
+追溯：`AC-09A`。
+
+1. 两包分别复制到临时仓库外，从无 Babata 上下文的 cwd 调用 --help／实际检查；依赖只走 PATH。
+2. 临时 Git 仓库覆盖 staged、dirty、Unicode／空格路径、linked worktree、detached HEAD、错误
+   base、无历史基线、疑似秘密／先提交后删除、超大 blob 和可配置政策；重跑核 refs/index/文件不变。
+3. 受控本地 HTTP 服务覆盖 200、500、合法重复 cookie、重定向不跟随、超时、连接失败、坏 URL／
+   参数；头、URL、异常与正文放合成秘密，输出不含秘密值，健康和传输状态分开。
+4. 按两包 `references/scenarios.md` 走查授权／冲突／部署回滚／缺依赖，不实际变更远程环境；
+   记录观察及推断，未独立盲测或未实机验证显式说明。
+5. 运行 `python -m unittest discover -s 05_scripts/atoms -p test_delivery_atoms.py -v`、Skill
+   frontmatter 检查、文档检查、boundary 和 full gate。报告各自覆盖，测试数不是整体能力覆盖率。
+
 ## 11. TC-10：Backs 记忆档案与隔离恢复
 
 追溯：`AC-10`。

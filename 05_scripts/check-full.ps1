@@ -48,6 +48,10 @@ if ($Scope -in @('All', 'Rust')) {
 }
 
 if ($Scope -in @('All', 'Adapters')) {
+    Invoke-TimedCheck 'Standalone Git and Ops atoms' {
+        python -m unittest discover -s (Join-Path $repo '05_scripts/atoms') -p test_delivery_atoms.py -v
+        Assert-NativeCommandPassed 'delivery atom tests'
+    }
     Invoke-TimedCheck 'Research and offline PNG atom tests' {
         node --test (Join-Path $repo '05_scripts/atoms/research.test.mjs') (Join-Path $repo '05_scripts/atoms/render.test.mjs')
         Assert-NativeCommandPassed 'content atom tests'

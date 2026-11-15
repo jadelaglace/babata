@@ -162,6 +162,18 @@ validate scope -> stage metadata/assets -> write transaction -> finalize assets
 - staging、模型 workspace、execution ledger、缓存和日志位于 Git 外；仓库只保存 schema、Skill、模板和 checker。
 - SQLite migration 由 application/infrastructure 控制；任何兼容 fallback 必须显式、可测试且不静默降级。
 
+### 交付与运行维护 Skill 边界
+
+`babata-git` 与 `babata-ops` 是宿主 Agent 组合的独立操作能力，不是知识 writer 或新自治 runtime。
+Git refs/index/worktree 由 Git 维护；服务／环境当前状态由目标机 native manager 维护。Skill 只在
+用户授权范围调用它们，状态未知先读回，不能承诺外部 exactly-once。四件套继续拥有需求、
+架构、代码和设计职责，两个操作包按需返回测试／交付／运行证据，不复制其治理合同。
+新包的脚本规范源直接在各自 `scripts/`（单一维护点），验证在 `05_scripts/atoms/`；与其他包
+独立，不借用尚未合并的打包重构。标准库 Python 按 PATH／uv 调用，无第三方 Python 依赖。
+Git 检查是有界只读观察，覆盖不足须显式非通过；Ops probe 不自动重试、不跟随重定向、不输出
+响应正文或非白名单头值。运行证据留 Git 外；秘密发现只记录种类／对象位置，不复制命中字节。
+目标版本、权限、回滚和状态核对由 Agent 根据目标环境合同执行，窄脚本不持有写入权限或连接配置。
+
 ## 8. 来源、能力与自动化
 
 来源证据和 runtime 状态分开：
