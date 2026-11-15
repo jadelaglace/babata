@@ -137,6 +137,21 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 
 ## 10. 当前开放、暂缓和未开始
 
+### #241：仓库交付与运行维护原子
+
+`babata-git`／`babata-ops` 已在独立分支实现并提交 PR #242（Issue #241），包目录各自包含 Skill、reference 与标准库
+Python 窄脚本；脱离仓库复制执行、真实临时 Git、受控本地 HTTP、负例及脱敏共 27 项自动
+测试通过；18 题作者场景走查符合当前合同（不是独立盲测）。两包 frontmatter 检查通过，
+Python 3.13.17／Rust 1.100.0 本地 All gate 195.1s、其中 boundary 40.1s 通过；既有图像
+测试 23 pass／1 skip 如实保留。CI 已接入新包路径与测试。
+本地实现提交 `5f84a69` 与远端 head 已核一致；PR CI 已触发，当前结论以 GitHub 最新 head 为准，
+不把本地通过当远端通过。Git 传输被重置后用 GitHub API 发布，tree／commit 均与本地完全一致，
+未更改用户 Git 配置或泄漏凭据。未安装、未合并、未发布，真实 SSH／systemd／GPU／生产部署回滚和灾备未验证；原始两技能及
+四件套未修改，不新增 Rust writer／runtime／私有依赖变量。工程通过不是用户验收。
+证据：`D:/BabataEvidence/git-server-atoms-20261115/` 的 USER-INPUT、SCENARIO-REVIEW 与 REPORT。
+
+### 其他当前项
+
 | 项目 | 状态 | 下一授权条件 |
 | --- | --- | --- |
 | #209 WBS 单入口与内部可替换任务源 | `implemented / local-verified / installed-local` | 2026-11-15 按最新纠偏，飞书适配已吸收进 babata-wbs，原独立 feishu-wbs 入口可恢复退出；6个安装文件与仓内源 hash 一致。内部契约定义选源、身份、完整性、差异写入和回读；私有连接迁入 Assistant 配置。实际宿主仅发现单一 WBS 入口，两种脱敏源形状替换演练、CLI dry-run 4/4及 All gate 100.2s 通过。业务规则／汇总模板不变，不自动迁移或双写。目前只维护飞书实现；替换演练不代表第二后端已可用。原 #239 两层发现为历史证据，最新PR／合并状态查本轮终态回执；真实任务未读写。模型自动选择与真实 API 原验收缺口仍保留。证据见 §11 |

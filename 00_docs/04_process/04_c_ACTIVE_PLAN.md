@@ -11,9 +11,11 @@
 
 <!-- CURRENT-ACTIVE: none -->
 
-当前没有待执行开发项。#233／#235 已于 2026-11-15 经 PR #234、#236 合入 main（c13dc6a），
-render／vision 技能已装到本机；结果见 `DOC-USAGE`，证据根 `D:/BabataEvidence/render-vision-235/`。
-Round-1 已终态，不从摘要或旧 Goal 重跑。发布和用户验收未被自动授权。
+#241 的两个独立原子包已交付 PR #242；27 项自动测试、18 题作者场景走查、frontmatter 和
+本地 All／boundary 通过，具体结论和限制在 `DOC-USAGE` §10 及 Git 外
+`D:/BabataEvidence/git-server-atoms-20261115/REPORT.md`。当前 PR CI 已触发，不预判其结果。
+本次终端为 PR 交付，不自动安装、合并、清理或操作真实服务器；#238 和发丝队列不由此恢复。
+逐字输入、来源、验证及恢复证据已持久保留，本临时执行项退出恢复热路径。
 
 ## 2. 下次开工队列（禁止恢复时自动执行）
 
