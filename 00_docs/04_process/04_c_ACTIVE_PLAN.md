@@ -11,11 +11,10 @@
 
 <!-- CURRENT-ACTIVE: none -->
 
-#241 的两个独立原子包已交付 PR #242；27 项自动测试、18 题作者场景走查、frontmatter 和
-本地 All／boundary 通过，具体结论和限制在 `DOC-USAGE` §10 及 Git 外
-`D:/BabataEvidence/git-server-atoms-20261115/REPORT.md`。当前 PR CI 已触发，不预判其结果。
-本次终端为 PR 交付，不自动安装、合并、清理或操作真实服务器；#238 和发丝队列不由此恢复。
-逐字输入、来源、验证及恢复证据已持久保留，本临时执行项退出恢复热路径。
+#241 已按用户“合并 PR #242 后安装”完成：最新 head 四项 CI 成功，PR 合入 main（`67fba31`），
+两个 Skill 已安装到 `.agents/skills`，`.claude/skills` junction 共用；10/10 文件及脚本 smoke
+核验通过。状态与限制见 `DOC-USAGE` §10，授权／回执在
+`D:/BabataEvidence/git-server-atoms-20261115/`。临时执行项已退出；不自动恢复 #238 或队列。
 
 ## 2. 下次开工队列（禁止恢复时自动执行）
 
