@@ -158,6 +158,12 @@ validate scope -> stage metadata/assets -> write transaction -> finalize assets
   助理文件只有显式 promotion 经原 Rust writer 才成为正式知识，不直接修改 canonical SQLite。
 - 薄 run manifest 可聚合记录身份、producer/build、输入、root alias＋相对路径、size/hash（可 unknown）、
   角色／状态／敏感性／retention／备份分类／依赖／可选晋升，不强迫旧文件逐个补 sidecar。
+- 探索性研究来源工作区复用 Assistant 的 `solutions/<solution>/workspaces/<task-or-run>`，
+  可保留既有内部布局与独立本地 Git；它不成为产品仓库、正式知识库或第二 writer。资料与研究
+  过程留在工作区，需要长期审计的执行凭据写 Evidence；既有证据不为路径整齐强迁。未接纳
+  不等于临时垃圾，PNG 不自动成为正式 C2。桌面链接只作访问别名，原子使用已核实体路径，
+  不放宽资产 symlink/junction 越界检查；四根自身隔离约束不变。迁移冻结清单与 hash，
+  核查源漂移、Git 状态和真实目标，成功后保留追加路径映射及明确回退入口；不隐含去重或自动化。
 - 历史回执原字节保留；追加路径终态映射，活动入口适配新路径，历史脚本不得盲执行或全局替换。
 - staging、模型 workspace、execution ledger、缓存和日志位于 Git 外；仓库只保存 schema、Skill、模板和 checker。
 - SQLite migration 由 application/infrastructure 控制；任何兼容 fallback 必须显式、可测试且不静默降级。

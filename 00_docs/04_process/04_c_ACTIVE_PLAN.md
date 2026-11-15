@@ -11,11 +11,13 @@
 
 <!-- CURRENT-ACTIVE: none -->
 
-#241 的两个独立原子包已交付 PR #242；27 项自动测试、18 题作者场景走查、frontmatter 和
-本地 All／boundary 通过，具体结论和限制在 `DOC-USAGE` §10 及 Git 外
-`D:/BabataEvidence/git-server-atoms-20261115/REPORT.md`。当前 PR CI 已触发，不预判其结果。
-本次终端为 PR 交付，不自动安装、合并、清理或操作真实服务器；#238 和发丝队列不由此恢复。
-逐字输入、来源、验证及恢复证据已持久保留，本临时执行项退出恢复热路径。
+#244 本机迁移与最小文件语义补充已完成：5,406 文件/775 目录全量 hash、mtime 与独立
+Git 状态一致；桌面 junction 及4类文件读回、7项隔离演练、四根检查和 All gate 200.7s 通过。
+当前交付边界只到 PR，不自动合并／发布；交付身份和实时 CI 查
+`D:/BabataEvidence/research-workspace-20261115/DELIVERY.md`，真实迁移查同目录
+`terminal-receipt.json` 和 `PATH-MAPPING.json`；Usage §10/11 拥有持久结果。
+原目录 `research_reports.rollback-244` 保留，退出须另行明确授权，不自动清理或当独立备份。
+未来自动化、自动收集、结构改造、重复治理不自动启动；迁移成功实例不得重跑。
 
 ## 2. 下次开工队列（禁止恢复时自动执行）
 
