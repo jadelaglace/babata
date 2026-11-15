@@ -1,0 +1,4 @@
+interface:
+  display_name: "Babata WBS"
+  short_description: "汇总个人 WBS、维护任务进度与 TOP 顺序，按统一模板汇报"
+  default_prompt: "Use $babata-wbs to summarize my latest WBS with TOP ordering and complete priority groups."

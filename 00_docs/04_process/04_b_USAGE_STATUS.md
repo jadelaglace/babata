@@ -139,6 +139,7 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 
 | 项目 | 状态 | 下一授权条件 |
 | --- | --- | --- |
+| #209 WBS 规则与模板解耦 | `implemented / local-verified / installed-local` | 2026-11-15 按用户新要求，平台无关语义、TOP 与完整汇报模板归仓内 babata-wbs；Base／schema／CLI／鉴权和回读归本机 feishu-wbs。两层已安装、实际宿主发现及离线对账通过，合成 CLI dry-run 4/4 和完整 All gate 85.1s 通过；真实任务未改动。新交付替代旧薄路由草稿 #216，合并状态以关联 PR 和终态回执为准。模型自动选择与真实 API 写后回读未在本轮验证，#209 保留这些原验收缺口。证据见 §11 |
 | P0-P9 Docs 收束 | `completed / merged` | PR #194；merge `aaa4d0fe18c378cb5e58751f1eb981608673466e`；旧全文冻结于 `9182a77` |
 | #233 搜索调研与 PNG 原子 | `implemented / verified / merged` | #210 / Epic #203 第一条；PR #234 于 2026-11-15 按用户“先合 #234 再合 #236”合入 main（da9b32d）。两原子独立及组合、本地 .agents 入口已验证。后继依“旧的不用兼容”退出旧报告两入口，仅保留 babata-research / babata-render；旧文件可恢复归档，6/6 hash 一致，新入口四目录静态校验、既有研究/PNG 完整性与 scoped docs 检查通过。原实施 Rust 1.100.0 All gate 85.4s 及远端完整 CI 的历史证据不改写；原轮与后继身份分别查 §11 的两个回执。不发布，宿主自动选择和用户验收不推断 |
 | #235 render＋vision | `implemented / verified-with-known-failures / merged / installed-local` | #210 / Epic #203 第一条；PR #236 于 2026-11-15 合入 main（c13dc6a，Python 3.13 CI 4/4）；用户“装，并更新状态”后 render 1.1.0／vision 1.0.0 拷贝安装到 .agents 与 .claude 技能目录，逐文件 hash 与 main 一致，旧 render 1.0.1 已备份。用户 2026-11-15“全部接受”三项范围后实施。Round-1 冻结 48 题：R/Q/B 30 pass、1 fail（R04 发丝带 MAE 0.436）、1 partial（B08 静态审阅）；V 千问 13/16（V01 标点宽度、V06 读值误差、V08 断言截断值，后者经人工裁定）；宿主 16/16 非盲。轮后修复 multibg 放大框、新增 refine、判分否定句、clean 路由边界，Round-2 新变体复验。不发布；babata-clean 仍是指向主检出的 junction，描述更新随该检出切到 main 生效。宿主自动选择和用户验收不推断 |
@@ -161,6 +162,7 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 
 | 使用事实 | Evidence 入口 |
 | --- | --- |
+| #209 WBS 规则与汇报模板 2026-11-15 解耦 | `D:/BabataEvidence/wbs/skill-decoupling-20261115-4a86f6fe/`：intent、适配器迁移前备份与安装回执；脱敏混合样本及旧授权导出只读对账；app-server 实际发现；lark-cli 合成 GET／POST／PATCH 全部 dry-run；最终安装 hash、边界检查及工程日志。离线算术／覆盖走查不是独立模型行为证明，宿主发现不是自动选择，dry-run 不证明真实鉴权／schema／实写回读。完整终态由 terminal-receipt.json 保存；不发布新二进制，不改真实任务 |
 | #233 搜索调研与 PNG 2026-11-14 实施 | `D:/BabataEvidence/research-render-233/`：真实搜索、正文及结论在 `live-research/run/`；独立分页、组合及正式 PNG 实物和目视记录在 `final-round/`；最终 gate／构建／交付身份由 `terminal-receipt.json` 指定。正文和图不进 Git。正式首版沿用现有 record 投影，不声称完整正文／附件；依赖 probe 不等于启动测试，离线请求护栏不是强 OS 沙箱，视觉自审不是用户验收 |
 | #233 旧技能入口退出纠偏 | `D:/BabataEvidence/research-render-233/legacy-skill-retirement-20261114/`：`manifest.json` 保存用户原话、六文件身份和可恢复归档映射；`receipt.json` 保存退出及定向验证结果。两个旧名无兼容别名；原调研汇报可直接组合新原子，图表检查指引归入 renderer。Rust 格式、原始数据、Hermes 与历史回执未改 |
 | #235 render＋vision 2026-11-15 实施 | `D:/BabataEvidence/render-vision-235/`：授权原话 `AUTHORIZATION-20261115.md`；`round-1/` 冻结题、输入 hash、逐次调用 manifest 与原始回答、`results/`、`ADJUDICATION.json`；`round-2-fix-verify/` 轮后复验；可读汇总 `REPORT.md`。公开样本仅本地评测；rembg 权重与数据集在 Assistant 根，不进 Git；安装回执与旧版备份 `install-20261115/` |

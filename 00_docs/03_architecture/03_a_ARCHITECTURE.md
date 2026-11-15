@@ -47,6 +47,12 @@ external source / first-party input
 | C2 package/live | output artifact | builder + verifier；publisher 只复制 | 可删除重建，不反写 |
 | C3 job/log/temp | runtime | worker/runtime | 临时、可清理、不可冒充产品事实 |
 | credential/config | local secure config | 用户授权的本地工具 | 不进 Git、receipt 正文或输出 |
+| 个人 WBS 任务当前值 | 用户选定的任务源，当前为飞书原生表 | 授权任务源 native writer，经 `feishu-wbs` 调用现成 CLI | 无本地任务主库，不从汇总反写 |
+
+个人 WBS 的业务规则与汇报模板由仓内 `02_skills/babata-wbs/` 拥有；它接受已有任务数据，或调用
+本机独立 `feishu-wbs` 取得当前值并实施已授权变更。适配器只拥有私有 Base 坐标、字段映射、
+schema／CLI／鉴权／分页／回读机制，不反向拥有汇报与个人规则；不创建 Rust capability 或新服务。
+私有配置和快照留 Git 外，旧 Hermes 不共用、不自动同步。
 
 ## 5. C0、版本、资产和事务
 
