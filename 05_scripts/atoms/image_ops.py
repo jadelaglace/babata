@@ -57,7 +57,14 @@ def canonical_hash(value) -> str:
 
 
 def is_link(path: Path) -> bool:
-    return path.is_symlink() or (hasattr(os.path, "isjunction") and os.path.isjunction(path))
+    """Symlink, junction or any other reparse point (works on Python 3.11, which lacks os.path.isjunction)."""
+    if path.is_symlink():
+        return True
+    try:
+        attrs = getattr(os.lstat(path), "st_file_attributes", 0)
+    except OSError:
+        return False
+    return bool(attrs & 0x400)  # FILE_ATTRIBUTE_REPARSE_POINT
 
 
 def external_dir(directory: str) -> Path:

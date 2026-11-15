@@ -19,4 +19,15 @@
 
 ## 2. 下次开工队列（禁止恢复时自动执行）
 
-当前没有排队项；不得自动启动其他来源、Web 输出或通用 Obsidian capability。
+### #235 复杂发丝真正 alpha matting 后端：queued / requires-explicit-resume
+
+- 用户原话（2026-11-15）：“先收尾，发丝的记一下，不急”。不由 Issue OPEN、空 Goal 或本条触发。
+- 缺口：R04 冻结门槛为全图 MAE≤0.05 且发丝边缘带 MAE≤0.25；rembg 是分割模型，Round-1 带误差 0.436，
+  加 `refine` 后新变体 0.343。需要可本地运行的 matting 模型（核许可、权重 hash、CPU 可行性），新 seed 复验。
+- 证据：`D:/BabataEvidence/render-vision-235/REPORT.md` 第 3、5 节。
+
+### #235 render／vision 技能安装：queued / requires-explicit-resume
+
+- 用户原话（2026-11-15）：“pr好之后再安装”。条件：PR #236 审阅通过并合并后，再装到本机技能目录并逐文件回读 hash。
+
+不得自动启动其他来源、Web 输出或通用 Obsidian capability。
