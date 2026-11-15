@@ -47,11 +47,19 @@ external source / first-party input
 | C2 package/live | output artifact | builder + verifier；publisher 只复制 | 可删除重建，不反写 |
 | C3 job/log/temp | runtime | worker/runtime | 临时、可清理、不可冒充产品事实 |
 | credential/config | local secure config | 用户授权的本地工具 | 不进 Git、receipt 正文或输出 |
-| 个人 WBS 任务当前值 | 用户选定的任务源，当前为飞书原生表 | 授权任务源 native writer，经 `feishu-wbs` 调用现成 CLI | 无本地任务主库，不从汇总反写 |
+| 个人 WBS 任务当前值 | 用户选定的任务源，当前为飞书原生表 | 授权任务源 native writer，经 `babata-wbs` 内部任务源适配调用 | 无本地任务主库，不从汇总反写 |
 
-个人 WBS 的业务规则与汇报模板由仓内 `02_skills/babata-wbs/` 拥有；它接受已有任务数据，或调用
-本机独立 `feishu-wbs` 取得当前值并实施已授权变更。适配器只拥有私有 Base 坐标、字段映射、
-schema／CLI／鉴权／分页／回读机制，不反向拥有汇报与个人规则；不创建 Rust capability 或新服务。
+个人 WBS 的业务规则、汇报模板和任务源适配都由仓内 `02_skills/babata-wbs/` 拥有，仅一个 Skill
+入口。内部 `references/task-source.md` 定义选源、身份、读取／差异写入／回读和错误契约；
+`references/providers/feishu.md` 实现飞书映射，使用现成 lark-base／CLI，不另建 feishu-wbs Skill。
+私有选源与连接在 `BABATA_ASSISTANT_HOME/solutions/wbs/runtime/task-source.local.json`；缺失、
+无效或未实现的 provider 停住有关操作，离线汇总不依赖配置。任务身份包含 provider＋数据集＋native ID，
+不把不同源的同名或同 ID 当作同一对象。适配返回字段投影／完整性、原始证据和规范化业务值，
+接收明确目标、基线和最小差异，逐项报告写响应与最终回读；具体契约只在该 reference 维护。
+
+选择内部 reference 而非独立 Skill：调用者与维护生命周期相同，替换点是存储实现，不是第二套业务。
+将来替换只实现同一窄契约并显式改本机选源，模板与业务规则不变；切源不自动迁移、双写或回退，
+迁移须另立明确范围及身份映射。本轮只实现飞书，不建插件加载器、Rust capability、新服务或任务库。
 私有配置和快照留 Git 外，旧 Hermes 不共用、不自动同步。
 
 ## 5. C0、版本、资产和事务
