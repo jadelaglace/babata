@@ -19,12 +19,13 @@
 - 用户目标：调研技能独立复制可用，默认 Assistant，显式路径可从任意项目调用。
 - 当前状态：基于 #238 head `152b2d3` 创建独立 `codex/research-portable-246`，复用独立发布包；
   不合并 #238，也不复制其未决清理工作。PR 将以 #238 分支为 base，清楚标明依赖。
-  路径8/8、真实默认目录 smoke、Skill validator 通过；All 首轮代码/原子部分通过，计划字段名不合 checker，修正后重跑。
+  路径8/8、真实默认目录 smoke、Skill validator 通过；All 138.3s／boundary 37.4s 通过。
+  实现 e41491e 已推 PR #247，真实远端 CI 运行中；本地状态补充待提交。
 - 合同：`--run` 精确路径，或 `--workspace`＋`--run-id`；省 workspace 才读既有 Assistant 配置。
   路径不齐、冲突或 Git 内输出明确失败；不新造环境变量、不改持久配置。
 - 声明终端：最小 Docs 链、实现、独立复制与路径负例、完整 gate、PR/CI 结果；不自动合并/安装。
 - 受保护边界：不动其他工作树 dirty 文件，不重跑研究目录删除，不 git init，不启动 matting 队列。
-- 下一步：按合同实施，验证后提交和 PR；证据在上述外部目录，结果回写 DOC-USAGE。
+- 下一步：等待 PR #247 真实 head 检查到终态；只处理本项导致的缺陷，结果回写 DOC-USAGE。
 - 恢复入口：本工作树、Issue #246、`D:/BabataEvidence/research-portable-workspace-20261115/REPORT.md`。
 
 依赖 #238 仍 OPEN，其协议、独立发布实测及未决 CI/旧依赖清理状态由 DOC-USAGE 和
