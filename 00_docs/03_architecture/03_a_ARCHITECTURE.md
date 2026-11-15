@@ -103,6 +103,12 @@ validate scope -> stage metadata/assets -> write transaction -> finalize assets
 - `babata-research` 由宿主推理／搜索工具执行查询和核证；配套 run helper 只保存 Git 外冻结请求、
   搜索观察、正文快照、结论及 hash，不是搜索 provider 或正式知识 writer。网页正文仍是外部候选，
   综合结论是 machine 衍生物；研究完成不启用 disabled route 或绕过来源接纳。
+- 调研 run 路径由独立 helper 解析：`--run <absolute-dir>` 与工作区模式互斥；
+  工作区模式要求稳定 `--run-id`，显式 `--workspace <absolute-dir>` 优先，未给时才读既有
+  `BABATA_ASSISTANT_HOME/solutions/research/workspaces`。没有配置即失败并提示显式路径，
+  不新增路径变量、不扫描仓库或硬编码盘符。结果回传实际 `run_directory`，manifest v1 不变；
+  输出继续按解析后的真实路径拒绝 Git 内落点。Assistant/Evidence 是 Babata 集成默认，
+  不是原子前置条件；自定义 run 可自持请求、观察与结论，不强制第二份 Evidence 镜像。
 - `babata-render` 的浏览器 helper 接受冻结 Markdown/HTML 及限定本地资产，提供 long 与显式
   `.page` 结构分页；页面禁用脚本、网络及登录态，资源经白名单提供，拒绝越界路径。它不是强 OS 沙箱。
 - 正式 `OutputKind::Png` 复用 `OutputService`/`OutputViewStore`。Rust 将受控内容交可替换 Node

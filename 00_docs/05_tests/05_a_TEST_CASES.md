@@ -256,6 +256,12 @@ knowledge/log/insight、verified package、唯一 live、证据回链和隔离�
 
 ### TC-08R：独立调研、PNG 与组合
 
+0. 将 research Skill 复制到仓库外，移除所有 Babata 定位配置，以另一个 Git 项目作 cwd，
+   用绝对脚本路径分别验证 `--run`、`--workspace`＋`--run-id` 和进程级 Assistant 默认覆盖；
+   中文空格路径、跨 cwd 回放、finalize/verify 均成功。缺配置、路径模式冲突、无效 ID、
+   未知参数、Git 内输出和 junction 指回 Git 的落点失败；失败时不创建默认目录，所有调用不写 skill 目录。
+   身份/hash 检查保留，测试 fixture 不冒充新增真实网络研究。
+
 1. 真实搜索一个明确问题：短词起步、拆子问题、读一手正文后核查；冻结查询／工具／时间／来源／
    读取范围。只返回调研结论，不调用 renderer 或写正式 C0；正文不可读显式失败。
 2. 用 run helper 保存并重放相同请求及结果；改同键输入、破坏正文或使用越界路径，必须拒绝；

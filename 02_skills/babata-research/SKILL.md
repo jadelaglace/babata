@@ -2,8 +2,8 @@
 name: babata-research
 description: 搜索、核实或调研网络问题与话题，交付来源、证据或调研结论；可独立使用，不强制出报告图片或入知识库。已有内容转 PNG 用 babata-render。
 metadata:
-  version: "1.1.0"
-compatibility: Node.js on PATH for the optional recoverable run helper; no third-party Node packages.
+  version: "1.2.0"
+  compatibility: Node.js on PATH for the optional recoverable run helper; no third-party Node packages.
 ---
 
 # Babata 搜索与调研
@@ -21,7 +21,9 @@ compatibility: Node.js on PATH for the optional recoverable run helper; no third
 
 ## 可恢复工作
 
-需要落盘／连续研究时，用 Git 外 Assistant 工作区保存 run，证据在 Evidence。读 [run 合同](references/run.md)，调用本目录 `scripts/research.mjs` 保存请求、实际查询观察、正文和结论。不为一次口头小查询强制制造完整项目树。
+需要落盘／连续研究时，读 [run 合同](references/run.md)，用本目录 `scripts/research.mjs` 保存请求、实际查询观察、正文和结论。脚本用绝对路径调用，cwd 可以是任意项目。用 `--run` 指定完整 Git 外落点，或用 `--workspace`＋稳定 `--run-id`；省略 workspace 才使用已配置的 Assistant 默认目录。未配 Assistant 时直接给自定义路径，不要求用户配置 Babata、创建变量或初始化 Git。不为一次口头小查询强制制造完整项目树。
+
+run 自带可恢复资料与完整性记录。Babata 本机集成默认工作区在 Assistant，独立验收证据按需归 Evidence；这些是集成约定，不是原子依赖，不强制复制第二份记录。路径选择不改变内容身份、核证责任或正式接纳边界。
 
 同 run 先 status/verify，再复用已有观察；刷新用新 run。helper 核文件身份与引用，不证明外部事实正确。异常 lock 先核 PID 和实际进程状态，无法排除活跃写入时不删；确认已终止并检查文件后才清理该精确 lock。
 
