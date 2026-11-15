@@ -154,6 +154,7 @@ Python 3.13.17／Rust 1.100.0 本地 All gate 195.1s、其中 boundary 40.1s 通
 
 | 项目 | 状态 | 下一授权条件 |
 | --- | --- | --- |
+| #244 探索性研究工作区 | `local-migrated / integrity-verified / docs-awaiting-merge` | 2026-11-15 按用户授权原样归位；桌面 research_reports 为指向 Assistant 实体工作区的 junction（symbolic link 权限不可用，未改系统设置）。5,406 文件、775 目录、872,407,347 字节及 Git HEAD/refs/dirty/untracked/diff 前后一致，源再次 hash 与切换后新旧全量核验通过；4 类代表性文件经入口读回。7 项隔离演练、四根真实路径检查与本地 All gate 200.7s（boundary 41.6s）通过；图像回归 23 pass/1 skip，跳过项未冒充通过。原目录以精确 rollback-244 名保留，不是独立备份，不自动删除；不去重、不改结构、不实施自动收集、不正式入库、不重跑研究或生成业务 PNG。协议补充与证据见 §11；PR 身份／实时 CI 见同目录 DELIVERY.md，不预判合并或用户验收。 |
 | #209 WBS 单入口与内部可替换任务源 | `implemented / local-verified / installed-local` | 2026-11-15 按最新纠偏，飞书适配已吸收进 babata-wbs，原独立 feishu-wbs 入口可恢复退出；6个安装文件与仓内源 hash 一致。内部契约定义选源、身份、完整性、差异写入和回读；私有连接迁入 Assistant 配置。实际宿主仅发现单一 WBS 入口，两种脱敏源形状替换演练、CLI dry-run 4/4及 All gate 100.2s 通过。业务规则／汇总模板不变，不自动迁移或双写。目前只维护飞书实现；替换演练不代表第二后端已可用。原 #239 两层发现为历史证据，最新PR／合并状态查本轮终态回执；真实任务未读写。模型自动选择与真实 API 原验收缺口仍保留。证据见 §11 |
 | P0-P9 Docs 收束 | `completed / merged` | PR #194；merge `aaa4d0fe18c378cb5e58751f1eb981608673466e`；旧全文冻结于 `9182a77` |
 | #233 搜索调研与 PNG 原子 | `implemented / verified / merged` | #210 / Epic #203 第一条；PR #234 于 2026-11-15 按用户“先合 #234 再合 #236”合入 main（da9b32d）。两原子独立及组合、本地 .agents 入口已验证。后继依“旧的不用兼容”退出旧报告两入口，仅保留 babata-research / babata-render；旧文件可恢复归档，6/6 hash 一致，新入口四目录静态校验、既有研究/PNG 完整性与 scoped docs 检查通过。原实施 Rust 1.100.0 All gate 85.4s 及远端完整 CI 的历史证据不改写；原轮与后继身份分别查 §11 的两个回执。不发布，宿主自动选择和用户验收不推断 |
@@ -177,6 +178,7 @@ Python 3.13.17／Rust 1.100.0 本地 All gate 195.1s、其中 boundary 40.1s 通
 
 | 使用事实 | Evidence 入口 |
 | --- | --- |
+| #244 研究工作区迁移与文件语义补充 | `D:/BabataEvidence/research-workspace-20261115/`：USER-INPUT.md、IMPLEMENTATION-AUTHORIZATION.md、PLAN.md；source-before/source-pre-switch/destination-copied/destination-final/rollback-final.json 保存全量 inventory/hash 与 Git 状态；PATH-MAPPING.json、terminal-receipt.json 保存入口、实体与回退映射和限制。正文和清单不进产品 Git。现实体为 `D:/BabataAssistant/solutions/research/workspaces/research_reports`；旧回执不改写，回退副本退出须另行明确授权。 |
 | #209 WBS 内部适配 2026-11-15 最新纠偏 | `D:/BabataEvidence/wbs/internal-adapter-20261115/`：用户原话、独立入口与单入口安装前备份、原字节可恢复退出目录、私有配置迁移和6文件 hash 回执。新一轮宿主发现、任务源替换脱敏演练、CLI dry-run、完整工程检查及 PR 身份见终态 terminal-receipt.json。未读取或改写真实任务，不把配置／reference、离线演练、宿主发现分别冒充第二真实后端、模型自动选择或实写验收 |
 | #209 WBS 规则与汇报模板 2026-11-15 解耦 | `D:/BabataEvidence/wbs/skill-decoupling-20261115-4a86f6fe/`：intent、适配器迁移前备份与安装回执；脱敏混合样本及旧授权导出只读对账；app-server 实际发现；lark-cli 合成 GET／POST／PATCH 全部 dry-run；最终安装 hash、边界检查及工程日志。离线算术／覆盖走查不是独立模型行为证明，宿主发现不是自动选择，dry-run 不证明真实鉴权／schema／实写回读。完整终态由 terminal-receipt.json 保存；不发布新二进制，不改真实任务 |
 | #233 搜索调研与 PNG 2026-11-14 实施 | `D:/BabataEvidence/research-render-233/`：真实搜索、正文及结论在 `live-research/run/`；独立分页、组合及正式 PNG 实物和目视记录在 `final-round/`；最终 gate／构建／交付身份由 `terminal-receipt.json` 指定。正文和图不进 Git。正式首版沿用现有 record 投影，不声称完整正文／附件；依赖 probe 不等于启动测试，离线请求护栏不是强 OS 沙箱，视觉自审不是用户验收 |
