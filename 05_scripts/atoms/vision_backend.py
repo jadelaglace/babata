@@ -6,6 +6,14 @@ ask    : image(s) + question -> answer, via `bl` (Qwen-VL through Bailian CLI) o
 matte  : complex background removal via a local rembg interpreter (BABATA_REMBG_PYTHON).
 probe  : installed / configured / probed state of each backend, without spending calls.
 
+External tools are dependencies, wired through environment variables (all optional):
+  BABATA_BL            path to the Bailian `bl` executable (default: `bl` on PATH)
+  BABATA_VISION_MODEL  default semantic model for --backend bl (default: qwen3-vl-plus)
+  BABATA_REMBG_PYTHON  interpreter that has rembg installed (complex matting is unavailable without it)
+  BABATA_REMBG_MODEL   default rembg model (default: isnet-general-use)
+  U2NET_HOME           rembg weight directory (read by rembg itself)
+  COMFYUI_URL          reported by probe only; no endpoint scanning
+
 Adapters never write Babata databases. Results go to a new run directory (same run
 semantics as image_ops.py). Empty, truncated or malformed answers are failures.
 Credentials are resolved by the backend tool itself and never passed on the command line.
@@ -28,7 +36,20 @@ from PIL import Image, ImageDraw
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import image_ops as io  # noqa: E402
 
-ADAPTER_VERSION = "1.0.0"
+ADAPTER_VERSION = "1.1.0"
+DEFAULT_VISION_MODEL = "qwen3-vl-plus"
+DEFAULT_REMBG_MODEL = "isnet-general-use"
+
+
+def bl_executable():
+    configured = os.environ.get("BABATA_BL")
+    if configured:
+        return configured if Path(configured).is_file() else None
+    return shutil.which("bl")
+
+
+def vision_model(explicit):
+    return explicit or os.environ.get("BABATA_VISION_MODEL") or DEFAULT_VISION_MODEL
 
 
 def validate_answer(content, finish_reason, expect: str):
@@ -87,9 +108,9 @@ def run_bounded(cmd, timeout):
 
 
 def call_bl(image: str, prompt: str, model: str, timeout: int):
-    exe = shutil.which("bl")
+    exe = bl_executable()
     if not exe:
-        raise io.AtomError("unavailable", "bl not found on PATH")
+        raise io.AtomError("unavailable", "bl not found (set BABATA_BL or put bl on PATH)")
     cmd = [exe, "vision", "describe", "--image", image, "--prompt", prompt, "--model", model,
            "--output", "json", "--timeout", str(timeout), "--quiet"]
     started = time.time()
@@ -123,7 +144,7 @@ def cmd_ask(args, limits):
         answer_path = Path(args.answer_file)
         answer_text = answer_path.read_text(encoding="utf-8")
         answer_sha = io.sha256_file(answer_path)
-    req = {"backend": args.backend, "model": args.model, "images": [r["sha256"] for r in recs], "prompt": args.prompt,
+    req = {"backend": args.backend, "model": vision_model(args.model) if args.backend == "bl" else args.model, "images": [r["sha256"] for r in recs], "prompt": args.prompt,
            "expect": args.expect, "max_side": args.max_side}
     if args.backend == "host":
         req["answer_sha256"] = answer_sha
@@ -145,8 +166,9 @@ def cmd_ask(args, limits):
                     img = io.resize_rgba(img, max(1, round(w * s)), max(1, round(h * s)))
                     sent_note.append(f"downscaled x{s:.4f} before sending")
                 sent = run.add("sent-image", "sent.png", img, relation="exact pixels sent to backend")
-            ident = backend_identity("bl", args.model or "qwen3-vl-plus")
-            resp = call_bl(str(sent), args.prompt, args.model or "qwen3-vl-plus", args.timeout)
+            model = vision_model(args.model)
+            ident = backend_identity("bl", model)
+            resp = call_bl(str(sent), args.prompt, model, args.timeout)
             if resp.get("model"):
                 ident["model"] = resp["model"]
             if resp["transport"] != "ok":
@@ -172,7 +194,8 @@ def cmd_ask(args, limits):
 def backend_identity(kind: str, model):
     ident = {"adapter": "05_scripts/atoms/vision_backend.py", "adapter_version": ADAPTER_VERSION, "backend": kind, "model": model}
     if kind == "bl":
-        code, out, _, timed_out = run_bounded([shutil.which("bl"), "--version"], 20)
+        exe = bl_executable()
+        code, out, _, timed_out = run_bounded([exe, "--version"], 20) if exe else (None, "", "", False)
         ident["bl_version"] = out.strip() if code == 0 and not timed_out else "unknown"
     return ident
 
@@ -197,6 +220,7 @@ def cmd_matte(args, limits):
     py = os.environ.get("BABATA_REMBG_PYTHON")
     if not py or not Path(py).is_file():
         raise io.AtomError("unavailable", "complex matting backend not configured (BABATA_REMBG_PYTHON); report blocked, do not substitute keying")
+    args.model = args.model or os.environ.get("BABATA_REMBG_MODEL") or DEFAULT_REMBG_MODEL
     req = {"backend": "rembg", "model": args.model, "input_sha256": rec["sha256"]}
     run = io.Run(args.out, "matte", req)
     if (prev := run.existing()):
@@ -225,11 +249,13 @@ def cmd_matte(args, limits):
 
 def cmd_probe(args, limits):
     out = {}
-    bl = shutil.which("bl")
-    out["bl"] = {"installed": bool(bl), "configured": bool(os.environ.get("DASHSCOPE_API_KEY")) if bl else False,
-                 "probed": "not-run (spends a call; use ask on a known image)", "real_tested": "see evidence receipts"}
+    bl = bl_executable()
+    out["bl"] = {"installed": bool(bl), "executable": bl, "default_model": vision_model(None),
+                 "credentials": "resolved by bl itself; not inspected here",
+                 "probed": "not-run (spends a call; use ask on a known image)"}
     py = os.environ.get("BABATA_REMBG_PYTHON")
-    out["rembg"] = {"configured": bool(py), "installed": False}
+    out["rembg"] = {"configured": bool(py), "installed": False, "model": os.environ.get("BABATA_REMBG_MODEL") or DEFAULT_REMBG_MODEL,
+                    "weights_dir": os.environ.get("U2NET_HOME") or "rembg default (~/.u2net)"}
     if py and Path(py).is_file():
         proc = subprocess.run([py, "-c", "import rembg, onnxruntime; print('ok')"], capture_output=True, text=True, timeout=120)
         out["rembg"]["installed"] = proc.returncode == 0
@@ -249,7 +275,7 @@ def main(argv=None):
     s.add_argument("--max-side", type=int, default=2048); s.add_argument("--timeout", type=int, default=120)
     s.add_argument("--out", required=True); s.set_defaults(fn=cmd_ask)
     s = sub.add_parser("matte")
-    s.add_argument("--image", required=True); s.add_argument("--model", default="isnet-general-use")
+    s.add_argument("--image", required=True); s.add_argument("--model")
     s.add_argument("--profile", choices=list(io.PROFILES), default="cutout"); s.add_argument("--timeout", type=int, default=600)
     s.add_argument("--out", required=True); s.set_defaults(fn=cmd_matte)
     s = sub.add_parser("probe"); s.set_defaults(fn=cmd_probe)

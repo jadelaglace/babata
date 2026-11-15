@@ -115,17 +115,21 @@ validate scope -> stage metadata/assets -> write transaction -> finalize assets
 
 ### 静态素材加工与视觉检查边界
 
-- `babata-render` 增加静态素材加工，`babata-vision` 负责理解与检查；两者共用 Git 内
-  `05_scripts/atoms/image_ops.py`（Pillow＋NumPy，OpenCV 非必需）。它只读输入、写新 run 目录，
+- `babata-render` 增加静态素材加工，`babata-vision` 负责理解与检查；两者使用
+  `image_ops.py`（Pillow＋NumPy，OpenCV 非必需）。它只读输入、写新 run 目录，
   manifest 最后写入；同 run 同请求校验后复用，请求不同拒绝。拒绝 symlink／junction 输入和超像素上限图片。
 - 加工命令：keying（白底／色幕）、阴影提取、over 合成、保透明缩放。尺寸不一致默认拒绝，`--fit` 才变换；
   不默认 keep-largest。检查命令：probe、measure（按 profile 解释连通域／半透明／边缘）、diff
   （raw RGBA／alpha 与指定背景可见差异分列）、multibg、tiles（长图分片＋坐标回映）、annotate（写副本）。
-- 语义视觉与复杂抠图经 `05_scripts/atoms/vision_backend.py` 窄适配：宿主视觉只记录宿主实际回答，
+- 语义视觉与复杂抠图经 `vision_backend.py` 窄适配：宿主视觉只记录宿主实际回答，
   `bl vision describe` 与本地 rembg 是可替换后端。适配器校验空／截断／坏格式结果，记录真实模型、耗时和可得
   usage；未配置即 unavailable，不扫网、不静默降级。外传只发本次授权的图片，密钥不进命令行、manifest 或 Git。
 - 这些 helper 不写 SQLite、不登记 C0／C1、不成为正式输出 writer；需要正式 PNG 仍走 `OutputService`。
   视觉回答与测量是助理候选，正式接纳仍走既有 clean／writer。动画／视频首版不接入。
+- Skill 目录是发布单元：render、vision、research 各自在 `scripts/` 携带所需脚本，单独拷出即可运行，
+  不查找或依赖仓库。规范源保留在 `05_scripts/atoms/`（测试、CI 与正式 PNG 使用），由
+  `05_scripts/sync-skill-bundles.py` 拷入，`--check` 在 CI 中阻断不一致。Node 包与浏览器、rembg 与权重、
+  百炼 `bl`／千问模型等是外部依赖，只经可选环境变量接入，未配置即 unavailable。
 
 活动 `BABATA_DATA_HOME` 顶层保持六个编号分区：
 

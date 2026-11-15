@@ -56,6 +56,12 @@ if ($Scope -in @('All', 'Adapters')) {
         python -m pytest -q -p no:cacheprovider (Join-Path $repo '05_scripts/atoms/test_image_ops.py')
         Assert-NativeCommandPassed 'image atom tests'
     }
+    Invoke-TimedCheck 'Standalone skill bundles' {
+        python (Join-Path $repo '05_scripts/sync-skill-bundles.py') --check
+        Assert-NativeCommandPassed 'skill bundle sync check'
+        python -m pytest -q -p no:cacheprovider (Join-Path $repo '05_scripts/atoms/test_skill_bundles.py')
+        Assert-NativeCommandPassed 'standalone skill tests'
+    }
     Invoke-TimedCheck 'Kimi OpenCLI tests' {
         node --experimental-vm-modules --test (Join-Path $repo '08_adapters/03_opencli/kimi/detail-full.test.js')
         Assert-NativeCommandPassed 'Kimi OpenCLI tests'
