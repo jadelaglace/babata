@@ -139,16 +139,20 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 
 ### #241：仓库交付与运行维护原子
 
-`babata-git`／`babata-ops` 已在独立分支实现并提交 PR #242（Issue #241），包目录各自包含 Skill、reference 与标准库
+`babata-git`／`babata-ops` 1.0.0 已经 PR #242 合入 main（`67fba31`），Issue #241 已关闭；
+2026-11-15 用户明确授权“合并 PR #242 后安装”，已从该合并提交安装，包目录各自包含 Skill、reference 与标准库
 Python 窄脚本；脱离仓库复制执行、真实临时 Git、受控本地 HTTP、负例及脱敏共 27 项自动
 测试通过；18 题作者场景走查符合当前合同（不是独立盲测）。两包 frontmatter 检查通过，
 Python 3.13.17／Rust 1.100.0 本地 All gate 195.1s、其中 boundary 40.1s 通过；既有图像
 测试 23 pass／1 skip 如实保留。CI 已接入新包路径与测试。
-本地实现提交 `5f84a69` 与远端 head 已核一致；PR CI 已触发，当前结论以 GitHub 最新 head 为准，
-不把本地通过当远端通过。Git 传输被重置后用 GitHub API 发布，tree／commit 均与本地完全一致，
-未更改用户 Git 配置或泄漏凭据。未安装、未合并、未发布，真实 SSH／systemd／GPU／生产部署回滚和灾备未验证；原始两技能及
+PR 最终 head `292effd` 四项 CI 全部 SUCCESS 后正常 merge（未绕过检查），合并时间
+2026-11-15 12:49:05 +08:00。本机安装根 `.agents/skills`；`.claude/skills` 是指向该根的
+junction，同一份安装对两边可见，未重复拷贝。10/10 文件与合并 Git blob 逐字节一致，
+两包安装后 frontmatter、真实临时 Git 与本地 HTTP 脚本 smoke 通过；宿主自动发现／选择从
+下一轮对话观察，不冒充已经触发。未发布 tag，真实 SSH／systemd／GPU／生产部署回滚和灾备未验证；原始两技能及
 四件套未修改，不新增 Rust writer／runtime／私有依赖变量。工程通过不是用户验收。
-证据：`D:/BabataEvidence/git-server-atoms-20261115/` 的 USER-INPUT、SCENARIO-REVIEW 与 REPORT。
+证据：`D:/BabataEvidence/git-server-atoms-20261115/` 的 USER-INPUT、SCENARIO-REVIEW、REPORT、
+INSTALL-AUTHORIZATION、INSTALL-RECEIPT.json；`verify-install.py` 可重复核安装字节与 smoke。
 
 ### 其他当前项
 
