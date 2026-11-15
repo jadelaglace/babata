@@ -139,7 +139,7 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 
 | 项目 | 状态 | 下一授权条件 |
 | --- | --- | --- |
-| #246 调研原子可配置工作区 | `implemented / full-gate-verified / PR-open / CI-running / not-installed` | 属于 #210 / Epic #203。research 1.2.0 复用 #238 独立发布包，新增显式 workspace＋稳定 run ID，或保留精确 run；省路径才读既有 Assistant。8/8定向、仓库外三种路径完整生命周期、真实 Assistant 默认 smoke 和 Skill validator 通过；修正计划字段后 All gate 138.3s／boundary 37.4s 通过。实现提交 e41491e，PR #247 stacked 于未合并 #238，远端 CI 已启动；实时 head/checks 与终态查 §11 证据。不宣称 main 已有，不自动合并或安装。 |
+| #246 调研原子可配置工作区 | `implemented / full-gate-verified / implementation-CI-4-of-4 / PR-open / not-installed` | 属于 #210 / Epic #203。research 1.2.0 复用 #238 独立发布包，新增显式 workspace＋稳定 run ID，或保留精确 run；省路径才读既有 Assistant。8/8定向、仓库外三种路径完整生命周期、真实 Assistant 默认 smoke 和 Skill validator 通过；All gate 138.3s／boundary 37.4s 通过。实现 e41491e 的 GitHub CI 四项通过，后续仅状态文档；PR #247 stacked 于未合并 #238。最终 head/checks 由 §11 `DELIVERY.json` 持有，不拿旧 head 绿灯证明新提交。不宣称 main 已有，未合并/发布/安装，用户验收不推断。 |
 | P0-P9 Docs 收束 | `completed / merged` | PR #194；merge `aaa4d0fe18c378cb5e58751f1eb981608673466e`；旧全文冻结于 `9182a77` |
 | #233 搜索调研与 PNG 原子 | `implemented / verified / merged` | #210 / Epic #203 第一条；PR #234 于 2026-11-15 按用户“先合 #234 再合 #236”合入 main（da9b32d）。两原子独立及组合、本地 .agents 入口已验证。后继依“旧的不用兼容”退出旧报告两入口，仅保留 babata-research / babata-render；旧文件可恢复归档，6/6 hash 一致，新入口四目录静态校验、既有研究/PNG 完整性与 scoped docs 检查通过。原实施 Rust 1.100.0 All gate 85.4s 及远端完整 CI 的历史证据不改写；原轮与后继身份分别查 §11 的两个回执。不发布，宿主自动选择和用户验收不推断 |
 | #235 render＋vision | `implemented / verified-with-known-failures / merged / installed-local` | #210 / Epic #203 第一条；PR #236 于 2026-11-15 合入 main（c13dc6a，Python 3.13 CI 4/4）；用户“装，并更新状态”后 render 1.1.0／vision 1.0.0 拷贝安装到 .agents 与 .claude 技能目录，逐文件 hash 与 main 一致（未设用户环境变量、不保留旧版备份；外部依赖经可选环境变量接入）。用户 2026-11-15“全部接受”三项范围后实施。Round-1 冻结 48 题：R/Q/B 30 pass、1 fail（R04 发丝带 MAE 0.436）、1 partial（B08 静态审阅）；V 千问 13/16（V01 标点宽度、V06 读值误差、V08 断言截断值，后者经人工裁定）；宿主 16/16 非盲。轮后修复 multibg 放大框、新增 refine、判分否定句、clean 路由边界，Round-2 新变体复验。不发布；babata-clean 仍是指向主检出的 junction，描述更新随该检出切到 main 生效。宿主自动选择和用户验收不推断 |
@@ -163,7 +163,7 @@ P0-P9 主线已完成并由用户接受，当前不再作为活动 roadmap。它
 
 | 使用事实 | Evidence 入口 |
 | --- | --- |
-| #246 可配置调研工作区 | `D:/BabataEvidence/research-portable-workspace-20261115/`：`USER-INTENT.md`、`REPORT.md`、`smoke-receipt.json`、`full-gate.log`（首轮，计划标签失败）及 `full-gate-final.log`（复验）。fixture 路径验收不冒充新增网络研究；版本、查询/正文核证和用户验收边界保持不变。 |
+| #246 可配置调研工作区 | `D:/BabataEvidence/research-portable-workspace-20261115/`：`USER-INTENT.md`、`REPORT.md`、`smoke-receipt.json`、`full-gate.log`（首轮，计划标签失败）、`full-gate-final.log`（复验）及 `DELIVERY.json`（最终远端 head/检查，未取得前不推断绿灯）。fixture 路径验收不冒充新增网络研究；版本、查询/正文核证和用户验收边界保持不变。 |
 | #233 搜索调研与 PNG 2026-11-14 实施 | `D:/BabataEvidence/research-render-233/`：真实搜索、正文及结论在 `live-research/run/`；独立分页、组合及正式 PNG 实物和目视记录在 `final-round/`；最终 gate／构建／交付身份由 `terminal-receipt.json` 指定。正文和图不进 Git。正式首版沿用现有 record 投影，不声称完整正文／附件；依赖 probe 不等于启动测试，离线请求护栏不是强 OS 沙箱，视觉自审不是用户验收 |
 | #233 旧技能入口退出纠偏 | `D:/BabataEvidence/research-render-233/legacy-skill-retirement-20261114/`：`manifest.json` 保存用户原话、六文件身份和可恢复归档映射；`receipt.json` 保存退出及定向验证结果。两个旧名无兼容别名；原调研汇报可直接组合新原子，图表检查指引归入 renderer。Rust 格式、原始数据、Hermes 与历史回执未改 |
 | #235 render＋vision 2026-11-15 实施 | `D:/BabataEvidence/render-vision-235/`：授权原话 `AUTHORIZATION-20261115.md`；`round-1/` 冻结题、输入 hash、逐次调用 manifest 与原始回答、`results/`、`ADJUDICATION.json`；`round-2-fix-verify/` 轮后复验；可读汇总 `REPORT.md`。公开样本仅本地评测；数据集仍在 Assistant 根，权重已按 #238 迁往 rembg 默认 `~/.u2net`，不进 Git；原安装回执 `install-20261115/receipt.json` 不改。 |

@@ -20,7 +20,7 @@
 - 当前状态：基于 #238 head `152b2d3` 创建独立 `codex/research-portable-246`，复用独立发布包；
   不合并 #238，也不复制其未决清理工作。PR 将以 #238 分支为 base，清楚标明依赖。
   路径8/8、真实默认目录 smoke、Skill validator 通过；All 138.3s／boundary 37.4s 通过。
-  实现 e41491e 已推 PR #247，真实远端 CI 运行中；本地状态补充待提交。
+  实现 e41491e 已推 PR #247，远端 CI 四项通过；状态8c153bf已推，新 head 检查另核。
 - 合同：`--run` 精确路径，或 `--workspace`＋`--run-id`；省 workspace 才读既有 Assistant 配置。
   路径不齐、冲突或 Git 内输出明确失败；不新造环境变量、不改持久配置。
 - 声明终端：最小 Docs 链、实现、独立复制与路径负例、完整 gate、PR/CI 结果；不自动合并/安装。
