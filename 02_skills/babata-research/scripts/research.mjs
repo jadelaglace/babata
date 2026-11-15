@@ -3,7 +3,35 @@ import path from "node:path";
 import { argsOf, atomicJson, canonical, emitError, externalDirectory, identity, isMain, jsonBytes, lock, readJson, requireValue, sha, verifyFiles, within } from "./common.mjs";
 
 const schema = "babata.research-run/v1";
+const commandInputs = { init: "request", record: "event", finish: "conclusion", status: null, verify: null };
+const usage = `Recoverable research (Node built-ins only; no repository required)
+  node <skill>/scripts/research.mjs <init|record|finish|status|verify> <location> [input]
+  location: --run <absolute-directory>
+         or --workspace <absolute-directory> --run-id <stable-id>
+         or --run-id <stable-id> (uses BABATA_ASSISTANT_HOME/solutions/research/workspaces)
+  input: init --request <json>; record --event <json>; finish --conclusion <json>
+  status/verify require an existing run. No configuration is changed.
+`;
 function text(value) { return typeof value === "string" && value.trim().length > 0; }
+export function resolveResearchRun(options, env = process.env) {
+  if (Object.hasOwn(options, "run")) {
+    requireValue(!Object.hasOwn(options, "workspace") && !Object.hasOwn(options, "run-id"), "--run cannot be combined with --workspace or --run-id");
+    requireValue(text(options.run) && path.isAbsolute(options.run), "--run must be an absolute directory");
+    return path.resolve(options.run);
+  }
+  const id = options["run-id"];
+  requireValue(text(id) && /^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/.test(id) && !/^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i.test(id), "--run-id must be a stable portable ID (1-80 letters/digits/_/-, starting with a letter/digit; no reserved device names)");
+  let workspace;
+  if (Object.hasOwn(options, "workspace")) {
+    workspace = options.workspace;
+    requireValue(text(workspace) && path.isAbsolute(workspace), "--workspace must be an absolute directory");
+  } else {
+    const assistant = env.BABATA_ASSISTANT_HOME;
+    requireValue(text(assistant) && path.isAbsolute(assistant), "Assistant default unavailable; pass --workspace <absolute-dir> --run-id <id> or --run <absolute-dir>");
+    workspace = path.join(assistant, "solutions", "research", "workspaces");
+  }
+  return path.resolve(workspace, id);
+}
 function validateRequest(request) {
   requireValue(request && text(request.question) && text(request.producer), "question and producer required");
   requireValue(["sources", "research"].includes(request.depth), "depth must be sources or research");
@@ -66,7 +94,18 @@ function addFile(directory, manifest, name, bytes, role) {
   manifest.files.push({ path: name, sha256: sha(bytes), role });
 }
 export function research(command, options) {
-  const directory = externalDirectory(options.run); const release = lock(directory);
+  requireValue(Object.hasOwn(commandInputs, command), `unknown research command: ${command}`);
+  const input = commandInputs[command];
+  const allowed = new Set(["run", "workspace", "run-id", ...(input ? [input] : [])]);
+  for (const key of Object.keys(options)) requireValue(allowed.has(key), `unknown option for ${command}: --${key}`);
+  if (input) requireValue(text(options[input]), `--${input} required for ${command}`);
+  const selected = resolveResearchRun(options);
+  if (command !== "init") requireValue(fs.existsSync(selected) && fs.statSync(selected).isDirectory(), "research run does not exist; init an explicit run first");
+  const directory = externalDirectory(selected);
+  return { ...executeResearch(command, options, directory), run_directory: directory };
+}
+function executeResearch(command, options, directory) {
+  const release = lock(directory);
   try {
     const manifestPath = path.join(directory, "manifest.json");
     if (command === "init") {
@@ -103,6 +142,10 @@ export function research(command, options) {
   } finally { release(); }
 }
 if (isMain(import.meta)) {
-  try { const { command, options } = argsOf(process.argv.slice(2)); process.stdout.write(JSON.stringify(research(command, options)) + "\n"); }
+  try {
+    const argv = process.argv.slice(2);
+    if (argv.length === 1 && ["help", "--help"].includes(argv[0])) process.stdout.write(usage);
+    else { const { command, options } = argsOf(argv); process.stdout.write(JSON.stringify(research(command, options)) + "\n"); }
+  }
   catch (error) { emitError(error); }
 }

@@ -9,26 +9,27 @@
 
 ## 1. 当前活动项（恢复时先读，最多一个）
 
-<!-- CURRENT-ACTIVE: standalone-skill-238-rework -->
+<!-- CURRENT-ACTIVE: research-portable-246 -->
 
-### standalone-skill-238-rework
+### research-portable-246
 
-- 来源锚点：2026-11-15 用户独立发布交接、“开始”及最新要求“环境变量之类的问题 也按流程 写进babata新协议 更新”；原话见 Git 外 `D:/BabataEvidence/skill-standalone-238/ENV-PROTOCOL-USER-INPUT-20261115.md`。
-- transition：explicit-supplement / documentation-protocol。
-- transition evidence：最新直接用户消息要求协议更新；沿用 #235 / PR #238，不新建 Goal，不改变安装和清理权限。
-- 用户目标：三 Skill 独立包返工基础上，把环境变量、配置、凭据和依赖发现边界提升为 Babata 通用协议，按权威链更新并验证。
-- 基线：`codex/skill-standalone-235` / `0eb1717`；原工作区干净。
-- 阶段：依赖与目录边界 → Python/Node 实现 → 仓库外验证与 gate → 提交推送 #238。
-- 当前状态：原返工本地 All gate 208.9s 通过且已推 #238；本次通用环境／依赖协议按权威链补齐，boundary 37.1s 通过，未改实现或用户环境。远端新 head 没有 checks/run，旧 CI 不适用；旧六路径清理仍受策略阻止。
-- 声明终端：返工代码和文档经适用检查，推送原 PR；不能将 CI 绿等同用户验收。
-- 受保护边界：不合并、不重装技能、不设置用户变量、不备份旧技能、不写反馈/记忆、不动主检出。
-- 发丝 matting 队列不启动；datasets/dev* 不删除。第三方旧目录仅新路径成功后按授权清理。
-- 下一步：本次协议补充提交推送原 PR 后交还；远端 CI 与旧目录清理未决项继续单列，待正常触发路径／策略变化再处理。不自动重开 PR、不绕过删除策略、不合并、重装或启动队列。
-- 恢复入口：本工作树；`D:/BabataEvidence/skill-standalone-238/`；PR #238。
+- 来源锚点：active Goal 原话见 `D:/BabataEvidence/research-portable-workspace-20261115/USER-INTENT.md`。
+- transition：started-goal / explicit-development；Issue #246 属于 #210 / Epic #203。
+- transition evidence：恢复时 task-state API 核实 active Goal，按 DOC-PROCESS §11 排除已终态 Git 删除后捕获。
+- 用户目标：调研技能独立复制可用，默认 Assistant，显式路径可从任意项目调用。
+- 当前状态：基于 #238 head `152b2d3` 创建独立 `codex/research-portable-246`，复用独立发布包；
+  不合并 #238，也不复制其未决清理工作。PR 将以 #238 分支为 base，清楚标明依赖。
+  路径8/8、真实默认目录 smoke、Skill validator 通过；All 首轮代码/原子部分通过，计划字段名不合 checker，修正后重跑。
+- 合同：`--run` 精确路径，或 `--workspace`＋`--run-id`；省 workspace 才读既有 Assistant 配置。
+  路径不齐、冲突或 Git 内输出明确失败；不新造环境变量、不改持久配置。
+- 声明终端：最小 Docs 链、实现、独立复制与路径负例、完整 gate、PR/CI 结果；不自动合并/安装。
+- 受保护边界：不动其他工作树 dirty 文件，不重跑研究目录删除，不 git init，不启动 matting 队列。
+- 下一步：按合同实施，验证后提交和 PR；证据在上述外部目录，结果回写 DOC-USAGE。
+- 恢复入口：本工作树、Issue #246、`D:/BabataEvidence/research-portable-workspace-20261115/REPORT.md`。
 
-此前 #233／#235 已于 2026-11-15 经 PR #234、#236 合入 main（c13dc6a），
-render／vision 技能已装到本机；结果见 `DOC-USAGE`，证据根 `D:/BabataEvidence/render-vision-235/`。
-Round-1 已终态，不从摘要或旧 Goal 重跑。发布和用户验收未被自动授权。
+依赖 #238 仍 OPEN，其协议、独立发布实测及未决 CI/旧依赖清理状态由 DOC-USAGE 和
+`D:/BabataEvidence/skill-standalone-238/` 拥有；本项不接管清理，不合并、不重装、不设置用户变量。
+已结束的研究目录删除/取消版本管理不重跑，原迁移工作树 dirty 状态保留。
 
 ## 2. 下次开工队列（禁止恢复时自动执行）
 
