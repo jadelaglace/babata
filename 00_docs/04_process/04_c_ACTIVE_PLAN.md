@@ -13,17 +13,17 @@
 
 ### standalone-skill-238-rework
 
-- 来源锚点：2026-11-15 用户独立发布交接及最新直接指令“开始”；实施限定已有 PR #238。
-- transition：explicit-resume / rework。
-- transition evidence：当前直接用户消息“开始”；既有 PR #238 继续实施，不新建 Goal。
-- 用户目标：三 Skill 独立包、uv/PEP723、外部工具 PATH/自有默认目录、四根协议补丁及针对性验证。
+- 来源锚点：2026-11-15 用户独立发布交接、“开始”及最新要求“环境变量之类的问题 也按流程 写进babata新协议 更新”；原话见 Git 外 `D:/BabataEvidence/skill-standalone-238/ENV-PROTOCOL-USER-INPUT-20261115.md`。
+- transition：explicit-supplement / documentation-protocol。
+- transition evidence：最新直接用户消息要求协议更新；沿用 #235 / PR #238，不新建 Goal，不改变安装和清理权限。
+- 用户目标：三 Skill 独立包返工基础上，把环境变量、配置、凭据和依赖发现边界提升为 Babata 通用协议，按权威链更新并验证。
 - 基线：`codex/skill-standalone-235` / `0eb1717`；原工作区干净。
 - 阶段：依赖与目录边界 → Python/Node 实现 → 仓库外验证与 gate → 提交推送 #238。
-- 当前状态：返工提交 `dec7bff` 及进度回写已推送 #238；本地 All gate 208.9s 通过，独立包 8/8、正式 PNG 2/2。远端新 head 没有 checks/run，旧 0eb1717 CI 不适用；旧六路径清理被执行策略拒绝，未删除或绕过。
+- 当前状态：原返工本地 All gate 208.9s 通过且已推 #238；本次通用环境／依赖协议按权威链补齐，boundary 37.1s 通过，未改实现或用户环境。远端新 head 没有 checks/run，旧 CI 不适用；旧六路径清理仍受策略阻止。
 - 声明终端：返工代码和文档经适用检查，推送原 PR；不能将 CI 绿等同用户验收。
 - 受保护边界：不合并、不重装技能、不设置用户变量、不备份旧技能、不写反馈/记忆、不动主检出。
 - 发丝 matting 队列不启动；datasets/dev* 不删除。第三方旧目录仅新路径成功后按授权清理。
-- 下一步：本轮 partial-delivery 交还：远端 CI 未触发，旧目录清理受策略阻止。待正常 CI 触发路径或执行策略变化再处理未决项；不自动重开 PR、不绕过删除策略、不合并、重装或启动队列。
+- 下一步：本次协议补充提交推送原 PR 后交还；远端 CI 与旧目录清理未决项继续单列，待正常触发路径／策略变化再处理。不自动重开 PR、不绕过删除策略、不合并、重装或启动队列。
 - 恢复入口：本工作树；`D:/BabataEvidence/skill-standalone-238/`；PR #238。
 
 此前 #233／#235 已于 2026-11-15 经 PR #234、#236 合入 main（c13dc6a），

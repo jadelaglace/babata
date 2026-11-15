@@ -26,3 +26,6 @@
    `05_scripts/atoms/`，改动后运行 `python 05_scripts/sync-skill-bundles.py`；CI 用 `--check` 校验。
    Python 用 PEP 723＋uv，Node 用随包 lock＋npm；工具按 PATH／自有配置及默认缓存查找，
    不用技能私有依赖变量，不把第三方运行时／权重塞进 Babata 四根。正式 Rust 输出既有配置另论。
+10. 通用配置规则由 [`DOC-ARCH` §7“配置、环境变量与依赖协议”](../00_docs/03_architecture/03_a_ARCHITECTURE.md#配置环境变量与依赖协议)
+    拥有，适用于所有 Skill／原子／适配器；新增配置与持久环境变更遵循 `DOC-PROCESS` §7.1。
+    本目录只实现该合同，不维护另一份配置或凭据权威。

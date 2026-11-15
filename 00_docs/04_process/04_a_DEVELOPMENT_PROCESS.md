@@ -118,6 +118,19 @@ status: observed | triaged | deferred | promoted-for-fix | fixed | verified | cl
 6. PR 描述列出用户结果、影响角色、验证、未完成项和 release impact。
 7. 合并后更新 status/evidence，删除成功 Active Plan 临时项；不把 PR 合并冒充用户 acceptance。
 
+### 7.1 配置与外部依赖变更
+
+配置合同由 `DOC-ARCH` §7“配置、环境变量与依赖协议”拥有；本节只规定开发检查，不复制变量表。
+
+- 新增／修改 Skill、原子或适配器前，先核 PATH、工具自有配置／默认位置及标准包管理路线，
+  对新增自有变量说明真实缺口和归属；按需沿 Requirements → PRD → AC → Architecture → TC 更新。
+- 在 Issue／PR 列出依赖准备方式、配置解析来源、缺失行为和是否涉及持久环境变更；新变量或
+  全局设置不是默认实施手段。需要持久变更时先取得明确授权，不以功能开发授权代替。
+- 按 TC-09 在隔离环境验证依赖发现、原生覆盖、缺依赖负例和无环境副作用；秘密只用合成占位值
+  验证不泄漏，不导出真实用户变量或凭据。回执／Usage 区分协议采纳、实际覆盖和未迁移例外。
+- 仅文档合同变更时跑 scoped docs 与适用 boundary gate；改变实现后再跑相应工程 gate。
+  不为满足新协议重跑已关闭 usage round、自动重装技能或删除旧目录。
+
 ## 8. 版本与发布
 
 - 唯一版本源为 `01_app/Cargo.toml` 的 `[workspace.package].version`。
