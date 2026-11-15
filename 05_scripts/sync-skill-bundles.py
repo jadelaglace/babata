@@ -18,8 +18,8 @@ REPO = Path(__file__).resolve().parent.parent
 ATOMS = REPO / "05_scripts" / "atoms"
 BUNDLES = {
     "babata-render": ["render.mjs", "common.mjs", "package.json", "package-lock.json",
-                      "image_ops.py", "vision_backend.py", "requirements-image.txt"],
-    "babata-vision": ["image_ops.py", "vision_backend.py", "requirements-image.txt"],
+                      "image_ops.py", "vision_backend.py", "rembg_matte.py"],
+    "babata-vision": ["image_ops.py", "vision_backend.py", "rembg_matte.py"],
     "babata-research": ["research.mjs", "common.mjs"],
 }
 
@@ -37,8 +37,9 @@ def main() -> int:
         target = REPO / "02_skills" / skill / "scripts"
         expected = set(files)
         present = {p.name for p in target.iterdir() if p.is_file()} if target.is_dir() else set()
-        for extra in sorted(present - expected):
-            problems.append(f"{skill}/scripts/{extra}: not part of the bundle")
+        if args.check:
+            for extra in sorted(present - expected):
+                problems.append(f"{skill}/scripts/{extra}: not part of the bundle")
         for name in files:
             source, copy = ATOMS / name, target / name
             if args.check:

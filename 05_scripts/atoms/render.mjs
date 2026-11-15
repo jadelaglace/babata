@@ -13,10 +13,23 @@ export function pngDimensions(bytes) {
   requireValue(bytes.length >= 33 && bytes.subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10])) && bytes.toString("ascii",12,16) === "IHDR", "renderer did not produce PNG");
   return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
 }
-export async function probe() {
+export async function launchBrowser(chromium, preference = "auto") {
+  const choices = { auto: ["msedge", "chrome", "chromium"], edge: ["msedge"], chrome: ["chrome"], chromium: ["chromium"] };
+  requireValue(Object.hasOwn(choices, preference), "browser must be auto, edge, chrome or chromium");
+  const failures = [];
+  for (const channel of choices[preference]) {
+    try {
+      const browser = await chromium.launch({ headless: true, ...(channel === "chromium" ? {} : { channel }) });
+      return { browser, channel };
+    } catch (error) { failures.push(`${channel}: ${error.message.split("\n")[0]}`); }
+  }
+  throw new Error("Browser unavailable; install system Edge/Chrome or run npx playwright install chromium in this script's package directory. " + failures.join("; "));
+}
+export async function probe(options = {}) {
   const { chromium } = await dependency("playwright"); await dependency("marked");
-  requireValue(fs.existsSync(process.env.BABATA_CHROMIUM_EXECUTABLE || chromium.executablePath()), "Chromium unavailable; install Playwright Chromium or configure BABATA_CHROMIUM_EXECUTABLE");
-  return { state: "available", renderer: "babata-playwright/v1" };
+  const { browser, channel } = await launchBrowser(chromium, options.browser);
+  try { return { state: "available", renderer: "babata-playwright/v1", channel, browser: browser.version() }; }
+  finally { await browser.close(); }
 }
 function verify(directory) {
   const manifest = readJson(path.join(directory, "manifest.json"));
@@ -43,6 +56,8 @@ function verify(directory) {
 }
 function validateOptions(options) {
   const mode = options.mode ?? "long"; const width = Number(options.width ?? 1120);
+  const browser = options.browser ?? "auto";
+  requireValue(["auto", "edge", "chrome", "chromium"].includes(browser), "browser must be auto, edge, chrome or chromium");
   requireValue(["long", "paged"].includes(mode), "mode must be long or paged");
   requireValue(Number.isInteger(width) && width >= 480 && width <= 2400, "width must be 480..2400 CSS pixels");
   requireValue(options.input && path.isAbsolute(options.input), "absolute input path required");
@@ -50,7 +65,7 @@ function validateOptions(options) {
   requireValue([".md", ".html", ".htm"].includes(extension), "input must be Markdown or HTML");
   const bytes = fs.readFileSync(input);
   requireValue(bytes.length > 0 && bytes.length <= 8 * 1024 * 1024, "input must contain 1 byte..8 MiB");
-  return { input, extension, bytes, mode, width };
+  return { input, extension, bytes, mode, width, browser };
 }
 async function renderFresh(directory, spec) {
   const { chromium } = await dependency("playwright");
@@ -61,7 +76,7 @@ async function renderFresh(directory, spec) {
   const document = '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><style>' + css + pageCss + '</style></head><body><main>' + html + '</main></body></html>';
   const stage = path.join(directory, ".staging-" + crypto.randomUUID()); fs.mkdirSync(stage);
   const assets = new Map(); const failures = [];
-  const browser = await chromium.launch({ headless: true, ...(process.env.BABATA_CHROMIUM_EXECUTABLE ? { executablePath: process.env.BABATA_CHROMIUM_EXECUTABLE } : {}) });
+  const { browser, channel } = await launchBrowser(chromium, spec.browser);
   try {
     const context = await browser.newContext({ javaScriptEnabled: false, serviceWorkers: "block", viewport: { width: spec.width, height: 900 }, deviceScaleFactor: 1, reducedMotion: "reduce" });
     const page = await context.newPage(); page.setDefaultTimeout(15000);
@@ -131,13 +146,13 @@ async function renderFresh(directory, spec) {
     const measured = outputs.map(name => { const bytes = fs.readFileSync(path.join(stage,name)); const dimensions = pngDimensions(bytes); requireValue(dimensions.width > 0 && dimensions.height > 0, "empty PNG dimensions"); files.push({path: name, sha256: sha(bytes), role: "png"}); return { path: name, sha256: sha(bytes), ...dimensions }; });
     if (spec.mode === "long") requireValue(measured[0].width === spec.width && measured[0].height === structure.height, "PNG dimensions differ from measured content");
     const request = renderRequest(spec);
-    const manifest = { schema_version: schema, state: "succeeded", request, request_sha256: identity(request), source_input: spec.input, source_assets: sourceAssets, created_at: new Date().toISOString(), browser: browser.version(), outputs: measured, files, checks: { assets: "pass", structure: "pass", dimensions: "pass", network: "blocked", scripts: "disabled", visual_review: "not-run", glyphs: "requires-visual-review", blank_bands: "requires-visual-review" } };
+    const manifest = { schema_version: schema, state: "succeeded", request, request_sha256: identity(request), source_input: spec.input, source_assets: sourceAssets, created_at: new Date().toISOString(), browser: browser.version(), browser_channel: channel, outputs: measured, files, checks: { assets: "pass", structure: "pass", dimensions: "pass", network: "blocked", scripts: "disabled", visual_review: "not-run", glyphs: "requires-visual-review", blank_bands: "requires-visual-review" } };
     for (const file of files) fs.renameSync(path.join(stage,file.path), path.join(directory,file.path));
     atomicJson(path.join(directory,"manifest.json"), manifest); fs.rmdirSync(stage); return verify(directory);
   } finally { await browser.close(); }
 }
 function renderRequest(spec) {
-  return { input_sha256: sha(spec.bytes), mode: spec.mode, width: spec.width, profile, template_sha256: sha(css + (spec.mode === "paged" ? pagedCss : "")), renderer: "babata-playwright/v1" };
+  return { input_sha256: sha(spec.bytes), mode: spec.mode, width: spec.width, profile, template_sha256: sha(css + (spec.mode === "paged" ? pagedCss : "")), renderer: "babata-playwright/v1", ...(spec.browser !== "auto" ? {browser_preference: spec.browser} : {}) };
 }
 export async function render(command, options) {
   const directory = externalDirectory(options.out); const release = lock(directory);
@@ -157,6 +172,6 @@ export async function render(command, options) {
   } finally { release(); }
 }
 if (isMain(import.meta)) {
-  try { const { command, options } = argsOf(process.argv.slice(2)); process.stdout.write(JSON.stringify(command === "probe" ? await probe() : await render(command, options)) + "\n"); }
+  try { const { command, options } = argsOf(process.argv.slice(2)); process.stdout.write(JSON.stringify(command === "probe" ? await probe(options) : await render(command, options)) + "\n"); }
   catch (error) { emitError(error); }
 }

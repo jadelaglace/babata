@@ -35,10 +35,7 @@ fn failed_rebuild_preserves(
     Command::cargo_bin("babata")
         .unwrap()
         .env("BABATA_DATA_HOME", root)
-        .env(
-            "BABATA_CHROMIUM_EXECUTABLE",
-            root.join("missing-browser.exe"),
-        )
+        .env("BABATA_NODE", root.join("missing-node.exe"))
         .args(["outputs", "rebuild", "--output", id])
         .assert()
         .failure();

@@ -3,6 +3,7 @@ name: babata-render
 description: Babata 画面制作：把已有 Markdown、HTML 或正式输出渲染成 PNG 长图／显式结构分页；对静态图片抠图／去背景（白底、绿幕、复杂背景）、提取阴影、透明图层合成、保透明缩放。原件只读、产物写新文件。不搜索调研、不重写事实、不负责看图判断（交给 babata-vision）、不发布。
 metadata:
   version: "1.2.0"
+compatibility: Requires uv for Python helpers and Node.js/npm for PNG rendering; optional bl on PATH.
 ---
 
 # Babata 画面制作
@@ -10,7 +11,7 @@ metadata:
 两类制作：已有内容转 PNG，和静态图片素材加工。都只产出新文件和可回读证据，不改原件、不写正式库。
 "测量／检查透明边、杂点、裁切"属于 babata-vision；需要改素材时回到本 Skill 显式加工。搜索调研走 babata-research。
 
-本 Skill 自带脚本，在本目录 `scripts/`（下文路径均相对本 SKILL.md 所在目录）；切出仓库单独安装即可运行，不找、不依赖 Babata 仓库。缺外部依赖时报告 unavailable，不拿别的文件冒充本原子输出。外部依赖（Node 包与浏览器、rembg、千问 `bl` 等）经环境变量配置，见 [外部依赖](references/dependencies.md)。
+本 Skill 自带脚本，在本目录 `scripts/`（路径相对本 SKILL.md）；切出仓库即可按标准包管理运行，不找 Babata 仓库。Python 用 `uv run --script` 内联依赖；PNG 首次在 `scripts/` 执行 `npm ci --ignore-scripts`。外部工具从 PATH 和各自默认配置／缓存发现，见 [依赖与默认位置](references/dependencies.md)。缺依赖明确报告 unavailable，不设置用户环境变量、不借别的仓库脚本。
 
 ## 内容转 PNG
 

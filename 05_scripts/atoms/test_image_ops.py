@@ -204,9 +204,36 @@ def test_answer_validation(content, finish, expect, state, reason):
 
 def test_matte_unavailable_is_reported_not_substituted(tmp_path, monkeypatch):
     p = save(tmp_path / "in.png", solid(8, 8, (1, 1, 1, 255)))
-    monkeypatch.delenv("BABATA_REMBG_PYTHON", raising=False)
+    monkeypatch.setattr(vb.shutil, "which", lambda name: None)
     assert vb.main(["matte", "--image", p, "--out", str(tmp_path / "r")]) == 4
     assert not (tmp_path / "r" / "manifest.json").exists()
+
+
+def test_backend_discovery_uses_path_and_explicit_models(monkeypatch):
+    monkeypatch.setenv("BABATA_BL", "ignored-old-path")
+    monkeypatch.setenv("BABATA_VISION_MODEL", "ignored-old-model")
+    monkeypatch.setattr(vb.shutil, "which", lambda name: "/tools/bl" if name == "bl" else None)
+    assert vb.bl_executable() == "/tools/bl"
+    assert vb.vision_model(None) == vb.DEFAULT_VISION_MODEL
+    assert vb.vision_model("chosen-model") == "chosen-model"
+
+
+@pytest.mark.parametrize("payload,timeout,reason", [("not-json", False, "integrity"), ("", True, "timeout")])
+def test_matte_worker_bad_metadata_and_timeout_fail_closed(tmp_path, monkeypatch, payload, timeout, reason):
+    src = save(tmp_path / "in.png", solid(8, 8, (1, 1, 1, 255)))
+    monkeypatch.setattr(vb.shutil, "which", lambda name: "uv")
+    def worker(cmd, deadline):
+        assert cmd[1:4] == ["run", "--no-project", "--script"]
+        assert Path(cmd[4]).name == "rembg_matte.py"
+        Image.new("RGBA", (8, 8)).save(cmd[6])
+        return (None if timeout else 0), payload, "", timeout
+    monkeypatch.setattr(vb, "run_bounded", worker)
+    out = tmp_path / "run"
+    code = vb.main(["matte", "--image", src, "--out", str(out)])
+    assert code != 0
+    if (out / "manifest.json").exists():
+        assert manifest(out)["state"] != "succeeded"
+        assert manifest(out)["reason"] == reason
 
 
 def test_bl_adapter_handles_fake_backend_outputs(tmp_path, monkeypatch):
@@ -254,3 +281,14 @@ def test_v08_grader_ignores_negated_hedges():
     case = {"id": "V08", "truth": {}, "scoring": ""}
     assert vc.score_semantic(case, "峰值未被截断或模糊处理，2024 年销量为 100，数值可确定。")[0] == "fail"
     assert vc.score_semantic(case, "折线顶到坐标上限 100，实际值至少为 100，无法精确读出。")[0] == "pass"
+
+
+def test_case_runner_rembg_uses_path_launcher_not_retired_variable(tmp_path, monkeypatch):
+    import vision_cases as vc
+    monkeypatch.setattr(vc.shutil, "which", lambda name: None)
+    observed = []
+    monkeypatch.setattr(vc, "load_freeze", lambda root: {"cases": [{"id": "R04", "inputs": []}]})
+    monkeypatch.setitem(vc.LOCAL, "R04", lambda root, case, inputs, run, step, launcher: observed.append(launcher))
+    vc.run_local(tmp_path)
+    assert observed == [None]
+    assert json.loads((tmp_path / "results/local/R04.json").read_text(encoding="utf-8"))["id"] == "R04"

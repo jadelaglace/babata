@@ -129,7 +129,10 @@ validate scope -> stage metadata/assets -> write transaction -> finalize assets
 - Skill 目录是发布单元：render、vision、research 各自在 `scripts/` 携带所需脚本，单独拷出即可运行，
   不查找或依赖仓库。规范源保留在 `05_scripts/atoms/`（测试、CI 与正式 PNG 使用），由
   `05_scripts/sync-skill-bundles.py` 拷入，`--check` 在 CI 中阻断不一致。Node 包与浏览器、rembg 与权重、
-  百炼 `bl`／千问模型等是外部依赖，只经可选环境变量接入，未配置即 unavailable。
+  百炼 `bl`／千问模型等是外部依赖：Python 用 PEP 723＋uv 解析，Node 用随包 lock＋npm ci 解析；
+  工具从 PATH 使用，凭据／缓存按工具自有配置发现，模型名用参数，不另造技能私有依赖变量。
+  浏览器经 Playwright 系统 channel（Edge／Chrome）及默认缓存发现；缺依赖明确 unavailable，不偷偷安装。
+  正式 outputs 既有 `BABATA_PNG_RENDERER`／`BABATA_NODE` 配置保留，不成为独立 Skill 前提。
 
 活动 `BABATA_DATA_HOME` 顶层保持六个编号分区：
 
@@ -142,6 +145,9 @@ validate scope -> stage metadata/assets -> write transaction -> finalize assets
 - `BABATA_ASSISTANT_HOME` 保存非知识的助理方案资产：`solutions/<solution>/runtime/{scripts,cli,...}`
   及 `solutions/<solution>/workspaces/<task-or-run>`，按真实调用增量建立；Git 管理的产品代码仍在 Git。
 - 四根必须在 Git 外、互不重合／嵌套；以实际解析路径检查，不追随 junction/symlink 越界。
+- 第三方依赖、缓存、权重及解释器／运行时放工具公认默认目录或标准包目录（uv 缓存、npm 包旁 node_modules、
+  Playwright 默认缓存、rembg `~/.u2net` 等），不放 Data／Evidence／Recovery／Assistant 四根。
+  工具自有路径变量按其约定尊重，不包装成一批 `BABATA_*`；弱网预置校验完整性。业务产物和验证证据仍按四根归类。
 - `04_runtime` 用于知识处理过程数据；既有 `04_runtime/staging/model-workspaces/` 原位 legacy 兼容，
   不强迁，不因路径名把付费结果、持久证据或未知唯一内容判为可删／可排除。新方案脚本外置 Assistant。
 - WBS 的权威仍在飞书，证据进 Evidence/wbs，方案工作区进 Assistant；model-value 同样拆分，

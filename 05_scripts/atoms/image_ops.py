@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11,<3.15"
+# dependencies = ["pillow>=11,<14", "numpy>=2,<3"]
+# ///
 """Babata static image atoms.
 
 Render side (asset edits): key-white, key-chroma, shadow-extract, over, resize.

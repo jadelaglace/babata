@@ -24,4 +24,5 @@
    结果写 Git 外 run 目录，不写正式库，不新增第三个视觉入口。
 9. Skill 目录是发布单元，切出仓库也能用：脚本放本目录 `scripts/`，不得引用仓库路径。规范源在
    `05_scripts/atoms/`，改动后运行 `python 05_scripts/sync-skill-bundles.py`；CI 用 `--check` 校验。
-   外部工具（Node 包、浏览器、rembg、bl、模型）只经环境变量配置。
+   Python 用 PEP 723＋uv，Node 用随包 lock＋npm；工具按 PATH／自有配置及默认缓存查找，
+   不用技能私有依赖变量，不把第三方运行时／权重塞进 Babata 四根。正式 Rust 输出既有配置另论。

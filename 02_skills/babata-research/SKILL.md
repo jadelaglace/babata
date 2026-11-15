@@ -3,6 +3,7 @@ name: babata-research
 description: 搜索、核实或调研网络问题与话题，交付来源、证据或调研结论；可独立使用，不强制出报告图片或入知识库。已有内容转 PNG 用 babata-render。
 metadata:
   version: "1.1.0"
+compatibility: Node.js on PATH for the optional recoverable run helper; no third-party Node packages.
 ---
 
 # Babata 搜索与调研

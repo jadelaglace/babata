@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11,<3.15"
+# dependencies = ["pillow>=11,<14", "numpy>=2,<3"]
+# ///
 """Babata vision/render backend adapters (narrow, replaceable).
 
 ask    : image(s) + question -> answer, via `bl` (Qwen-VL through Bailian CLI) or `host`
          (records the host agent's own answer file; the host must actually have read the image).
-matte  : complex background removal via a local rembg interpreter (BABATA_REMBG_PYTHON).
+matte  : local background segmentation through uv and the bundled rembg_matte.py.
 probe  : installed / configured / probed state of each backend, without spending calls.
 
-External tools are dependencies, wired through environment variables (all optional):
-  BABATA_BL            path to the Bailian `bl` executable (default: `bl` on PATH)
-  BABATA_VISION_MODEL  default semantic model for --backend bl (default: qwen3-vl-plus)
-  BABATA_REMBG_PYTHON  interpreter that has rembg installed (complex matting is unavailable without it)
-  BABATA_REMBG_MODEL   default rembg model (default: isnet-general-use)
-  U2NET_HOME           rembg weight directory (read by rembg itself)
+External tools are discovered on PATH; models are explicit --model arguments.
+  U2NET_HOME           rembg's own override; otherwise rembg uses ~/.u2net
   COMFYUI_URL          reported by probe only; no endpoint scanning
 
 Adapters never write Babata databases. Results go to a new run directory (same run
@@ -36,20 +36,17 @@ from PIL import Image, ImageDraw
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import image_ops as io  # noqa: E402
 
-ADAPTER_VERSION = "1.1.0"
+ADAPTER_VERSION = "1.2.0"
 DEFAULT_VISION_MODEL = "qwen3-vl-plus"
 DEFAULT_REMBG_MODEL = "isnet-general-use"
 
 
 def bl_executable():
-    configured = os.environ.get("BABATA_BL")
-    if configured:
-        return configured if Path(configured).is_file() else None
     return shutil.which("bl")
 
 
 def vision_model(explicit):
-    return explicit or os.environ.get("BABATA_VISION_MODEL") or DEFAULT_VISION_MODEL
+    return explicit or DEFAULT_VISION_MODEL
 
 
 def validate_answer(content, finish_reason, expect: str):
@@ -110,7 +107,7 @@ def run_bounded(cmd, timeout):
 def call_bl(image: str, prompt: str, model: str, timeout: int):
     exe = bl_executable()
     if not exe:
-        raise io.AtomError("unavailable", "bl not found (set BABATA_BL or put bl on PATH)")
+        raise io.AtomError("unavailable", "bl not found on PATH")
     cmd = [exe, "vision", "describe", "--image", image, "--prompt", prompt, "--model", model,
            "--output", "json", "--timeout", str(timeout), "--quiet"]
     started = time.time()
@@ -200,50 +197,42 @@ def backend_identity(kind: str, model):
     return ident
 
 
-REMBG_SNIPPET = r"""
-import sys, json, time
-from rembg import remove, new_session
-from PIL import Image
-src, dst, model = sys.argv[1], sys.argv[2], sys.argv[3]
-t = time.time()
-session = new_session(model)
-out = remove(Image.open(src).convert("RGBA"), session=session)
-out.save(dst, "PNG")
-import rembg, onnxruntime
-print(json.dumps({"elapsed_ms": int((time.time()-t)*1000), "rembg": getattr(rembg, "__version__", "?"),
-                  "onnxruntime": onnxruntime.__version__, "model": model}))
-"""
-
-
 def cmd_matte(args, limits):
     img, rec = io.load_image(args.image, "input", limits)
-    py = os.environ.get("BABATA_REMBG_PYTHON")
-    if not py or not Path(py).is_file():
-        raise io.AtomError("unavailable", "complex matting backend not configured (BABATA_REMBG_PYTHON); report blocked, do not substitute keying")
-    args.model = args.model or os.environ.get("BABATA_REMBG_MODEL") or DEFAULT_REMBG_MODEL
+    args.model = args.model or DEFAULT_REMBG_MODEL
     req = {"backend": "rembg", "model": args.model, "input_sha256": rec["sha256"]}
     run = io.Run(args.out, "matte", req)
     if (prev := run.existing()):
         return prev
+    uv = shutil.which("uv")
+    helper = Path(__file__).resolve().with_name("rembg_matte.py")
+    if not uv or not helper.is_file():
+        raise io.AtomError("unavailable", "rembg needs uv on PATH and bundled rembg_matte.py; do not substitute keying")
     with run:
         src = run.add("normalized-input", "input.png", img, relation="RGBA copy of input after explicit probe")
         tmp = run.dir / "cutout.tmp.png"
-        proc = subprocess.run([py, "-c", REMBG_SNIPPET, str(src), str(tmp), args.model], capture_output=True, text=True,
-                              encoding="utf-8", errors="replace", timeout=args.timeout)
-        if proc.returncode != 0 or not tmp.is_file():
+        code, stdout, stderr, timed_out = run_bounded(
+            [uv, "run", "--no-project", "--script", str(helper), str(src), str(tmp), "--model", args.model], args.timeout)
+        if timed_out or code != 0 or not tmp.is_file():
             tmp.unlink(missing_ok=True)
-            return run.finish([rec], {"stderr_tail": proc.stderr[-600:]}, [], {}, [], state="failed",
-                              extra={"reason": "backend-error", "producer_backend": {"backend": "rembg", "model": args.model}})
-        info = json.loads(proc.stdout.strip().splitlines()[-1])
-        out = np.asarray(Image.open(tmp).convert("RGBA")).copy()
+            return run.finish([rec], {"stderr_tail": stderr[-600:]}, [], {}, [], state="failed",
+                              extra={"reason": "timeout" if timed_out else "backend-error",
+                                     "producer_backend": {"backend": "rembg", "model": args.model}})
+        try:
+            info = json.loads(stdout.strip().splitlines()[-1])
+            if not isinstance(info, dict) or info.get("model") != args.model:
+                raise ValueError("invalid rembg identity")
+        except (ValueError, IndexError) as exc:
+            raise io.AtomError("integrity", "rembg returned invalid metadata") from exc
+        out, _ = io.load_image(str(tmp), "backend-output", limits)
         tmp.unlink()
         if out.shape[:2] != img.shape[:2]:
             raise io.AtomError("integrity", "backend returned a different size")
-        run.add("cutout", "cutout.png", out, relation="rembg alpha matte")
+        run.add("cutout", "cutout.png", out, relation="rembg foreground segmentation")
         meas, finds = io.measure_alpha(out, args.profile)
         meas["backend"] = info
         return run.finish([rec], meas, finds, {"region": "full image"},
-                          ["learned matting: quality varies by material; check on multiple backgrounds"],
+                          ["foreground segmentation is not true alpha matting; check on multiple backgrounds"],
                           extra={"producer_backend": {"adapter_version": ADAPTER_VERSION, "backend": "rembg", **info}})
 
 
@@ -253,12 +242,12 @@ def cmd_probe(args, limits):
     out["bl"] = {"installed": bool(bl), "executable": bl, "default_model": vision_model(None),
                  "credentials": "resolved by bl itself; not inspected here",
                  "probed": "not-run (spends a call; use ask on a known image)"}
-    py = os.environ.get("BABATA_REMBG_PYTHON")
-    out["rembg"] = {"configured": bool(py), "installed": False, "model": os.environ.get("BABATA_REMBG_MODEL") or DEFAULT_REMBG_MODEL,
-                    "weights_dir": os.environ.get("U2NET_HOME") or "rembg default (~/.u2net)"}
-    if py and Path(py).is_file():
-        proc = subprocess.run([py, "-c", "import rembg, onnxruntime; print('ok')"], capture_output=True, text=True, timeout=120)
-        out["rembg"]["installed"] = proc.returncode == 0
+    uv = shutil.which("uv")
+    weights = Path(os.environ.get("U2NET_HOME") or Path.home() / ".u2net").expanduser()
+    out["rembg"] = {"launcher": uv, "launcher_available": bool(uv), "model": DEFAULT_REMBG_MODEL,
+                    "weights_dir": str(weights), "default_weights_present": (weights / (DEFAULT_REMBG_MODEL + ".onnx")).is_file(),
+                    "dependencies": "managed by uv from rembg_matte.py inline metadata",
+                    "probed": "not-run; probe does not install dependencies or load weights"}
     out["comfyui"] = {"configured": bool(os.environ.get("COMFYUI_URL")), "note": "no endpoint scanning; set COMFYUI_URL explicitly"}
     out["host"] = {"note": "available only when the running host model can actually read images"}
     return {"schema": "babata.vision-backend-probe/v1", "backends": out}

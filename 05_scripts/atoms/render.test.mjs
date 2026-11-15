@@ -3,7 +3,28 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { render } from './render.mjs';
+import { render, launchBrowser } from './render.mjs';
+
+test('browser discovery uses system channels then Playwright default and supports explicit selection',async()=>{
+ const calls=[]; const browser={};
+ const chromium={launch:async options=>{calls.push(options.channel??'chromium');if(options.channel)throw Error('not installed');return browser;}};
+ assert.deepEqual(await launchBrowser(chromium),{browser,channel:'chromium'});
+ assert.deepEqual(calls,['msedge','chrome','chromium']);
+ calls.length=0;
+ await assert.rejects(launchBrowser(chromium,'chrome'),/Browser unavailable/);
+ assert.deepEqual(calls,['chrome']);
+ await assert.rejects(launchBrowser(chromium,'invalid'),/browser must be/);
+});
+
+test('browser discovery reports unavailable without substituting a different explicit channel',async()=>{
+ const calls=[];
+ const chromium={launch:async options=>{calls.push(options.channel??'chromium');throw Error('not installed');}};
+ await assert.rejects(launchBrowser(chromium),/Browser unavailable.*msedge.*chrome.*chromium/);
+ assert.deepEqual(calls,['msedge','chrome','chromium']);
+ calls.length=0;
+ await assert.rejects(launchBrowser(chromium,'edge'),/Browser unavailable/);
+ assert.deepEqual(calls,['msedge']);
+});
 
 const temp=()=>fs.mkdtempSync(path.join(os.tmpdir(),'babata-render-'));
 const input=(root,text,name='input.md')=>{const file=path.join(root,name);fs.writeFileSync(file,text);return file;};

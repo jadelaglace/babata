@@ -65,8 +65,7 @@ export async function dependency(name) {
   let location;
   try { location = require.resolve(name); }
   catch {
-    requireValue(process.env.BABATA_NODE_MODULES, `${name} unavailable; install atoms package dependencies or set BABATA_NODE_MODULES`);
-    location = require.resolve(name, { paths: [process.env.BABATA_NODE_MODULES] });
+    throw new Error(`${name} unavailable; run npm ci --ignore-scripts in this script's package directory`);
   }
   const loaded = await import(pathToFileURL(location).href);
   return loaded.default ?? loaded;

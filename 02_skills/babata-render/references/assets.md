@@ -1,21 +1,21 @@
 # 素材加工运行入口
 
-脚本在本 Skill 的 `scripts/`。依赖 Python 3.13、Pillow、NumPy（`pip install -r scripts/requirements-image.txt`）；OpenCV 不需要。所有命令输出 `babata.image-atom/v1` JSON 到 stdout，并在 `--out`（Git 外绝对路径、新目录）写产物和最后写入的 manifest.json。
+脚本在本 Skill 的 `scripts/`。用 PATH 上 uv 按 PEP 723 内联声明解析 Python、Pillow、NumPy，无需手建 venv，OpenCV 不需要。所有命令输出 `babata.image-atom/v1` JSON 到 stdout，在 `--out`（Git 外绝对路径、新目录）最后写 manifest.json。
 
-    python scripts/image_ops.py key-white <in> --out <run> [--level 248 --soft 28] [--connectivity border|global] [--keep-largest]
-    python scripts/image_ops.py key-chroma <in> --out <run> --color green|blue [--tolerance 60 --despill 0.8]
-    python scripts/image_ops.py shadow-extract <plate> --reference <orig> --subject <subject.png> --out <run>
-    python scripts/image_ops.py over <top> <bottom> [...] --out <run> [--fit none|stretch|contain]
-    python scripts/image_ops.py resize <in> --width W [--height H] --out <run>
-    python scripts/image_ops.py verify --out <run>
+    uv run --no-project --script scripts/image_ops.py key-white <in> --out <run> [--level 248 --soft 28] [--connectivity border|global] [--keep-largest]
+    uv run --no-project --script scripts/image_ops.py key-chroma <in> --out <run> --color green|blue [--tolerance 60 --despill 0.8]
+    uv run --no-project --script scripts/image_ops.py shadow-extract <plate> --reference <orig> --subject <subject.png> --out <run>
+    uv run --no-project --script scripts/image_ops.py over <top> <bottom> [...] --out <run> [--fit none|stretch|contain]
+    uv run --no-project --script scripts/image_ops.py resize <in> --width W [--height H] --out <run>
+    uv run --no-project --script scripts/image_ops.py verify --out <run>
 
-复杂抠图（本地 rembg，可替换；`BABATA_REMBG_PYTHON` 指向装有 rembg 的解释器，见 [外部依赖](dependencies.md)）：
+复杂背景分割（本地 rembg，可替换；uv 管理随包 worker 的依赖，见 [依赖与默认位置](dependencies.md)）：
 
-    python scripts/vision_backend.py matte --image <in> --out <run> [--model isnet-general-use|u2net|birefnet-general]
+    uv run --no-project --script scripts/vision_backend.py matte --image <in> --out <run> [--model isnet-general-use|u2net|birefnet-general]
 
 分割结果的边缘精修（可组合，不是真正的 matting 模型）：
 
-    python scripts/image_ops.py refine <原图> --coarse <rembg cutout.png> --out <run> [--band 8]
+    uv run --no-project --script scripts/image_ops.py refine <原图> --coarse <rembg cutout.png> --out <run> [--band 8]
 
 - 退出码：0 成功；2 输入无效／不支持／超限／冲突；3 完整性失败；4 后端不可用。
 - over 是 straight-alpha 8-bit 浮点计算后四舍五入，第一张为顶层；无色彩管理。

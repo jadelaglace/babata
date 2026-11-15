@@ -9,9 +9,24 @@
 
 ## 1. 当前活动项（恢复时先读，最多一个）
 
-<!-- CURRENT-ACTIVE: none -->
+<!-- CURRENT-ACTIVE: standalone-skill-238-rework -->
 
-当前没有待执行开发项。#233／#235 已于 2026-11-15 经 PR #234、#236 合入 main（c13dc6a），
+### standalone-skill-238-rework
+
+- 来源锚点：2026-11-15 用户独立发布交接及最新直接指令“开始”；实施限定已有 PR #238。
+- transition：explicit-resume / rework。
+- transition evidence：当前直接用户消息“开始”；既有 PR #238 继续实施，不新建 Goal。
+- 用户目标：三 Skill 独立包、uv/PEP723、外部工具 PATH/自有默认目录、四根协议补丁及针对性验证。
+- 基线：`codex/skill-standalone-235` / `0eb1717`；原工作区干净。
+- 阶段：依赖与目录边界 → Python/Node 实现 → 仓库外验证与 gate → 提交推送 #238。
+- 当前状态：返工及补检缺陷已修复，本地 All gate 208.9s 通过，独立包 8/8、正式 PNG 2/2。仓库外 smoke 与当前 12 个脚本／包文件一致；旧六路径清理被执行策略拒绝，未删除或绕过。
+- 声明终端：返工代码和文档经适用检查，推送原 PR；不能将 CI 绿等同用户验收。
+- 受保护边界：不合并、不重装技能、不设置用户变量、不备份旧技能、不写反馈/记忆、不动主检出。
+- 发丝 matting 队列不启动；datasets/dev* 不删除。第三方旧目录仅新路径成功后按授权清理。
+- 下一步：提交推送原 PR #238 并核 CI；清理受策略阻止须如实交还，不重试绕过；不合并、重装或启动队列。
+- 恢复入口：本工作树；`D:/BabataEvidence/skill-standalone-238/`；PR #238。
+
+此前 #233／#235 已于 2026-11-15 经 PR #234、#236 合入 main（c13dc6a），
 render／vision 技能已装到本机；结果见 `DOC-USAGE`，证据根 `D:/BabataEvidence/render-vision-235/`。
 Round-1 已终态，不从摘要或旧 Goal 重跑。发布和用户验收未被自动授权。
 

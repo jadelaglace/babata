@@ -3,6 +3,7 @@ name: babata-vision
 description: Babata 视觉：看图、读图中文字／表格／图表、比较两张图，检查透明边、白边黑边、光晕、杂点、裁切、缺图空白等质量问题，并给出带位置的证据和诊断标注副本。语义回答、客观测量与最终判断分开呈现。不负责抠图／合成／生成图片（交给 babata-render）、不搜索调研、不把识图结果登记为正式知识。
 metadata:
   version: "1.1.0"
+compatibility: Requires uv for Python helpers; optional bl on PATH for cloud image understanding.
 ---
 
 # Babata 视觉
@@ -14,7 +15,7 @@ metadata:
 
 客观问题先测量再解释；数值与模型说法冲突时以测量为准，并说明哪条未核实。运行方式见 [运行说明](references/run.md)。
 
-本 Skill 自带脚本，在本目录 `scripts/`（下文路径均相对本 SKILL.md 所在目录）；切出仓库单独安装即可运行，不找、不依赖 Babata 仓库。缺外部依赖时报告 unavailable，不拿别的文件冒充本原子输出。千问 `bl`、模型名等外部依赖经环境变量配置，见运行说明末尾。
+本 Skill 自带脚本，在本目录 `scripts/`（路径相对本 SKILL.md）；Python 用 `uv run --script` 解析内联依赖，不依赖 Babata 仓库或项目虚拟环境。千问入口 `bl` 从 PATH 发现，凭据由它自己解析，模型用 `--model`；见运行说明。缺依赖报告 unavailable，不设置用户环境变量。
 
 ## 识别与比较
 

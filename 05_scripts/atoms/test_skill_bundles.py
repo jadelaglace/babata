@@ -22,14 +22,15 @@ def detached(tmp_path, skill):
 
 
 def clean_env(**extra):
-    env = {k: v for k, v in os.environ.items() if not k.startswith("BABATA_") and k != "PYTHONPATH"}
+    env = {k: v for k, v in os.environ.items() if not k.startswith("BABATA_")
+           and k not in ("PYTHONPATH", "VIRTUAL_ENV", "NODE_PATH", "NODE_OPTIONS")}
     env.update(extra)
     return env
 
 
 def run(cmd, cwd, env=None):
     p = subprocess.run([str(c) for c in cmd], cwd=cwd, capture_output=True, text=True, encoding="utf-8",
-                       errors="replace", env=env or clean_env())
+                       errors="replace", env=env or clean_env(), stdin=subprocess.DEVNULL, timeout=300)
     assert p.returncode == 0, f"{cmd}\n{p.stderr[-800:]}"
     return json.loads(p.stdout) if p.stdout.strip().startswith("{") else p.stdout
 
@@ -43,27 +44,34 @@ def test_skill_text_does_not_point_back_into_the_repository(skill):
 
 @pytest.mark.parametrize("skill", ["babata-render", "babata-vision"])
 def test_detached_image_skill_runs_its_own_scripts(tmp_path, skill):
+    uv = shutil.which("uv")
+    assert uv, "uv on PATH is required for standalone Python acceptance"
     root = detached(tmp_path, skill)
     img = tmp_path / "in.png"
     arr = np.zeros((40, 60, 4), np.uint8); arr[10:30, 15:45] = (200, 40, 40, 255)
     Image.fromarray(arr, "RGBA").save(img)
-    out = run([sys.executable, root / "scripts" / "image_ops.py", "measure", img, "--out", tmp_path / "m"], cwd=tmp_path)
+    out = run([uv, "run", "--no-project", "--script", root / "scripts" / "image_ops.py", "measure", img, "--out", tmp_path / "m"], cwd=tmp_path)
     assert out["state"] == "succeeded" and out["producer"]["tool"].endswith("image_ops.py")
-    probe = run([sys.executable, root / "scripts" / "vision_backend.py", "probe"], cwd=tmp_path,
-                env=clean_env(BABATA_BL=str(tmp_path / "no-bl.exe")))
-    assert probe["backends"]["bl"]["installed"] is False and probe["backends"]["rembg"]["configured"] is False
+    probe = run([uv, "run", "--no-project", "--script", root / "scripts" / "vision_backend.py", "probe"], cwd=tmp_path)
+    assert probe["backends"]["bl"]["installed"] == bool(shutil.which("bl"))
+    assert probe["backends"]["rembg"]["launcher_available"] is True
+    assert probe["backends"]["rembg"]["probed"].startswith("not-run")
 
 
 def test_detached_render_skill_renders_png(tmp_path):
     node = shutil.which("node")
-    modules = ATOMS / "node_modules"
-    if not node or not modules.is_dir():
-        pytest.skip("node or renderer dependencies unavailable")
+    npm = shutil.which("npm.cmd" if os.name == "nt" else "npm")
+    assert node and npm, "Node and npm on PATH required for standalone PNG acceptance"
     root = detached(tmp_path, "babata-render")
+    run([npm, "ci", "--ignore-scripts", "--no-audit", "--no-fund"], cwd=root / "scripts")
     md = tmp_path / "doc.md"; md.write_text("# 独立发布\n\n切出仓库也能渲染。\n", encoding="utf-8")
     run([node, root / "scripts" / "render.mjs", "render", "--input", md, "--out", tmp_path / "png", "--mode", "long"],
-        cwd=tmp_path, env=clean_env(BABATA_NODE_MODULES=str(modules)))
-    assert (tmp_path / "png" / "output.png").is_file()
+        cwd=tmp_path)
+    output = tmp_path / "png" / "output.png"
+    with Image.open(output) as image:
+        assert image.width == 1120 and image.height > 0
+    checked = run([node, root / "scripts" / "render.mjs", "verify", "--out", tmp_path / "png"], cwd=tmp_path)
+    assert checked["integrity"] == "verified"
 
 
 def test_detached_research_skill_records_a_run(tmp_path):
@@ -78,5 +86,6 @@ def test_detached_research_skill_records_a_run(tmp_path):
 
 
 def test_bundles_match_canonical_sources():
-    p = subprocess.run([sys.executable, REPO / "05_scripts" / "sync-skill-bundles.py", "--check"], capture_output=True, text=True)
+    p = subprocess.run([sys.executable, REPO / "05_scripts" / "sync-skill-bundles.py", "--check"],
+                       stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30)
     assert p.returncode == 0, p.stderr

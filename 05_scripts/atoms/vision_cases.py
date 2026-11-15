@@ -518,7 +518,7 @@ def alpha_of(path):
 def run_local(root: Path, only=None):
     fz = load_freeze(root)
     runs = root / "runs"; res_dir = root / "results" / "local"; res_dir.mkdir(parents=True, exist_ok=True)
-    rembg_py = os.environ.get("BABATA_REMBG_PYTHON")
+    rembg_launcher = shutil.which("uv")
     for c in fz["cases"]:
         cid = c["id"]
         if only and cid not in only:
@@ -536,7 +536,7 @@ def run_local(root: Path, only=None):
         try:
             if cid not in LOCAL:
                 continue
-            out.update(LOCAL[cid](root, c, ins, r, step, rembg_py) or {})
+            out.update(LOCAL[cid](root, c, ins, r, step, rembg_launcher) or {})
         except Exception as exc:  # recorded, not hidden
             out["error"] = f"{type(exc).__name__}: {exc}"
         (res_dir / f"{cid}.json").write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -585,9 +585,9 @@ def _r03(root, c, ins, r, step, _):
 
 
 @local("R04")
-def _r04(root, c, ins, r, step, rembg_py):
-    if not rembg_py:
-        return {"blocked": "BABATA_REMBG_PYTHON not configured"}
+def _r04(root, c, ins, r, step, rembg_launcher):
+    if not rembg_launcher:
+        return {"blocked": "uv not found on PATH"}
     env = dict(os.environ)
     res = step("rembg matte", backend("matte", "--image", ins[0], "--out", r / "rembg", env=env, timeout=1800))
     if res["exit"] != 0:
