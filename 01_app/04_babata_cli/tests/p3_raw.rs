@@ -518,7 +518,10 @@ fn graph_failure_cli_rolls_back_database_and_staging() {
             .is_none()
     );
     assert_eq!(recovery_counts(&temp), (0, 0));
-    assert!(files_under(&temp.path().join("01_raw/assets")).is_empty());
+    assert_eq!(
+        files_under(&temp.path().join("01_raw/assets")),
+        [] as [PathBuf; 0]
+    );
 }
 
 #[test]

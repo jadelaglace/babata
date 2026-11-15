@@ -456,8 +456,8 @@ mod tests {
         let common = summary.effective_common_metadata();
         common.validate().unwrap();
         assert!(common.title.is_none());
-        assert!(common.hierarchy.is_empty());
-        assert!(common.limitations.is_empty());
+        assert_eq!(common.hierarchy, [] as [SourceHierarchyNode; 0]);
+        assert_eq!(common.limitations, [] as [SourceLimitation; 0]);
         assert!(common.context.is_none());
     }
 }

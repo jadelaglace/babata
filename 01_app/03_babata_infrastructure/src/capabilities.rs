@@ -128,7 +128,16 @@ pub fn all_descriptors() -> Vec<CapabilityDescriptor> {
     descriptors.push(
         crate::processing::semantic_digest::BailianSemanticDigestProvider::detect().describe(),
     );
-    descriptors
+    descriptors.into_iter().chain([png_descriptor()]).collect()
+}
+
+fn png_descriptor() -> CapabilityDescriptor {
+    CapabilityDescriptor {
+        id: CapabilityId::new("outputs.png"),
+        status: if crate::views::png::configured() { CapabilityStatus::Enabled } else { CapabilityStatus::Unavailable },
+        activation_phase: "content-atoms".to_owned(),
+        reason: Some("PNG requires a configured renderer, Node packages and browser executable; availability probes these dependencies, build validates browser launch without fallback; visual review remains separate".to_owned()),
+    }
 }
 
 fn p7_source_descriptors() -> Vec<CapabilityDescriptor> {

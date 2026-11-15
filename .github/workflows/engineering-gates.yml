@@ -30,11 +30,15 @@ jobs:
         with:
           filters: |
             rust:
+              - '.github/workflows/engineering-gates.yml'
+              - '05_scripts/atoms/**'
               - '01_app/**'
               - '03_migrations/**'
               - '05_scripts/check-fast.ps1'
               - '05_scripts/check-full.ps1'
             adapters:
+              - '.github/workflows/engineering-gates.yml'
+              - '05_scripts/atoms/**'
               - '08_adapters/**'
               - '05_scripts/check-fast.ps1'
               - '05_scripts/check-full.ps1'
@@ -48,14 +52,26 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v5
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@1.94.0
+        uses: dtolnay/rust-toolchain@1.100.0
         with:
           components: clippy, rustfmt
       - name: Restore Rust build cache
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: ./01_app -> target
+      - name: Install Node.js for official PNG lifecycle tests
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Install PNG renderer dependencies
+        working-directory: ./05_scripts/atoms
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install PNG Chromium
+        working-directory: ./05_scripts/atoms
+        run: npx playwright install chromium
       - name: Run full Rust checks
+        env:
+          BABATA_PNG_RENDERER: ${{ github.workspace }}/05_scripts/atoms/render.mjs
         shell: pwsh
         run: ./05_scripts/check-full.ps1 -Scope Rust
 
@@ -80,7 +96,15 @@ jobs:
       - name: Install TypeScript dependencies
         working-directory: ./08_adapters/01_browser_extension
         run: npm ci
+      - name: Install atom renderer dependencies
+        working-directory: ./05_scripts/atoms
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install atom Chromium
+        working-directory: ./05_scripts/atoms
+        run: npx playwright install chromium
       - name: Run full adapter checks
+        env:
+          BABATA_PNG_RENDERER: ${{ github.workspace }}/05_scripts/atoms/render.mjs
         shell: pwsh
         run: ./05_scripts/check-full.ps1 -Scope Adapters
 

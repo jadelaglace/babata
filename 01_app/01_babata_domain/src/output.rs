@@ -9,6 +9,7 @@ pub const OUTPUT_MANIFEST_SCHEMA_VERSION: &str = "babata.output-manifest/v1";
 pub enum OutputKind {
     HumanReadable,
     Structured,
+    Png,
     Web,
     Obsidian,
 }

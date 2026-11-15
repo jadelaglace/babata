@@ -1,0 +1,4 @@
+interface:
+  display_name: "Babata 搜索调研"
+  short_description: "Search, verify sources and retain research evidence"
+  default_prompt: "Use $babata-research to investigate this question and distinguish evidence, inference, and limitations."

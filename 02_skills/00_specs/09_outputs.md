@@ -13,6 +13,13 @@ Update only roles whose semantics or contracts changed; complete every required 
 formal registration or publication.
 
 - Target CLI: `babata outputs ...`
+- PNG profile: `png` uses the existing record/sublibrary scope, output identity, generation, manifest,
+  verify/delete/rebuild lifecycle. Local `BABATA_PNG_RENDERER` points to the trusted atom renderer;
+  `BABATA_NODE` and browser/dependency configuration stay outside Git. No renderer means unavailable.
+  Rust validates the returned PNG dimensions/hash and frozen-input receipt before accepting it.
+  PNG verification reads the artifact/receipt and authoritative inputs, without re-rendering pixel bytes.
+  This first formal profile is long-mode record projection, not complete external-body or media export.
+  Independent assistant Markdown/HTML renders use Git-external runs, not a second formal C2 writer.
 - Input: explicit item/sublibrary scope and output kind
 - Output: build status, output reference, and provenance manifest
 - Permissions: read C0/C1 through Rust services; no reverse write from generated output

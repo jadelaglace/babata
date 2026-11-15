@@ -625,16 +625,9 @@ where
         if self.assets.complete_operation(&operation_id).is_err() {
             warnings.push("recovery journal cleanup is pending".to_owned());
         }
-        let detail = self
-            .repository
-            .load_detail(&item.id)
-            .ok()
-            .and_then(|detail| {
-                if validate_ready_readback(&detail, &revision.id, &staged_assets).is_ok() {
-                    Some(detail)
-                } else {
-                    None
-                }
+        let detail =
+            self.repository.load_detail(&item.id).ok().filter(|detail| {
+                validate_ready_readback(detail, &revision.id, &staged_assets).is_ok()
             });
         if detail.is_none() {
             warnings.push("ready capture committed but repository read-back failed".to_owned());
@@ -711,24 +704,15 @@ where
         if self.assets.complete_operation(&operation_id).is_err() {
             warnings.push("recovery journal cleanup is pending".to_owned());
         }
-        let detail = self
-            .repository
-            .load_detail(&item_id)
-            .ok()
-            .and_then(|detail| {
-                if validate_ready_asset_attachment_readback(
-                    &detail,
-                    &operation.id,
-                    &operation.revision_id,
-                    &staged_assets,
-                )
-                .is_ok()
-                {
-                    Some(detail)
-                } else {
-                    None
-                }
-            });
+        let detail = self.repository.load_detail(&item_id).ok().filter(|detail| {
+            validate_ready_asset_attachment_readback(
+                detail,
+                &operation.id,
+                &operation.revision_id,
+                &staged_assets,
+            )
+            .is_ok()
+        });
         if detail.is_none() {
             warnings.push("ready attachment committed but repository read-back failed".to_owned());
         }
@@ -1817,7 +1801,7 @@ pub(crate) mod tests {
         assert_eq!(state.revisions.len(), 1);
         assert_eq!(state.revisions[0].id, parent.revision_id);
         assert_eq!(state.states[0].1, RawState::Ready);
-        assert!(state.quarantined.is_empty());
+        assert_eq!(state.quarantined, [] as [RevisionId; 0]);
         assert_eq!(state.asset_attachments.len(), 1);
         assert_eq!(state.asset_attachments[0].state, RawState::Quarantined);
         assert_eq!(

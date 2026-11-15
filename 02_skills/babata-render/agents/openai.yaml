@@ -1,0 +1,4 @@
+interface:
+  display_name: "Babata PNG 渲染"
+  short_description: "Render existing content into verified PNG images"
+  default_prompt: "Use $babata-render to render this existing content into PNG and review its visual completeness."

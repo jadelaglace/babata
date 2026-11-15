@@ -820,7 +820,11 @@ mod tests {
 
         let available = dispatch(&config, "GET", "/v1/outputs", Some(TOKEN), b"").unwrap();
         let available: Value = serde_json::from_slice(&available.body).unwrap();
-        assert_eq!(available["data"], json!(["human_readable", "structured"]));
+        let formats = available["data"].as_array().unwrap();
+        assert!(
+            formats == &vec![json!("human_readable"), json!("structured")]
+                || formats == &vec![json!("human_readable"), json!("structured"), json!("png")]
+        );
         let output = dispatch(
             &config,
             "POST",

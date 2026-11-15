@@ -2625,8 +2625,14 @@ mod tests {
         let semantic_record = format!("semantic:{}", fixture.knowledge_semantic);
         let detail = projection.show(&semantic_record).unwrap();
         assert_eq!(detail.score_history.len(), 2);
-        assert!(!detail.revisions.is_empty());
-        assert!(!detail.derivatives.is_empty());
+        assert_ne!(
+            detail.revisions,
+            [] as [babata_domain::SearchRevisionRef; 0]
+        );
+        assert_ne!(
+            detail.derivatives,
+            [] as [babata_domain::SearchDerivativeRef; 0]
+        );
         assert_eq!(detail.record.map_nodes[0].name, "时间");
         assert!(detail.relations.iter().any(|relation| {
             relation.related_record_id == Some(format!("semantic:{}", fixture.case_semantic))
