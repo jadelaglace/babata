@@ -101,6 +101,11 @@ flowchart LR
 
 ## 6. 维护规则
 
+已采纳提案记录（不属于当前权威注册表，现行合同已写入各权威文档）：[#235](https://github.com/jadelaglace/babata/issues/235) 的
+[render＋vision PRD](../proposals/2026-11-15-render-vision/PRD.md) 与
+[架构建议](../proposals/2026-11-15-render-vision/ARCHITECTURE.md)。2026-11-15 已采纳并实施中；
+当前任务／暂停边界仍见 `DOC-ACTIVE-PLAN`。
+
 1. 用户拥有需求、优先级、价值判断和 acceptance；Agent 负责明确范围内的实现、执行和证据。
 2. 语义变化按 Requirements -> PRD -> AC -> Architecture -> Process/TC -> implementation -> Usage 推进。
 3. 只改运行结果时更新 Usage/receipt；只改实现时不制造 Requirements/PRD 变化。

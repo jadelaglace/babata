@@ -92,7 +92,7 @@ jobs:
       - name: Install Python
         uses: actions/setup-python@v7
         with:
-          python-version: '3.11'
+          python-version: '3.13'
       - name: Install TypeScript dependencies
         working-directory: ./08_adapters/01_browser_extension
         run: npm ci
@@ -102,6 +102,8 @@ jobs:
       - name: Install atom Chromium
         working-directory: ./05_scripts/atoms
         run: npx playwright install chromium
+      - name: Install image atom Python dependencies
+        run: python -m pip install -r ./05_scripts/atoms/requirements-image.txt
       - name: Run full adapter checks
         env:
           BABATA_PNG_RENDERER: ${{ github.workspace }}/05_scripts/atoms/render.mjs

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Babata 视觉"
+  short_description: "Read, compare and quality-check static images with measured evidence"
+  default_prompt: "Use $babata-vision to inspect this image and report findings with locations and the scope actually checked."

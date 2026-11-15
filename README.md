@@ -82,7 +82,7 @@ flowchart LR
 
 ## 本地构建
 
-前置条件：Git、PowerShell 7、Rust `1.85` 或更高版本、Node.js 24 和 Python 3.11
+前置条件：Git、PowerShell 7、Rust `1.85` 或更高版本、Node.js 24 和 Python 3.13
 或更高版本。首次检查前，在 `08_adapters/01_browser_extension` 运行一次 `npm ci`。
 
 ```powershell
