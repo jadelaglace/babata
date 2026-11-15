@@ -9,27 +9,13 @@
 
 ## 1. 当前活动项（恢复时先读，最多一个）
 
-<!-- CURRENT-ACTIVE: git-ops-atoms-241 -->
+<!-- CURRENT-ACTIVE: none -->
 
-### git-ops-atoms-241
-
-- transition evidence：最新直接用户消息授权蒸馏两个新技能并走流程，不恢复旧任务。
-
-- 来源锚点：2026-11-15 用户要求“那就新蒸馏两个babata原子技能 解决上述问题。 走流程开始”。
-- transition：explicit-override / new-implementation；逐字输入在 Git 外
-  `D:/BabataEvidence/git-server-atoms-20261115/USER-INPUT.md`。
-- 用户目标：独立可携的 `babata-git` 与 `babata-ops`，保留原技能和四件套；仓库政策优先、明确授权、
-  无武断排障结论，提供窄检查工具而非执行平台。
-- 基线：最新 origin/main `152b62e`；Issue #241 / Epic #203 / #210；
-  分支 `codex/git-ops-atoms-241`，本工作树隔离实施。
-- 当前状态：两包、文档合同、27 项自动测试和 18 题作者走查完成；All 195.1s／boundary 40.1s
-  通过，frontmatter 通过；正在提交 PR，未安装／未合并／未发布。
-- 声明终端：两个包及所需文档、测试、证据通过适用 gate 并提交 PR；未安装、未合并及真实远程
-  运维未验证必须明确，不以脚本通过代替 Agent 行为或用户验收。
-- 受保护边界：不修改源技能／四件套、不安装、不改用户环境、不操作真实服务器、不合并或清理分支；
-  #238 保持原 PR，不复制其未合并实现；发丝 matting 继续 queued。
-- 下一步：精确暂存、预检、提交推送并创建 PR，读回 head 与远端检查；不自动 merge 或安装。
-- 恢复入口：本文件、Issue #241；Git 外证据 `D:/BabataEvidence/git-server-atoms-20261115/`。
+#241 的两个独立原子包已交付 PR #242；27 项自动测试、18 题作者场景走查、frontmatter 和
+本地 All／boundary 通过，具体结论和限制在 `DOC-USAGE` §10 及 Git 外
+`D:/BabataEvidence/git-server-atoms-20261115/REPORT.md`。当前 PR CI 已触发，不预判其结果。
+本次终端为 PR 交付，不自动安装、合并、清理或操作真实服务器；#238 和发丝队列不由此恢复。
+逐字输入、来源、验证及恢复证据已持久保留，本临时执行项退出恢复热路径。
 
 ## 2. 下次开工队列（禁止恢复时自动执行）
 
