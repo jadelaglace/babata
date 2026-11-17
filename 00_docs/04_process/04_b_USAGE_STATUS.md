@@ -157,6 +157,12 @@ Python 3.13.17／Rust 1.100.0 本地 All gate 195.1s、其中 boundary 40.1s 通
 研究证据在 `D:/BabataEvidence/finance-stk02-discovery-20261115/`。
 未运行金融回测、未验证信源／信号效果、未实施或安装新金融能力，未接券商、交易、
 WBS 或推送自动化；StockMesh 仅只读核对。是否采纳方案及首轮范围由用户决定。
+2026-11-17 已按后续指令建立 Git 外 `D:/BabataAssistant/solutions/finance-stk02/` 工作入口、
+个人设定／待定项、精选来源、预测与回溯账本、信号／影子复盘模板；公开结构说明见同提案
+`WORKSPACE.md`。目前只有文件骨架，没有真实来源登记、预测评分、信号或金融实现。
+用户可逐条补充，由 Agent 更新对应文件；不要求参数一次填完，不自动启动采集／付费／通知。
+本次骨架检查与最终 Git／CI 状态见 `D:/BabataEvidence/finance-stk02-scaffold-20261117/DELIVERY.json`。
+下列 43.5s 与研究完整性属于 2026-11-15 的既有证据，不冒充本次新验证：
 本地完整 boundary 43.5s 通过，含文档与 mutation／negative checks；研究 run 已 finalized／
 integrity verified（21 观察，10 正文相关摘录、1 正文不可访问）；不把完整性检查当事实认证。
 未运行任何金融策略验收题或收益验证。最终提交与远端 CI 结果见本轮 `DELIVERY.json`，不预判。
