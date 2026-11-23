@@ -140,6 +140,8 @@ direct user input
 ```
 
 - 每个事实只有一个 primary authority；其他文档只引用或解释。
+- 模块变更沿模块自己的文档链更新。跨模块共识变更沿总体文档链更新，模块保留指向适用条款的链接。
+  归属和文档落点见 [文件协议](../03_architecture/03_a_ARCHITECTURE.md#文件协议的文档归属)。
 - run 数字、批次、课程、accepted instance 和 receipt 属于 Usage/evidence，不进入稳定产品合同。
 - 历史原话、旧 phase、被替代设计和关闭过程进入收官归档、Git 或 receipt，不进入日常热路径。
 - 新产品意图先逐字捕获到有恢复能力的输入证据；当前结构已将低频原话历史冻结在 Git/归档，

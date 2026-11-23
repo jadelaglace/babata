@@ -35,6 +35,11 @@ flowchart LR
 正常解释从 Requirements 开始，只读取当前问题需要的下游权威。P0-P9 历史和精选原话只在审计、
 严重漂移或回顾时读取 `DOC-P0-P9-ARCHIVE`；它不参与任务恢复和当前决策。
 
+业务模块从自己的文档入口开始，以下注册表用于总体 Babata 和仍在原位的知识宇宙文档。
+模块可使用 `modules/<module>/README.md` 或已有模块入口。原子能力的技术文档按需随自身维护位置
+组织，供模块引用。共享条款的引用方式见
+[文件协议的文档归属](03_architecture/03_a_ARCHITECTURE.md#文件协议的文档归属)。
+
 ## 2. 当前文档注册表
 
 <!-- DOC-REGISTRY: v2 -->
